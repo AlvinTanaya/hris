@@ -2,16 +2,28 @@
 
 namespace App\Http\Controllers;
 
+use Illuminate\Bus\UpdatedBatchJobCounts;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail;
+
 use App\Models\User;
 use App\Models\history_transfer_employee;
 use App\Models\history_extend_employee;
 use App\Models\users_education;
 use App\Models\users_family;
 use App\Models\users_work_experience;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Storage;
+use App\Models\users_language;
+use App\Models\users_training;
+use App\Models\users_organization;
+
+use App\Mail\TransferNotification;
+use App\Mail\UpdateNotification;
+use App\Mail\DepartmentUpdateNotification;
+
 
 class UserController extends Controller
 {
@@ -231,6 +243,9 @@ class UserController extends Controller
         $userEducation = users_education::where('users_id', $id)->get();
         $userWork = users_work_experience::where('users_id', $id)->get();
         $userFamily = users_family::where('users_id', $id)->get();
+        $userTraining = users_training::where('users_id', $id)->get();
+        $userLanguage = users_language::where('users_id', $id)->get();
+        $userOrganization = users_organization::where('users_id', $id)->get();
 
         // If no related data, you could check for empty sets or return defaults
         if ($userEducation->isEmpty()) {
@@ -242,6 +257,19 @@ class UserController extends Controller
         if ($userFamily->isEmpty()) {
             $userFamily = null;
         }
+
+        if ($userOrganization->isEmpty()) {
+            $userOrganization = null;
+        }
+
+        if ($userLanguage->isEmpty()) {
+            $userLanguage = null;
+        }
+
+        if ($userTraining->isEmpty()) {
+            $userTraining = null;
+        }
+
 
         $duty = DB::table('elearning_invitation')
             ->join('elearning_lesson', 'elearning_invitation.lesson_id', '=', 'elearning_lesson.id')
@@ -262,12 +290,12 @@ class UserController extends Controller
             ->get();
 
         // Pass the data to the update view
-        return view('user.update', compact('user', 'userEducation', 'userWork', 'userFamily', 'duty'));
+        return view('user.update', compact('user', 'userEducation', 'userWork', 'userFamily', 'userOrganization', 'userLanguage', 'userTraining', 'duty'));
     }
 
     public function update(Request $request, $id)
     {
-        //dd($request->all()); 
+        //dd($request->all());
         // Validasi input
 
 
@@ -276,69 +304,35 @@ class UserController extends Controller
             'photo' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
             'id_card' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
             'cv' => 'nullable|mimes:pdf|max:2048',
+            'achievement' => 'nullable|mimes:pdf|max:2048',
             'employee_id' => 'required',
             'name' => 'required',
-            'position' => 'required',
-            'department' => 'required',
-            'join_date' => 'required',
-            'contract_date' => 'required_if:employee_status,Contract,Part Time|nullable|date',
-            'email' => 'required|email',
-            'phone_number' => 'required',
-            'employee_status' => 'required',
             'user_status' => 'required',
-            'bpjs_employment' => 'required',
-            'bpjs_kesehatan' => 'required',
             'ID_number' => 'required',
-            'birth_date' => 'required',
-            'birth_place' => 'required|date',
+            'birth_date' => 'required|date',
+            'birth_place' => 'required',
             'ID_address' => 'required',
             'domicile_address' => 'required',
             'religion' => 'required',
             'gender' => 'required',
-            'height' => 'required',
-            'weight' => 'required',
-            'blood_type' => 'required',
+            'phone_number' => 'required',
+            'employee_status' => 'required',
+            'email' => 'required|email',
+            'join_date' => 'required',
+            'position' => 'required',
+            'contract_start_date' => 'required_if:employee_status,Contract,Part Time|nullable|date',
+            'contract_end_date' => 'required_if:employee_status,Contract,Part Time|nullable|date',
 
+            'department' => 'required',
 
-
-            // Data array yang tidak wajib diisi (nullable)
-            'id_family' => 'nullable|array',
-            'name_family' => 'nullable|array',
-            'relation' => 'nullable|array',
-            'birth_date_family' => 'nullable|array',
-            'birth_place_family' => 'nullable|array',
-            'ID_number_family' => 'nullable|array',
-            'phone_number_family' => 'nullable|array',
-            'address_family' => 'nullable|array',
-            'gender_family' => 'nullable|array',
-            'job' => 'nullable|array',
-
-            // Pendidikan
-            'id_education' => 'nullable|array',
-            'education_level' => 'nullable|array',
-            'education_place' => 'nullable|array',
-            'major' => 'nullable|array',
-            'start_education' => 'nullable|array',
-            'end_education' => 'nullable|array',
-            'grade' => 'nullable|array',
-
-            // job
-            'id_work' => 'nullable|array',
-            'company_name' => 'nullable|array',
-            'position_working' => 'nullable|array',
-            'start_working' => 'nullable|array',
-            'end_working' => 'nullable|array',
         ]);
-
-        // Update password only if a new one is provided
-
 
         //dd('masuk validate');
 
         // Cari data pegawai berdasarkan ID
         $user = User::findOrFail($id);
 
-
+        // Update password only if a new one is provided
         if (!empty($request->password)) {
             $newpassword = bcrypt($request->password);
         } else {
@@ -400,6 +394,48 @@ class UserController extends Controller
         }
 
 
+        if ($request->hasFile('achievement')) {
+            // Hapus file lama jika ada
+            if ($user->achievement_path) {
+                Storage::disk('public')->delete('user/achievement_user/' . $user->cv_path);
+            }
+
+            // Simpan file baru
+            $achievementPath = $request->file('achievement')->storeAs(
+                'user/achievement_user',
+                'achievement_' . $user->employee_id . '.' . $request->file('achievement')->getClientOriginalExtension(),
+                'public'
+            );
+
+            // Update path
+            $user->achievement_path = $achievementPath;
+        }
+
+
+
+        //sim
+        if (!$request->has('no_license') || $request->has('sim')) {
+            // Lakukan sesuatu
+            $user->sim = $request->has('sim') ? implode(',', $request->sim) : null;
+
+            // Ambil nomor SIM sesuai SIM yang dipilih
+            $selectedSimNumbers = [];
+            if ($request->has('sim')) {
+                foreach ($request->sim as $simType) {
+                    if (!empty($request->sim_number[$simType])) {
+                        $selectedSimNumbers[$simType] = $request->sim_number[$simType];
+                    }
+                }
+            }
+
+            // Simpan nomor SIM dengan format JSON
+            $user->sim_number = !empty($selectedSimNumbers) ? json_encode($selectedSimNumbers) : null;
+        } else {
+            $user->sim = null;
+            $user->sim_number = null;
+        }
+
+
 
 
         // Update data pegawai
@@ -439,8 +475,8 @@ class UserController extends Controller
                 if (!is_null($name)) {
                     //dd($name);
                     // Jika ID family sudah ada (update)
-                    if (array_key_exists($index, $request->id_family) && !is_null($request->id_family[$index])) {
-                        // dd($request->id_family[$index]);
+                    if (isset($request->id_family) && array_key_exists($index, $request->id_family) && !is_null($request->id_family[$index])) {
+
                         $id_used[] = $request->id_family[$index]; // Simpan ID untuk pengecekan akhir
 
                         // Cari data yang ada di database
@@ -508,8 +544,8 @@ class UserController extends Controller
             foreach ($request->education_level as $index => $education_level) {
                 // Cek apakah degree pendidikan tidak kosong
                 if (!is_null($education_level)) {
+                    if (isset($request->id_education) && array_key_exists($index, $request->id_education) && !is_null($request->id_education[$index])) {
 
-                    if (array_key_exists($index, $request->id_education) && !is_null($request->id_education[$index])) {
                         // Update data jika ID education ada
                         $id_used_education[] = $request->id_education[$index];
 
@@ -519,6 +555,7 @@ class UserController extends Controller
                         if (
                             $userEducation->degree !== $education_level ||
                             $userEducation->educational_place !== $request->education_place[$index] ||
+                            $userEducation->educational_city !== $request->educational_city[$index] ||
                             $userEducation->mulai_edukasi !== $request->start_education[$index] ||
                             $userEducation->akhir_edukasi !== $request->end_education[$index] ||
                             $userEducation->major !== $request->major[$index] ||
@@ -566,8 +603,8 @@ class UserController extends Controller
             foreach ($request->company_name as $index => $company_name) {
                 // Cek apakah nama perusahaan tidak kosong
                 if (!is_null($company_name)) {
+                    if (isset($request->id_work) && array_key_exists($index, $request->id_work) && !is_null($request->id_work[$index])) {
 
-                    if (array_key_exists($index, $request->id_work) && !is_null($request->id_work[$index])) {
                         // Update data jika ID work ada
                         $id_used_work[] = $request->id_work[$index];
 
@@ -582,9 +619,21 @@ class UserController extends Controller
                         ) {
                             $userWork->update([
                                 'nama_perusahaan' => $company_name,
-                                'position' => $request->position[$index],
-                                'start_working' => $request->start_work[$index],
-                                'end_working' => $request->end_work[$index],
+                                'position' => $request->position_work[$index] ?? '',
+                                'start_working' => $request->start_work[$index] ?? '',
+                                'end_working' => $request->end_work[$index] ?? '',
+
+                                'company_address' => $request->company_address[$index] ?? '',
+                                'company_phone' => $request->company_phone[$index] ?? '',
+                                'salary' => $request->previous_salary[$index] ?? '',
+                                'supervisor_name' => $request->supervisor_name[$index] ?? '',
+                                'supervisor_phone' => $request->supervisor_phone[$index] ?? '',
+                                'job_desc' => str_replace(["\r", "\n", "-", "  "], ["", ";", "", " "], trim($request->job_desc[$index] ?? '')),
+                                'reason' => str_replace(["\r", "\n", "-", "  "], ["", ";", "", " "], trim($request->reason[$index] ?? '')),
+                                'benefit' => str_replace(["\r", "\n", "-", "  "], ["", ";", "", " "], trim($request->benefit[$index] ?? '')),
+                                'facility' => str_replace(["\r", "\n", "-", "  "], ["", ";", "", " "], trim($request->facility[$index] ?? '')),
+
+                                'created_at' => now(),
                                 'updated_at' => now(),
                             ]);
                         }
@@ -593,9 +642,20 @@ class UserController extends Controller
                         $newWork = users_work_experience::create([
                             'users_id' => $user->id,
                             'nama_perusahaan' => $company_name,
-                            'position' => $request->position[$index],
-                            'start_working' => $request->start_work[$index],
-                            'end_working' => $request->end_work[$index],
+
+                            'position' => $request->position_work[$index] ?? '',
+                            'start_working' => $request->start_work[$index] ?? '',
+                            'end_working' => $request->end_work[$index] ?? '',
+                            'company_address' => $request->company_address[$index] ?? '',
+                            'company_phone' => $request->company_phone[$index] ?? '',
+                            'salary' => $request->salary[$index] ?? '',
+                            'supervisor_name' => $request->supervisor_name[$index] ?? '',
+                            'supervisor_phone' => $request->supervisor_phone[$index] ?? '',
+                            'job_desc' => str_replace(["\r", "\n", "-", "  "], ["", ";", "", " "], trim($request->job_desc[$index] ?? '')),
+                            'reason' => str_replace(["\r", "\n", "-", "  "], ["", ";", "", " "], trim($request->reason[$index] ?? '')),
+                            'benefit' => str_replace(["\r", "\n", "-", "  "], ["", ";", "", " "], trim($request->benefit[$index] ?? '')),
+                            'facility' => str_replace(["\r", "\n", "-", "  "], ["", ";", "", " "], trim($request->facility[$index] ?? '')),
+
                             'created_at' => now(),
                             'updated_at' => now(),
                         ]);
@@ -613,6 +673,155 @@ class UserController extends Controller
             // dd('beres');
         }
 
+
+
+        // Logika untuk Training
+        if ($request->has('training_name')) {
+            $id_used_training = [];
+
+            foreach ($request->training_name as $index => $training_name) {
+                if (!is_null($training_name)) {
+                    if (isset($request->id_training) && array_key_exists($index, $request->id_training) && !is_null($request->id_training[$index])) {
+                        $id_used_training[] = $request->id_training[$index];
+                        $userTraining = users_training::findOrFail($request->id_training[$index]);
+
+                        if (
+                            $userTraining->training_name !== $training_name ||
+                            $userTraining->training_city !== $request->training_city[$index] ||
+                            $userTraining->start_date !== $request->training_start_date[$index] ||
+                            $userTraining->end_date !== $request->training_end_date[$index]
+                        ) {
+                            $userTraining->update([
+                                'training_name' => $training_name,
+                                'training_city' => $request->training_city[$index] ?? '',
+                                'start_date' => $request->training_start_date[$index] ?? '',
+                                'end_date' => $request->training_end_date[$index] ?? '',
+                                'updated_at' => now(),
+                            ]);
+                        }
+                    } else {
+                        $newTraining = users_training::create([
+                            'users_id' => $user->id,
+                            'training_name' => $training_name,
+                            'training_city' => $request->training_city[$index] ?? '',
+                            'start_date' => $request->training_start_date[$index] ?? '',
+                            'end_date' => $request->training_end_date[$index] ?? '',
+                            'created_at' => now(),
+                            'updated_at' => now(),
+                        ]);
+                        $id_used_training[] = $newTraining->id;
+                    }
+                }
+            }
+
+            users_training::where('users_id', $user->id)
+                ->whereNotIn('id', $id_used_training)
+                ->delete();
+        }
+
+        // Logika untuk Organization
+        if ($request->has('organization_name')) {
+            $id_used_organization = [];
+
+            foreach ($request->organization_name as $index => $organization_name) {
+                if (!is_null($organization_name)) {
+                    if (isset($request->id_organization) && array_key_exists($index, $request->id_organization) && !is_null($request->id_organization[$index])) {
+
+                        $id_used_organization[] = $request->id_organization[$index];
+                        $userOrganization = users_organization::findOrFail($request->id_organization[$index]);
+
+                        if (
+                            $userOrganization->organization_name !== $organization_name ||
+                            $userOrganization->position !== $request->organization_position[$index] ||
+                            $userOrganization->start_date !== $request->organization_start_date[$index] ||
+                            $userOrganization->end_date !== $request->organization_end_date[$index]
+                        ) {
+                            $userOrganization->update([
+                                'organization_name' => $organization_name,
+                                'position' => $request->organization_position[$index] ?? '',
+                                'city' => $request->organization_city[$index] ?? '',
+                                'activity_type' => str_replace(["\r", "\n", "-", "  "], ["", ";", "", " "], trim($request->activity_type[$index] ?? '')),
+
+                                'start_date' => $request->organization_start_date[$index] ?? '',
+                                'end_date' => $request->organization_end_date[$index] ?? '',
+                                'updated_at' => now(),
+                            ]);
+                        }
+                    } else {
+                        $newOrganization = users_organization::create([
+                            'users_id' => $user->id,
+                            'organization_name' => $organization_name,
+                            'position' => $request->organization_position[$index] ?? '',
+                            'city' => $request->organization_city[$index] ?? '',
+                            'activity_type' => str_replace(["\r", "\n", "-", "  "], ["", ";", "", " "], trim($request->activity_type[$index] ?? '')),
+                            'start_date' => $request->organization_start_date[$index] ?? '',
+                            'end_date' => $request->organization_end_date[$index] ?? '',
+                            'created_at' => now(),
+                            'updated_at' => now(),
+                        ]);
+                        $id_used_organization[] = $newOrganization->id;
+                    }
+                }
+            }
+
+            users_organization::where('users_id', $user->id)
+                ->whereNotIn('id', $id_used_organization)
+                ->delete();
+        }
+
+        // Logika untuk Language
+        if ($request->has('language')) {
+            $id_used_language = [];
+
+            foreach ($request->language as $index => $language) {
+                if (!is_null($language)) {
+                    if (isset($request->id_language) && array_key_exists($index, $request->id_language) && !is_null($request->id_language[$index])) {
+
+                        $id_used_language[] = $request->id_language[$index];
+                        $userLanguage = users_language::findOrFail($request->id_language[$index]);
+
+                        if (
+                            $userLanguage->language !== $language ||
+                            $userLanguage->verbal !== $request->verbal[$index] ||
+                            $userLanguage->written !== $request->written[$index]
+                        ) {
+                            $userLanguage->update([
+                                'language' => $language,
+                                'verbal' => $request->verbal[$index] ?? '',
+                                'written' => $request->written[$index] ?? '',
+                                'updated_at' => now(),
+                            ]);
+                        }
+                    } else {
+                        $newLanguage = users_language::create([
+                            'users_id' => $user->id,
+                            'language' => $language,
+                            'verbal' => $request->verbal[$index] ?? '',
+                            'written' => $request->written[$index] ?? '',
+                            'created_at' => now(),
+                            'updated_at' => now(),
+                        ]);
+                        $id_used_language[] = $newLanguage->id;
+                    }
+                }
+            }
+
+            users_language::where('users_id', $user->id)
+                ->whereNotIn('id', $id_used_language)
+                ->delete();
+        }
+
+
+
+        Mail::to($user->email)->send(new UpdateNotification($user->name));
+
+
+
+        // Ambil email karyawan di HR
+        $hr_emails = User::where('department', 'Human Resources')->where('email', '!=', $user->email)->pluck('email');
+
+
+        Mail::to($hr_emails)->send(new DepartmentUpdateNotification($user->employee_id, $user->position, $user->department));
 
 
         // Redirect ke halaman index atau halaman lain dengan pesan sukses
@@ -643,7 +852,6 @@ class UserController extends Controller
 
     public function transfer_user(Request $request, $id)
     {
-        // dd($request->all());
         // Validasi input
         $request->validate([
             'old_position' => 'required|string|max:255',
@@ -667,6 +875,8 @@ class UserController extends Controller
 
         // Cari data pegawai berdasarkan ID
         $user = User::findOrFail($id);
+
+        // Update user data
         if ($request->transfer_type == "Penetapan") {
             $user->update([
                 'employee_status' => "Tetap",
@@ -682,10 +892,17 @@ class UserController extends Controller
             ]);
         }
 
+        // Kirim email notifikasi
+        Mail::to($user->email)->send(new TransferNotification(
+            $request->old_position,
+            $request->old_department,
+            $request->new_position,
+            $request->new_department,
+            $request->transfer_type
+        ));
         // Redirect ke halaman index atau halaman lain dengan pesan sukses
-        return redirect()->route('home')->with('success', 'Employee Transfered successfully.');
+        return redirect()->route('user.index')->with('success', 'Employee Transfered successfully.');
     }
-
 
 
     public function extendDate(Request $request, $id)

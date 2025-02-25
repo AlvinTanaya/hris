@@ -34,6 +34,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
 <script>
     const url = "{{ asset('storage/' . $task->lesson_file) }}";
+    console.log(url);
 
     pdfjsLib.getDocument(url).promise.then(pdf => {
         const pdfContainer = document.getElementById('pdf-pages');

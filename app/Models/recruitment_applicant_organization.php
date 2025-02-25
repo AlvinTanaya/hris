@@ -5,30 +5,23 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class recruitment_applicant_work_experience extends Model
+class recruitment_applicant_organization extends Model
 {
     use HasFactory;
 
     // Define the table name if it's not the plural of the model name
-    protected $table = 'recruitment_applicant_work_experience';
+    protected $table = 'recruitment_applicant_organization';
 
     // Define which fields can be mass-assigned
     protected $fillable = [
         'id',
         'applicant_id',
-        'company_name',
+        'organization_name',
+        'activity_type',
         'position',
-        'working_start',
-        'working_end',
-        'company_address',
-        'company_phone',
-        'salary',
-        'supervisor_name',
-        'supervisor_phone',
-        'job_desc',
-        'reason',
-        'benefit',
-        'facility',
+        'city',
+        'start_date',
+        'end_date',
         'created_at',
         'updated_at',
     ];

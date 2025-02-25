@@ -478,45 +478,79 @@
                         </div>
                     </div>
 
-                    <!-- Other Personal Info Card -->
+                    <!-- Other Info Card -->
                     <div class="col-12">
                         <div class="card border-0 shadow-sm">
                             <div class="card-header bg-primary text-white">
-                                <h6 class="mb-0"><i class="fas fa-check-circle me-2"></i>Other Personal Information</h6>
+                                <h6 class="mb-0"><i class="fas fa-check-circle me-2"></i>Other Information</h6>
                             </div>
                             <div class="card-body">
                                 <div class="row">
                                     <div class="col-md-6">
                                         <div class="info-group">
-                                            <label>Email</label>
+                                            <strong>Email</strong>
                                             <p id="applicantEmail"></p>
                                         </div>
 
                                         <div class="info-group">
-                                            <label>Weight</label>
+                                            <strong>Weight</strong>
                                             <p id="applicantWeight"></p>
                                         </div>
 
+
                                         <div class="info-group">
-                                            <label>BPJS Health</label>
+                                            <strong>BPJS Health</strong>
                                             <p id="applicantBPJSHealth"></p>
                                         </div>
+
+                                        <div class="info-group">
+                                            <strong>Expected Salary</strong>
+                                            <p id="applicantExpectedSalary"></p>
+                                        </div>
+
+
+                                        <div class="info-group">
+                                            <strong>Expected Facility</strong>
+                                            <p id="applicantExpectedFacility"></p>
+                                        </div>
+
+
+                                        <div class="info-group">
+                                            <strong>SIM</strong>
+                                            <p id="applicantSim">-</p>
+                                        </div>
+
+
+
 
                                     </div>
 
                                     <div class="col-md-6">
                                         <div class="info-group">
-                                            <label>Domicile Address</label>
+                                            <strong>Domicile Address</strong>
                                             <p id="applicantDomicileAddress"></p>
                                         </div>
                                         <div class="info-group">
-                                            <label>Height</label>
+                                            <strong>Height</strong>
                                             <p id="applicantHeight"></p>
                                         </div>
+
                                         <div class="info-group">
-                                            <label>Status Applicant</label>
+                                            <strong>BPJS Employment</strong>
+                                            <p id="applicantBPJSEmployment"></p>
+                                        </div>
+
+                                        <div class="info-group">
+                                            <strong>Status Applicant</strong>
                                             <p id="applicantStatus"></p>
                                         </div>
+
+                                        <div class="info-group">
+                                            <strong>Expected Benefit</strong>
+                                            <p id="applicantExpectedBenefit"></p>
+                                        </div>
+
+
 
                                     </div>
 
@@ -532,7 +566,7 @@
                                 <h6 class="mb-0"><i class="fa-solid fa-file-image me-2"></i> Applicant ID Card</h6>
                             </div>
                             <div class="card-body text-center">
-                                <img id="applicantIDCard" src="" width="100%" height="500px" style="border: none; object-fit: contain;">
+                                <img id="applicantIDCard" src="" width="100%" height="250px" style="border: none; object-fit: contain;">
 
                             </div>
                         </div>
@@ -546,6 +580,17 @@
                             </div>
                             <div class="card-body">
                                 <iframe id="applicantCVFrame" src="" width="100%" height="500px" style="border: none;"></iframe>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-12">
+                        <div class="card border-0 shadow-sm">
+                            <div class="card-header bg-primary text-white">
+                                <h6 class="mb-0"><i class="fa-solid fa-file-pdf me-2"></i>Achievement</h6>
+                            </div>
+                            <div class="card-body">
+                                <iframe id="applicantAchievementFrame" src="" width="100%" height="500px" style="border: none;"></iframe>
                             </div>
                         </div>
                     </div>
@@ -582,6 +627,48 @@
                                         <div id="educationInfo" class="accordion-collapse collapse" data-bs-parent="#detailsAccordion">
                                             <div class="accordion-body">
                                                 <div id="educationDetails"></div>
+                                            </div>
+                                        </div>
+
+                                    </div>
+                                    <div class="accordion-item">
+                                        <h2 class="accordion-header">
+                                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#trainingInfo">
+                                                Applicant Training Data
+                                            </button>
+                                        </h2>
+
+                                        <div id="trainingInfo" class="accordion-collapse collapse" data-bs-parent="#detailsAccordion">
+                                            <div class="accordion-body">
+                                                <div id="trainingDetails"></div>
+                                            </div>
+                                        </div>
+
+                                    </div>
+                                    <div class="accordion-item">
+                                        <h2 class="accordion-header">
+                                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#languageInfo">
+                                                Applicant Language Data
+                                            </button>
+                                        </h2>
+
+                                        <div id="languageInfo" class="accordion-collapse collapse" data-bs-parent="#detailsAccordion">
+                                            <div class="accordion-body">
+                                                <div id="languageDetails"></div>
+                                            </div>
+                                        </div>
+
+                                    </div>
+                                    <div class="accordion-item">
+                                        <h2 class="accordion-header">
+                                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#organizationInfo">
+                                                Applicant Organization Data
+                                            </button>
+                                        </h2>
+
+                                        <div id="organizationInfo" class="accordion-collapse collapse" data-bs-parent="#detailsAccordion">
+                                            <div class="accordion-body">
+                                                <div id="organizationDetails"></div>
                                             </div>
                                         </div>
 
@@ -701,12 +788,370 @@
     </div>
 </div>
 
+<!-- Modal for Adding Employee -->
+<div class="modal fade" id="addEmployeeModal" tabindex="-1" aria-labelledby="addEmployeeModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addEmployeeModalLabel">Add Applicant to Employees</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="addEmployeeForm">
+                    <input type="hidden" id="applicant_id">
+                    <div class="mb-3">
+                        <label for="join_date" class="form-label">Join Date</label>
+                        <input type="date" class="form-control" id="join_date" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100">Continue</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
 
 @endsection
 
 
 @push('scripts')
+
+
 <script>
+    function formatList(value) {
+        if (!value) return '-'; // Jika kosong, tampilkan strip
+        const items = value.split(';').map(item => item.trim()).filter(item => item !== '');
+        return `<ul><li>` + items.join('</li><li>') + `</li></ul>`;
+    }
+
+    function formatSim(sim, simNumber) {
+        if (!sim) return '-'; // Jika SIM null, tampilkan tanda strip
+
+        const simList = sim.split(','); // Memisahkan SIM jika ada banyak (misal: "A,C")
+        let formattedText = '';
+
+        try {
+            const simNumbers = simNumber ? JSON.parse(simNumber) : {}; // Parse JSON jika ada nomor SIM
+
+            simList.forEach(type => {
+                type = type.trim(); // Hapus spasi ekstra
+                const number = simNumbers[type] || '-'; // Ambil nomor jika ada, jika tidak tampilkan "-"
+                formattedText += `SIM ${type}: ${number}<br>`; // Format hasilnya
+            });
+        } catch (error) {
+            formattedText = 'Format SIM tidak valid';
+        }
+
+        return formattedText;
+    }
+
+    // Function to format date strings
+    function formatDate(dateString) {
+        if (!dateString) return '';
+        const date = new Date(dateString);
+        return date.toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+        });
+    }
+
+    // Populate family information with cards
+    function populateFamilyDetails(response) {
+        let familyHtml = '<div class="row g-4">';
+        response.family.forEach(member => {
+            familyHtml += `
+            <div class="col-md-6 col-lg-4">
+                <div class="card h-100 border-0 shadow-sm">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="card-title mb-0">${member.relation}</h5>
+                    </div>
+                    <div class="card-body">
+                        <h6 class="card-subtitle mb-3 text-primary">${member.name}</h6>
+                        <div class="mb-2">
+                            <i class="fas fa-briefcase me-2"></i>${member.job}
+                        </div>
+                        <div class="mb-2">
+                            <i class="fas fa-calendar me-2"></i>${formatDate(member.birth_date)}
+                        </div>
+                        <div class="mb-2">
+                            <i class="fas fa-map-marker-alt me-2"></i>${member.birth_place}
+                        </div>
+                        <div class="mb-2">
+                            <i class="fas fa-phone me-2"></i>${member.phone_number}
+                        </div>
+                        <div class="mb-2">
+                            <i class="fas fa-id-card me-2"></i>${member.ID_number}
+                        </div>
+                        <div class="mb-2">
+                            <i class="fas fa-home me-2"></i>${member.address}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        });
+        familyHtml += '</div>';
+        $('#familyDetails').html(familyHtml);
+    }
+
+    // Populate education information with timeline
+    function populateEducationDetails(response) {
+        let educationHtml = '<div class="education-timeline">';
+        response.education.sort((a, b) => new Date(b.end_education) - new Date(a.end_education))
+            .forEach(edu => {
+                educationHtml += `
+                <div class="timeline-item">
+                    <div class="timeline-marker"></div>
+                    <div class="timeline-content card border-0 shadow-sm">
+                        <div class="card-body">
+                            <h5 class="text-primary mb-2">${edu.degree}</h5>
+                            <h6 class="mb-3">${edu.educational_place}</h6>
+                            <div class="mb-2">
+                            <i class="fa-solid fa-city me-2"></i> ${edu.educational_city}
+                            </div>
+                            <div class="mb-2">
+                                <i class="fas fa-graduation-cap me-2"></i>${edu.major}
+                            </div>
+                            <div class="mb-2">
+                                <i class="fa-solid fa-marker me-2"></i> ${edu.grade}
+                            </div>
+                            <div class="text-muted">
+                                <i class="fas fa-calendar me-2"></i>
+                                ${formatDate(edu.start_education)} - ${formatDate(edu.end_education)}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            });
+        educationHtml += '</div>';
+        $('#educationDetails').html(educationHtml);
+    }
+
+
+
+
+    // Populate work experience with modern cards
+    function populateWorkExperience(response) {
+        let experienceHtml = '<div class="education-timeline">';
+        response.experience.sort((a, b) => new Date(b.end_date) - new Date(a.end_date))
+            .forEach(exp => {
+                experienceHtml += `
+            <div class="timeline-item">
+                <div class="timeline-marker"></div>
+                <div class="timeline-content card border-0 shadow-sm">    
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start mb-3">
+                            <div>
+                                <h5 class="text-primary mb-1">${exp.company_name}</h5>
+                                <h6 class="mb-0">${exp.position}</h6>
+                            </div>
+                            <span class="badge bg-secondary">
+                                ${formatDate(exp.working_start)} - ${formatDate(exp.working_end)}
+                            </span>
+                        </div>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <div class="mb-2">
+                                    <i class="fas fa-map-marker-alt me-2"></i>${exp.company_address}
+                                </div>
+                                <div class="mb-2">
+                                    <i class="fas fa-phone me-2"></i>${exp.company_phone}
+                                </div>
+                                <div class="mb-2">
+                                    <i class="fas fa-dollar-sign me-2"></i>Rp. ${parseInt(exp.salary).toLocaleString('id-ID')}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-2">
+                                    <i class="fas fa-user me-2"></i>Supervisor: ${exp.supervisor_name}
+                                </div>
+                                <div class="mb-2">
+                                    <i class="fas fa-phone me-2"></i>Supervisor: ${exp.supervisor_phone}
+                                </div>
+                            </div>
+                            <div class="col-12">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                    <h6 class="mb-2">Job Description</h6>
+                                        ${formatList(exp.job_desc)}
+                        
+                                    </div>
+                                    <div class="col-md-6">
+                                    <h6 class="mb-2">Reason for Leaving</h6>
+                                    ${formatList(exp.reason)}
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <h6 class="mb-2">Benefits</h6>
+                                        ${formatList(exp.benefit)}
+                        
+                                    </div>
+                                    <div class="col-md-6">
+                                        <h6 class="mb-2">Facilities</h6>
+                                        ${formatList(exp.facility)}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+            });
+        experienceHtml += '</div>';
+        $('#experienceDetails').html(experienceHtml);
+    }
+
+
+    function populateWorkTraining(response) {
+        let trainingHtml = '<div class="education-timeline">';
+        response.training.sort((a, b) => new Date(b.end_date) - new Date(a.end_date))
+            .forEach(tra => {
+                trainingHtml += `
+                <div class="timeline-item">
+                    <div class="timeline-marker"></div>
+                    <div class="timeline-content card border-0 shadow-sm">
+                        <div class="card-body">
+                            <h5 class="text-primary mb-2">${tra.training_name}</h5>
+                            <div class="mb-2">
+                            <i class="fa-solid fa-city me-2"></i> ${tra.training_city}
+                            </div>
+                            <div class="text-muted">
+                                <i class="fas fa-calendar me-2"></i>
+                                ${formatDate(tra.start_date)} - ${formatDate(tra.end_date)}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            });
+        trainingHtml += '</div>';
+        $('#trainingDetails').html(trainingHtml);
+    }
+
+    function populateOrganizations(response) {
+        let orgHtml = '<div class="education-timeline">';
+        response.organization.sort((a, b) => new Date(b.end_date) - new Date(a.end_date))
+            .forEach(org => {
+                orgHtml += `
+            <div class="timeline-item">
+                <div class="timeline-marker"></div>
+                <div class="timeline-content card border-0 shadow-sm">    
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start mb-3">
+                            <div>
+                                <h5 class="text-primary mb-1">${org.organization_name}</h5>
+                                <p class="text-muted mb-2">${org.position}</p>
+                            </div>
+                            <span class="badge bg-secondary">
+                                ${formatDate(org.start_date)} - ${formatDate(org.end_date)}
+                            </span>
+                        </div>
+
+                        <div class="mb-2">
+                            <i class="fa-solid fa-city me-2"></i> ${org.organization_name}
+                        </div>
+                        <div class="row">
+                            <div class="col-md-12">
+                                <h6>Activity</h6>
+                                ${formatList(org.activity_type)}
+                
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+            });
+        orgHtml += '</div>';
+        $('#organizationDetails').html(orgHtml);
+    }
+
+
+
+    function populateLanguages(response) {
+
+
+
+        let languageHtml = '<div class="row g-4">';
+        response.language.forEach(lang => {
+            languageHtml += `
+            <div class="col-md-6">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-body">
+                        <h5 class="text-primary mb-3">${lang.language}</h5>
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="text-muted">Written</span>
+                            <span class="badge ${lang.written === 'Active' ? 'bg-success' : 'bg-secondary'}">
+                                ${lang.written}
+                            </span>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span class="text-muted">Verbal</span>
+                            <span class="badge ${lang.verbal === 'Active' ? 'bg-success' : 'bg-secondary'}">
+                                ${lang.verbal}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        });
+        languageHtml += '</div>';
+        $('#languageDetails').html(languageHtml);
+    }
+
+    $('<style>')
+        .text(`
+        .education-timeline {
+            position: relative;
+            padding: 2rem 0;
+        }
+        
+        .education-timeline::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 1rem;
+            height: 100%;
+            width: 2px;
+            background: #e9ecef;
+        }
+        
+        .timeline-item {
+            position: relative;
+            padding-left: 3rem;
+            margin-bottom: 2rem;
+        }
+        
+        .timeline-marker {
+            position: absolute;
+            left: 0.35rem;
+            width: 1.3rem;
+            height: 1.3rem;
+            border-radius: 50%;
+            background: #primary;
+            border: 3px solid blue;
+            box-shadow: 0 0 0 2px #primary;
+        }
+        
+        .timeline-content {
+            margin-left: 1rem;
+        }
+        
+        .card {
+            transition: transform 0.2s;
+        }
+        
+        .card:hover {
+            transform: translateY(-5px);
+        }
+    `)
+        .appendTo('head');
+
     $(document).ready(function() {
 
         // Aktifkan tooltip untuk elemen dengan data-bs-toggle="tooltip"
@@ -725,6 +1170,8 @@
             });
         });
 
+
+
         // View Applicant Details
         $('.view-btn').click(function() {
             const id = $(this).data('id');
@@ -737,8 +1184,18 @@
                     $('#applicantPhoto').attr('src', '/storage/' + response.applicant.photo_profile_path);
                     $('#applicantCVFrame').attr('src', '/storage/' + response.applicant.cv_path);
                     $('#applicantIDCard').attr('src', '/storage/' + response.applicant.ID_card_path);
-                    $('#applicantName').text(response.applicant.name);
+                    $('#applicantAchievementFrame').attr('src', '/storage/' + response.applicant.achievement_path);
 
+                    $('#applicantExpectedSalary').text(
+                        "Rp. " + parseInt(response.applicant.expected_salary).toLocaleString('id-ID')
+                    );
+
+                    $('#applicantExpectedFacility').html(formatList(response.applicant.expected_facility));
+                    $('#applicantExpectedBenefit').html(formatList(response.applicant.expected_benefit));
+                    $('#applicantSim').html(formatSim(response.applicant.sim, response.applicant.sim_number));
+
+
+                    $('#applicantName').text(response.applicant.name);
                     $('#applicantEmail').text(response.applicant.email);
                     $('#applicantPhoneNumber').text(response.applicant.phone_number);
                     $('#applicantIDNumber').text(response.applicant.ID_number);
@@ -751,6 +1208,7 @@
                     $('#applicantWeight').text(response.applicant.weight + " kg");
                     $('#applicantHeight').text(response.applicant.height + " cm");
                     $('#applicantBPJSHealth').text(response.applicant.bpjs_health);
+                    $('#applicantBPJSEmployment').text(response.applicant.bpjs_employment);
                     const status = response.applicant.status_applicant;
                     const statusElement = $('#applicantStatus');
 
@@ -780,45 +1238,12 @@
                         header.addClass('bg-success');
                     }
 
-                    // Populate family information
-                    let familyHtml = '<div class="table-responsive" style="padding-right: 1%;"><table class="table mb-3 pt-3 table-bordered">';
-                    familyHtml += '<thead>     <tr class="align-middle"><th>Relation</th><th>Name</th><th>Occupation</th></tr></thead><tbody>';
-                    response.family.forEach(member => {
-                        familyHtml += `<tr class="align-middle">
-                        <td>${member.relation}</td>
-                        <td>${member.name}</td>
-                        <td>${member.job}</td>
-                    </tr>`;
-                    });
-                    familyHtml += '</tbody></table></div>';
-                    $('#familyDetails').html(familyHtml);
-
-                    // Populate education information
-                    let educationHtml = '<div class="table-responsive" style="padding-right: 1%;"><table class="table mb-3 pt-3 table-bordered">';
-                    educationHtml += '<thead>     <tr class="align-middle"><th>Level</th><th>Institution</th><th>Period</th><th>Major</th></tr></thead><tbody>';
-                    response.education.forEach(edu => {
-                        educationHtml += `<tr class="align-middle">
-                        <td>${edu.degree}</td>
-                        <td>${edu.educational_place}</td>
-                        <td>(${edu.start_education}) - (${edu.end_education})</td>
-                        <td>${edu.major}</td>
-                    </tr>`;
-                    });
-                    educationHtml += '</tbody></table></div>';
-                    $('#educationDetails').html(educationHtml);
-
-                    // Populate work experience
-                    let experienceHtml = '<div class="table-responsive" style="padding-right: 1%;"><table class="table mb-3 pt-3 table-bordered">';
-                    experienceHtml += '<thead>     <tr class="align-middle"><th>Company</th><th>Position</th><th>Period</th></tr></thead><tbody>';
-                    response.experience.forEach(exp => {
-                        experienceHtml += `<tr class="align-middle">
-                        <td>${exp.company_name}</td>
-                        <td>${exp.position}</td>
-                        <td>(${exp.working_start}) - (${exp.working_end})</td>
-                    </tr>`;
-                    });
-                    experienceHtml += '</tbody></table></div>';
-                    $('#experienceDetails').html(experienceHtml);
+                    populateFamilyDetails(response);
+                    populateEducationDetails(response);
+                    populateWorkExperience(response);
+                    populateWorkTraining(response);
+                    populateLanguages(response);
+                    populateOrganizations(response);
 
                     $('#viewModal').modal('show');
                 },
@@ -975,12 +1400,29 @@
         });
 
         // Add to Employees handler
-        $('.add-employee-btn').click(function() {
-            const id = $(this).data('id');
+        let selectedApplicantId = null;
 
+        // Ketika tombol Add Employee diklik, tampilkan modal
+        $('.add-employee-btn').click(function() {
+            selectedApplicantId = $(this).data('id');
+            $('#applicant_id').val(selectedApplicantId);
+            $('#addEmployeeModal').modal('show'); // Tampilkan modal
+        });
+
+        // Ketika form modal disubmit
+        $('#addEmployeeForm').submit(function(e) {
+            e.preventDefault();
+
+            const joinDate = $('#join_date').val();
+            if (!joinDate) {
+                Swal.fire('Error', 'Please select a Join Date', 'error');
+                return;
+            }
+
+            // Tampilkan konfirmasi SweetAlert
             Swal.fire({
                 title: 'Add to Employees',
-                text: 'Are you sure you want to add this applicant to employees?',
+                text: `Are you sure you want to add this applicant to employees with Join Date: ${joinDate}?`,
                 icon: 'question',
                 showCancelButton: true,
                 confirmButtonText: 'Yes, add to employees',
@@ -988,8 +1430,11 @@
             }).then((result) => {
                 if (result.isConfirmed) {
                     $.ajax({
-                        url: `/recruitment/applicant/employee/${id}`,
+                        url: `/recruitment/applicant/employee/${selectedApplicantId}`,
                         method: 'POST',
+                        data: {
+                            join_date: joinDate
+                        },
                         success: function(response) {
                             Swal.fire('Success', 'Applicant added to employees successfully', 'success')
                                 .then(() => location.reload());
@@ -1000,6 +1445,8 @@
                     });
                 }
             });
+
+            $('#addEmployeeModal').modal('hide'); // Sembunyikan modal setelah submit
         });
     });
 </script>

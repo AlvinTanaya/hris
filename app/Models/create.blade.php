@@ -331,7 +331,7 @@
                     </div>
                     <div class="col-md-6">
                         <label class="form-label">Phone Number</label>
-                        <input type="tel" placeholder="08XXXXXXXXXX" pattern="08[0-9]{10,12}" class="form-control" name="phone_number" required>
+                        <input type="tel" placeholder="08X-XXX-XXX-XXXX" pattern="08[0-9]{1}-[0-9]{3}-[0-9]{3}-[0-9]{1,4}" class="form-control" name="phone_number" required>
                     </div>
                     <div class="col-md-6">
                         <label class="form-label">NIK</label>
@@ -1018,7 +1018,7 @@
             </div>
             <div class="col-md-6">
                 <label class="form-label">Phone Number</label>
-                <input type="tel" placeholder="08XXXXXXXXXX" pattern="08[0-9]{10,12}" class="form-control" name="family_phone[]" required>
+                <input type="tel" placeholder="08X-XXX-XXX-XXXX" pattern="08[0-9]{1}-[0-9]{3}-[0-9]{3}-[0-9]{1,4}" class="form-control" name="family_phone[]" required>
 
     
             </div>
@@ -1176,7 +1176,7 @@
             </div>
             <div class="col-md-6">
                 <label class="form-label">Company Phone</label>
-                <input type="tel" placeholder="08XXXXXXXXXX" pattern="08[0-9]{10,12}" class="form-control" name="company_phone[]" required>
+                <input type="tel" placeholder="08X-XXX-XXX-XXXX" pattern="08[0-9]{1}-[0-9]{3}-[0-9]{3}-[0-9]{1,4}" class="form-control" name="company_phone[]" required>
             </div>
             <div class="col-md-6">
                 <label class="form-label">Previous Salary</label>
@@ -1194,7 +1194,7 @@
             </div>
             <div class="col-md-6">
                 <label class="form-label">Supervisor Phone</label>
-                <input type="tel" placeholder="08XXXXXXXXXX" pattern="08[0-9]{10,12}" class="form-control" name="supervisor_phone[]" required>
+                <input type="tel" placeholder="08X-XXX-XXX-XXXX" pattern="08[0-9]{1}-[0-9]{3}-[0-9]{3}-[0-9]{1,4}" class="form-control" name="supervisor_phone[]" required>
             </div>
             <div class="col-md-6">
                 <label class="form-label">Start Date</label>

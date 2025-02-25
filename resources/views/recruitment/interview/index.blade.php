@@ -195,7 +195,7 @@
                             <td class="d-flex">
 
                                 <a href="{{ route('recruitment.applicant', $item->id) }}" class="btn btn-warning btn-sm me-2">
-                                    <i class="fa-solid fa-users"></i> See Applicant
+                                    <i class="fa-solid fa-users"></i> View Applicant
                                 </a>
 
                                 <button class="btn btn-info btn-sm me-2 view-btn"
@@ -219,7 +219,7 @@
                                     data-time-work-experience="{{ $item->time_work_experience }}"
                                     data-declined-reason="{{ $item->declined_reason ?? 'N/A' }}"
                                     data-skills="{{ $item->skills }}">
-                                    <i class="fas fa-eye"></i> View
+                                    <i class="fas fa-eye"></i> View Detail
                                 </button>
                             </td>
                         </tr>

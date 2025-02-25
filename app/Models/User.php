@@ -45,7 +45,9 @@ class User extends Authenticatable
         'domicile_address',
         'height',
         'weight',
-
+        'achievement_path',
+        'sim',
+        'sim_number',
         'blood_type',
         'bpjs_employment',
         'bpjs_health',

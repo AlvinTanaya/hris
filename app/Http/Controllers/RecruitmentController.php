@@ -3,19 +3,35 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Log;
+
 use App\Models\recruitment_demand;
 use App\Models\recruitment_applicant;
 use App\Models\recruitment_applicant_education;
+use App\Models\recruitment_applicant_training;
 use App\Models\recruitment_applicant_family;
 use App\Models\recruitment_applicant_work_experience;
+use App\Models\recruitment_applicant_organization;
+use App\Models\recruitment_applicant_language;
 use App\Models\User;
 use App\Models\users_education;
 use App\Models\users_family;
 use App\Models\users_work_experience;
+use App\Models\users_language;
+use App\Models\users_training;
+use App\Models\users_organization;
 
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Storage;
+use App\Mail\InterviewScheduledMail;
+use App\Mail\InterviewRescheduledMail;
+use App\Mail\ApplicantStatusMail;
+use App\Mail\PositionExchangedMail;
+use App\Mail\AcceptedApplicantMail;
+use App\Mail\NewEmployeeNotificationMail;
+
 use Carbon\Carbon;
 
 class RecruitmentController extends Controller
@@ -28,6 +44,8 @@ class RecruitmentController extends Controller
                 'users.name as maker_name',
                 'recruitment_demand.*'
             );
+
+        //dd($query);
 
         // Apply filters
         if ($request->filled('status_demand')) {
@@ -630,14 +648,22 @@ class RecruitmentController extends Controller
         $applicantFamily = recruitment_applicant_family::where('applicant_id', $applicant->id)->get();
         $applicantEducation = recruitment_applicant_education::where('applicant_id', $applicant->id)->get();
         $applicantWorkExperience = recruitment_applicant_work_experience::where('applicant_id', $applicant->id)->get();
+        $applicantTraining = recruitment_applicant_training::where('applicant_id', $applicant->id)->get();
+        $applicantLanguage = recruitment_applicant_language::where('applicant_id', $applicant->id)->get();
+        $applicantOrganization = recruitment_applicant_organization::where('applicant_id', $applicant->id)->get();
+
 
         return response()->json([
             'applicant' => $applicant,
             'family' => $applicantFamily,
             'education' => $applicantEducation,
-            'experience' => $applicantWorkExperience
+            'experience' => $applicantWorkExperience,
+            'training' => $applicantTraining,
+            'language' => $applicantLanguage,
+            'organization' => $applicantOrganization,
         ]);
     }
+
 
 
 
@@ -647,62 +673,80 @@ class RecruitmentController extends Controller
             'interview_date' => 'required|date',
             'interview_note' => 'required|string',
             'updated_at' => now(),
-
         ]);
 
         $applicant = recruitment_applicant::findOrFail($id);
 
+        $oldInterviewDate = $applicant->interview_date; // Ambil tanggal sebelumnya
+
         $applicant->update([
             'interview_date' => $request->interview_date,
-            'interview_note' => $request->interview_note,
+            'interview_note' => str_replace("\r\n", "\n", $request->interview_note),
             'updated_at' => now(),
         ]);
+
+        // Jika sebelumnya NULL, berarti panggilan pertama
+        if (is_null($oldInterviewDate)) {
+            Mail::to($applicant->email)->send(new InterviewScheduledMail($applicant));
+        } else {
+            Mail::to($applicant->email)->send(new InterviewRescheduledMail($applicant, $oldInterviewDate));
+        }
 
         return response()->json(['message' => 'Interview scheduled successfully']);
     }
 
+
     public function update_status(Request $request, $id)
     {
-        // dd($id);
-        //dd($request->all());
         $request->validate([
             'status' => 'required|in:Approved,Declined',
             'status_note' => 'required|string',
-            'updated_at' => now(),
-
         ]);
-
-
 
         $applicant = recruitment_applicant::findOrFail($id);
 
+        // Tentukan pesan berdasarkan status
+        if ($request->status == 'Declined') {
+            $messageContent = "We regret to inform you that you did not pass the interview. We appreciate your time and effort. We hope there will be other opportunities for you in the future.";
+        } else {
+            $messageContent = "Congratulations! You have passed the interview. Please wait for further information from us regarding the next steps.";
+        }
+
+        // Update database
         $applicant->update([
             'status_applicant' => $request->status,
             'status_note' => $request->status_note,
             'updated_at' => now(),
         ]);
 
-        return response()->json(['message' => 'Status updated successfully']);
+        // Kirim email ke applicant
+        Mail::to($applicant->email)->send(new ApplicantStatusMail($applicant, $messageContent));
+
+        return response()->json(['message' => 'Status updated and email sent successfully']);
     }
-
-
 
     public function exchange_position(Request $request, $id)
     {
-        //dd($request->all());
         $request->validate([
             'new_demand_id' => 'required'
         ]);
 
         $applicant = recruitment_applicant::findOrFail($request->applicant_id);
 
+        // Ambil data posisi baru dari tabel recruitment_demand
+        $newDemand = recruitment_demand::findOrFail($request->new_demand_id);
+
+        // Update database
         $applicant->update([
             'recruitment_demand_id' => $request->new_demand_id,
             'exchange_note' => $request->exchange_reason,
             'updated_at' => now(),
         ]);
 
-        return response()->json(['message' => 'Position exchanged successfully']);
+        // Kirim email ke applicant
+        Mail::to($applicant->email)->send(new PositionExchangedMail($applicant, $newDemand->position, $newDemand->department));
+
+        return response()->json(['message' => 'Position exchanged and email sent successfully']);
     }
 
 
@@ -728,57 +772,36 @@ class RecruitmentController extends Controller
         ]);
     }
 
-    public function add_to_employee($id)
-    {
-        try {
-            $applicant = recruitment_applicant::where('id', $id)->first();
-            $demand = recruitment_demand::where('id', $applicant->recruitment_demand_id)->first();
 
-            // Get the latest employee ID and increment
-            $lastEmployee = User::orderBy('id', 'desc')
-                ->where('employee_id', 'like', 'emp_%')
+    public function add_to_employee(Request $request, $id)
+    {
+        //dd($request->all(), $id);
+        try {
+            $applicant = recruitment_applicant::findOrFail($id);
+            $demand = recruitment_demand::findOrFail($applicant->recruitment_demand_id);
+
+            // Ambil join_date dari request
+            $joinDate = $request->join_date ? Carbon::parse($request->join_date) : now();
+            $yearMonth = $joinDate->format('Ym'); // Format YYYYMM
+
+            // Cari employee terakhir di bulan tersebut
+            $lastEmployee = User::where('employee_id', 'like', "{$yearMonth}%")
+                ->orderBy('employee_id', 'desc')
                 ->first();
 
+            // Tentukan nomor urut
             $newEmployeeNumber = 1;
             if ($lastEmployee) {
-                $lastNumber = intval(substr($lastEmployee->employee_id, 4));
+                $lastNumber = intval(substr($lastEmployee->employee_id, -3)); // Ambil 3 angka terakhir
                 $newEmployeeNumber = $lastNumber + 1;
             }
-            $employeeId = 'emp_' . $newEmployeeNumber;
+            $employeeId = $yearMonth . str_pad($newEmployeeNumber, 3, '0', STR_PAD_LEFT);
 
             // Handle file copying
-            $photoProfilePath = null;
-            $cvPath = null;
-            $idCardPath = null;
-
-            // Copy profile photo if exists
-            if ($applicant->photo_profile_path && Storage::disk('public')->exists($applicant->photo_profile_path)) {
-                $extension = pathinfo($applicant->photo_profile_path, PATHINFO_EXTENSION);
-                $newPhotoPath = 'user/photos_profile/' . $employeeId . '.' . $extension;
-
-                Storage::disk('public')->copy($applicant->photo_profile_path, $newPhotoPath);
-                $photoProfilePath = $newPhotoPath;
-            }
-
-            // Copy CV if exists
-            if ($applicant->cv_path && Storage::disk('public')->exists($applicant->cv_path)) {
-                $extension = pathinfo($applicant->cv_path, PATHINFO_EXTENSION);
-                $newCvPath = 'user/cv_user/cv_' . $employeeId . '.' . $extension;
-
-                Storage::disk('public')->copy($applicant->cv_path, $newCvPath);
-                $cvPath = $newCvPath;
-            }
-
-            // Copy ID Card if exists
-            if ($applicant->ID_card_path && Storage::disk('public')->exists($applicant->ID_card_path)) {
-                $extension = pathinfo($applicant->ID_card_path, PATHINFO_EXTENSION);
-                $newIdCardPath = 'user/ID_card/ID_card_' . $employeeId . '.' . $extension;
-
-                Storage::disk('public')->copy($applicant->ID_card_path, $newIdCardPath);
-                $idCardPath = $newIdCardPath;
-            }
-            // dd($idCardPath);
-
+            $photoProfilePath = $this->copyFile($applicant->photo_profile_path, "user/photos_profile/{$employeeId}");
+            $cvPath = $this->copyFile($applicant->cv_path, "user/cv_user/cv_{$employeeId}");
+            $idCardPath = $this->copyFile($applicant->ID_card_path, "user/ID_card/ID_card_{$employeeId}");
+            $achievementPath = $this->copyFile($applicant->achievement_path, "user/achievement_user/achievement_{$employeeId}");
 
             // Create new employee
             $employee = User::create([
@@ -792,7 +815,7 @@ class RecruitmentController extends Controller
                 'contract_start_date' => now(),
                 'contract_end_date' => now()->addMonths($demand->length_of_working),
                 'user_status' => 'Unbanned',
-                'join_date' => now(),
+                'join_date' => $joinDate,
                 'ID_number' => $applicant->ID_number,
                 'birth_date' => $applicant->birth_date,
                 'birth_place' => $applicant->birth_place,
@@ -805,84 +828,198 @@ class RecruitmentController extends Controller
                 'blood_type' => $applicant->blood_type,
                 'bpjs_employment' => $applicant->bpjs_employment,
                 'bpjs_health' => $applicant->bpjs_health,
+                'sim' => $applicant->sim,
+                'sim_number' => $applicant->sim_number,
                 'photo_profile_path' => $photoProfilePath,
                 'cv_path' => $cvPath,
+                'achievement_path' => $achievementPath,
                 'ID_card_path' => $idCardPath,
                 'password' => Hash::make($applicant->name . '12345'),
                 'created_at' => now(),
                 'updated_at' => now()
             ]);
 
-            // Copy education records
-            $educations = recruitment_applicant_education::where('applicant_id', $applicant->id)->get();
-            foreach ($educations as $education) {
-                users_education::create([
-                    'users_id' => $employee->id,
-                    'degree' => $education->degree,
-                    'educational_place' => $education->educational_place,
-                    'start_education' => $education->start_education,
-                    'end_education' => $education->end_education,
-                    'grade' => $education->grade,
-                    'major' => $education->major
-                ]);
-            }
-
-            // Copy family records
-            $families = recruitment_applicant_family::where('applicant_id', $applicant->id)->get();
-            foreach ($families as $family) {
-                users_family::create([
-                    'users_id' => $employee->id,
-                    'name' => $family->name,
-                    'relation' => $family->relation,
-                    'birth_date' => $family->birth_date,
-                    'birth_place' => $family->birth_place,
-                    'ID_number' => $family->ID_number,
-                    'phone_number' => $family->phone_number,
-                    'address' => $family->address,
-                    'gender' => $family->gender,
-                    'job' => $family->job
-                ]);
-            }
-
-            // Copy work experience records
-            $experiences = recruitment_applicant_work_experience::where('applicant_id', $applicant->id)->get();
-            foreach ($experiences as $experience) {
-                users_work_experience::create([
-                    'users_id' => $employee->id,
-                    'company_name' => $experience->company_name,
-                    'position' => $experience->position,
-                    'start_working' => $experience->working_start,
-                    'end_working' => $experience->working_end
-                ]);
-            }
+            // Copy additional data
+            $this->copyEducation($applicant->id, $employee->id);
+            $this->copyFamily($applicant->id, $employee->id);
+            $this->copyWorkExperience($applicant->id, $employee->id);
+            $this->copyLanguages($applicant->id, $employee->id);
+            $this->copyTraining($applicant->id, $employee->id);
+            $this->copyOrganization($applicant->id, $employee->id);
 
             // Update demand quantities
-            $demand->update([
-                'qty_needed' => $demand->qty_needed - 1,
-                'qty_fullfil' => $demand->qty_fullfil + 1,
-                'updated_at' => now()
-            ]);
+            $demand->decrement('qty_needed');
+            $demand->increment('qty_fullfil');
 
-            // Update demand quantities
-            $applicant->update([
-                'status_applicant' => 'Done',
-                'updated_at' => now()
-            ]);
+            // Update applicant status
+            $applicant->update(['status_applicant' => 'Done']);
+
+            // **KIRIM EMAIL KE PESERTA**
+            Mail::to($applicant->email)->send(new AcceptedApplicantMail(
+                $applicant,
+                $demand->position,
+                $demand->department,
+                $joinDate->toFormattedDateString()
+            ));
+            
+            // Ambil semua email user KECUALI email peserta yang baru diterima
+            $userEmails = User::where('email', '!=', $applicant->email)->pluck('email')->toArray();
+
+            // Kirim email ke semua user (kecuali peserta yang baru diterima)
+            Mail::to($userEmails)->send(new NewEmployeeNotificationMail($employee));
+
+
 
             return response()->json(['message' => 'Employee added successfully']);
         } catch (\Exception $e) {
-            // If there's an error, we should clean up any files that were copied
-            if (isset($photoProfilePath) && Storage::disk('public')->exists($photoProfilePath)) {
-                Storage::disk('public')->delete($photoProfilePath);
-            }
-            if (isset($cvPath) && Storage::disk('public')->exists($cvPath)) {
-                Storage::disk('public')->delete($cvPath);
-            }
-            if (isset($idCardPath) && Storage::disk('public')->exists($idCardPath)) {
-                Storage::disk('public')->delete($idCardPath);
-            }
-
             return response()->json(['message' => 'Failed to add employee: ' . $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Copy file from one location to another
+     */
+    private function copyFile($sourcePath, $destinationPath)
+    {
+        if ($sourcePath && Storage::disk('public')->exists($sourcePath)) {
+            $extension = pathinfo($sourcePath, PATHINFO_EXTENSION);
+            $newPath = $destinationPath . '.' . $extension;
+
+            Storage::disk('public')->copy($sourcePath, $newPath);
+            return $newPath;
+        }
+        return null;
+    }
+
+    /**
+     * Copy applicant education data to user education
+     */
+    private function copyEducation($applicantId, $userId)
+    {
+        $educations = recruitment_applicant_education::where('applicant_id', $applicantId)->get();
+        foreach ($educations as $education) {
+            users_education::create([
+                'users_id' => $userId,
+                'degree' => $education->degree,
+                'educational_place' => $education->educational_place,
+                'educational_city' => $education->educational_city,
+                'start_education' => $education->start_education,
+                'end_education' => $education->end_education,
+                'grade' => $education->grade,
+                'major' => $education->major,
+                'created_at' => now(),
+                'updated_at' => now()
+            ]);
+        }
+    }
+
+    /**
+     * Copy applicant family data to user family
+     */
+    private function copyFamily($applicantId, $userId)
+    {
+        $families = recruitment_applicant_family::where('applicant_id', $applicantId)->get();
+        foreach ($families as $family) {
+            users_family::create([
+                'users_id' => $userId,
+                'name' => $family->name,
+                'relation' => $family->relation,
+                'birth_date' => $family->birth_date,
+                'birth_place' => $family->birth_place,
+                'ID_number' => $family->ID_number,
+                'phone_number' => $family->phone_number,
+                'address' => $family->address,
+                'gender' => $family->gender,
+                'job' => $family->job,
+                'created_at' => now(),
+                'updated_at' => now()
+            ]);
+        }
+    }
+
+    /**
+     * Copy applicant work experience data to user work experience
+     */
+    private function copyWorkExperience($applicantId, $userId)
+    {
+        $experiences = recruitment_applicant_work_experience::where('applicant_id', $applicantId)->get();
+        foreach ($experiences as $experience) {
+            users_work_experience::create([
+                'users_id' => $userId,
+                'company_name' => $experience->company_name,
+                'position' => $experience->position,
+                'start_working' => $experience->working_start,
+                'end_working' => $experience->working_end,
+                'company_address' => $experience->company_address,
+                'company_phone' => $experience->company_phone,
+                'salary' => $experience->salary,
+                'supervisor_name' => $experience->supervisor_name,
+                'supervisor_phone' => $experience->supervisor_phone,
+                'job_desc' => $experience->job_desc,
+                'reason' => $experience->reason,
+                'benefit' => $experience->benefit,
+                'facility' => $experience->facility,
+                'created_at' => now(),
+                'updated_at' => now()
+            ]);
+        }
+    }
+
+    /**
+     * Copy applicant languages to user languages
+     */
+    private function copyLanguages($applicantId, $userId)
+    {
+        $languages = recruitment_applicant_language::where('applicant_id', $applicantId)->get();
+        foreach ($languages as $language) {
+            users_language::create([
+                'users_id' => $userId,
+                'language' => $language->language,
+                'verbal' => $language->verbal,
+                'written' => $language->written,
+                'created_at' => now(),
+                'updated_at' => now()
+            ]);
+        }
+    }
+
+    /**
+     * Copy applicant training to user training
+     */
+    private function copyTraining($applicantId, $userId)
+    {
+        $trainings = recruitment_applicant_training::where('applicant_id', $applicantId)->get();
+        foreach ($trainings as $training) {
+            users_training::create([
+                'users_id' => $userId,
+                'training_name' => $training->training_name,
+                'training_city' => $training->training_city,
+                'start_date' => $training->start_date,
+                'end_date' => $training->end_date,
+                'created_at' => now(),
+                'updated_at' => now()
+            ]);
+        }
+    }
+
+    /**
+     * Copy applicant organization to user organization
+     */
+    private function copyOrganization($applicantId, $userId)
+    {
+        $organizations = recruitment_applicant_organization::where('applicant_id', $applicantId)->get();
+        foreach ($organizations as $organization) {
+            users_organization::create([
+                'users_id' => $userId,
+                'organization_name' => $organization->organization_name,
+                'position' => $organization->position,
+                'city' => $organization->city,
+                'activity_type' => $organization->activity_type,
+                'start_date' => $organization->start_date,
+                'end_date' => $organization->end_date,
+                'created_at' => now(),
+                'updated_at' => now()
+            ]);
         }
     }
 

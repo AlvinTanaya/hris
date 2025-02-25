@@ -18,6 +18,7 @@ class recruitment_applicant_education extends Model
         'applicant_id',
         'degree',
         'educational_place',
+        'educational_city',
         'start_education',
         'end_education',
         'grade',
