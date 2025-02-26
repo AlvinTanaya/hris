@@ -15,6 +15,19 @@
 
                 <div class="row">
                     <div class="col-md-6 mb-3">
+                        <label for="position" class="form-label">
+                            <i class="fas fa-briefcase"></i> Position
+                        </label>
+                        <select class="form-control" id="position" name="position" required>
+                            <option value="" selected disabled>Select Position</option>
+                            <option value="Director" {{ old('position') == 'Director' ? 'selected' : '' }}>Director</option>
+                            <option value="General Manager" {{ old('position') == 'General Manager' ? 'selected' : '' }}>General Manager</option>
+                            <option value="Manager" {{ old('position') == 'Manager' ? 'selected' : '' }}>Manager</option>
+                            <option value="Supervisor" {{ old('position') == 'Supervisor' ? 'selected' : '' }}>Supervisor</option>
+                            <option value="Staff" {{ old('position') == 'Staff' ? 'selected' : '' }}>Staff</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6 mb-3">
                         <label for="department" class="form-label">
                             <i class="fas fa-building"></i> Department
                         </label>
@@ -33,20 +46,6 @@
                                 Finance and Accounting
                             </option>
 
-                        </select>
-                    </div>
-
-                    <div class="col-md-6 mb-3">
-                        <label for="position" class="form-label">
-                            <i class="fas fa-briefcase"></i> Position
-                        </label>
-                        <select class="form-control" id="position" name="position" required>
-                            <option value="" selected disabled>Select Position</option>
-                            <option value="Director" {{ old('position') == 'Director' ? 'selected' : '' }}>Director</option>
-                            <option value="General Manager" {{ old('position') == 'General Manager' ? 'selected' : '' }}>General Manager</option>
-                            <option value="Manager" {{ old('position') == 'Manager' ? 'selected' : '' }}>Manager</option>
-                            <option value="Supervisor" {{ old('position') == 'Supervisor' ? 'selected' : '' }}>Supervisor</option>
-                            <option value="Staff" {{ old('position') == 'Staff' ? 'selected' : '' }}>Staff</option>
                         </select>
                     </div>
                 </div>
@@ -196,6 +195,43 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
 <script>
     $(document).ready(function() {
+        $('#position').change(function() {
+            var position = $(this).val();
+            var department = $('#department');
+            var departmentWrapper = department.closest('.form-group');
+
+            // Hapus pesan sebelumnya  
+            departmentWrapper.find('.text-danger').remove();
+
+            // Reset semua opsi dan status  
+            department.prop('readonly', false).val('').find('option').show();
+
+            if (position === 'Director') {
+                // Tambahkan atribut readonly dan hidden input untuk mengirim value  
+                department.prop('readonly', true)
+                    .val('Director')
+                    .after('<input type="hidden" name="department" value="Director">');
+                department.find('option:not([value="Director"])').hide();
+                departmentWrapper.append('<small class="text-danger">Department dibatasi sesuai posisi</small>');
+            } else if (position === 'General Manager') {
+                department.prop('readonly', true)
+                    .val('General Manager')
+                    .after('<input type="hidden" name="department" value="General Manager">');
+                department.find('option:not([value="General Manager"])').hide();
+                departmentWrapper.append('<small class="text-danger">Department dibatasi sesuai posisi</small>');
+            } else {
+                // Hapus hidden input jika ada  
+                departmentWrapper.find('input[type="hidden"][name="department"]').remove();
+                department.find('option[value="Director"], option[value="General Manager"]').hide();
+            }
+        });
+
+        // Optional: Tambahkan event listener untuk menghapus hidden input saat form disubmit  
+        $('form').on('submit', function() {
+            $(this).find('input[type="hidden"][name="department"]').prop('disabled', false);
+        });
+
+
         $('#status_job').on('change', function() {
             var selectedStatus = $(this).val();
 

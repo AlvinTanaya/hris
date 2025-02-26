@@ -372,7 +372,12 @@
                     </a>
                 </li>
 
-                @if (Auth::user()->department == 'Human Resources')
+                @if (
+                Auth::user()->department == 'Human Resources' ||
+                Auth::user()->department == 'General Manager' ||
+                Auth::user()->department == 'Director' ||
+                Auth::user()->position != 'Staff'
+                )
                 <li class="nav-item">
                     <a href="{{ url('/user/index') }}" class="nav-link">
                         <i class="fas fa-users"></i>

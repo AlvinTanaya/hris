@@ -31,9 +31,9 @@
                         <label for="lesson_file" class="form-label"><i class="far fa-file-pdf"></i> Upload New Material (PDF)</label>
                         <input type="file" name="lesson_file" class="form-control" accept=".pdf">
                         @if($lesson->lesson_file)
-                            <button type="button" class="btn btn-link" data-bs-toggle="modal" data-bs-target="#pdfModal">
-                                View Current PDF
-                            </button>
+                        <button type="button" class="btn btn-link" data-bs-toggle="modal" data-bs-target="#pdfModal">
+                            View Current PDF
+                        </button>
                         @endif
 
                     </div>
@@ -53,8 +53,13 @@
                     <tbody>
                         @foreach($questions as $index => $question)
                         <tr class="questionRow">
+
                             <td class="questionNumber">{{ $index + 1 }}</td>
-                            <td><textarea name="questions[{{ $index }}][question]" class="form-control" required>{{ old('questions.' . $index . '.question', $question->question) }}</textarea></td>
+
+                            <td>
+                                <textarea name="questions[{{ $index }}][question]" class="form-control" required>{{ old('questions.' . $index . '.question', $question->question) }}</textarea>
+                                <input type="hidden" name="questions[{{ $index }}][id]" value="{{ $question->id }}">
+                            </td>
                             <td><input type="number" name="questions[{{ $index }}][grade]" class="form-control" value="{{ old('questions.' . $index . '.grade', $question->grade) }}" required></td>
                             <td>
                                 <div class="choices">
@@ -106,38 +111,101 @@
 @push('scripts')
 <script>
     $(document).ready(function() {
-        let questionIndex = {{ count($questions) }};
+        // Get initial question count
+        let questionIndex = "{{count($questions)}}";
 
+        // Add question functionality
         $('#addQuestion').click(function() {
+            let newIndex = questionIndex;
             let newRow = `
-            <tr class="questionRow">
-                <td class="questionNumber">${questionIndex + 1}</td>
-                <td><textarea name="questions[${questionIndex}][question]" class="form-control" required></textarea></td>
-                <td><input type="number" name="questions[${questionIndex}][grade]" class="form-control" required></td>
-                <td>
-                    <div class="choices">
-                        <div class="choice-group d-flex align-items-center mb-2">
-                            <input type="radio" name="questions[${questionIndex}][answer_key]" value="">
-                            <input type="text" name="questions[${questionIndex}][choices][]" class="form-control mx-2 choice-input" required placeholder="Option A">
-                            <button type="button" class="btn btn-danger remove-choice">&times;</button>
-                        </div>
+        <tr class="questionRow">
+            <td class="questionNumber">${newIndex + 1}</td>
+            <td><textarea name="questions[${newIndex}][question]" class="form-control" required></textarea></td>
+            <td><input type="number" name="questions[${newIndex}][grade]" class="form-control" required></td>
+            <td>
+                <div class="choices">
+                    <div class="choice-group d-flex align-items-center mb-2">
+                        <input type="radio" name="questions[${newIndex}][answer_key]" value="" required>
+                        <input type="text" name="questions[${newIndex}][choices][]" class="form-control mx-2 choice-input" required placeholder="Option A">
+                        <button type="button" class="btn btn-danger remove-choice">&times;</button>
                     </div>
-                    <button type="button" class="btn btn-info addChoice">+ Add Option</button>
-                </td>
-                <td><button type="button" class="btn btn-danger removeRow">&times; Remove</button></td>
-            </tr>`;
+                </div>
+                <button type="button" class="btn btn-info addChoice">+ Add Option</button>
+            </td>
+            <td><button type="button" class="btn btn-danger removeRow">&times; Remove</button></td>
+        </tr>`;
             $('#questionsTable tbody').append(newRow);
             questionIndex++;
+            updateQuestionNumbers();
         });
 
+        // Add choice functionality
         $(document).on('click', '.addChoice', function() {
             let questionRow = $(this).closest('tr');
+            let rowIndex = questionRow.index();
             let newChoice = `<div class="choice-group d-flex align-items-center mb-2">
-                <input type="radio" name="questions[${questionIndex}][answer_key]" value="">
-                <input type="text" name="questions[${questionIndex}][choices][]" class="form-control mx-2 choice-input" required placeholder="New Option">
-                <button type="button" class="btn btn-danger remove-choice">&times;</button>
-            </div>`;
+            <input type="radio" name="questions[${rowIndex}][answer_key]" value="" required>
+            <input type="text" name="questions[${rowIndex}][choices][]" class="form-control mx-2 choice-input" required placeholder="New Option">
+            <button type="button" class="btn btn-danger remove-choice">&times;</button>
+        </div>`;
             $(this).siblings('.choices').append(newChoice);
+
+            // Update answer_key values when choice text changes
+            updateRadioValues(questionRow);
+        });
+
+        // Remove choice functionality
+        $(document).on('click', '.remove-choice', function() {
+            let choiceGroup = $(this).closest('.choice-group');
+            let questionRow = $(this).closest('tr');
+
+            // Don't remove if it's the last choice
+            if (questionRow.find('.choice-group').length > 1) {
+                choiceGroup.remove();
+                updateRadioValues(questionRow);
+            } else {
+                alert('Each question must have at least one choice.');
+            }
+        });
+
+        // Remove question row functionality
+        $(document).on('click', '.removeRow', function() {
+            let questionRow = $(this).closest('tr');
+
+            // Add a hidden field to mark this question for deletion if it has an ID
+            let questionId = questionRow.data('question-id');
+            if (questionId) {
+                $('form').append(`<input type="hidden" name="deleted_questions[]" value="${questionId}">`);
+            }
+
+            questionRow.remove();
+            updateQuestionNumbers();
+        });
+
+        // Update radio button values when choice text changes
+        $(document).on('input', '.choice-input', function() {
+            let questionRow = $(this).closest('tr');
+            updateRadioValues(questionRow);
+        });
+
+        // Function to update the radio values based on choice text
+        function updateRadioValues(questionRow) {
+            questionRow.find('.choice-group').each(function() {
+                let choiceText = $(this).find('.choice-input').val();
+                $(this).find('input[type="radio"]').val(choiceText);
+            });
+        }
+
+        // Function to update question numbers after removing rows
+        function updateQuestionNumbers() {
+            $('.questionNumber').each(function(index) {
+                $(this).text(index + 1);
+            });
+        }
+
+        // Initialize the radio values for existing questions
+        $('.questionRow').each(function() {
+            updateRadioValues($(this));
         });
     });
 </script>

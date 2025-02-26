@@ -91,13 +91,15 @@
 
                             <div class="col-md-4 mb-3 text-center">
                                 <!-- Pratinjau gambar berbentuk bulat -->
+                                <small class="text-muted text-centers">Profile Picture</small>
                                 <div class="mb-3">
                                     <img
                                         id="image-preview"
                                         src="#"
                                         alt="Preview"
-                                        class="rounded-circle border d-none"
+                                        class="rounded-circle border d-none border-primary border-3"
                                         style="width: 150px; height: 150px; object-fit: cover;">
+
                                 </div>
 
                                 <!-- Input file untuk gambar -->
@@ -113,7 +115,7 @@
                             <div class="col-md-4 mb-3"></div>
                         </div>
 
-                        <div class="row">
+                        <!-- <div class="row">
                             <div class="col-md-6 mb-3">
                                 <label for="employee_id" class="form-label">
                                     <i class="fas fa-id-badge"></i> Employee ID
@@ -126,7 +128,7 @@
                                 </label>
                                 <input type="date" class="form-control" id="join_date" name="join_date" value="{{ old('join_date') }}" required>
                             </div>
-                        </div>
+                        </div> -->
 
 
                         <div class="row">
@@ -174,9 +176,9 @@
                                 <select class="form-control" id="department" name="department" required>
                                     <option selected disabled>Choose Department</option>
                                     <option value="Director" {{ old('department') == 'Director' ? 'selected' : '' }}>Director</option>
-                                    <option value="General manager" {{ old('department') == 'General manager' ? 'selected' : '' }}>General manager</option>
+                                    <option value="General Manager" {{ old('department') == 'General Manager' ? 'selected' : '' }}>General Manager</option>
                                     <option value="Human Resources" {{ old('department') == 'Human Resources' ? 'selected' : '' }}>Human Resources</option>
-                                    <option value="Finnance and Accounting" {{ old('department') == 'Finnance and Accounting' ? 'selected' : '' }}>Finnance and Accounting</option>
+                                    <option value="Finance and Accounting" {{ old('department') == 'Finance and Accounting' ? 'selected' : '' }}>Finance and Accounting</option>
 
                                 </select>
                             </div>
@@ -184,7 +186,7 @@
 
                         <div class="row">
                             <!-- Employee Status -->
-                            <div class="col-md-12 mb-3">
+                            <div class="col-md-6 mb-3">
                                 <label for="employee_status" class="form-label">
                                     <i class="fas fa-user-check"></i> Employee Status
                                 </label>
@@ -195,6 +197,12 @@
                                     <option value="Contract" {{ old('employee_status' ) == 'Contract' ? 'selected' : '' }}>Contract</option>
                                     <option value="Inactive" {{ old('employee_status') == 'Inactive' ? 'selected' : '' }}>Inactive</option>
                                 </select>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="join_date" class="form-label">
+                                    <i class="fas fa-calendar-alt"></i> Join Date
+                                </label>
+                                <input type="date" class="form-control" id="join_date" name="join_date" value="{{ old('join_date') }}" required>
                             </div>
                         </div>
 
@@ -892,7 +900,44 @@
     }
 
 
+
     $(document).ready(function() {
+        $('#position').change(function() {
+            var position = $(this).val();
+            var department = $('#department');
+            var departmentWrapper = department.closest('.form-group');
+
+            // Hapus pesan sebelumnya  
+            departmentWrapper.find('.text-danger').remove();
+
+            // Reset semua opsi dan status  
+            department.prop('readonly', false).val('').find('option').show();
+
+            if (position === 'Director') {
+                // Tambahkan atribut readonly dan hidden input untuk mengirim value  
+                department.prop('readonly', true)
+                    .val('Director')
+                    .after('<input type="hidden" name="department" value="Director">');
+                department.find('option:not([value="Director"])').hide();
+                departmentWrapper.append('<small class="text-danger">Department dibatasi sesuai posisi</small>');
+            } else if (position === 'General Manager') {
+                department.prop('readonly', true)
+                    .val('General Manager')
+                    .after('<input type="hidden" name="department" value="General Manager">');
+                department.find('option:not([value="General Manager"])').hide();
+                departmentWrapper.append('<small class="text-danger">Department dibatasi sesuai posisi</small>');
+            } else {
+                // Hapus hidden input jika ada  
+                departmentWrapper.find('input[type="hidden"][name="department"]').remove();
+                department.find('option[value="Director"], option[value="General Manager"]').hide();
+            }
+        });
+
+        // Optional: Tambahkan event listener untuk menghapus hidden input saat form disubmit  
+        $('form').on('submit', function() {
+            $(this).find('input[type="hidden"][name="department"]').prop('disabled', false);
+        });
+
 
 
         $(document).on("input", ".list-textarea", function() {
@@ -945,8 +990,14 @@
         });
 
 
+        // Default profile image
+        var defaultImage = "{{ asset('storage/default_profile.png') }}";
+        var currentImage = null;
 
-        //photo profile
+        if (!currentImage) {
+            $('#image-preview').attr('src', defaultImage).removeClass('d-none');
+        }
+
         $('#image-input').on('change', function(event) {
             const file = event.target.files[0];
 
@@ -955,13 +1006,13 @@
                 reader.onload = function(e) {
                     $('#image-preview')
                         .attr('src', e.target.result)
-                        .removeClass('d-none'); // Tampilkan gambar
+                        .removeClass('d-none'); // Tampilkan gambar yang diupload
                 };
                 reader.readAsDataURL(file);
             } else {
                 $('#image-preview')
-                    .attr('src', '#')
-                    .addClass('d-none'); // Sembunyikan gambar
+                    .attr('src', defaultImage)
+                    .removeClass('d-none'); // Kembali ke gambar default jika tidak ada upload
             }
         });
 

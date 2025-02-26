@@ -64,9 +64,14 @@
     <div class="card shadow-sm">
         <div class="card-header d-flex justify-content-between align-items-center">
             <h5 class="text-primary mt-2"><i class="fas fa-user"></i> Employee List</h5>
-            <a href="{{ route('user.create') }}" class="btn btn-primary">
-                <i class="fas fa-plus-circle me-2"></i>Add Employee
-            </a>
+            <div style="margin-right: 12px;">
+                <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#importModal">
+                    <i class="fas fa-file-excel me-2"></i> Import Employees
+                </button>
+                <a href="{{ route('user.create') }}" class="btn btn-primary">
+                    <i class="fas fa-plus-circle me-2"></i>Add Employee
+                </a>
+            </div>
         </div>
 
         <div class="card-body">
@@ -121,7 +126,7 @@
                                 $contractEndDate = \Carbon\Carbon::parse($item->contract_end_date);
                                 $now = \Carbon\Carbon::now();
                                 @endphp
-                                @if($now->diffInDays($contractEndDate, false) <= 2 && $now <=$contractEndDate)
+                                @if($now->diffInMonths($contractEndDate, false) <= 2 && $now <=$contractEndDate)
                                     style="background-color: yellow;"
                                     @elseif($now> $contractEndDate)
                                     style="background-color: red; color: white;"
@@ -216,13 +221,103 @@
     </div>
 </div>
 
+
+
+<!-- Modal Import -->
+<div class="modal fade" id="importModal" tabindex="-1" aria-labelledby="importModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="importModalLabel">Import Employees</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="importForm" action="{{ route('employees.import') }}" method="POST" enctype="multipart/form-data">
+                    @csrf
+                    <div class="mb-3">
+                        <label for="file" class="form-label">Upload Excel File</label>
+                        <input type="file" name="file" id="file" class="form-control" required>
+                        <small class="text-muted">Format file harus .xlsx dengan urutan kolom:</small>
+                        <ul class="text-muted small">
+                            <li><b>name</b> - Nama Karyawan</li>
+                            <li><b>email</b> - Email Karyawan</li>
+                            <li><b>position</b> - Jabatan (Director, Manager, dll.)</li>
+                            <li><b>department</b> - Departemen (Jangan Pakai Singkatan)</li>
+                            <li><b>ID_number</b> - Nomor Identitas</li>
+                            <li><b>birth_date</b> - Tanggal Lahir (YYYY-MM-DD)</li>
+                            <li><b>birth_place</b> - Tempat Lahir</li>
+                            <li><b>ID_address</b> - Alamat KTP</li>
+                            <li><b>domicile_address</b> - Alamat Domisili</li>
+                            <li><b>religion</b> - Islam/Kristen/Katolik/Buddha/Hindu/Konghucu</li>
+                            <li><b>gender</b> - Male / Female</li>
+                            <li><b>phone_number</b> - Nomor HP (08XXXXXXXXXX)</li>
+                            <li><b>employee_status</b> - Full Time / Part Time / Contract</li>
+                            <li><b>contract_start_date</b> - (Opsional, jika Contract/Part Time)</li>
+                            <li><b>contract_end_date</b> - (Opsional, jika Contract/Part Time)</li>
+                            <li><b>join_date</b> - Tanggal Bergabung (YYYY-MM-DD)</li>
+                        </ul>
+                    </div>
+
+                    <div class="d-flex justify-content-between">
+                        <a href="{{ asset('storage/sample_employee_import.xlsx') }}" class="btn btn-info">
+                            <i class="fas fa-download me-2"></i> Download Sample
+                        </a>
+                        <button type="submit" class="btn btn-success">
+                            <i class="fas fa-file-excel me-2"></i> Import
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+
 @endsection
 
 @push('scripts')
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-
 <script>
     $(document).ready(function() {
+
+        $('#importForm').on('submit', function(event) {
+            event.preventDefault();
+
+            var formData = new FormData(this);
+
+            $.ajax({
+                url: "{{ route('employees.import') }}",
+                type: "POST",
+                data: formData,
+                processData: false,
+                contentType: false,
+                success: function(response) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Import Berhasil!',
+                        text: response.message,
+                        timer: 2000,
+                        showConfirmButton: false
+                    }).then(() => {
+                        location.reload();
+                    });
+                },
+                error: function(xhr) {
+                    let errorMessage = "Gagal mengimpor file.";
+                    if (xhr.responseJSON && xhr.responseJSON.message) {
+                        errorMessage = xhr.responseJSON.message;
+                    }
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Import Gagal!',
+                        text: errorMessage,
+                    });
+                }
+            });
+        });
+
         $('#userTable').DataTable({
             "paging": true,
             "searching": true,
@@ -260,14 +355,15 @@
 
 
     });
-
-    @if(session('success'))
+</script>
+@if(session('success'))
+<script>
     Swal.fire({
         title: "Success!",
         text: "{{ session('success') }}",
         icon: "success",
         confirmButtonText: "OK"
     });
-    @endif
 </script>
+@endif
 @endpush

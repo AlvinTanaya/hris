@@ -24,8 +24,8 @@ class DashboardController extends Controller
      */
     public function index()
     {
-        $users = User::where('employee_status', '!=', 'Inactive')->get();  
-        
+        $users = User::where('employee_status', '!=', 'Inactive')->get();
+
         $generasiData = User::selectRaw(
             "
             CASE 
@@ -44,13 +44,13 @@ class DashboardController extends Controller
         ")
             ->get();
 
-      
+
         $genderData = User::selectRaw('gender, COUNT(*) as total')
-            ->whereIn('gender', ['Male', 'Female']) 
+            ->whereIn('gender', ['Male', 'Female'])
             ->groupBy('gender')
             ->get();
 
-       
+
         $totalUsers = User::whereNotNull('employee_status')->count();
 
 
@@ -59,7 +59,29 @@ class DashboardController extends Controller
             ->first()
             ->avg_age;
 
-      
-        return view('dashboard', compact('generasiData', 'genderData', 'totalUsers', 'avgAge', 'users'));
+        // Add new query for employees 55 and older
+        $olderEmployees = User::selectRaw('id, name, TIMESTAMPDIFF(YEAR, birth_date, CURDATE()) as age')
+            ->whereRaw('TIMESTAMPDIFF(YEAR, birth_date, CURDATE()) >= 55')
+            ->where('employee_status', '!=', 'Inactive')
+            ->orderBy('age', 'desc')
+            ->get();
+
+        // Add new query for employees with contracts ending within 2 months
+        $contractEndingSoon = User::select('id', 'name', 'contract_end_date')
+            ->whereNotNull('contract_end_date')
+            ->whereRaw('contract_end_date BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 2 MONTH)')
+            ->where('employee_status', '!=', 'Inactive')
+            ->orderBy('contract_end_date')
+            ->get();
+
+        return view('dashboard', compact(
+            'generasiData',
+            'genderData',
+            'totalUsers',
+            'avgAge',
+            'users',
+            'olderEmployees',
+            'contractEndingSoon'
+        ));
     }
 }

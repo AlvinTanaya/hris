@@ -29,6 +29,20 @@
             <div class="card-body">
                 <div class="row">
                     <div class="col-md-6 mb-3">
+                        <label for="position" class="form-label">
+                            <i class="fas fa-briefcase"></i> Position
+                        </label>
+                        <select class="form-control" id="position" name="position" required>
+                            <option value="" selected disabled>Select Position</option>
+                            <option value="Director" {{ $demand->position == 'Director' ? 'selected' : '' }}>Director</option>
+                            <option value="General Manager" {{ old('position') == 'General Manager' ? 'selected' : '' }}>General Manager</option>
+                            <option value="Manager" {{ $demand->position == 'Manager' ? 'selected' : '' }}>Manager</option>
+                            <option value="Supervisor" {{ $demand->position == 'Supervisor' ? 'selected' : '' }}>Supervisor</option>
+                            <option value="Staff" {{ $demand->position == 'Staff' ? 'selected' : '' }}>Staff</option>
+                        </select>
+                    </div>
+
+                    <div class="col-md-6 mb-3">
                         <label for="department" class="form-label">
                             <i class="fas fa-building"></i> Department
                         </label>
@@ -47,21 +61,7 @@
                             <option value="Finance and Accounting" {{ $demand->department == 'Finance and Accounting' ? 'selected' : '' }}>
                                 Finance and Accounting
                             </option>
-                       
-                        </select>
-                    </div>
 
-                    <div class="col-md-6 mb-3">
-                        <label for="position" class="form-label">
-                            <i class="fas fa-briefcase"></i> Position
-                        </label>
-                        <select class="form-control" id="position" name="position" required>
-                            <option value="" selected disabled>Select Position</option>
-                            <option value="Director" {{ $demand->position == 'Director' ? 'selected' : '' }}>Director</option>
-                            <option value="General Manager" {{ old('position') == 'General Manager' ? 'selected' : '' }}>General Manager</option>
-                            <option value="Manager" {{ $demand->position == 'Manager' ? 'selected' : '' }}>Manager</option>
-                            <option value="Supervisor" {{ $demand->position == 'Supervisor' ? 'selected' : '' }}>Supervisor</option>
-                            <option value="Staff" {{ $demand->position == 'Staff' ? 'selected' : '' }}>Staff</option>
                         </select>
                     </div>
                 </div>
@@ -103,14 +103,20 @@
                     </div>
                 </div>
 
-                <div class="row" id="length_of_working_container" style="{{ in_array($demand->status_job, ['Part Time', 'Contract']) ? 'display:block;' : 'display:none;' }}">
+                <div class="row" id="length_of_working_container" x-show="['Part Time', 'Contract'].includes(statusJob)">
                     <div class="col-md-12 mb-3">
                         <label for="length_of_working" class="form-label">
-                            <i class="fas fa-clock"></i> Working Period (months)
+                            <i class="fas fa-clock me-2"></i> {{ __('Working Period (months)') }}
                         </label>
-                        <input type="number" name="length_of_working" id="length_of_working" class="form-control"
-                            value="{{ $demand->length_of_working }}"
-                            {{ in_array($demand->status_job, ['Part Time', 'Contract']) ? 'required' : '' }}>
+                        <input
+                            type="number"
+                            name="length_of_working"
+                            id="length_of_working"
+                            class="form-control"
+                            value="{{ old('length_of_working', $demand->length_of_working) }}"
+                            x-bind:required="['Part Time', 'Contract'].includes(statusJob)"
+                            min="1"
+                            max="60">
                     </div>
                 </div>
 
@@ -215,6 +221,42 @@
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>
     $(document).ready(function() {
+        $('#position').change(function() {
+            var position = $(this).val();
+            var department = $('#department');
+            var departmentWrapper = department.closest('.form-group');
+
+            // Hapus pesan sebelumnya  
+            departmentWrapper.find('.text-danger').remove();
+
+            // Reset semua opsi dan status  
+            department.prop('readonly', false).val('').find('option').show();
+
+            if (position === 'Director') {
+                // Tambahkan atribut readonly dan hidden input untuk mengirim value  
+                department.prop('readonly', true)
+                    .val('Director')
+                    .after('<input type="hidden" name="department" value="Director">');
+                department.find('option:not([value="Director"])').hide();
+                departmentWrapper.append('<small class="text-danger">Department dibatasi sesuai posisi</small>');
+            } else if (position === 'General Manager') {
+                department.prop('readonly', true)
+                    .val('General Manager')
+                    .after('<input type="hidden" name="department" value="General Manager">');
+                department.find('option:not([value="General Manager"])').hide();
+                departmentWrapper.append('<small class="text-danger">Department dibatasi sesuai posisi</small>');
+            } else {
+                // Hapus hidden input jika ada  
+                departmentWrapper.find('input[type="hidden"][name="department"]').remove();
+                department.find('option[value="Director"], option[value="General Manager"]').hide();
+            }
+        });
+
+        // Optional: Tambahkan event listener untuk menghapus hidden input saat form disubmit  
+        $('form').on('submit', function() {
+            $(this).find('input[type="hidden"][name="department"]').prop('disabled', false);
+        });
+
         // Show/hide working period based on job status
         $('#status_job').on('change', function() {
             var selectedStatus = $(this).val();

@@ -1,6 +1,11 @@
 <?php
 
+
+
 namespace App\Http\Controllers;
+
+use App\Imports\EmployeesImport;
+use Maatwebsite\Excel\Facades\Excel;
 
 use Illuminate\Bus\UpdatedBatchJobCounts;
 use Illuminate\Http\Request;
@@ -23,7 +28,10 @@ use App\Models\users_organization;
 use App\Mail\TransferNotification;
 use App\Mail\UpdateNotification;
 use App\Mail\DepartmentUpdateNotification;
+use App\Mail\NewEmployeeNotification;
+use App\Mail\WelcomeNewEmployee;
 
+use Carbon\Carbon;
 
 class UserController extends Controller
 {
@@ -78,6 +86,7 @@ class UserController extends Controller
             'photo' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
             'id_card' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
             'cv' => 'nullable|mimes:pdf|max:2048',
+            'achievement' => 'nullable|mimes:pdf|max:2048',
             'employee_id' => 'required',
             'name' => 'required',
             'position' => 'required',
@@ -94,9 +103,6 @@ class UserController extends Controller
             'domicile_address' => 'required',
             'religion' => 'required',
             'gender' => 'required',
-            'height' => 'required',
-            'weight' => 'required',
-            'blood_type' => 'required',
             'contract_start_date' => 'required_if:employee_status,Contract,Part Time|nullable|date',
             'contract_end_date' => 'required_if:employee_status,Contract,Part Time|nullable|date',
         ]);
@@ -134,24 +140,79 @@ class UserController extends Controller
         }
 
 
+        $achievementPath = null;
+        if ($request->hasFile('achievement')) {
+            $achievementPath2 = $request->file('achievement')->storeAs(
+                'user/achievement_user',
+                'achievement_' . $request->employee_id . '.' . $request->file('achievement')->getClientOriginalExtension(),
+                'public'
+            );
+            $achievementPath = $achievementPath2;
+        }
+
+        $license = null;
+        $license_number = null;
+        if (!$request->has('no_license') || $request->has('sim')) {
+            // Lakukan sesuatu
+            $license = $request->has('sim') ? implode(',', $request->sim) : null;
+
+            // Ambil nomor SIM sesuai SIM yang dipilih
+            $selectedSimNumbers = [];
+            if ($request->has('sim')) {
+                foreach ($request->sim as $simType) {
+                    if (!empty($request->sim_number[$simType])) {
+                        $selectedSimNumbers[$simType] = $request->sim_number[$simType];
+                    }
+                }
+            }
+
+            // Simpan nomor SIM dengan format JSON
+            $license_number = !empty($selectedSimNumbers) ? json_encode($selectedSimNumbers) : null;
+        } else {
+            $license = null;
+            $license_number = null;
+        }
+
+        // Ambil join_date dari request
+        $joinDate = $request->join_date ? Carbon::parse($request->join_date) : now();
+        $yearMonth = $joinDate->format('Ym'); // Format YYYYMM
+
+        // Cari employee terakhir di bulan tersebut
+        $lastEmployee = User::where('employee_id', 'like', "{$yearMonth}%")
+            ->orderBy('employee_id', 'desc')
+            ->first();
+
+        // Tentukan nomor urut
+        $newEmployeeNumber = 1;
+        if ($lastEmployee) {
+            $lastNumber = intval(substr($lastEmployee->employee_id, -3)); // Ambil 3 angka terakhir
+            $newEmployeeNumber = $lastNumber + 1;
+        }
+        $employeeId = $yearMonth . str_pad($newEmployeeNumber, 3, '0', STR_PAD_LEFT);
+
+
+
         // Create a new Pegawai record
         User::create([
+            'employee_id' => $employeeId,
+            'sim' => $license ?? null,
+            'sim_number' => $license_number ?? null,
             'photo_profile_path' => $temp ?? null,
             'id_card_path' => $idCardPath ?? null,
             'cv_path' => $cvPath ?? null,
-            'employee_id' => $request->employee_id,
+            'achievement_path' => $achievementPath ?? null,
             'name' => $request->name,
             'position' => $request->position,
             'department' => $request->department,
-            'join_date' => $request->join_date,
-            'contract_start_date' => $request->contract_start_date,
-            'contract_end_date' => $request->contract_end_date,
+            'join_date' => $joinDate,
+            'contract_start_date' => $request->contract_start_date ?? null,
+            'contract_end_date' => $request->contract_end_date ?? null,
             'email' => $request->email,
             'phone_number' => $request->phone_number,
             'employee_status' => $request->employee_status,
             'user_status' => $request->user_status,
-            'bpjs_employment' => $request->bpjs_employment,
-            'bpjs_kesehatan' => $request->bpjs_kesehatan,
+            'bpjs_employment' => $request->bpjs_employment ?? null,
+            'bpjs_kesehatan' => $request->bpjs_kesehatan ?? null,
             'ID_number' => $request->ID_number,
             'birth_date' => $request->birth_date,
             'birth_place' => $request->birth_place,
@@ -159,9 +220,9 @@ class UserController extends Controller
             'domicile_address' => $request->domicile_address,
             'religion' => $request->religion,
             'gender' => $request->gender,
-            'height' => $request->height,
-            'weight' => $request->weight,
-            'blood_type' => $request->blood_type, // Simpan blood_type
+            'height' => $request->height ?? null,
+            'weight' => $request->weight ?? null,
+            'blood_type' => $request->blood_type ?? null, // Simpan blood_type
             'created_at' => now(),
             'updated_at' => now(),
             'password' => $password,
@@ -170,6 +231,8 @@ class UserController extends Controller
 
         $user = User::where('employee_id', $request->employee_id)->first();
         //dd($user->id);
+
+        // data keluarga
         if ($request->has('name_family')) {
             foreach ($request->name_family as $index => $name) {
                 if ($request->name_family[$index] !== null) {
@@ -198,6 +261,7 @@ class UserController extends Controller
                         'users_id' => $user->id,
                         'degree' => $request->education_level[$index],
                         'educational_place' => $request->education_place[$index],
+                        'educational_city' => $request->education_city[$index],
                         'start_education'  => $request->start_education[$index],
                         'end_education'  => $request->end_education[$index],
                         'major'  => $request->major[$index],
@@ -218,6 +282,18 @@ class UserController extends Controller
                         'position' => $request->position_working[$index],
                         'start_working' => $request->start_work[$index],
                         'end_working' => $request->end_work[$index],
+
+                        'company_address' => $request->company_address[$index] ?? null,
+                        'company_phone' => $request->company_phone[$index] ?? null,
+                        'salary' => $request->previous_salary[$index] ?? null,
+                        'supervisor_name' => $request->supervisor_name[$index] ?? null,
+                        'supervisor_phone' => $request->supervisor_phone[$index] ?? null,
+                        'job_desc' => str_replace(["\r", "\n", "-", "  "], ["", ";", "", " "], trim($request->job_desc[$index] ?? null)),
+                        'reason' => str_replace(["\r", "\n", "-", "  "], ["", ";", "", " "], trim($request->reason[$index] ?? null)),
+                        'benefit' => str_replace(["\r", "\n", "-", "  "], ["", ";", "", " "], trim($request->benefit[$index] ?? null)),
+                        'facility' => str_replace(["\r", "\n", "-", "  "], ["", ";", "", " "], trim($request->facility[$index] ?? null)),
+
+
                         'created_at' => now(),
                         'updated_at' => now(),
                     ]);
@@ -225,12 +301,90 @@ class UserController extends Controller
             }
         }
 
+
+        if ($request->has('training_name')) {
+            foreach ($request->training_name as $index => $training_name) {
+                if (!empty($training_name)) {
+                    users_training::create([
+                        'users_id' => $user->id,
+                        'training_name' => $training_name,
+                        'training_city' => $request->training_city[$index] ?? null,
+                        'start_date' => $request->training_start_date[$index] ?? null,
+                        'end_date' => $request->training_end_date[$index] ?? null,
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ]);
+                }
+            }
+        }
+
+        if ($request->has('organization_name')) {
+            foreach ($request->organization_name as $index => $organization_name) {
+                if (!empty($organization_name)) {
+                    users_organization::create([
+                        'users_id' => $user->id,
+                        'organization_name' => $organization_name,
+                        'position' => $request->organization_position[$index] ?? null,
+                        'city' => $request->organization_city[$index] ?? null,
+                        'activity_type' => str_replace(["\r", "\n", "-", "  "], ["", ";", "", " "], trim($request->activity_type[$index] ?? null)),
+                        'start_date' => $request->organization_start_date[$index] ?? null,
+                        'end_date' => $request->organization_end_date[$index] ?? null,
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ]);
+                }
+            }
+        }
+
+        if ($request->has('language')) {
+            foreach ($request->language as $index => $language) {
+                if (!empty($language)) {
+                    users_language::create([
+                        'users_id' => $user->id,
+                        'language' => $language,
+                        'verbal' => $request->verbal[$index] ?? null,
+                        'written' => $request->written[$index] ?? null,
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ]);
+                }
+            }
+        }
+
+
+
+
+
+
+        // Kirim email ke semua user yang sudah ada
+        $allUsers = User::where('id', '!=', $user->id)->pluck('email');
+        foreach ($allUsers as $email) {
+            Mail::to($email)->send(new NewEmployeeNotification($user));
+        }
+
+        // Kirim email ke pegawai baru
+        Mail::to($user->email)->send(new WelcomeNewEmployee($user));
+
+
+
+
+
+
         return redirect()->route('user.index')->with('success', 'Employee added successfully');
     }
 
 
 
+    public function import(Request $request)
+    {
+        $request->validate([
+            'file' => 'required|mimes:xlsx,csv',
+        ]);
 
+        Excel::import(new EmployeesImport, $request->file('file'));
+
+        return redirect()->back()->with('success', 'Employees imported successfully.');
+    }
 
     public function edit($id)
     {
@@ -295,7 +449,7 @@ class UserController extends Controller
 
     public function update(Request $request, $id)
     {
-        //dd($request->all());
+        dd($request->department);
         // Validasi input
 
 
@@ -556,16 +710,17 @@ class UserController extends Controller
                             $userEducation->degree !== $education_level ||
                             $userEducation->educational_place !== $request->education_place[$index] ||
                             $userEducation->educational_city !== $request->educational_city[$index] ||
-                            $userEducation->mulai_edukasi !== $request->start_education[$index] ||
-                            $userEducation->akhir_edukasi !== $request->end_education[$index] ||
+                            $userEducation->start_education !== $request->start_education[$index] ||
+                            $userEducation->end_education !== $request->end_education[$index] ||
                             $userEducation->major !== $request->major[$index] ||
                             $userEducation->grade !== $request->grade[$index]
                         ) {
                             $userEducation->update([
                                 'degree' => $education_level,
                                 'educational_place' => $request->education_place[$index],
-                                'mulai_edukasi' => $request->start_education[$index],
-                                'akhir_edukasi' => $request->end_education[$index],
+                                'educational_city' => $request->education_city[$index],
+                                'start_education' => $request->start_education[$index],
+                                'end_education' => $request->end_education[$index],
                                 'major' => $request->major[$index],
                                 'grade' => $request->grade[$index],
                                 'updated_at' => now(),
@@ -577,8 +732,9 @@ class UserController extends Controller
                             'users_id' => $user->id,
                             'degree' => $education_level,
                             'educational_place' => $request->education_place[$index],
-                            'mulai_edukasi' => $request->start_education[$index],
-                            'akhir_edukasi' => $request->end_education[$index],
+                            'educational_city' => $request->education_city[$index],
+                            'start_education' => $request->start_education[$index],
+                            'end_education' => $request->end_education[$index],
                             'major' => $request->major[$index],
                             'grade' => $request->grade[$index],
                             'created_at' => now(),
@@ -619,19 +775,19 @@ class UserController extends Controller
                         ) {
                             $userWork->update([
                                 'nama_perusahaan' => $company_name,
-                                'position' => $request->position_work[$index] ?? '',
-                                'start_working' => $request->start_work[$index] ?? '',
-                                'end_working' => $request->end_work[$index] ?? '',
+                                'position' => $request->position_work[$index] ?? null,
+                                'start_working' => $request->start_work[$index] ?? null,
+                                'end_working' => $request->end_work[$index] ?? null,
 
-                                'company_address' => $request->company_address[$index] ?? '',
-                                'company_phone' => $request->company_phone[$index] ?? '',
-                                'salary' => $request->previous_salary[$index] ?? '',
-                                'supervisor_name' => $request->supervisor_name[$index] ?? '',
-                                'supervisor_phone' => $request->supervisor_phone[$index] ?? '',
-                                'job_desc' => str_replace(["\r", "\n", "-", "  "], ["", ";", "", " "], trim($request->job_desc[$index] ?? '')),
-                                'reason' => str_replace(["\r", "\n", "-", "  "], ["", ";", "", " "], trim($request->reason[$index] ?? '')),
-                                'benefit' => str_replace(["\r", "\n", "-", "  "], ["", ";", "", " "], trim($request->benefit[$index] ?? '')),
-                                'facility' => str_replace(["\r", "\n", "-", "  "], ["", ";", "", " "], trim($request->facility[$index] ?? '')),
+                                'company_address' => $request->company_address[$index] ?? null,
+                                'company_phone' => $request->company_phone[$index] ?? null,
+                                'salary' => $request->previous_salary[$index] ?? null,
+                                'supervisor_name' => $request->supervisor_name[$index] ?? null,
+                                'supervisor_phone' => $request->supervisor_phone[$index] ?? null,
+                                'job_desc' => str_replace(["\r", "\n", "-", "  "], ["", ";", "", " "], trim($request->job_desc[$index] ?? null)),
+                                'reason' => str_replace(["\r", "\n", "-", "  "], ["", ";", "", " "], trim($request->reason[$index] ?? null)),
+                                'benefit' => str_replace(["\r", "\n", "-", "  "], ["", ";", "", " "], trim($request->benefit[$index] ?? null)),
+                                'facility' => str_replace(["\r", "\n", "-", "  "], ["", ";", "", " "], trim($request->facility[$index] ?? null)),
 
                                 'created_at' => now(),
                                 'updated_at' => now(),
@@ -643,18 +799,18 @@ class UserController extends Controller
                             'users_id' => $user->id,
                             'nama_perusahaan' => $company_name,
 
-                            'position' => $request->position_work[$index] ?? '',
-                            'start_working' => $request->start_work[$index] ?? '',
-                            'end_working' => $request->end_work[$index] ?? '',
-                            'company_address' => $request->company_address[$index] ?? '',
-                            'company_phone' => $request->company_phone[$index] ?? '',
-                            'salary' => $request->salary[$index] ?? '',
-                            'supervisor_name' => $request->supervisor_name[$index] ?? '',
-                            'supervisor_phone' => $request->supervisor_phone[$index] ?? '',
-                            'job_desc' => str_replace(["\r", "\n", "-", "  "], ["", ";", "", " "], trim($request->job_desc[$index] ?? '')),
-                            'reason' => str_replace(["\r", "\n", "-", "  "], ["", ";", "", " "], trim($request->reason[$index] ?? '')),
-                            'benefit' => str_replace(["\r", "\n", "-", "  "], ["", ";", "", " "], trim($request->benefit[$index] ?? '')),
-                            'facility' => str_replace(["\r", "\n", "-", "  "], ["", ";", "", " "], trim($request->facility[$index] ?? '')),
+                            'position' => $request->position_work[$index] ?? null,
+                            'start_working' => $request->start_work[$index] ?? null,
+                            'end_working' => $request->end_work[$index] ?? null,
+                            'company_address' => $request->company_address[$index] ?? null,
+                            'company_phone' => $request->company_phone[$index] ?? null,
+                            'salary' => $request->salary[$index] ?? null,
+                            'supervisor_name' => $request->supervisor_name[$index] ?? null,
+                            'supervisor_phone' => $request->supervisor_phone[$index] ?? null,
+                            'job_desc' => str_replace(["\r", "\n", "-", "  "], ["", ";", "", " "], trim($request->job_desc[$index] ?? null)),
+                            'reason' => str_replace(["\r", "\n", "-", "  "], ["", ";", "", " "], trim($request->reason[$index] ?? null)),
+                            'benefit' => str_replace(["\r", "\n", "-", "  "], ["", ";", "", " "], trim($request->benefit[$index] ?? null)),
+                            'facility' => str_replace(["\r", "\n", "-", "  "], ["", ";", "", " "], trim($request->facility[$index] ?? null)),
 
                             'created_at' => now(),
                             'updated_at' => now(),
@@ -693,9 +849,9 @@ class UserController extends Controller
                         ) {
                             $userTraining->update([
                                 'training_name' => $training_name,
-                                'training_city' => $request->training_city[$index] ?? '',
-                                'start_date' => $request->training_start_date[$index] ?? '',
-                                'end_date' => $request->training_end_date[$index] ?? '',
+                                'training_city' => $request->training_city[$index] ?? null,
+                                'start_date' => $request->training_start_date[$index] ?? null,
+                                'end_date' => $request->training_end_date[$index] ?? null,
                                 'updated_at' => now(),
                             ]);
                         }
@@ -703,9 +859,9 @@ class UserController extends Controller
                         $newTraining = users_training::create([
                             'users_id' => $user->id,
                             'training_name' => $training_name,
-                            'training_city' => $request->training_city[$index] ?? '',
-                            'start_date' => $request->training_start_date[$index] ?? '',
-                            'end_date' => $request->training_end_date[$index] ?? '',
+                            'training_city' => $request->training_city[$index] ?? null,
+                            'start_date' => $request->training_start_date[$index] ?? null,
+                            'end_date' => $request->training_end_date[$index] ?? null,
                             'created_at' => now(),
                             'updated_at' => now(),
                         ]);
@@ -738,12 +894,12 @@ class UserController extends Controller
                         ) {
                             $userOrganization->update([
                                 'organization_name' => $organization_name,
-                                'position' => $request->organization_position[$index] ?? '',
-                                'city' => $request->organization_city[$index] ?? '',
-                                'activity_type' => str_replace(["\r", "\n", "-", "  "], ["", ";", "", " "], trim($request->activity_type[$index] ?? '')),
+                                'position' => $request->organization_position[$index] ?? null,
+                                'city' => $request->organization_city[$index] ?? null,
+                                'activity_type' => str_replace(["\r", "\n", "-", "  "], ["", ";", "", " "], trim($request->activity_type[$index] ?? null)),
 
-                                'start_date' => $request->organization_start_date[$index] ?? '',
-                                'end_date' => $request->organization_end_date[$index] ?? '',
+                                'start_date' => $request->organization_start_date[$index] ?? null,
+                                'end_date' => $request->organization_end_date[$index] ?? null,
                                 'updated_at' => now(),
                             ]);
                         }
@@ -751,11 +907,11 @@ class UserController extends Controller
                         $newOrganization = users_organization::create([
                             'users_id' => $user->id,
                             'organization_name' => $organization_name,
-                            'position' => $request->organization_position[$index] ?? '',
-                            'city' => $request->organization_city[$index] ?? '',
-                            'activity_type' => str_replace(["\r", "\n", "-", "  "], ["", ";", "", " "], trim($request->activity_type[$index] ?? '')),
-                            'start_date' => $request->organization_start_date[$index] ?? '',
-                            'end_date' => $request->organization_end_date[$index] ?? '',
+                            'position' => $request->organization_position[$index] ?? null,
+                            'city' => $request->organization_city[$index] ?? null,
+                            'activity_type' => str_replace(["\r", "\n", "-", "  "], ["", ";", "", " "], trim($request->activity_type[$index] ?? null)),
+                            'start_date' => $request->organization_start_date[$index] ?? null,
+                            'end_date' => $request->organization_end_date[$index] ?? null,
                             'created_at' => now(),
                             'updated_at' => now(),
                         ]);
@@ -787,8 +943,8 @@ class UserController extends Controller
                         ) {
                             $userLanguage->update([
                                 'language' => $language,
-                                'verbal' => $request->verbal[$index] ?? '',
-                                'written' => $request->written[$index] ?? '',
+                                'verbal' => $request->verbal[$index] ?? null,
+                                'written' => $request->written[$index] ?? null,
                                 'updated_at' => now(),
                             ]);
                         }
@@ -796,8 +952,8 @@ class UserController extends Controller
                         $newLanguage = users_language::create([
                             'users_id' => $user->id,
                             'language' => $language,
-                            'verbal' => $request->verbal[$index] ?? '',
-                            'written' => $request->written[$index] ?? '',
+                            'verbal' => $request->verbal[$index] ?? null,
+                            'written' => $request->written[$index] ?? null,
                             'created_at' => now(),
                             'updated_at' => now(),
                         ]);

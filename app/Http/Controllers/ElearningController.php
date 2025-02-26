@@ -36,10 +36,10 @@ class ElearningController extends Controller
                 'elearning_schedule.start_date',
                 'elearning_schedule.end_date'
             );
-    
+
         // Duration filter
         if (request()->filled('duration_range')) {
-            switch(request('duration_range')) {
+            switch (request('duration_range')) {
                 case '0-60':
                     $query->where('elearning_lesson.duration', '<=', 60);
                     break;
@@ -54,19 +54,19 @@ class ElearningController extends Controller
                     break;
             }
         }
-    
+
         // Start date filter
         if (request()->filled('start_date')) {
             $query->whereDate('elearning_schedule.start_date', request('start_date'));
         }
-    
+
         // End date filter
         if (request()->filled('end_date')) {
             $query->whereDate('elearning_schedule.end_date', request('end_date'));
         }
-    
+
         $duty = $query->get();
-    
+
         return view('elearning.index2', compact('duty'));
     }
 
@@ -226,9 +226,24 @@ class ElearningController extends Controller
     public function create_schedule()
     {
         $lessons = elearning_lesson::all();
-        $employees = User::all();
-        return view('elearning/create_schedule', compact('lessons', 'employees'));
+        $employees = User::where('employee_status', '!=', 'Inactive')->get();
+
+        // Mengambil daftar departemen unik dari pegawai yang aktif
+        $departments = User::where('employee_status', '!=', 'Inactive')
+            ->whereNotNull('department')
+            ->distinct()
+            ->pluck('department');
+
+        // Mengambil daftar posisi unik dari pegawai yang aktif
+        $positions = User::where('employee_status', '!=', 'Inactive')
+            ->whereNotNull('position')
+            ->distinct()
+            ->pluck('position');
+
+        return view('elearning.create_schedule', compact('lessons', 'employees', 'departments', 'positions'));
     }
+
+
     public function store_schedule(Request $request)
     {
         //dd($request->all());
@@ -325,6 +340,8 @@ class ElearningController extends Controller
         // Retrieve all questions related to this lesson
         $questions = elearning_question::where('lesson_id', $id)->get();
 
+
+
         // Pass data to the edit view
         return view('elearning/update_lesson', compact('lesson', 'questions'));
     }
@@ -347,7 +364,6 @@ class ElearningController extends Controller
             $newFileName = $modifiedName . '.' . $extension;
             $filePath = $request->file('lesson_file')->storeAs('elearning_lesson_material', $newFileName, 'public');
 
-
             $lesson->update([
                 'lesson_file' => $filePath,
                 'updated_at' => now(),
@@ -360,58 +376,49 @@ class ElearningController extends Controller
                 'name' => $request->name,
                 'duration' => $request->duration,
                 'passing_grade' => $request->passing_grade,
-                'updated_at' => now(), // Ensure updated timestamp
+                'updated_at' => now(),
             ]);
         }
 
-        // Get existing questions for this lesson
-
+        // Process questions
         $existingQuestions = elearning_question::where('lesson_id', $lesson->id)->get();
         $existingQuestionIds = $existingQuestions->pluck('id')->toArray();
 
-        // Incoming questions from the form
+        // Get IDs of questions to delete
+        $deletedQuestionIds = $request->deleted_questions ?? [];
+
+        // Process existing and new questions from the form
         $incomingQuestions = $request->questions ?? [];
+        $processedQuestionIds = [];
 
-        // Identify deleted questions
-        $incomingQuestionIds = collect($incomingQuestions)->pluck('id')->filter()->toArray();
-        // dd($incomingQuestionIds,        $existingQuestionIds);
+        foreach ($incomingQuestions as $index => $q) {
+            // Skip empty questions
+            if (empty($q['question'])) continue;
 
-        $questionsToDelete = array_diff($existingQuestionIds, $incomingQuestionIds);
-        // dd($questionsToDelete);
-
-
-        // Delete removed questions only
-        if (!empty($questionsToDelete)) {
-            elearning_question::whereIn('id', $questionsToDelete)->delete();
-        }
-
-        // Process existing and new questions
-        foreach ($incomingQuestions as $q) {
             $choicesString = isset($q['choices']) ? implode(';', $q['choices']) : '';
 
+            // Check if answer key is set
+            if (!isset($q['answer_key']) || empty($q['answer_key'])) {
+                // Default to first choice if not set
+                $q['answer_key'] = $q['choices'][0] ?? '';
+            }
+
+            // Handle existing question (has ID)
             if (isset($q['id']) && in_array($q['id'], $existingQuestionIds)) {
-                // Update existing question if there are changes
                 $existingQuestion = elearning_question::find($q['id']);
                 if ($existingQuestion) {
-                    if (
-                        $existingQuestion->question !== $q['question'] ||
-                        $existingQuestion->grade != $q['grade'] ||
-                        $existingQuestion->multiple_choice !== $choicesString ||
-                        $existingQuestion->answer_key !== $q['answer_key']
-                    ) {
-                        // Only update if there are changes
-                        $existingQuestion->update([
-                            'question' => $q['question'],
-                            'grade' => $q['grade'],
-                            'multiple_choice' => $choicesString,
-                            'answer_key' => $q['answer_key'],
-                            'updated_at' => now(),
-                        ]);
-                    }
+                    $existingQuestion->update([
+                        'question' => $q['question'],
+                        'grade' => $q['grade'],
+                        'multiple_choice' => $choicesString,
+                        'answer_key' => $q['answer_key'],
+                        'updated_at' => now(),
+                    ]);
+                    $processedQuestionIds[] = $existingQuestion->id;
                 }
             } else {
-                // Insert new question if it doesn't exist
-                elearning_question::create([
+                // Create new question
+                $newQuestion = elearning_question::create([
                     'lesson_id' => $lesson->id,
                     'question' => $q['question'],
                     'grade' => $q['grade'],
@@ -420,12 +427,29 @@ class ElearningController extends Controller
                     'created_at' => now(),
                     'updated_at' => now(),
                 ]);
+                $processedQuestionIds[] = $newQuestion->id;
             }
+        }
+
+        // Determine which questions to delete: explicitly deleted + not in form
+        $questionsToDelete = array_merge(
+            $deletedQuestionIds,
+            array_diff($existingQuestionIds, $processedQuestionIds)
+        );
+
+        // Delete questions that have foreign key constraints
+        if (!empty($questionsToDelete)) {
+            // First, delete related records in the related tables
+            // Assuming your constraint is with a table like elearning_answers, first delete those
+            // You'll need to replace 'elearning_answers' and 'question_id' with your actual table and column names
+            //DB::table('elearning_answers')->whereIn('question_id', $questionsToDelete)->delete();
+
+            // Now it's safe to delete the questions
+            elearning_question::whereIn('id', $questionsToDelete)->delete();
         }
 
         return redirect()->route('elearning.index')->with('success', 'Lesson updated successfully.');
     }
-
     public function edit_schedule($id)
     {
         // Get the schedule by ID
@@ -433,7 +457,7 @@ class ElearningController extends Controller
 
         // Get all lessons
         $lessons = elearning_lesson::all();
-        $employees = User::all();
+        $employees = User::where('employee_status', '!=', 'Inactive')->get();
 
         // Get the invitations related to the selected schedule's lesson
         $invitations = elearning_invitation::where('lesson_id', $schedule->lesson_id)->get();
@@ -444,9 +468,24 @@ class ElearningController extends Controller
         // Get the employees based on the invited user IDs
         $invitedEmployees = User::whereIn('id', $invitedUserIds)->get();
 
+        // Get only the IDs of invited employees as an array
+        $invitedEmployeesPluck = User::whereIn('id', $invitedUserIds)->pluck('id')->toArray();
+
+
+
+        $departments = User::where('employee_status', '!=', 'Inactive')
+            ->whereNotNull('department')
+            ->distinct()
+            ->pluck('department');
+
+        // Mengambil daftar posisi unik dari pegawai yang aktif
+        $positions = User::where('employee_status', '!=', 'Inactive')
+            ->whereNotNull('position')
+            ->distinct()
+            ->pluck('position');
 
         // Return the view with the required data
-        return view('elearning/update_schedule', compact('schedule', 'lessons', 'invitedEmployees', 'invitedUserIds', 'employees'));
+        return view('elearning/update_schedule', compact('schedule', 'invitedEmployeesPluck', 'lessons', 'invitedEmployees', 'invitedUserIds', 'employees', 'departments', 'positions'));
     }
 
     public function update_schedule(Request $request, $id)
@@ -615,7 +654,7 @@ class ElearningController extends Controller
                     'invitation_id' => $elearning_invitation->invitation_id,
                     'lesson_id' => $elearning_invitation->lesson_id,
                     'schedule_id' => $elearning_invitation->schedule_id,
-                    'users_id' => auth()->id(),
+                    'users_id' => $request->user_id,
                     'question' => $question->question,
                     'multiple_choice' => $question->multiple_choice,
                     'answer_key' => $question->answer_key,

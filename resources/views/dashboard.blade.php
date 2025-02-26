@@ -2,8 +2,9 @@
 
 @section('content')
 <div class="container">
-
-    <h1 class="text-center text-warning" style="margin-bottom: 60px; margin-top:25px"><i class="fas fa-columns"></i> {{ __('Dashboard') }}</h1>
+    <h1 class="text-center text-warning mb-5 mt-4">
+        <i class="fas fa-columns"></i> {{ __('Dashboard') }}
+    </h1>
 
     @if (session('status'))
     <div class="alert alert-success" role="alert">
@@ -12,112 +13,258 @@
     @endif
 
     <!-- Stats Cards Row -->
-    <div class="row mb-4">
+    <div class="row g-4">
         <div class="col-md-6">
-            <div class="card bg-primary text-white">
-                <div class="card-body">
+            <div class="card shadow-sm border-0 bg-gradient-primary text-white">
+                <div class="card-body text-center">
                     <h5 class="card-title">Total Pegawai</h5>
-                    <h2 class="display-4">{{ $totalUsers }}</h2>
+                    <h2 class="fw-bold">{{ $totalUsers }}</h2>
                 </div>
             </div>
         </div>
         <div class="col-md-6">
-            <div class="card bg-success text-white">
-                <div class="card-body">
+            <div class="card shadow-sm border-0 bg-gradient-success text-white">
+                <div class="card-body text-center">
                     <h5 class="card-title">Rata-rata Umur</h5>
-                    <h2 class="display-4">{{ round($avgAge) }} Tahun</h2>
+                    <h2 class="fw-bold">{{ round($avgAge) }} Tahun</h2>
                 </div>
             </div>
         </div>
     </div>
 
     <!-- Charts Row -->
-    <div class="row">
-        <div class="col-md-6 mb-4">
-            <div class="card">
+    <div class="row g-4 mt-3">
+        <div class="col-md-6">
+            <div class="card shadow-sm">
                 <div class="card-body">
-                    <h5 class="card-title">Distribusi Generasi</h5>
-                    <div class="d-flex justify-content-center">
-                        <canvas id="generationChart" width="400" height="300"></canvas>
-                    </div>
+                    <h5 class="card-title text-center">Distribusi Generasi</h5>
+                    <canvas id="generationChart"></canvas>
                 </div>
             </div>
         </div>
-        <div class="col-md-6 mb-4">
-            <div class="card">
+        <div class="col-md-6">
+            <div class="card shadow-sm">
                 <div class="card-body">
-                    <h5 class="card-title">Distribusi Gender</h5>
-                    <div class="d-flex justify-content-center">
-                        <canvas id="genderChart" width="400" height="300"></canvas>
-                    </div>
+                    <h5 class="card-title text-center">Distribusi Gender</h5>
+                    <canvas id="genderChart"></canvas>
                 </div>
             </div>
         </div>
     </div>
 
 
+
+
+    <!-- Employee Alerts -->
+    <div class="row g-4 mt-3">
+        <div class="col-md-6">
+            <div class="card shadow-sm border-danger">
+                <div class="card-header bg-danger text-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="fas fa-user-clock"></i> Pegawai 55+ Tahun</h5>
+
+                    @if (in_array(Auth::user()->department, ['Human Resources', 'Director', 'General Manager']) && Auth::user()->position != 'staff')
+                    <!-- Button to User Index -->
+                    <a href="{{ route('user.index') }}" class="btn btn-danger">
+                        <i class="fa-solid fa-arrow-right"></i> Employee
+                    </a>
+                    @endif
+                </div>
+
+                <div class="card-body">
+                    @if(count($olderEmployees) > 0)
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Nama</th>
+                                <th class="text-center">Usia</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach($olderEmployees as $employee)
+                            <tr>
+                                <td>{{ $employee->name }}</td>
+                                <td class="text-center">{{ $employee->age }} Tahun</td>
+                            </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                    @else
+                    <p class="text-center">Tidak ada pegawai berusia 55 tahun atau lebih.</p>
+                    @endif
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card shadow-sm border-warning">
+
+
+                <div class="card-header bg-warning text-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="fas fa-calendar-times"></i> Kontrak Berakhir</h5>
+
+                    @if (in_array(Auth::user()->department, ['Human Resources', 'Director', 'General Manager']) && Auth::user()->position != 'staff')
+                    <!-- Button to User Index -->
+                    <a href="{{ route('user.index') }}" class="btn btn-warning text-white">
+                        <i class="fa-solid fa-arrow-right"></i> Employee
+                    </a>
+                    @endif
+                </div>
+                <div class="card-body">
+                    @if(count($contractEndingSoon) > 0)
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Nama</th>
+                                <th class="text-center">Tanggal Berakhir</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach($contractEndingSoon as $employee)
+                            <tr>
+                                <td>{{ $employee->name }}</td>
+                                <td class="text-center">{{ \Carbon\Carbon::parse($employee->contract_end_date)->format('d M Y') }}</td>
+                            </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                    @else
+                    <p class="text-center">Tidak ada kontrak berakhir dalam 2 bulan.</p>
+                    @endif
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+
+
+
+
 </div>
 
 <style>
-    .bg-primary {
-        background: linear-gradient(45deg, #4e73df, #224abe) !important;
+    /* Global Styling */
+    body {
+        background-color: #f4f6f9;
     }
 
-    .bg-success {
-        background: linear-gradient(45deg, #1cc88a, #13855c) !important;
+    .container {
+        padding-top: 30px;
     }
 
-    .display-4 {
-        font-size: 2.5rem;
+    /* Dashboard Title */
+    .text-warning {
+        font-weight: 700;
+        letter-spacing: -0.5px;
+    }
+
+    /* Stats Cards */
+    .card {
+        border: none;
+        border-radius: 15px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+        transition: all 0.3s ease;
+    }
+
+    .card:hover {
+        transform: translateY(-10px);
+        box-shadow: 0 15px 40px rgba(0, 0, 0, 0.12);
+    }
+
+    /* Gradient Backgrounds */
+    .bg-gradient-primary {
+        background: linear-gradient(145deg, #6a11cb 0%, #2575fc 100%);
+    }
+
+    .bg-gradient-success {
+        background: linear-gradient(145deg, #56ab2f 0%, #a8e063 100%);
+    }
+
+    /* Card Headers */
+    .card-header {
+        padding: 15px;
+        border-top-left-radius: 15px;
+        border-top-right-radius: 15px;
+    }
+
+    /* Typography */
+    .card-title {
         font-weight: 600;
+        opacity: 0.8;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
     }
 
+    .card-body h2 {
+        color: white;
+        font-size: 2.2rem;
+        font-weight: 700;
+    }
+
+    /* Tables */
+    .table {
+        border-radius: 10px;
+        overflow: hidden;
+    }
+
+    .table thead {
+        background-color: #f8f9fc;
+    }
+
+    .table-striped tbody tr:nth-of-type(odd) {
+        background-color: rgba(0, 0, 0, 0.02);
+    }
+
+    /* Alert Styles */
+    .alert-success {
+        background-color: #d4edda;
+        border-color: #c3e6cb;
+        color: #155724;
+        border-radius: 10px;
+    }
+
+    /* Responsive Adjustments */
     @media (max-width: 768px) {
-        .display-4 {
-            font-size: 2rem;
+        .card {
+            margin-bottom: 20px;
         }
     }
 
-    canvas {
-        width: 100% !important;
-        /* Membuat chart responsif */
-        max-width: 500px;
-        /* Batas lebar maksimal */
+    /* Chart Specific */
+    .card-body canvas {
         max-height: 300px;
-        /* Batas tinggi maksimal */
-        height: auto !important;
-        /* Menyesuaikan tinggi sesuai dengan lebar */
+        width: 100%;
+    }
+
+    /* Icons */
+    .card-header i {
+        margin-right: 10px;
+        opacity: 0.7;
     }
 </style>
 @endsection
 
 @push('scripts')
+
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        // Data yang di-passing dari Blade
+    $(document).ready(function() {
+        // Data dari Blade
         const generasiData = @json($generasiData);
         const genderData = @json($genderData);
 
-        // Cek data yang diterima dari PHP
         console.log("Generasi Data:", generasiData);
         console.log("Gender Data:", genderData);
 
-        // Mencari generasi yang terdaftar
-        const allGenerations = ["Gen Z", "Millennials", "Gen X", "Boomers"]; // Tentukan semua generasi yang ingin ditampilkan
+        const allGenerations = ["Gen Z", "Millennials", "Gen X", "Boomers"];
         const generasiLabels = allGenerations;
 
-        // Menyesuaikan data untuk setiap generasi
         const generasiCounts = generasiLabels.map(gen => {
             const found = generasiData.find(item => item.generasi === gen);
-            return found ? found.total : 0; // Jika tidak ditemukan, totalnya 0
+            return found ? found.total : 0;
         });
 
-        // Pastikan elemen canvas ada sebelum membuat chart
-        const genCanvas = document.getElementById('generationChart');
-        console.log('Canvas untuk Generation Chart:', genCanvas);
-
-        if (genCanvas && genCanvas.getContext) {
-            const genCtx = genCanvas.getContext('2d');
+        // Cek apakah canvas ada sebelum membuat chart
+        if ($("#generationChart").length) {
+            const genCtx = $("#generationChart")[0].getContext('2d');
             new Chart(genCtx, {
                 type: 'bar',
                 data: {
@@ -154,25 +301,22 @@
                 }
             });
         } else {
-            console.warn('Canvas dengan ID "generationChart" tidak ditemukan atau bukan canvas.');
+            console.warn('Canvas dengan ID "generationChart" tidak ditemukan.');
         }
 
         // Gender Chart (Pie Chart)
-        const genderCanvas = document.getElementById('genderChart');
-        console.log('Canvas untuk Gender Chart:', genderCanvas);
-
-        if (genderCanvas && genderCanvas.getContext) {
+        if ($("#genderChart").length) {
             setTimeout(function() {
-                const genderCtx = genderCanvas.getContext('2d');
+                const genderCtx = $("#genderChart")[0].getContext('2d');
                 new Chart(genderCtx, {
                     type: 'pie',
                     data: {
-                        labels: genderData.map(item => item.jenis_kelamin),
+                        labels: genderData.map(item => item.gender),
                         datasets: [{
                             data: genderData.map(item => item.total),
                             backgroundColor: [
-                                'rgba(54, 162, 235, 0.8)', // Laki-laki
-                                'rgba(255, 99, 132, 0.8)' // Perempuan
+                                'rgba(54, 162, 235, 0.8)', // Male
+                                'rgba(255, 99, 132, 0.8)' // Female
                             ],
                             borderWidth: 1
                         }]
@@ -184,7 +328,7 @@
                 });
             }, 500);
         } else {
-            console.warn('Canvas dengan ID "genderChart" tidak ditemukan atau bukan canvas.');
+            console.warn('Canvas dengan ID "genderChart" tidak ditemukan.');
         }
     });
 </script>

@@ -41,6 +41,7 @@ Route::middleware('auth')->group(function () {
     Route::put('/user/update/{id}', [UserController::class, 'update'])->name('user.update');
     Route::put('/user/transfer_user/{id}', [UserController::class, 'transfer_user'])->name('user.transfer_user');
     Route::post('/user/extend-date/{id}', [UserController::class, 'extendDate'])->name('user.extend');
+    Route::post('/employees/import', [UserController::class, 'import'])->name('employees.import');
 
     // E-learning routes  
     Route::get('/elearning/index', [ElearningController::class, 'index'])->name('elearning.index');
@@ -63,6 +64,8 @@ Route::middleware('auth')->group(function () {
     Route::post('/elearning/delete_lesson_answer/{id}', [ElearningController::class, 'delete_lesson_answer'])->name('elearning.delete_lesson_answer');
     Route::post('/elearning/delete_schedule_answer/{id}', [ElearningController::class, 'delete_schedule_answer'])->name('elearning.delete_schedule_answer');
 
+
+    
     // Recruitment routes  
     // PTK
     Route::get('/recruitment/labor_demand/index', [RecruitmentController::class, 'index'])->name('recruitment.index');
