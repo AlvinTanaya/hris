@@ -919,13 +919,13 @@
                     .val('Director')
                     .after('<input type="hidden" name="department" value="Director">');
                 department.find('option:not([value="Director"])').hide();
-                departmentWrapper.append('<small class="text-danger">Department dibatasi sesuai posisi</small>');
+                departmentWrapper.append('<small class="text-danger">Departments are limited by position</small>');
             } else if (position === 'General Manager') {
                 department.prop('readonly', true)
                     .val('General Manager')
                     .after('<input type="hidden" name="department" value="General Manager">');
                 department.find('option:not([value="General Manager"])').hide();
-                departmentWrapper.append('<small class="text-danger">Department dibatasi sesuai posisi</small>');
+                departmentWrapper.append('<small class="text-danger">Departments are limited by position</small>');
             } else {
                 // Hapus hidden input jika ada  
                 departmentWrapper.find('input[type="hidden"][name="department"]').remove();

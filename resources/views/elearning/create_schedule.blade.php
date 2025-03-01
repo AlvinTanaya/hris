@@ -13,8 +13,8 @@
 
                 <div class="row mb-3">
                     <div class="col-md-12">
-                        <label for="lesson" class="form-label">Lesson Title</label>
-                        <select name="lesson" class="form-control" required>
+                        <label for="lesson_id" class="form-label">Lesson Title</label>
+                        <select name="lesson_id" class="form-control" required>
                             <option value="" disabled selected>Select a lesson</option>
                             @foreach($lessons as $lesson)
                             <option value="{{ $lesson->id }}">{{ $lesson->name }}</option>
@@ -40,20 +40,18 @@
                     <div class="col-md-6 border-end">
                         <div class="row">
                             <div class="col-md-6">
-                                <label for="departmentFilter" class="form-label">Filter by Department</label>
-                                <select id="departmentFilter" class="form-control">
-                                    <option value="">All Departments</option>
-                                    @foreach($departments as $department)
-                                    <option value="{{ $department }}">{{ $department }}</option>
+                                <label for="positionFilter" class="form-label">Filter by Position</label>
+                                <select id="positionFilter" class="form-control select2" multiple>
+                                    @foreach($positions as $position)
+                                    <option value="{{ $position }}">{{ $position }}</option>
                                     @endforeach
                                 </select>
                             </div>
                             <div class="col-md-6">
-                                <label for="positionFilter" class="form-label">Filter by Position</label>
-                                <select id="positionFilter" class="form-control">
-                                    <option value="">All Positions</option>
-                                    @foreach($positions as $position)
-                                    <option value="{{ $position }}">{{ $position }}</option>
+                                <label for="departmentFilter" class="form-label">Filter by Department</label>
+                                <select id="departmentFilter" class="form-control select2" multiple>
+                                    @foreach($departments as $department)
+                                    <option value="{{ $department }}">{{ $department }}</option>
                                     @endforeach
                                 </select>
                             </div>
@@ -107,6 +105,8 @@
                                 <tr>
                                     <th>Employee ID</th>
                                     <th>Name</th>
+                                    <th>Position</th>
+                                    <th>Department</th>
                                     <th>Action</th>
                                 </tr>
                             </thead>
@@ -139,9 +139,20 @@
 <script>
     $(document).ready(function() {
         // Initialize Select2
-        $('.select2').select2({
+        $('#employees').select2({
             width: '100%',
             placeholder: "Select employees",
+            allowClear: true
+        });
+
+        $('#positionFilter').select2({
+            width: '100%',
+            placeholder: "All Position",
+            allowClear: true
+        });
+        $('#departmentFilter').select2({
+            width: '100%',
+            placeholder: "All Department",
             allowClear: true
         });
 
@@ -150,33 +161,24 @@
 
         // Function to filter employees based on department and position
         function filterEmployees() {
-            let department = $('#departmentFilter').val();
-            let position = $('#positionFilter').val();
+            let selectedDepartments = $('#departmentFilter').val() || [];
+            let selectedPositions = $('#positionFilter').val() || [];
 
-            // Reset all options first - make all visible and enabled
             $('#employees option').each(function() {
-                $(this).prop('disabled', false).show();
+                let empDept = $(this).data('department');
+                let empPos = $(this).data('position');
+
+                // Cek apakah employee sesuai dengan salah satu filter yang dipilih
+                let matchDept = selectedDepartments.length === 0 || selectedDepartments.includes(empDept);
+                let matchPos = selectedPositions.length === 0 || selectedPositions.includes(empPos);
+
+                if (matchDept && matchPos) {
+                    $(this).prop('disabled', false).show();
+                } else {
+                    $(this).prop('disabled', true).hide();
+                }
             });
 
-            // Apply department filter if selected
-            if (department) {
-                $('#employees option').each(function() {
-                    if ($(this).data('department') !== department) {
-                        $(this).prop('disabled', true).hide();
-                    }
-                });
-            }
-
-            // Apply position filter if selected
-            if (position) {
-                $('#employees option').each(function() {
-                    if ($(this).data('position') !== position) {
-                        $(this).prop('disabled', true).hide();
-                    }
-                });
-            }
-
-            // Refresh Select2 to reflect the changes
             $('#employees').select2('destroy').select2({
                 width: '100%',
                 placeholder: "Select employees",
@@ -184,10 +186,11 @@
             });
         }
 
-        // Filter when department or position changes
+        // Trigger filter setiap kali ada perubahan di dropdown
         $('#departmentFilter, #positionFilter').change(function() {
             filterEmployees();
         });
+
 
         // Add selected employees
         $('#addEmployees').on('click', function() {
@@ -210,9 +213,12 @@
 
             addEmployeesToTable(filteredEmployees);
 
-            // Reset filters after adding all filtered employees
-            $('#departmentFilter').val('');
-            $('#positionFilter').val('');
+            // Reset filters
+            $('#departmentFilter').val(null).trigger('change');
+            $('#positionFilter').val(null).trigger('change');
+
+            // Reset employee selection
+            $('#employees').val(null).trigger('change');
 
             // Reset all options to be selectable again
             $('#employees option').each(function() {
@@ -226,6 +232,7 @@
                 allowClear: true
             });
         });
+
 
         // Remove all employees
         $('#removeAllEmployees').on('click', function() {
@@ -266,6 +273,8 @@
                             `<tr data-id="${id}">
                             <td>${emp.employee_id}</td>
                             <td>${emp.name}</td>
+                            <td>${emp.position}</td>
+                            <td>${emp.department}</td>
                             <td><button type="button" class="btn btn-danger btn-sm removeEmployee" data-id="${id}">Remove</button></td>
                         </tr>`
                         );

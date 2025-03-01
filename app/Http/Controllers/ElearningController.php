@@ -258,15 +258,16 @@ class ElearningController extends Controller
         //dd('coba');
         // Store schedule
         $schedule = elearning_schedule::create([
-            'lesson_id' => $request->lesson,
+            'lesson_id' => $request->lesson_id,
             'start_date' => $request->startDate,
             'end_date' => $request->endDate,
         ]);
-        //dd('coba');
+
 
         // Store invitations
         if ($request->invited_employees) {
             $employeeIds = explode(',', $request->invited_employees);
+
             foreach ($employeeIds as $employeeId) {
                 elearning_invitation::create([
                     'schedule_id' => $schedule->id,
@@ -490,18 +491,19 @@ class ElearningController extends Controller
 
     public function update_schedule(Request $request, $id)
     {
+        //dd($request->all());
         $schedule = elearning_schedule::findOrFail($id);
 
         // Update schedule fields only if changed
-        if ($schedule->lesson_id != $request->lesson) {
+        if ($schedule->lesson_id != $request->lesson_id) {
 
 
             // update pada invitation lesson_id
             elearning_invitation::where('schedule_id', $id)
                 ->where('lesson_id', $schedule->lesson_id)
-                ->update(['lesson_id' => $request->lesson]);
+                ->update(['lesson_id' => $request->lesson_id]);
 
-            $schedule->lesson_id = $request->lesson;
+            $schedule->lesson_id = $request->lesson_id;
         }
         if ($schedule->start_date != $request->startDate) {
             $schedule->start_date = $request->startDate;

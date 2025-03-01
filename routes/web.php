@@ -1,5 +1,6 @@
 <?php
 
+
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\ElearningController;
@@ -7,11 +8,24 @@ use App\Http\Controllers\TimeManagementController;
 use App\Http\Controllers\RecruitmentController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\VacancyController;
+use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\AnnouncementController;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+
+use Illuminate\Notifications\Notification;
+
+
 
 // Routes that do not require authentication   
 Route::get('/', function () {
+    if (Auth::check()) {
+        return redirect('/home');
+    }
     return view('welcome');
 })->name('welcome');
+
+
 
 Route::get('/register', [App\Http\Controllers\Auth\RegisterController::class, 'showRegistrationForm'])->name('register');
 Route::post('/register', [App\Http\Controllers\Auth\RegisterController::class, 'register']);
@@ -22,14 +36,28 @@ Route::post('/job_vacancy/store/{id}', [VacancyController::class, 'store'])->nam
 Route::get('login', [App\Http\Controllers\Auth\LoginController::class, 'showLoginForm'])->name('login');
 Route::post('login', [App\Http\Controllers\Auth\LoginController::class, 'login']);
 
+
+// Password Reset Routes
+Route::get('/forgot-password', [App\Http\Controllers\Auth\ForgotPasswordController::class, 'showForgotForm'])->name('password.forgot');
+Route::post('/forgot-password', [App\Http\Controllers\Auth\ForgotPasswordController::class, 'sendOTP'])->name('password.otp.send');
+Route::get('/verify-otp', [App\Http\Controllers\Auth\ForgotPasswordController::class, 'showVerifyOTPForm'])->name('otp.verify');
+Route::post('/verify-otp', [App\Http\Controllers\Auth\ForgotPasswordController::class, 'verifyOTP'])->name('otp.verify.submit');
+
+Route::get('/reset-password', [App\Http\Controllers\Auth\ResetPasswordController::class, 'showResetForm'])->name('password.reset.form');
+Route::post('/reset-password', [App\Http\Controllers\Auth\ResetPasswordController::class, 'reset'])->name('password.update');
+
+
+
 // Authentication routes  
-Auth::routes();
+Auth::routes(['reset' => false]);
+
 
 // Routes that require authentication  
 Route::middleware('auth')->group(function () {
     // Home page after login  
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
     Route::get('/home', [App\Http\Controllers\HomeController::class, 'index'])->name('home');
+    Route::post('/logout', [App\Http\Controllers\Auth\LoginController::class, 'logout'])->name('logout');
 
     // Employee routes  
     Route::get('/user/index', [UserController::class, 'index'])->name('user.index');
@@ -65,7 +93,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/elearning/delete_schedule_answer/{id}', [ElearningController::class, 'delete_schedule_answer'])->name('elearning.delete_schedule_answer');
 
 
-    
+
     // Recruitment routes  
     // PTK
     Route::get('/recruitment/labor_demand/index', [RecruitmentController::class, 'index'])->name('recruitment.index');
@@ -92,6 +120,17 @@ Route::middleware('auth')->group(function () {
     Route::post('/recruitment/applicant/status/{id}', [RecruitmentController::class, 'update_status'])->name('recruitment.applicant.status');
     Route::post('/recruitment/applicant/exchange/{id}', [RecruitmentController::class, 'exchange_position'])->name('recruitment.applicant.exchange');
     Route::post('/recruitment/applicant/employee/{id}', [RecruitmentController::class, 'add_to_employee'])->name('applicant.add_to_employee');
+
+    //notification
+    Route::get('/notification/index', [NotificationController::class, 'index'])->name('notification.index');
+    Route::post('/notification/mark-read/{id}', [NotificationController::class, 'markAsRead'])->name('notification.markAsRead');
+    Route::post('/notification/mark-all-read', [NotificationController::class, 'markAllRead'])->name('notification.markAllRead');
+
+    //announcement
+    Route::get('/announcement/index', [AnnouncementController::class, 'index'])->name('announcement.index');
+    Route::get('/announcement/create', [AnnouncementController::class, 'create'])->name('announcement.create');
+    Route::get('/announcement/users', [AnnouncementController::class, 'users'])->name('announcement.users');
+    Route::post('/announcement/store', [AnnouncementController::class, 'store'])->name('announcement.store');;
 
     // Time Management Routes  
     Route::get('/work-shift', [TimeManagementController::class, 'workShift'])->name('time.work-shift');

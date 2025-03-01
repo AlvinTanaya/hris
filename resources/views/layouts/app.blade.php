@@ -59,6 +59,7 @@
             }
         }
 
+        /* Sidebar Styles */
         #sidebar {
             width: var(--sidebar-width);
             position: fixed;
@@ -73,15 +74,13 @@
             padding-top: 0;
             display: flex;
             flex-direction: column;
-            height: 100vh;
         }
+
+
 
         #sidebar.collapsed {
             width: var(--sidebar-collapsed-width);
         }
-
-
-
 
         #sidebar .logo-container {
             padding: 1.5rem 1rem;
@@ -131,14 +130,23 @@
             display: none;
         }
 
+        /* Perbaikan untuk dropdown sidebar */
         #sidebar .dropdown-container {
             margin-left: 1rem;
             display: none;
+            position: relative;
+            z-index: 1001;
+            /* Memastikan dropdown tetap di atas */
         }
 
         #sidebar .dropdown-container.show {
             display: block;
             animation: slideDown 0.3s ease-out;
+        }
+
+        /* Pastikan dropdown item memiliki pointer events */
+        #sidebar .dropdown-container .nav-link {
+            pointer-events: auto;
         }
 
         @keyframes slideDown {
@@ -153,16 +161,6 @@
             }
         }
 
-        #content {
-            margin-left: var(--sidebar-width);
-            padding: 1rem;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-
-        #content.expanded {
-            margin-left: var(--sidebar-collapsed-width);
-        }
-
         #sidebar .dropdown-icon {
             margin-left: auto;
             transition: transform 0.3s;
@@ -172,44 +170,34 @@
             transform: rotate(90deg);
         }
 
+        .nav-menu {
+            flex-grow: 1;
+            overflow-y: auto;
+            overflow-x: hidden;
+        }
+
+        /* Content Styles */
         #content {
             margin-left: 250px;
             padding: 1rem;
-            transition: all 0.3s;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            z-index: 990;
         }
 
         #content.expanded {
-            margin-left: 100px;
+            margin-left: var(--sidebar-collapsed-width);
         }
 
-
-
-        .profile-container {
-            display: flex;
-            align-items: center;
-            color: var(--text-color);
-            z-index: 1;
-        }
-
-        .profile-container img {
-            width: 45px;
-            height: 45px;
-            border-radius: 50%;
-            margin-right: 12px;
-            border: 2px solid var(--accent-color);
-            object-fit: cover;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-        }
-
-
-
+        /* Top Bar Styles */
         .top-bar {
             background: rgba(255, 255, 255, 0.1);
             backdrop-filter: blur(10px);
             padding: 1rem;
             display: flex;
             justify-content: space-between;
-            /* Changed to space-between */
+            position: relative;
+            z-index: 995;
             align-items: center;
             border-radius: 12px;
             margin-bottom: 1rem;
@@ -220,6 +208,7 @@
             display: flex;
             gap: 1rem;
             align-items: center;
+            position: relative;
         }
 
         .top-bar-icon {
@@ -236,13 +225,92 @@
             transform: translateY(-2px);
         }
 
-        .nav-menu {
-            flex-grow: 1;
-            overflow-y: auto;
-            overflow-x: hidden;
-            /* Add this to prevent horizontal scrolling */
+        /* Dropdown Styles - Fixed */
+        .dropdown {
+            position: relative;
         }
 
+        .notification-dropdown {
+            position: absolute;
+            top: 150%;
+            right: 0;
+            z-index: 1010;
+            background: white;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+            border-radius: 10px;
+            width: 320px;
+            max-height: 400px;
+            overflow-y: auto;
+            display: none;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+        }
+
+        .notification-header {
+            background: rgba(255, 255, 255, 0.2);
+            border-top-left-radius: 15px;
+            border-top-right-radius: 15px;
+        }
+
+        .notification-item {
+            transition: all 0.2s ease;
+            border-left: 4px solid transparent;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .notification-item:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .notification-item.bg-light {
+            border-left: 4px solid var(--accent-color);
+        }
+
+        .notification-badge {
+            font-size: 0.6rem;
+            padding: 0.2rem 0.4rem;
+        }
+
+        .notification-body {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .notification-item p {
+            color: #333;
+        }
+
+        .notification-footer a {
+            text-decoration: none;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+
+        .notification-footer a:hover {
+            text-decoration: underline;
+            color: #ffcc00;
+        }
+
+        .bg-light {
+            background: rgba(255, 255, 255, 0.3) !important;
+        }
+
+        .notification-body::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .notification-body::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.5);
+            border-radius: 10px;
+        }
+
+        .notification-body::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        /* Profile Styles */
         .profile-section {
             padding: 1rem;
             border-top: 1px solid rgba(255, 255, 255, 0.1);
@@ -284,9 +352,22 @@
             margin-right: 0;
         }
 
+        .profile-container {
+            display: flex;
+            align-items: center;
+            color: var(--text-color);
+            z-index: 1;
+        }
 
-
-
+        .profile-container img {
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            margin-right: 12px;
+            border: 2px solid var(--accent-color);
+            object-fit: cover;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
 
         /* Card Styles */
         .custom-card {
@@ -302,31 +383,6 @@
         .custom-card:hover {
             transform: translateY(-5px);
             box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
-        }
-
-        /* Responsive Design */
-        @media (max-width: 768px) {
-            :root {
-                --sidebar-width: 0px;
-            }
-
-            #sidebar {
-                transform: translateX(-100%);
-            }
-
-            #sidebar.show {
-                transform: translateX(0);
-                width: 250px;
-            }
-
-            #content {
-                margin-left: 0;
-            }
-
-            .top-bar {
-                margin: 0 -1rem 1rem -1rem;
-                border-radius: 0;
-            }
         }
 
         /* Loading Spinner */
@@ -350,6 +406,105 @@
                 transform: rotate(360deg);
             }
         }
+
+        /* Improved Mobile Sidebar Styles */
+        @media (max-width: 768px) {
+
+            /* Pastikan dropdown tidak tertutup sidebar */
+            .dropdown-container .nav-link {
+                padding: 0.8rem 1rem 0.8rem 2rem !important;
+            }
+
+
+
+
+            :root {
+                --sidebar-width: 250px;
+                --sidebar-collapsed-width: 0px;
+            }
+
+            #sidebar {
+                transform: translateX(-100%);
+                width: var(--sidebar-width);
+                position: fixed;
+                z-index: 1050;
+                box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
+            }
+
+            #sidebar.show {
+                transform: translateX(0);
+            }
+
+            #content {
+                margin-left: 0 !important;
+                width: 100%;
+            }
+
+            /* Overlay for when sidebar is shown on mobile */
+            .sidebar-overlay {
+                display: none;
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background: rgba(0, 0, 0, 0.5);
+                z-index: 1030;
+            }
+
+
+            .sidebar-overlay.show {
+                display: block;
+            }
+
+            /* Ensure proper padding for mobile view */
+            .top-bar {
+                padding: 0.75rem;
+                margin-bottom: 1rem;
+                border-radius: 10px;
+            }
+
+            /* Adjust dropdown positioning for mobile */
+            .notification-dropdown {
+                position: fixed;
+                top: 70px;
+                right: 10px;
+                left: auto;
+                width: 90%;
+                max-width: 350px;
+            }
+
+            /* Make sure sidebar content is scrollable on small screens */
+            .nav-menu {
+                max-height: calc(100vh - 150px);
+                overflow-y: auto;
+            }
+
+            /* Improve dropdown visibility on mobile */
+            #sidebar .dropdown-container {
+                background: rgba(0, 0, 0, 0.1);
+                border-radius: 8px;
+                margin: 0 0.7rem;
+            }
+        }
+
+        /* Smooth transitions for sidebar */
+        #sidebar {
+            transition: transform 0.3s ease, width 0.3s ease;
+        }
+
+        #content {
+            transition: margin-left 0.3s ease;
+        }
+
+        /* Improved sidebar toggle animation */
+        #sidebarToggle i {
+            transition: transform 0.3s ease;
+        }
+
+        #sidebarToggle.active i {
+            transform: rotate(90deg);
+        }
     </style>
 </head>
 
@@ -362,15 +517,19 @@
         </div>
 
         <div class="nav-menu">
-
-
             <ul class="nav flex-column">
+
+
+                @if (
+                Auth::user()->position == 'Manager'|| Auth::user()->position == 'Director'|| Auth::user()->position == 'General Manager'
+                )
                 <li class="nav-item">
-                    <a href="{{ url('/dashboard') }}" class="nav-link">
-                        <i class="fa-solid fa-gauge"></i>
-                        <span>Dashboard</span>
+                    <a href="{{ url('/announcement/index')}}" class="nav-link">
+                        <i class="fa-solid fa-bullhorn"></i>
+                        <span>Announcement</span>
                     </a>
                 </li>
+                @endif
 
                 @if (
                 Auth::user()->department == 'Human Resources' ||
@@ -378,6 +537,12 @@
                 Auth::user()->department == 'Director' ||
                 Auth::user()->position != 'Staff'
                 )
+                <li class="nav-item">
+                    <a href="{{ url('/dashboard') }}" class="nav-link">
+                        <i class="fa-solid fa-gauge"></i>
+                        <span>Dashboard</span>
+                    </a>
+                </li>
                 <li class="nav-item">
                     <a href="{{ url('/user/index') }}" class="nav-link">
                         <i class="fas fa-users"></i>
@@ -388,7 +553,6 @@
                     <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown">
                         <i class="fas fa-graduation-cap"></i>
                         <span>E-learning &nbsp;</span>
-
                     </a>
                     <div class="dropdown-container">
                         <a href="{{ url('/elearning/index') }}" class="nav-link">
@@ -472,9 +636,9 @@
                 @endif
             </ul>
         </div>
+
         <!-- Profile section at bottom of sidebar -->
         <div class="profile-section">
-
             <a href="{{ route('user.edit', Auth::user()->id) }}" class="profile-link">
                 <img src="{{ Auth::user()->photo_profile_path ? asset('storage/'. Auth::user()->photo_profile_path) : asset('storage/default_profile.png') }}"
                     alt="Profile Picture" class="profile-image">
@@ -489,14 +653,85 @@
                 <i class="fas fa-bars"></i>
             </button>
             <div class="top-bar-right">
-                <a href="#" class="top-bar-icon">
-                    <i class="fas fa-bell"></i>
-                </a>
-                <a href="{{ route('logout') }}"
-                    class="top-bar-icon"
+                <div class="dropdown">
+                    <a href="#" class="top-bar-icon position-relative" id="notificationDropdown">
+                        <i class="fas fa-bell"></i>
+                        @php
+                        $unreadCount = \App\Models\notification::where('users_id', Auth::id())
+                        ->where('status', 'Unread')
+                        ->count();
+                        @endphp
+                        @if($unreadCount > 0)
+                        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger notification-badge">
+                            {{ $unreadCount }}
+                        </span>
+                        @endif
+                    </a>
+                    <div class="notification-dropdown" aria-labelledby="notificationDropdown">
+                        <div class="notification-header d-flex justify-content-between align-items-center p-3 border-bottom">
+                            <h6 class="m-0">Notifications</h6>
+                            <span class="badge bg-primary rounded-pill">
+                                {{ \App\Models\notification::where('users_id', Auth::id())->count() }}
+                            </span>
+                        </div>
+                        <div class="notification-body">
+                            @php
+                            $notifications = \App\Models\notification::where('users_id', Auth::id())
+                            ->where('status', 'Unread')
+                            ->orderBy('created_at', 'desc')
+                            ->take(3)
+                            ->get();
+
+                            $notificationMakers = \App\Models\User::whereIn('id', $notifications->pluck('maker_id'))
+                            ->pluck('name', 'id');
+                            @endphp
+
+                            @if($notifications->count() > 0)
+                            @foreach($notifications as $notification)
+                            <div class="dropdown-item notification-item p-3 border-bottom {{ $notification->status == 'Unread' ? 'bg-light' : '' }}"
+                                data-id="{{ $notification->id }}">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <strong>{{ $notificationMakers[$notification->maker_id] ?? 'System' }}</strong>
+                                    <small class="text-muted">{{ \Carbon\Carbon::parse($notification->created_at)->diffForHumans() }}</small>
+                                </div>
+                                <div class="row align-items-center">
+                                    <div class="col-md-10">
+                                        <p class="mb-0 text-truncate">{{ $notification->message }}</p>
+                                    </div>
+                                    @if($notification->type == 'elearning_duty')
+                                    <div class="col-md-2 text-end mt-1">
+                                        <a href="{{ url('/elearning/index2/' . Auth::user()->id) }}" class="text-primary">
+                                            <i class="fa-solid fa-arrow-right fa-xl"></i>
+                                        </a>
+                                    </div>
+                                    @elseif($notification->type == 'general')
+                                    <div class="col-md-2 text-end mt-1">
+                                        <a href="{{ route('notification.index') }}" class="text-primary">
+                                            <i class="fa-solid fa-arrow-right fa-xl"></i>
+                                        </a>
+                                    </div>
+                                    @endif
+                                </div>
+                            </div>
+                            @endforeach
+                            @else
+                            <div class="p-3 text-center">No notifications</div>
+                            @endif
+                        </div>
+                        <div class="notification-footer p-2 text-center border-top">
+                            <a href="{{ route('notification.index') }}" class="text-primary">View All Notifications</a>
+                        </div>
+                    </div>
+                </div>
+                <form id="logout-form" action="{{ route('logout') }}" method="POST" class="d-none">
+                    @csrf
+                </form>
+
+                <a href="{{ route('logout') }}" class="top-bar-icon"
                     onclick="event.preventDefault(); document.getElementById('logout-form').submit();">
                     <i class="fas fa-sign-out-alt"></i>
                 </a>
+
             </div>
         </div>
 
@@ -528,38 +763,150 @@
     <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
 
     @vite(['resources/js/app.js'])
-
     <script>
         $(document).ready(function() {
-            // Toggle sidebar
-            $('#sidebarToggle').click(function() {
-                $('#sidebar').toggleClass('collapsed');
-                $('#content').toggleClass('expanded');
-            });
+            // Create overlay element for mobile sidebar
+            $('body').append('<div class="sidebar-overlay"></div>');
 
-            // Handle dropdown toggles
-            $('.dropdown-toggle').click(function(e) {
+            // Clean notification handling
+            $("#notificationDropdown").on("click", function(e) {
                 e.preventDefault();
-                let dropdownContainer = $(this).siblings('.dropdown-container');
-                dropdownContainer.slideToggle();
-                $(this).toggleClass('active');
+                e.stopPropagation();
+                $(this).siblings(".notification-dropdown").toggle();
             });
 
-            // Handle mobile responsiveness
-            if ($(window).width() < 768) {
-                $('#sidebar').addClass('collapsed');
-                $('#content').addClass('expanded');
-            }
-
-            // Adjust on window resize
-            $(window).resize(function() {
-                if ($(window).width() < 768) {
-                    $('#sidebar').addClass('collapsed');
-                    $('#content').addClass('expanded');
+            // Close notification dropdown when clicking elsewhere
+            $(document).on("click", function(e) {
+                if (!$(e.target).closest(".dropdown").length) {
+                    $(".notification-dropdown").hide();
                 }
             });
 
+            // Prevent dropdown from closing when clicking inside
+            $(".notification-dropdown").on("click", function(e) {
+                e.stopPropagation();
+            });
 
+            // Mark notifications as read
+            $(".notification-item").on("click", function() {
+                var notificationId = $(this).data("id");
+                var item = $(this);
+
+                $.ajax({
+                    url: "/notification/mark-read/" + notificationId,
+                    type: "POST",
+                    data: {
+                        _token: $('meta[name="csrf-token"]').attr('content')
+                    },
+                    success: function(response) {
+                        if (response.success) {
+                            item.removeClass("bg-light");
+                        }
+                    }
+                });
+            });
+
+            // Improved sidebar toggle handling
+            $('#sidebarToggle').click(function() {
+                if ($(window).width() < 768) {
+                    // Mobile behavior
+                    $('#sidebar').toggleClass('show');
+                    $('.sidebar-overlay').toggleClass('show');
+                    $(this).toggleClass('active');
+                } else {
+                    // Desktop behavior
+                    $('#sidebar').toggleClass('collapsed');
+                    $('#content').toggleClass('expanded');
+                }
+            });
+
+            // Close sidebar when overlay is clicked
+            $('.sidebar-overlay').click(function() {
+                $('#sidebar').removeClass('show');
+                $('.sidebar-overlay').removeClass('show');
+                $('#sidebarToggle').removeClass('active');
+            });
+
+            // PERBAIKAN: Handle sidebar dropdowns
+            $('.dropdown-toggle').click(function(e) {
+                e.preventDefault();
+                e.stopPropagation(); // Menghentikan propagasi event ke parent
+
+                // Toggle dropdown container
+                $(this).siblings('.dropdown-container').slideToggle();
+
+                // Toggle active class dan aria-expanded
+                $(this).toggleClass('active');
+                let isExpanded = $(this).attr('aria-expanded') === 'true';
+                $(this).attr('aria-expanded', !isExpanded);
+
+                // PENTING: Jangan tutup sidebar saat dropdown diklik
+                return false;
+            });
+
+            // Handle responsive layout
+            function adjustForScreenSize() {
+                if ($(window).width() < 768) {
+                    // Mobile view
+                    $('#content').css('margin-left', '0');
+
+                    // Close sidebar by default on mobile
+                    $('#sidebar').removeClass('collapsed').removeClass('show');
+                    $('.sidebar-overlay').removeClass('show');
+                    $('#sidebarToggle').removeClass('active');
+                } else {
+                    // Desktop view
+                    $('#sidebar').removeClass('show');
+                    $('.sidebar-overlay').removeClass('show');
+
+                    if ($('#sidebar').hasClass('collapsed')) {
+                        $('#content').addClass('expanded');
+                    } else {
+                        $('#content').removeClass('expanded');
+                    }
+                }
+            }
+
+            // Initialize responsive behavior
+            adjustForScreenSize();
+            $(window).resize(adjustForScreenSize);
+
+            // PERBAIKAN: Close sidebar when a menu item is clicked on mobile - BUT NOT DROPDOWN TOGGLES
+            $('#sidebar .nav-link:not(.dropdown-toggle)').click(function() {
+                if ($(window).width() < 768) {
+                    $('#sidebar').removeClass('show');
+                    $('.sidebar-overlay').removeClass('show');
+                    $('#sidebarToggle').removeClass('active');
+                }
+            });
+
+            // Add sub-menu accessibility
+            $('.dropdown-toggle').attr('aria-expanded', 'false');
+            $('.dropdown-toggle').attr('role', 'button');
+            $('.dropdown-container').attr('role', 'menu');
+
+            // PERBAIKAN UNTUK MODAL: Pastikan modal memiliki z-index lebih tinggi dari sidebar
+            // Tambahkan kode CSS inline
+            $('<style>')
+                .prop('type', 'text/css')
+                .html(`
+              
+                    .modal-backdrop {
+                        z-index: 1040 !important;
+                    }
+                    .modal {
+                        z-index: 1050 !important;
+                    }
+                    .modal-dialog {
+                        margin: 30px auto;
+                        max-height: calc(100% - 60px);
+                    }
+                    .modal-content {
+                        max-height: calc(100vh - 120px);
+                        overflow-y: auto;
+                    }
+        `)
+                .appendTo('head');
         });
     </script>
 

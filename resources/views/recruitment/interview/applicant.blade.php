@@ -1160,14 +1160,7 @@
         // Initialize DataTables
         const tables = ['#pendingTable', '#interviewTable', '#approvedTable', '#declinedTable'];
         tables.forEach(table => {
-            $(table).DataTable({
-                responsive: true,
-                lengthMenu: [5, 10, 25, 50],
-                language: {
-                    search: "<i class='fas fa-search'></i>",
-                    searchPlaceholder: "Search records..."
-                }
-            });
+            $(table).DataTable();
         });
 
 

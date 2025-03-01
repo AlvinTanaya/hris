@@ -30,24 +30,26 @@
     <h1 class="text-center text-warning" style="margin-bottom: 65px; margin-top:25px">
         <i class="fas fa-history me-2"></i> Employee History
     </h1>
-    <div class="row mb-5">
-        <div class="col-md-3">
-            <h3 class="text-white">
-                Employee ID
-            </h3>
-            <h3 class="text-white">
-                Employee Name
-            </h3>
+    <div class="row mb-5 align-items-center">
+        <div class="col-md-1 d-flex justify-content-center">
+            <img src="{{ $user->photo_profile_path ? asset('storage/'. $user->photo_profile_path) : asset('storage/default_profile.png') }}"
+                alt="Profile Picture"
+                style="width: 70px; height: 70px; object-fit: cover; border-radius: 50%; border: 2px solid #FFCC00;">
         </div>
-        <div class="col-md-9">
-            <h3 class="text-white">
-                : {{ $user->employee_id}}
-            </h3>
-            <h3 class="text-white">
-                : {{ $user->name }}
-            </h3>
+        <div class="col-md-11">
+            <div class="row">
+                <div class="col-md-3">
+                    <h3 class="text-white">Employee ID</h3>
+                    <h3 class="text-white">Employee Name</h3>
+                </div>
+                <div class="col-md-9">
+                    <h3 class="text-white">: {{ $user->employee_id }}</h3>
+                    <h3 class="text-white">: {{ $user->name }}</h3>
+                </div>
+            </div>
         </div>
     </div>
+
 
     <!-- Nav Tabs -->
     <ul class="nav nav-tabs" id="historyTabs">

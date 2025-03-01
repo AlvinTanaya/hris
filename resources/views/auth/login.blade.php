@@ -314,6 +314,7 @@
                         <input id="email" type="email" class="form-control @error('email') is-invalid @enderror"
                             name="email" value="{{ old('email') }}" required autocomplete="email" autofocus
                             placeholder="Enter your email">
+
                     </div>
                     @error('email')
                     <span class="invalid-feedback d-block">
@@ -331,7 +332,8 @@
                         </span>
                         <input id="password" type="password" class="form-control @error('password') is-invalid @enderror"
                             name="password" required autocomplete="current-password"
-                            placeholder="Enter your password">
+                            placeholder="Enter your password" value="{{ old('password') }}">
+
                         <span class="input-group-text" id="togglePassword">
                             <i class="fas fa-eye"></i>
                         </span>
@@ -343,13 +345,22 @@
                     @enderror
                 </div>
 
-                <!-- Remember Me -->
-                <!-- <div class="mb-4 form-check">
-                    <input class="form-check-input" type="checkbox" name="remember" id="remember" {{ old('remember') ? 'checked' : '' }}>
-                    <label class="form-check-label" for="remember">
-                        {{ __('Remember Me') }}
-                    </label>
-                </div> -->
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <!-- Remember Me -->
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" name="remember" id="remember" {{ old('remember') ? 'checked' : '' }}>
+                        <label class="form-check-label" for="remember">
+                            {{ __('Remember Me') }}
+                        </label>
+                    </div>
+
+                    <!-- Forgot Password -->
+                    <div>
+                        <a href="{{ route('password.forgot') }}" class="text-warning text-decoration-none">Forget Password?</a>
+                    </div>
+                </div>
+
+
 
                 <!-- Buttons -->
                 <div class="row">
@@ -369,23 +380,48 @@
         </div>
     </div>
 
-    <!-- Toggle Password Visibility -->
-    <script>
-        document.getElementById('togglePassword').addEventListener('click', function() {
-            const passwordInput = document.getElementById('password');
-            const icon = this.querySelector('i');
+    <!-- jQuery CDN -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 
-            if (passwordInput.type === "password") {
-                passwordInput.type = "text";
-                icon.classList.remove("fa-eye");
-                icon.classList.add("fa-eye-slash");
-            } else {
-                passwordInput.type = "password";
-                icon.classList.remove("fa-eye-slash");
-                icon.classList.add("fa-eye");
+    <script>
+        $(document).ready(function() {
+            // Toggle Password Visibility
+            $('#togglePassword').on('click', function() {
+                let passwordInput = $('#password');
+                let icon = $(this).find('i');
+
+                if (passwordInput.attr('type') === "password") {
+                    passwordInput.attr('type', 'text');
+                    icon.removeClass('fa-eye').addClass('fa-eye-slash');
+                } else {
+                    passwordInput.attr('type', 'password');
+                    icon.removeClass('fa-eye-slash').addClass('fa-eye');
+                }
+            });
+
+            // Load saved credentials if Remember Me was checked
+            if (localStorage.getItem("rememberMe") === "true") {
+                $('#email').val(localStorage.getItem("email") || "");
+                $('#password').val(localStorage.getItem("password") || "");
+                $('#remember').prop('checked', true);
             }
+
+            // Handle form submission
+            $('form').on('submit', function() {
+                if ($('#remember').is(':checked')) {
+                    localStorage.setItem("rememberMe", "true");
+                    localStorage.setItem("email", $('#email').val());
+                    localStorage.setItem("password", $('#password').val());
+                } else {
+                    localStorage.removeItem("rememberMe");
+                    localStorage.removeItem("email");
+                    localStorage.removeItem("password");
+                }
+            });
         });
     </script>
+
+
 </body>
 
 </html>

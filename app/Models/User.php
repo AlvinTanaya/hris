@@ -55,6 +55,9 @@ class User extends Authenticatable
         'cv_path',
         'ID_card_path',
         'password',
+        'otp',
+        'otp_expired_at',
+        'remember_token',
         'created_at',
         'updated_at'
     ];

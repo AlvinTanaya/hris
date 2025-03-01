@@ -2,12 +2,9 @@
 
 @section('content')
 
-
 <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
 <style>
     #container-body {
-        /* font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; */
-
         margin: 0;
         padding: 20px;
         min-height: 100vh;
@@ -23,10 +20,11 @@
     .container {
         max-width: 1200px;
         margin: 0 auto;
+        padding: 20px;
     }
 
-    .card {
 
+    .card {
         border-radius: 15px;
         box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
         margin-bottom: 2rem;
@@ -42,7 +40,6 @@
         color: #0d6efd;
         padding: 1.5rem;
     }
-
 
     .card-header h5 {
         margin: 0;
@@ -68,50 +65,99 @@
         margin-bottom: 1.5rem;
     }
 
-    .comparison-container {
-        background: #ecf0f1;
-        padding: 2rem;
-        border-radius: 10px;
-        margin-bottom: 2rem;
-    }
-
-    .row {
-        display: flex;
-        align-items: center;
+    .criteria-container {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 15px;
+        justify-content: center;
         margin-bottom: 1.5rem;
     }
 
-    .col-4 {
-        flex: 0 0 33.333333%;
+    .criteria-box {
+        background: #f8f9fa;
+        border-radius: 10px;
+        padding: 15px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        text-align: center;
+        min-width: 150px;
+    }
+
+    .criteria-label {
+        font-size: 14px;
+        font-weight: bold;
+        color: #2c3e50;
+    }
+
+    .criteria-percentage {
+        font-size: 16px;
+        font-weight: bold;
+        color: #3498db;
+    }
+
+    .criteria-percentage {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 16px;
+        font-weight: bold;
+        color: #3498db;
+    }
+
+
+
+    .criteria-input {
+        flex: 0 0 60%;
         padding: 0 15px;
     }
 
-    .text-end {
-        text-align: right;
-        font-weight: 600;
-        color: #34495e;
+    .percentage-input {
+        width: 60px;
+        padding: 5px;
+        border: 2px solid #ddd;
+        border-radius: 8px;
+        text-align: center;
+        font-weight: bold;
+        color: #2c3e50;
     }
 
-    .form-range {
-        width: 100%;
-        height: 8px;
-        background: #ddd;
-        border-radius: 4px;
-        outline: none;
-    }
 
-    .form-range::-webkit-slider-thumb {
-        appearance: none;
-        width: 20px;
-        height: 20px;
-        background: #3498db;
-        border-radius: 50%;
+
+    .calculate-btn {
+        display: block;
+        width: 200px;
+        margin: 0 auto;
+        background-color: #3498db;
+        color: white;
+        padding: 10px;
+        border: none;
+        border-radius: 8px;
+        font-size: 16px;
+        font-weight: bold;
         cursor: pointer;
-        transition: background 0.3s ease;
+        transition: 0.3s;
     }
 
-    .form-range::-webkit-slider-thumb:hover {
-        background: #2c3e50;
+    .calculate-btn:hover {
+        border: 2px solid #ccc;
+        background-color: #2ecc71;
+        /* Hijau terang */
+        color: white;
+        /* Warna teks agar kontras */
+    }
+
+
+
+    .percentage-total {
+        text-align: center;
+        font-size: 18px;
+        font-weight: bold;
+        margin-bottom: 15px;
+        color: #3498db;
+        padding: 1rem;
+    }
+
+    .percentage-total.error {
+        color: #e74c3c;
     }
 
     .btn-primary,
@@ -181,49 +227,23 @@
             transform: rotate(360deg);
         }
     }
-
-    .weights-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-        gap: 1rem;
-        margin-top: 1rem;
-    }
-
-    .weight-item {
-        background: #ecf0f1;
-        padding: 1rem;
-        border-radius: 8px;
-        text-align: center;
-    }
-
-    .weight-item h4 {
-        color: #2c3e50;
-        margin: 0 0 0.5rem 0;
-    }
-
-    .weight-value {
-        font-size: 1.5rem;
-        color: #3498db;
-        font-weight: bold;
-    }
 </style>
-
 
 <h1 class="page-title text-warning mb-5">
     <i class="fas fa-calculator"></i> AHP Recommendation System
 </h1>
 <div class="container mb-4 p-0 mx-auto" id="container-body">
-    <!-- Criteria Comparison Form -->
+    <!-- Criteria Percentage Form -->
     <div class="card">
         <div class="card-header">
-            <h5>Criteria Pairwise Comparison</h5>
-            <small>Move the slider to the right if the left criterion is more important, to the left if the right criterion is more important</small>
+            <h5>Criteria Weights</h5>
+            <small>Assign percentage weights to each criterion (total must be 100%)</small>
         </div>
-        <div class="card-body">
+        <div class="card-body pt-3">
             <form id="ahpForm" onsubmit="return false;">
                 @csrf
                 <div>
-                    <label for="demandId">Select Demand:</label>
+                    <label for="demandId" class="mb-3">Select Demand:</label>
                     <select name="demandId" id="demandId" class="form-select" required>
                         <option value="" disabled selected>-- Select Demand --</option>
                         @foreach($demands as $demand)
@@ -232,72 +252,33 @@
                     </select>
                 </div>
 
-                <div class="comparison-container">
-                    <div class="row">
-                        <div class="col-4 text-end">Age</div>
-                        <div class="col-4">
-                            <input type="range" class="form-range" name="age_education" min="0.11" max="9" step="0.01" value="1">
-                            <div style="text-align: center" class="mt-2"><small>Importance Level</small></div>
+                <div class="criteria-container d-flex justify-content-center gap-3">
+                    @foreach($criteria as $key => $label)
+                    <div class="criteria-box text-center p-3">
+                        <div class="criteria-label">{{ $label }}</div>
+                        <div class="criteria-percentage mt-2">
+                            <input type="number" name="{{ $key }}"
+                                class="percentage-input criteria-percentage"
+                                min="0" max="100" value="{{ 100 / count($criteria) }}"
+                                required style="width: 80px; height: 45px; font-size: 20px;">
+
+
+                            <span>%</span>
                         </div>
-                        <div class="col-4">Education Level</div>
+                    </div>
+                    @endforeach
+
+
+                    <div class="percentage-total" id="percentageTotal">
+                        <strong>Total: <span id="totalValue">100.0</span>%</strong>
                     </div>
 
-                    <div class="row">
-                        <div class="col-4 text-end">Age</div>
-                        <div class="col-4">
-                            <input type="range" class="form-range" name="age_grade" min="0.11" max="9" step="0.01" value="1">
-                            <div style="text-align: center" class="mt-2"><small>Importance Level</small></div>
-                        </div>
-                        <div class="col-4">Education Score</div>
-                    </div>
-
-                    <div class="row">
-                        <div class="col-4 text-end">Age</div>
-                        <div class="col-4">
-                            <input type="range" class="form-range" name="age_experience" min="0.11" max="9" step="0.01" value="1">
-                            <div style="text-align: center" class="mt-2"><small>Importance Level</small></div>
-                        </div>
-                        <div class="col-4">Years of Experience</div>
-                    </div>
-
-                    <div class="row">
-                        <div class="col-4 text-end">Education Level</div>
-                        <div class="col-4">
-                            <input type="range" class="form-range" name="education_experience" min="0.11" max="9" step="0.01" value="1">
-                            <div style="text-align: center" class="mt-2"><small>Importance Level</small></div>
-                        </div>
-                        <div class="col-4">Years of Experience</div>
-                    </div>
-
-                    <div class="row">
-                        <div class="col-4 text-end">Years of Experience</div>
-                        <div class="col-4">
-                            <input type="range" class="form-range" name="experience_company" min="0.11" max="9" step="0.01" value="1">
-                            <div style="text-align: center" class="mt-2"><small>Importance Level</small></div>
-                        </div>
-                        <div class="col-4">Number of Companies</div>
-                    </div>
                 </div>
 
                 <div style="text-align: center">
-                    <button type="button" id="calculateBtn" class="btn-primary">Calculate Ranking</button>
+                    <button type="button" id="calculateBtn" class="calculate-btn">Calculate Ranking</button>
                 </div>
             </form>
-        </div>
-    </div>
-
-    <!-- Criteria Weights Display -->
-    <div class="card" id="criteriaWeightsCard" style="display: none;">
-        <div class="card-header">
-            <h5>Criteria Weights Results</h5>
-        </div>
-        <div class="card-body">
-            <div class="weights-grid" id="weightsGrid">
-                <!-- Weights will be displayed here -->
-            </div>
-            <div style="text-align: center; margin-top: 2rem;">
-                <button type="button" id="showRankingsBtn" class="btn-success">Show Applicant Rankings</button>
-            </div>
         </div>
     </div>
 
@@ -314,16 +295,17 @@
                             <th>Rank</th>
                             <th>Name</th>
                             <th>Age</th>
-                            <th>Education Level</th>
-                            <th>Score</th>
-                            <th>Years of Experience</th>
-                            <th>Number of Companies</th>
+                            <th>Education</th>
+                            <th>Experience</th>
+                            <th>Training</th>
+                            <th>Language</th>
+                            <th>Organization</th>
                             <th>Total Score</th>
                         </tr>
                     </thead>
                     <tbody id="rankingResults">
                         <tr>
-                            <td colspan="8" style="text-align: center">Please fill out the comparison form above to see results</td>
+                            <td colspan="9" style="text-align: center">Please fill out the criteria weights above to see results</td>
                         </tr>
                     </tbody>
                 </table>
@@ -334,23 +316,42 @@
 
 @endsection
 
-
 <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<!-- Core Scripts -->
+<script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const form = document.getElementById('ahpForm');
-        const calculateBtn = document.getElementById('calculateBtn');
-        const showRankingsBtn = document.getElementById('showRankingsBtn');
-        const rankingResults = document.getElementById('rankingResults');
-        const criteriaWeightsCard = document.getElementById('criteriaWeightsCard');
-        const rankingResultsCard = document.getElementById('rankingResultsCard');
-        let savedWeights = null;
+    $(document).ready(function() {
+        const $form = $('#ahpForm');
+        const $calculateBtn = $('#calculateBtn');
+        const $rankingResults = $('#rankingResults');
+        const $percentageInputs = $('.criteria-percentage');
+        const $totalValueSpan = $('#totalValue');
+        const $percentageTotalDiv = $('#percentageTotal');
 
-        calculateBtn.addEventListener('click', function() {
-            const demandSelect = document.getElementById('demandId');
+        // Update total when any percentage input changes
+        $percentageInputs.on('input', updateTotal);
 
-            if (!demandSelect.value) {
+        function updateTotal() {
+            let total = 0;
+            $percentageInputs.each(function() {
+                total += Number($(this).val()) || 0;
+            });
+
+            $totalValueSpan.text(total.toFixed(1));
+
+            if (Math.abs(total - 100) > 0.1) {
+                $percentageTotalDiv.addClass('error');
+            } else {
+                $percentageTotalDiv.removeClass('error');
+            }
+        }
+
+        $calculateBtn.on('click', function() {
+            const $demandSelect = $('#demandId');
+
+            if (!$demandSelect.val()) {
                 Swal.fire({
                     icon: 'warning',
                     title: 'Oops...',
@@ -358,147 +359,91 @@
                     confirmButtonColor: '#3498db',
                     confirmButtonText: 'OK'
                 }).then(() => {
-                    demandSelect.focus();
+                    $demandSelect.focus();
                 });
                 return;
             }
 
-            calculateBtn.disabled = true;
-            calculateBtn.innerHTML = '<span class="spinner-border" role="status" aria-hidden="true"></span> Loading...';
-
-            const formData = new FormData(form);
-            const jsonData = {};
-            formData.forEach((value, key) => {
-                jsonData[key] = value;
+            // Check if total is 100%
+            let total = 0;
+            $percentageInputs.each(function() {
+                total += Number($(this).val()) || 0;
             });
 
-            fetch('/ahp/calculate-weights', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': document.querySelector('input[name="_token"]').value,
-                        'Accept': 'application/json'
-                    },
-                    body: JSON.stringify(jsonData)
-                })
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error(`HTTP error! Status: ${response.status}`);
-                    }
-                    return response.json();
-                })
-                .then(data => {
-                    if (data.success) {
-                        savedWeights = data.weights;
-                        displayWeights(data.weights);
-                        criteriaWeightsCard.style.display = 'block';
-                        rankingResultsCard.style.display = 'none';
-                    } else {
-                        Swal.fire('Error', data.message, 'error');
-                    }
-                })
-                // .catch(error => {
-                //     console.error('Error:', error);
-                //     Swal.fire('Error', 'Server Error', 'error');
-                // })
-                .finally(() => {
-                    calculateBtn.disabled = false;
-                    calculateBtn.innerHTML = 'Calculate Weights';
+            if (Math.abs(total - 100) > 0.1) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Invalid Weights',
+                    text: 'Total percentage must be 100%',
+                    confirmButtonColor: '#3498db',
+                    confirmButtonText: 'OK'
                 });
-
-        });
-
-        showRankingsBtn.addEventListener('click', function() {
-            if (!savedWeights) {
-                Swal.fire('Error', 'Please calculate weights first', 'error');
                 return;
             }
 
-            showRankingsBtn.disabled = true;
-            showRankingsBtn.innerHTML = '<span class="spinner-border" role="status" aria-hidden="true"></span> Loading...';
+            $calculateBtn.prop('disabled', true);
+            $calculateBtn.html('<span class="spinner-border" role="status" aria-hidden="true"></span> Loading...');
 
-            const formData = new FormData(form);
-            const jsonData = {
-                demandId: formData.get('demandId'),
-                weights: savedWeights
-            };
+            const formData = $form.serializeArray();
+            const jsonData = {};
+            $.each(formData, function(_, field) {
+                jsonData[field.name] = field.value;
+            });
 
-            fetch('/ahp/calculate-rankings', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': document.querySelector('input[name="_token"]').value,
-                        'Accept': 'application/json'
-                    },
-                    body: JSON.stringify(jsonData)
-                })
-                .then(response => response.json())
-                .then(data => {
+            $.ajax({
+                url: '/ahp/calculate',
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': $('input[name="_token"]').val(),
+                    'Accept': 'application/json'
+                },
+                contentType: 'application/json',
+                data: JSON.stringify(jsonData),
+                success: function(data) {
                     if (data.success) {
                         displayRankings(data.rankings);
-                        rankingResultsCard.style.display = 'block';
                     } else {
-
                         Swal.fire('Error', data.message, 'error');
                     }
-                })
-                // .catch(error => {
-                //     console.error('Error:', error);
-                //     Swal.fire('Error', 'Server Error', 'error');
-                // })
-                .finally(() => {
-                    showRankingsBtn.disabled = false;
-                    showRankingsBtn.innerHTML = 'Show Applicant Rankings';
-                });
-        });
-
-        function displayWeights(weights) {
-            const weightsGrid = document.getElementById('weightsGrid');
-            weightsGrid.innerHTML = '';
-
-            const weightLabels = {
-                age: 'Age',
-                education: 'Education Level',
-                grade: 'Education Score',
-                experience: 'Years of Experience',
-                company: 'Number of Companies'
-            };
-
-            Object.entries(weights).forEach(([key, value]) => {
-                const weightItem = document.createElement('div');
-                weightItem.className = 'weight-item';
-                weightItem.innerHTML = `
-                        <h4>${(weightLabels[key] || key).replace(/_/g, ' ').toUpperCase()}</h4>
-
-                        <div class="weight-value">${(value * 100).toFixed(2)}%</div>
-                    `;
-                weightsGrid.appendChild(weightItem);
+                },
+                error: function(xhr, status, error) {
+                    console.error('Error:', error);
+                    Swal.fire('Error', 'Server Error', 'error');
+                },
+                complete: function() {
+                    $calculateBtn.prop('disabled', false);
+                    $calculateBtn.html('Calculate Ranking');
+                }
             });
-        }
+        });
 
         function displayRankings(rankings) {
             let html = '';
-            rankings.forEach((item, index) => {
+            $.each(rankings, function(index, item) {
                 try {
                     if (!item.applicant || !item.applicant.birth_date) return;
                     const age = moment().diff(moment(item.applicant.birth_date), 'years');
                     html += `
-                            <tr>
-                                <td>${index + 1}</td>
-                                <td>${item.applicant.name}</td>
-                                <td>${age} Year</td>
-                                <td>${(item.breakdown.education_level * 100).toFixed(1)}%</td>
-                                <td>${(item.breakdown.education_grade * 100).toFixed(1)}%</td>
-                                <td>${(item.breakdown.experience_duration * 100).toFixed(1)}%</td>
-                                <td>${(item.breakdown.company_count * 100).toFixed(1)}%</td>
-                                <td>${(item.score * 100).toFixed(2)}%</td>
-                            </tr>
-                        `;
+                    <tr>
+                        <td>${index + 1}</td>
+                        <td>${item.applicant.name}</td>
+                        <td>${age} Year</td>
+                        <td>${(item.breakdown.education * 100).toFixed(1)}%</td>
+                        <td>${(item.breakdown.experience_duration * 100).toFixed(1)}%</td>
+                        <td>${(item.breakdown.training * 100).toFixed(1)}%</td>
+                        <td>${(item.breakdown.language * 100).toFixed(1)}%</td>
+                        <td>${(item.breakdown.organization * 100).toFixed(1)}%</td>
+                        <td>${(item.score * 100).toFixed(2)}%</td>
+                    </tr>
+                `;
                 } catch (error) {
                     console.error("Error processing item:", error);
                 }
             });
-            rankingResults.innerHTML = html || '<tr><td colspan="8" style="text-align: center">No valid data to display</td></tr>';
+            $rankingResults.html(html || '<tr><td colspan="9" style="text-align: center">No valid data to display</td></tr>');
         }
+
+        // Initialize total
+        updateTotal();
     });
 </script>

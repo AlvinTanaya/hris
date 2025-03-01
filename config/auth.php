@@ -39,9 +39,11 @@ return [
         'web' => [
             'driver' => 'session',
             'provider' => 'users',
+            'remember' => true, // Pastikan ini ada
         ],
     ],
-
+    
+    
     /*
     |--------------------------------------------------------------------------
     | User Providers

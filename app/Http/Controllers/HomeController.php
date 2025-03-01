@@ -3,7 +3,8 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use App\Models\Pegawai;
+use App\Models\User;
+use App\Models\notification;
 
 class HomeController extends Controller
 {

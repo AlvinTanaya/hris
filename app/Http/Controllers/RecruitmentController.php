@@ -261,11 +261,12 @@ class RecruitmentController extends Controller
      */
 
     private $criteria = [
-        'age' => 'Usia',
-        'experience_duration' => 'Lama Pengalaman',
-        'company_count' => 'Jumlah Perusahaan',
-        'education_grade' => 'Nilai Pendidikan',
-        'education_level' => 'Tingkat Pendidikan'
+        'age' => 'Age',
+        'experience_duration' => 'Experience',
+        'education' => 'Education', // Combined education_grade + education_level
+        'training' => 'Training',
+        'language' => 'Language',
+        'organization' => 'Organization'
     ];
 
     public function index_ahp()
@@ -286,97 +287,44 @@ class RecruitmentController extends Controller
         ]);
     }
 
-    // AHPController.php
-
-    public function calculateWeights(Request $request)
-    {
-        try {
-            // Validate the request
-            $request->validate([
-                'demandId' => 'required',
-                'age_education' => 'required|numeric|min:0.11|max:9',
-                'age_grade' => 'required|numeric|min:0.11|max:9',
-                'age_experience' => 'required|numeric|min:0.11|max:9',
-                'education_experience' => 'required|numeric|min:0.11|max:9',
-                'experience_company' => 'required|numeric|min:0.11|max:9',
-            ]);
-
-            // Create comparison matrix from input
-            $matrix = $this->createComparisonMatrix($request);
-
-            // Calculate weights using AHP
-            $weights = $this->calculateAHPWeights($matrix);
-
-            return response()->json([
-                'success' => true,
-                'weights' => $weights
-            ], 200);
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Error calculating weights: ' . $e->getMessage()
-            ], 422);
-        }
-    }
-
-    public function calculateRankings(Request $request)
-    {
-        try {
-            // Validate the request
-            $request->validate([
-                'demandId' => 'required',
-                'weights' => 'required|array'
-            ]);
-
-            $demand = recruitment_demand::findOrFail($request->demandId);
-            $applicants = recruitment_applicant::where('recruitment_demand_id', $demand->id)->get();
-
-            if ($applicants->isEmpty()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Tidak ada pelamar untuk demand ini'
-                ], 200);
-            }
-
-            $rankings = $this->calculateApplicantScores($applicants, $request->weights);
-
-            return response()->json([
-                'success' => true,
-                'rankings' => $rankings
-            ], 200);
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Error calculating rankings: ' . $e->getMessage()
-            ], 422);
-        }
-    }
-
-
     public function calculate(Request $request)
     {
-
         try {
             // Validate the request
             $request->validate([
                 'demandId' => 'required',
-                'age_education' => 'required|numeric|min:0.11|max:9',
-                'age_grade' => 'required|numeric|min:0.11|max:9',
-                'age_experience' => 'required|numeric|min:0.11|max:9',
-                'education_experience' => 'required|numeric|min:0.11|max:9',
-                'experience_company' => 'required|numeric|min:0.11|max:9',
+                'age' => 'required|numeric|min:0|max:100',
+                'experience_duration' => 'required|numeric|min:0|max:100',
+                'education' => 'required|numeric|min:0|max:100',
+                'training' => 'required|numeric|min:0|max:100',
+                'language' => 'required|numeric|min:0|max:100',
+                'organization' => 'required|numeric|min:0|max:100',
             ]);
 
-            // Create comparison matrix from input
-            $matrix = $this->createComparisonMatrix($request);
+            // Validate that percentages sum to 100%
+            $totalPercentage = $request->age + $request->experience_duration + $request->education +
+                $request->training + $request->language + $request->organization;
 
-            // Calculate weights using AHP
-            $weights = $this->calculateAHPWeights($matrix);
+            if (abs($totalPercentage - 100) > 0.01) { // Allow small floating point error
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Total persentase harus 100%'
+                ], 422);
+            }
+
+            // Convert percentages to weights (0-1 scale)
+            $weights = [
+                'age' => $request->age / 100,
+                'experience_duration' => $request->experience_duration / 100,
+                'education' => $request->education / 100,
+                'training' => $request->training / 100,
+                'language' => $request->language / 100,
+                'organization' => $request->organization / 100
+            ];
 
             // Get applicants data
-
             $demand = recruitment_demand::findOrFail($request->demandId);
-            $applicants = recruitment_applicant::where('recruitment_demand_id', $demand->id)->get();
+            $applicants = recruitment_applicant::where('recruitment_demand_id', $demand->id)->where('status_applicant', 'Pending')->get();
 
             if ($applicants->isEmpty()) {
                 return response()->json([
@@ -399,54 +347,6 @@ class RecruitmentController extends Controller
             ], 422);
         }
     }
-    private function createComparisonMatrix($request)
-    {
-        $criteriaCount = count($this->criteria);
-        $matrix = array_fill(0, $criteriaCount, array_fill(0, $criteriaCount, 1));
-
-        // Fill matrix with comparison values
-        $comparisons = [
-            ['age', 'education_level', 'age_education'],
-            ['age', 'education_grade', 'age_grade'],
-            ['age', 'experience_duration', 'age_experience'],
-            ['education_level', 'experience_duration', 'education_experience'],
-            ['experience_duration', 'company_count', 'experience_company']
-        ];
-
-        foreach ($comparisons as $comp) {
-            $value = $request->input($comp[2]);
-            $i = array_search($comp[0], array_keys($this->criteria));
-            $j = array_search($comp[1], array_keys($this->criteria));
-
-            $matrix[$i][$j] = $value;
-            $matrix[$j][$i] = 1 / $value;
-        }
-
-        return $matrix;
-    }
-
-    private function calculateAHPWeights($matrix)
-    {
-        $n = count($matrix);
-        $weights = array_fill(0, $n, 0);
-
-        // Calculate eigenvalues
-        for ($i = 0; $i < $n; $i++) {
-            $product = 1;
-            for ($j = 0; $j < $n; $j++) {
-                $product *= $matrix[$i][$j];
-            }
-            $weights[$i] = pow($product, 1 / $n);
-        }
-
-        // Normalize weights
-        $sum = array_sum($weights);
-        $weights = array_map(function ($w) use ($sum) {
-            return $w / $sum;
-        }, $weights);
-
-        return array_combine(array_keys($this->criteria), $weights);
-    }
 
     private function calculateApplicantScores($applicants, $weights)
     {
@@ -458,20 +358,20 @@ class RecruitmentController extends Controller
                 'experience_duration' => $this->calculateExperienceDurationScore(
                     recruitment_applicant_work_experience::where('applicant_id', $applicant->id)->get()
                 ),
-                'company_count' => $this->calculateCompanyCountScore(
-                    recruitment_applicant_work_experience::where('applicant_id', $applicant->id)->get()
-                )
             ];
 
-
+            // Get education data
             $education = recruitment_applicant_education::where('applicant_id', $applicant->id)
                 ->orderBy('end_education', 'desc')
                 ->first();
 
-            $criteriaScores['education_level'] = $education ?
-                $this->calculateEducationLevelScore($education->degree) : 0;
-            $criteriaScores['education_grade'] = $education ?
-                $this->calculateEducationGradeScore($education->degree, $education->grade) : 0;
+            // Combined education score
+            $criteriaScores['education'] = $this->calculateEducationScore($education);
+
+            // New criteria scores
+            $criteriaScores['training'] = $this->calculateTrainingScore($applicant->id);
+            $criteriaScores['language'] = $this->calculateLanguageScore($applicant->id);
+            $criteriaScores['organization'] = $this->calculateOrganizationScore($applicant->id);
 
             // Calculate weighted sum
             $totalScore = 0;
@@ -489,15 +389,35 @@ class RecruitmentController extends Controller
         return collect($scores)->sortByDesc('score')->values();
     }
 
-
     private function calculateAgeScore($birthDate)
     {
         $age = Carbon::parse($birthDate)->age;
 
-        if ($age <= 25) return 1.0;
+        if ($age <= 17) return 1.0;   // Sangat muda, skor tertinggi
+        if ($age <= 25) return 0.9;
         if ($age <= 30) return 0.8;
-        if ($age <= 35) return 0.6;
-        return 0.4;
+        if ($age <= 35) return 0.7;
+        if ($age <= 40) return 0.6;
+        if ($age <= 50) return 0.5;
+        if ($age <= 60) return 0.4;
+        if ($age <= 70) return 0.3;
+        if ($age <= 80) return 0.2;
+        if ($age <= 90) return 0.1;
+        return 0.05;  // Di atas 90 tahun, skor sangat rendah
+    }
+
+
+    private function calculateEducationScore($education)
+    {
+        if (!$education) {
+            return 0; // No education data
+        }
+
+        $levelScore = $this->calculateEducationLevelScore($education->degree);
+        $gradeScore = $this->calculateEducationGradeScore($education->degree, $education->grade);
+
+        // Combined score (average of level and grade)
+        return ($levelScore + $gradeScore) / 2;
     }
 
     private function calculateEducationLevelScore($degree)
@@ -529,31 +449,402 @@ class RecruitmentController extends Controller
         }
     }
 
-    private function calculateExperienceDurationScore($experiences)
+    private function calculateExperienceDurationScore($applicantId)
     {
+        $experiences = recruitment_applicant_work_experience::where('applicant_id', $applicantId)->get();
+    
         $totalDuration = 0;
-
+        $count = $experiences->count();
+        $salaryScore = 0;
+    
         foreach ($experiences as $exp) {
+            // Hitung durasi kerja dalam tahun
             $startDate = Carbon::parse($exp->working_start);
             $endDate = $exp->working_end ? Carbon::parse($exp->working_end) : Carbon::now();
             $totalDuration += $startDate->diffInYears($endDate);
+    
+            // Hitung skor salary berdasarkan kategori
+            if ($exp->salary >= 10000000) {
+                $salaryScore += 1.0;
+            } elseif ($exp->salary >= 5000000) {
+                $salaryScore += 0.6;
+            } elseif ($exp->salary >= 2500000) {
+                $salaryScore += 0.4;
+            } 
+            else {
+                $salaryScore += 0.2;
+            }
+        }
+    
+        // Normalisasi durasi kerja (maks 10 tahun = 1.0)
+        $durationScore = min(1.0, $totalDuration / 10);
+    
+        // Normalisasi jumlah pekerjaan (maks 5 pekerjaan = 1.0)
+        $countScore = min(1.0, $count / 5);
+    
+        // Normalisasi gaji (rata-rata dari semua salary score)
+        $salaryScore = $count > 0 ? $salaryScore / $count : 0.2; // Default jika tidak ada pengalaman
+    
+        // Gabungkan dengan bobot yang diberikan
+        return (0.65 * $durationScore) + (0.15 * $countScore) + (0.2 * $salaryScore);
+    }
+    
+
+    // New calculation methods for the added criteria
+    private function calculateTrainingScore($applicantId)
+    {
+        // Assume we have a model for training
+        $trainings = recruitment_applicant_training::where('applicant_id', $applicantId)->get();
+
+        $count = $trainings->count();
+
+        if ($count >= 5) return 1.0;
+        if ($count >= 3) return 0.8;
+        if ($count >= 1) return 0.6;
+        return 0.3;
+    }
+
+    private function calculateLanguageScore($applicantId)
+    {
+        $languages = recruitment_applicant_language::where('applicant_id', $applicantId)->get();
+
+        $score = 0;
+        $count = 0;
+
+        foreach ($languages as $language) {
+            $verbalScore = ($language->verbal === 'Active') ? 1 : 0;
+            $writtenScore = ($language->written === 'Active') ? 1 : 0;
+
+            $score += ($verbalScore + $writtenScore) / 2; // Rata-rata verbal & written
+            $count++;
         }
 
-        if ($totalDuration >= 5) return 1.0;
-        if ($totalDuration >= 3) return 0.8;
-        if ($totalDuration >= 1) return 0.6;
-        return 0.4;
+        // Jika ada data, hitung rata-rata, kalau tidak ada, kasih nilai default 0.2
+        return $count > 0 ? min(1.0, $score / $count) : 0.2;
     }
 
-    private function calculateCompanyCountScore($experiences)
+    private function calculateOrganizationScore($applicantId)
     {
-        $companyCount = $experiences->count();
+        // Ambil data organisasi berdasarkan applicant_id
+        $organizations = recruitment_applicant_organization::where('applicant_id', $applicantId)->get();
 
-        if ($companyCount >= 3) return 1.0;
-        if ($companyCount == 2) return 0.7;
-        if ($companyCount == 1) return 0.5;
-        return 0.2;
+        $count = $organizations->count();
+        $totalMonths = 0;
+
+        foreach ($organizations as $org) {
+            $startDate = Carbon::parse($org->start_date);
+            $endDate = $org->end_date ? Carbon::parse($org->end_date) : now();
+            $totalMonths += $startDate->diffInMonths($endDate);
+        }
+
+        // Normalisasi count ke skala 0-1 (maksimal 5 organisasi dianggap 1.0)
+        $countScore = min(1.0, $count / 5);
+
+        // Normalisasi durasi ke skala 0-1 (maksimal 60 bulan/5 tahun dianggap 1.0)
+        $durationScore = min(1.0, $totalMonths / 60);
+
+        // Bobot: 60% count, 40% duration
+        return (0.6 * $countScore) + (0.4 * $durationScore);
     }
+
+
+
+    // ahp lama
+
+    // private $criteria = [
+    //     'age' => 'Usia',
+    //     'experience_duration' => 'Lama Pengalaman',
+    //     'company_count' => 'Jumlah Perusahaan',
+    //     'education_grade' => 'Nilai Pendidikan',
+    //     'education_level' => 'Tingkat Pendidikan'
+    // ];
+
+    // public function index_ahp()
+    // {
+    //     // Retrieve all recruitment applicants and pluck their unique recruitment_demand_ids  
+    //     $recruitmentDemandIds = recruitment_applicant::pluck('recruitment_demand_id')->unique();
+
+    //     // Filter recruitment_demand based on the unique recruitment_demand_ids  
+    //     $demands = recruitment_demand::whereIn('id', $recruitmentDemandIds)
+    //         ->where('status_demand', 'Approved')
+    //         ->where('qty_needed', '>', 0)
+    //         ->get();
+
+    //     // Return the filtered recruitment_demand data to the view  
+    //     return view('recruitment/ahp_recruitment/index', [
+    //         'demands' => $demands,
+    //         'criteria' => $this->criteria
+    //     ]);
+    // }
+
+    // // AHPController.php
+
+    // public function calculateWeights(Request $request)
+    // {
+    //     try {
+    //         // Validate the request
+    //         $request->validate([
+    //             'demandId' => 'required',
+    //             'age_education' => 'required|numeric|min:0.11|max:9',
+    //             'age_grade' => 'required|numeric|min:0.11|max:9',
+    //             'age_experience' => 'required|numeric|min:0.11|max:9',
+    //             'education_experience' => 'required|numeric|min:0.11|max:9',
+    //             'experience_company' => 'required|numeric|min:0.11|max:9',
+    //         ]);
+
+    //         // Create comparison matrix from input
+    //         $matrix = $this->createComparisonMatrix($request);
+
+    //         // Calculate weights using AHP
+    //         $weights = $this->calculateAHPWeights($matrix);
+
+    //         return response()->json([
+    //             'success' => true,
+    //             'weights' => $weights
+    //         ], 200);
+    //     } catch (\Exception $e) {
+    //         return response()->json([
+    //             'success' => false,
+    //             'message' => 'Error calculating weights: ' . $e->getMessage()
+    //         ], 422);
+    //     }
+    // }
+
+    // public function calculateRankings(Request $request)
+    // {
+    //     try {
+    //         // Validate the request
+    //         $request->validate([
+    //             'demandId' => 'required',
+    //             'weights' => 'required|array'
+    //         ]);
+
+    //         $demand = recruitment_demand::findOrFail($request->demandId);
+    //         $applicants = recruitment_applicant::where('recruitment_demand_id', $demand->id)->get();
+
+    //         if ($applicants->isEmpty()) {
+    //             return response()->json([
+    //                 'success' => false,
+    //                 'message' => 'Tidak ada pelamar untuk demand ini'
+    //             ], 200);
+    //         }
+
+    //         $rankings = $this->calculateApplicantScores($applicants, $request->weights);
+
+    //         return response()->json([
+    //             'success' => true,
+    //             'rankings' => $rankings
+    //         ], 200);
+    //     } catch (\Exception $e) {
+    //         return response()->json([
+    //             'success' => false,
+    //             'message' => 'Error calculating rankings: ' . $e->getMessage()
+    //         ], 422);
+    //     }
+    // }
+
+
+    // public function calculate(Request $request)
+    // {
+
+    //     try {
+    //         // Validate the request
+    //         $request->validate([
+    //             'demandId' => 'required',
+    //             'age_education' => 'required|numeric|min:0.11|max:9',
+    //             'age_grade' => 'required|numeric|min:0.11|max:9',
+    //             'age_experience' => 'required|numeric|min:0.11|max:9',
+    //             'education_experience' => 'required|numeric|min:0.11|max:9',
+    //             'experience_company' => 'required|numeric|min:0.11|max:9',
+    //         ]);
+
+    //         // Create comparison matrix from input
+    //         $matrix = $this->createComparisonMatrix($request);
+
+    //         // Calculate weights using AHP
+    //         $weights = $this->calculateAHPWeights($matrix);
+
+    //         // Get applicants data
+
+    //         $demand = recruitment_demand::findOrFail($request->demandId);
+    //         $applicants = recruitment_applicant::where('recruitment_demand_id', $demand->id)->get();
+
+    //         if ($applicants->isEmpty()) {
+    //             return response()->json([
+    //                 'success' => false,
+    //                 'message' => 'Tidak ada pelamar untuk demand ini'
+    //             ], 200);
+    //         }
+
+    //         $rankings = $this->calculateApplicantScores($applicants, $weights);
+
+    //         return response()->json([
+    //             'success' => true,
+    //             'rankings' => $rankings
+    //         ], 200);
+    //     } catch (\Illuminate\Validation\ValidationException $e) {
+    //         return response()->json([
+    //             'success' => false,
+    //             'message' => 'Data yang dikirim tidak valid',
+    //             'errors' => $e->errors()
+    //         ], 422);
+    //     }
+    // }
+    // private function createComparisonMatrix($request)
+    // {
+    //     $criteriaCount = count($this->criteria);
+    //     $matrix = array_fill(0, $criteriaCount, array_fill(0, $criteriaCount, 1));
+
+    //     // Fill matrix with comparison values
+    //     $comparisons = [
+    //         ['age', 'education_level', 'age_education'],
+    //         ['age', 'education_grade', 'age_grade'],
+    //         ['age', 'experience_duration', 'age_experience'],
+    //         ['education_level', 'experience_duration', 'education_experience'],
+    //         ['experience_duration', 'company_count', 'experience_company']
+    //     ];
+
+    //     foreach ($comparisons as $comp) {
+    //         $value = $request->input($comp[2]);
+    //         $i = array_search($comp[0], array_keys($this->criteria));
+    //         $j = array_search($comp[1], array_keys($this->criteria));
+
+    //         $matrix[$i][$j] = $value;
+    //         $matrix[$j][$i] = 1 / $value;
+    //     }
+
+    //     return $matrix;
+    // }
+
+    // private function calculateAHPWeights($matrix)
+    // {
+    //     $n = count($matrix);
+    //     $weights = array_fill(0, $n, 0);
+
+    //     // Calculate eigenvalues
+    //     for ($i = 0; $i < $n; $i++) {
+    //         $product = 1;
+    //         for ($j = 0; $j < $n; $j++) {
+    //             $product *= $matrix[$i][$j];
+    //         }
+    //         $weights[$i] = pow($product, 1 / $n);
+    //     }
+
+    //     // Normalize weights
+    //     $sum = array_sum($weights);
+    //     $weights = array_map(function ($w) use ($sum) {
+    //         return $w / $sum;
+    //     }, $weights);
+
+    //     return array_combine(array_keys($this->criteria), $weights);
+    // }
+
+    // private function calculateApplicantScores($applicants, $weights)
+    // {
+    //     $scores = [];
+
+    //     foreach ($applicants as $applicant) {
+    //         $criteriaScores = [
+    //             'age' => $this->calculateAgeScore($applicant->birth_date),
+    //             'experience_duration' => $this->calculateExperienceDurationScore(
+    //                 recruitment_applicant_work_experience::where('applicant_id', $applicant->id)->get()
+    //             ),
+    //             'company_count' => $this->calculateCompanyCountScore(
+    //                 recruitment_applicant_work_experience::where('applicant_id', $applicant->id)->get()
+    //             )
+    //         ];
+
+
+    //         $education = recruitment_applicant_education::where('applicant_id', $applicant->id)
+    //             ->orderBy('end_education', 'desc')
+    //             ->first();
+
+    //         $criteriaScores['education_level'] = $education ?
+    //             $this->calculateEducationLevelScore($education->degree) : 0;
+    //         $criteriaScores['education_grade'] = $education ?
+    //             $this->calculateEducationGradeScore($education->degree, $education->grade) : 0;
+
+    //         // Calculate weighted sum
+    //         $totalScore = 0;
+    //         foreach ($weights as $criterion => $weight) {
+    //             $totalScore += $criteriaScores[$criterion] * $weight;
+    //         }
+
+    //         $scores[] = [
+    //             'applicant' => $applicant,
+    //             'score' => $totalScore,
+    //             'breakdown' => $criteriaScores
+    //         ];
+    //     }
+
+    //     return collect($scores)->sortByDesc('score')->values();
+    // }
+
+
+    // private function calculateAgeScore($birthDate)
+    // {
+    //     $age = Carbon::parse($birthDate)->age;
+
+    //     if ($age <= 25) return 1.0;
+    //     if ($age <= 30) return 0.8;
+    //     if ($age <= 35) return 0.6;
+    //     return 0.4;
+    // }
+
+    // private function calculateEducationLevelScore($degree)
+    // {
+    //     $scores = [
+    //         'SD' => 0.2,
+    //         'SMP' => 0.3,
+    //         'SMA' => 0.4,
+    //         'SMK' => 0.4,
+    //         'D3' => 0.6,
+    //         'S1' => 0.8,
+    //         'S2' => 1.0,
+    //         'S3' => 1.0
+    //     ];
+
+    //     return $scores[$degree] ?? 0.4;
+    // }
+
+    // private function calculateEducationGradeScore($degree, $grade)
+    // {
+    //     if ($grade === null) {
+    //         return 0; // Handle jika nilai kosong
+    //     }
+
+    //     if (in_array($degree, ['SD', 'SMP', 'SMA', 'SMK'])) {
+    //         return min(1, max(0, $grade / 100));
+    //     } else {
+    //         return min(1, max(0, $grade / 4));
+    //     }
+    // }
+
+    // private function calculateExperienceDurationScore($experiences)
+    // {
+    //     $totalDuration = 0;
+
+    //     foreach ($experiences as $exp) {
+    //         $startDate = Carbon::parse($exp->working_start);
+    //         $endDate = $exp->working_end ? Carbon::parse($exp->working_end) : Carbon::now();
+    //         $totalDuration += $startDate->diffInYears($endDate);
+    //     }
+
+    //     if ($totalDuration >= 5) return 1.0;
+    //     if ($totalDuration >= 3) return 0.8;
+    //     if ($totalDuration >= 1) return 0.6;
+    //     return 0.4;
+    // }
+
+    // private function calculateCompanyCountScore($experiences)
+    // {
+    //     $companyCount = $experiences->count();
+
+    //     if ($companyCount >= 3) return 1.0;
+    //     if ($companyCount == 2) return 0.7;
+    //     if ($companyCount == 1) return 0.5;
+    //     return 0.2;
+    // }
 
 
 
@@ -861,7 +1152,7 @@ class RecruitmentController extends Controller
                 $demand->department,
                 $joinDate->toFormattedDateString()
             ));
-            
+
             // Ambil semua email user KECUALI email peserta yang baru diterima
             $userEmails = User::where('email', '!=', $applicant->email)->pluck('email')->toArray();
 

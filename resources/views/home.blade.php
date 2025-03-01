@@ -26,7 +26,7 @@
         justify-content: center;
         align-items: flex-start;
         /* Ubah ke flex-start untuk posisi atas */
-        padding-top: 5rem;
+        padding-top: 6rem;
         /* Tambahkan padding-top untuk memberi jarak dari atas */
         font-family: 'Poppins', sans-serif;
         text-align: center;

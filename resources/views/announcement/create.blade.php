@@ -1,44 +1,24 @@
 @extends('layouts.app')
 
 @section('content')
-<a href="{{ route('elearning.index') }}" class="btn btn-danger ms-2 px-5"> <i class="fas fa-arrow-left me-2"></i>Back</a>
-<h1 class="text-center text-warning" style="margin-bottom: 65px; margin-top:25px"><i class="fas fa-book"></i> Edit Schedule</h1>
+<a href="{{ route('announcement.index') }}" class="btn btn-danger ms-2 px-5"> <i class="fas fa-arrow-left me-2"></i>Back</a>
+<h1 class="text-center text-warning" style="margin-bottom: 65px; margin-top:25px"><i class="fas fa-plus"></i> Add Announcement</h1>
 
 <div class="container mt-4 mx-auto">
 
     <div class="card shadow-lg">
         <div class="card-body">
-            <form action="{{ route('elearning.update_schedule', $schedule->id) }}" method="POST" enctype="multipart/form-data">
+            <form action="{{ route('announcement.store') }}" method="POST" enctype="multipart/form-data">
                 @csrf
-                @method('PUT')
-
-                <div class="row mb-3 mt-3">
+                <input type="number" hidden name="maker_id" value="{{ Auth::user()->id }}">
+                <h4 class="text-primary"><i class="fa-solid fa-message"></i> Message</h4>
+                <div class="row">
                     <div class="col-md-12">
-                        <label for="lesson_id" class="form-label">Lesson Title</label>
-                        <select name="lesson_id" class="form-control" required>
-                            <option value="" disabled>Select a lesson</option>
-                            @foreach($lessons as $lesson)
-                            <option value="{{ $lesson->id }}" {{ $schedule->lesson_id == $lesson->id ? 'selected' : '' }}>
-                                {{ $lesson->name }}
-                            </option>
-                            @endforeach
-                        </select>
+                        <textarea id="message" name="message" class="form-control" rows="3" placeholder="Enter your message here..."></textarea>
                     </div>
                 </div>
 
-                <div class="row mb-3">
-                    <div class="col-md-6">
-                        <label for="startDate" class="form-label">Start Date</label>
-                        <input type="date" name="startDate" class="form-control" value="{{ $schedule->start_date }}" required>
-                    </div>
-                    <div class="col-md-6">
-                        <label for="endDate" class="form-label">End Date</label>
-                        <input type="date" name="endDate" class="form-control" value="{{ $schedule->end_date }}" required>
-                    </div>
-                </div>
-
-                <h4 class="text-primary mt-4 mb-4"><i class="fas fa-users me-2"></i>Invite Employees</h4>
-
+                <h4 class="text-primary mt-4 mb-4"><i class="fas fa-users me-2"></i> Invite Employees</h4>
                 <div class="row mb-3">
                     <div class="col-md-6 border-end">
                         <div class="row">
@@ -74,14 +54,10 @@
                                 <label for="employees" class="form-label">Select Employees</label>
                                 <select id="employees" class="form-control select2" style="width: 100%;" multiple>
                                     @foreach($employees as $employee)
-                                    <option value="{{ $employee->id }}" data-department="{{ $employee->department }}" data-position="{{ $employee->position }}"
-                                        @if(in_array($employee->id, $invitedEmployeesPluck)) selected @endif>
-                                        {{ $employee->employee_id }} - {{ $employee->name }}
-                                    </option>
+                                    <option value="{{ $employee->id }}" data-department="{{ $employee->department }}" data-position="{{ $employee->position }}">{{ $employee->employee_id }} - {{ $employee->name }}</option>
                                     @endforeach
                                 </select>
                             </div>
-
                         </div>
                         <div class="row mt-3">
                             <div class="col-md-12">
@@ -92,11 +68,6 @@
                         </div>
                     </div>
                 </div>
-
-
-
-
-
 
                 <div class="card mt-3">
                     <div class="card-header bg-primary text-white">
@@ -119,24 +90,16 @@
                                 </tr>
                             </thead>
                             <tbody id="invitedEmployees">
-                                @foreach($invitedEmployees as $employee)
-                                <tr data-id="{{ $employee->id }}">
-                                    <td>{{ $employee->employee_id }}</td>
-                                    <td>{{ $employee->name }}</td>
-                                    <td>{{ $employee->position}}</td>
-                                    <td>{{ $employee->department }}</td>
-                                    <td><button type="button" class="btn btn-danger btn-sm removeEmployee" data-id="{{ $employee->id }}">Remove</button></td>
-                                </tr>
-                                @endforeach
+                                <!-- Data will be displayed here -->
                             </tbody>
                         </table>
                     </div>
                 </div>
 
-                <input type="hidden" name="invited_employees" id="invitedEmployeesInput" value="{{ implode(',', $invitedUserIds) }}">
+                <input type="hidden" name="invited_employees" id="invitedEmployeesInput">
 
                 <div class="d-flex justify-content-end mt-3">
-                    <button type="submit" class="btn btn-success"><i class="fas fa-save me-2"></i>Save Changes</button>
+                    <button type="submit" class="btn btn-success"><i class="fas fa-save me-2"></i>Save</button>
                 </div>
             </form>
         </div>
@@ -147,13 +110,13 @@
 <!-- Include Select2 JS -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/js/select2.min.js"></script>
 <link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/css/select2.min.css" rel="stylesheet" />
+<!-- SweetAlert CSS -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+
+<!-- SweetAlert JS -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
     $(document).ready(function() {
-
-
-
-
-
         // Initialize Select2
         $('#employees').select2({
             width: '100%',
@@ -172,10 +135,10 @@
             allowClear: true
         });
 
-        let invitedEmployees = @json($invitedUserIds) || [];
+
+
+        let invitedEmployees = [];
         let employeeList = @json($employees);
-
-
 
         // Function to filter employees based on department and position
         function filterEmployees() {
@@ -218,7 +181,6 @@
             $('#employees').val(null).trigger('change'); // Reset dropdown selection
         });
 
-        // Add all filtered employees
         $('#addAllEmployees').on('click', function() {
             let filteredEmployees = [];
 
@@ -250,9 +212,9 @@
             });
         });
 
+
         // Remove all employees
         $('#removeAllEmployees').on('click', function() {
-            console.log('asdad');
             if (invitedEmployees.length === 0) return;
 
             // SweetAlert confirmation
@@ -311,10 +273,10 @@
 
         // Update hidden input with the list of invited employees
         function updateHiddenInput() {
-            $('#invitedEmployeesInput').val(invitedEmployees.length > 0 ? invitedEmployees.join(',') : '');
+            $('#invitedEmployeesInput').val(invitedEmployees.join(','));
         }
-
     });
 </script>
+
 @endpush
 @endsection
