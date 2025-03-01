@@ -21,30 +21,61 @@ class ForgotPasswordController extends Controller
 
     public function sendOTP(Request $request)
     {
-
-        $request->validate(['email' => 'required|email|exists:users,email']);
+        $request->validate(['email' => 'required|email']);
 
         $user = User::where('email', $request->email)->first();
 
-        // Generate a 6-digit OTP
-        $otp = sprintf('%06d', mt_rand(0, 999999)); // Better random generation with padding
+        if (!$user) {
+            return response()->json(['message' => 'Email not found in the Database!'], 404);
+        }
 
+        // Generate a 6-digit OTP
+        $otp = sprintf('%06d', mt_rand(0, 999999));
 
         $user->update([
             'otp' => Hash::make($otp),
             'otp_expired_at' => Carbon::now()->addMinutes(2),
         ]);
 
-        // dd($user);
+        // Send OTP email
+        Mail::to($user->email)->send(new \App\Mail\SendOTP($otp));
+
+        return response()->json([
+            'success' => true,
+            'message' => 'OTP has been sent to your email.',
+            'email' => $request->email
+        ]);
+    }
+
+
+    public function resendOTP(Request $request)
+    {
+        $request->validate(['email' => 'required|email']);
+
+        $user = User::where('email', $request->email)->first();
+
+        if (!$user) {
+            return response()->json(['message' => 'Email not found in the Database!'], 404);
+        }
+
+        // Generate a 6-digit OTP
+        $otp = sprintf('%06d', mt_rand(0, 999999));
+
+        $user->update([
+            'otp' => Hash::make($otp),
+            'otp_expired_at' => Carbon::now()->addMinutes(2),
+        ]);
 
         // Send OTP email
         Mail::to($user->email)->send(new \App\Mail\SendOTP($otp));
 
-
-        // dd('asdad');
-        return redirect()->route('otp.verify', ['email' => $request->email])
-            ->with('status', 'OTP telah dikirim ke email Anda.');
+        return response()->json([
+            'message' => 'OTP has been sent to your email.',
+            'email' => $request->email
+        ]);
     }
+
+
 
     public function showVerifyOTPForm(Request $request)
     {
@@ -58,7 +89,7 @@ class ForgotPasswordController extends Controller
 
     public function verifyOTP(Request $request)
     {
-      
+
         $request->validate([
             'email' => 'required|email|exists:users,email',
             'otp' => 'required|numeric|digits:6'

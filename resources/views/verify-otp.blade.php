@@ -293,10 +293,9 @@
         <p class="text-center mb-4">OTP code has been sent to <span class="user-email" id="display-email"></span></p>
 
         <!-- Form Verify OTP -->
-        <form id="verify-otp-form" method="POST" action="{{ route('otp.verify.submit') }}">
+        <form id="verify-otp-form" method="POST">
             @csrf
-            <input type="hidden" id="email" name="email" value="">
-
+            <input type="hidden" id="email" name="email" value="{{ $email }}">
             <div class="mb-4">
                 <label for="otp-input" class="form-label text-center w-100">Enter OTP Code</label>
                 <div class="otp-input-container">
@@ -323,12 +322,25 @@
             </button>
         </div>
 
+        <div class="text-center mt-3">
+            <a href="{{ route('login') }}" class="btn btn-outline-light">
+                <i class="fas fa-arrow-left me-1"></i> Back to Login
+            </a>
+        </div>
+
     </div>
 
     <!-- jQuery -->
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-    <!-- Bootstrap JS -->
+
+    <!-- Bootstrap Bundle (includes Popper) -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <!-- Optional: Axios for AJAX (alternative to jQuery) -->
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
 
     <script>
         $(document).ready(function() {
@@ -346,49 +358,66 @@
             if (email) {
                 $('#email').val(email);
                 $('#display-email').text(email);
-
-                // Auto focus to first OTP input
-                $('.otp-input').first().focus();
-
-                // Start countdown
-                startCountdown(120); // 2 minutes
+                $('.otp-input').first().focus(); // Auto-focus ke input pertama
+                startCountdown(120); // 2 menit
             } else {
-                // Redirect to forgot password page if no email
                 window.location.href = "{{ route('password.forgot') }}";
             }
 
             // Handle OTP input
             $('.otp-input').on('input', function() {
-                // Allow only numbers
-                $(this).val($(this).val().replace(/[^0-9]/g, ''));
+                let value = $(this).val().replace(/[^0-9]/g, ''); // Hanya angka
+                $(this).val(value);
 
-                // Auto focus to next input
-                if ($(this).val() && $(this).index() < $('.otp-input').length - 1) {
-                    $('.otp-input').eq($(this).index() + 1).focus();
+                if (value.length === 1) {
+                    $(this).next('.otp-input').focus();
                 }
 
-                // Combine all inputs to hidden field
                 combineOtpValues();
             });
 
             $('.otp-input').on('keydown', function(e) {
-                // On backspace, move to previous input if current is empty
-                if (e.key === 'Backspace') {
-                    if (!$(this).val() && $(this).index() > 0) {
-                        $('.otp-input').eq($(this).index() - 1).focus();
-                        e.preventDefault();
-                    }
+                if (e.key === 'Backspace' && !$(this).val()) {
+                    $(this).prev('.otp-input').focus();
                 }
             });
 
-            function combineOtpValues() {
-                let combinedOtp = '';
-                $('.otp-input').each(function() {
-                    combinedOtp += $(this).val();
-                });
-                $('#otp').val(combinedOtp);
+            // Handle OTP verification
+            $('#verify-otp-form').submit(function(e) {
+                e.preventDefault();
+                let email = $('#email').val();
+                let otp = $('.otp-input').map(function() {
+                    return $(this).val();
+                }).get().join('');
 
-                // Hide error if inputs are being filled
+                $.ajax({
+                    url: "{{ route('otp.verify.submit') }}",
+                    method: "POST",
+                    data: {
+                        email: email,
+                        otp: otp
+                    },
+                    error: function(xhr) {
+                        let response = xhr.responseJSON;
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Error!',
+                            text: response?.message || 'Something went wrong!',
+                        });
+                    },
+                    success: function(response) {
+                        if (response.success) {
+                            window.location.href = response.redirect;
+                        }
+                    }
+                });
+            });
+
+            function combineOtpValues() {
+                let combinedOtp = $('.otp-input').map(function() {
+                    return $(this).val();
+                }).get().join('');
+                $('#otp').val(combinedOtp);
                 $('#otp-error').addClass('d-none');
             }
 
@@ -396,76 +425,46 @@
             $('#resend-btn').on('click', function() {
                 if ($(this).prop('disabled')) return;
 
-                // Show loading state
-                var originalText = $(this).html();
-                $(this).html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Sending...');
-                $(this).prop('disabled', true);
+                $(this).prop('disabled', true).html('<span class="spinner-border spinner-border-sm"></span> Sending...');
 
-                // Send AJAX request
                 $.ajax({
-                    url: "{{ route('password.otp.send') }}",
+                    url: "{{ route('password.otp.resend') }}",
                     type: 'POST',
                     data: {
-                        email: $('#email').val(),
-                        _token: $('meta[name="csrf-token"]').attr('content')
+                        email: $('#email').val()
                     },
                     dataType: 'json',
                     success: function(response) {
-                        if (response.success) {
-                            // Restart countdown
-                            startCountdown(120);
-
-                            // Show success message
-                            $('#alert-container').html('<div class="alert alert-success text-center">' + (response.message || "New OTP has been sent to your email.") + '</div>');
-
-                            // Reset OTP inputs
-                            $('.otp-input').val('');
-                            $('#otp').val('');
-                            $('.otp-input').first().focus();
-
-                            // Hide success message after 5 seconds
-                            setTimeout(function() {
-                                $('#alert-container').empty();
-                            }, 5000);
-                        } else {
-                            // Show error message
-                            $('#alert-container').html('<div class="alert alert-danger text-center">' + (response.message || "Failed to send OTP.") + '</div>');
-                            $('#resend-btn').html(originalText);
-                            $('#resend-btn').prop('disabled', false);
-                        }
+                        console.log(response);
+                        localStorage.removeItem('otpEndTime');
+                        startCountdown(120);
+                        $('#alert-container').html('<div class="alert alert-success text-center">' + response.message + '</div>');
+                        $('.otp-input').val('').first().focus();
                     },
-                    error: function() {
-                        $('#alert-container').html('<div class="alert alert-danger text-center">An error occurred. Please try again.</div>');
-                        $('#resend-btn').html(originalText);
-                        $('#resend-btn').prop('disabled', false);
+                    error: function(xhr) {
+                        let errorMessage = xhr.responseJSON?.message || "An error occurred. Please try again.";
+                        $('#alert-container').html('<div class="alert alert-danger text-center">' + errorMessage + '</div>');
+                        $('#resend-btn').prop('disabled', false).html('<i class="fas fa-redo-alt me-1"></i> Resend OTP');
                     }
                 });
             });
 
-            // Start countdown timer
             function startCountdown(seconds) {
-                // Clear any existing interval
-                if (window.countdownInterval) {
-                    clearInterval(window.countdownInterval);
-                }
-
-                $('#resend-btn').prop('disabled', true);
-                $('#resend-btn').removeClass('pulse');
-
-                const endTime = Date.now() + seconds * 1000;
+                let endTime = localStorage.getItem('otpEndTime') || (Date.now() + seconds * 1000);
+                localStorage.setItem('otpEndTime', endTime);
 
                 function updateCountdown() {
-                    const timeLeft = Math.max(0, Math.floor((endTime - Date.now()) / 1000));
-                    const minutes = Math.floor(timeLeft / 60).toString().padStart(2, '0');
-                    const secs = (timeLeft % 60).toString().padStart(2, '0');
+                    let timeLeft = Math.max(0, Math.floor((endTime - Date.now()) / 1000));
+                    let minutes = Math.floor(timeLeft / 60).toString().padStart(2, '0');
+                    let secs = (timeLeft % 60).toString().padStart(2, '0');
 
                     $('#countdown').text(`${minutes}:${secs}`);
 
                     if (timeLeft === 0) {
                         clearInterval(window.countdownInterval);
-                        $('#resend-btn').prop('disabled', false);
-                        $('#resend-btn').addClass('pulse');
+                        $('#resend-btn').prop('disabled', false).addClass('pulse');
                         $('#timer').html('Didn\'t receive the code? <span class="text-white-50">Try again</span>');
+                        localStorage.removeItem('otpEndTime');
                     }
                 }
 
@@ -474,6 +473,7 @@
             }
         });
     </script>
+
 </body>
 
 </html>

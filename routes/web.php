@@ -39,7 +39,10 @@ Route::post('login', [App\Http\Controllers\Auth\LoginController::class, 'login']
 
 // Password Reset Routes
 Route::get('/forgot-password', [App\Http\Controllers\Auth\ForgotPasswordController::class, 'showForgotForm'])->name('password.forgot');
+
 Route::post('/forgot-password', [App\Http\Controllers\Auth\ForgotPasswordController::class, 'sendOTP'])->name('password.otp.send');
+
+Route::post('/forgot-password/resend', [App\Http\Controllers\Auth\ForgotPasswordController::class, 'resendOTP'])->name('password.otp.resend');
 Route::get('/verify-otp', [App\Http\Controllers\Auth\ForgotPasswordController::class, 'showVerifyOTPForm'])->name('otp.verify');
 Route::post('/verify-otp', [App\Http\Controllers\Auth\ForgotPasswordController::class, 'verifyOTP'])->name('otp.verify.submit');
 

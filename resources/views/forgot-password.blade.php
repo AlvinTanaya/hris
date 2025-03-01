@@ -176,6 +176,28 @@
             transform: translateY(-2px);
         }
 
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            width: 100%;
+            font-weight: 500;
+            padding: 0.8rem;
+            margin-top: 1rem;
+            transition: 0.3s;
+            border-radius: 10px;
+            color: white;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.2);
+            box-shadow: 0 4px 15px rgba(255, 255, 255, 0.15);
+            transform: translateY(-2px);
+            color: white;
+        }
+
         .invalid-feedback {
             font-size: 0.875rem;
             color: #ff6b6b;
@@ -199,6 +221,10 @@
             background: rgba(220, 53, 69, 0.2);
             border-left: 4px solid #dc3545;
         }
+
+        .back-icon {
+            margin-right: 0.5rem;
+        }
     </style>
 </head>
 
@@ -213,31 +239,94 @@
 
         <!-- Flash Message -->
         @if(session('status'))
-            <div class="alert alert-success text-center">{{ session('status') }}</div>
+        <div class="alert alert-success text-center">{{ session('status') }}</div>
         @endif
 
         @if(session('error'))
-            <div class="alert alert-danger text-center">{{ session('error') }}</div>
+        <div class="alert alert-danger text-center">{{ session('error') }}</div>
         @endif
 
         <!-- Form Send OTP -->
-        <form id="send-otp-form" method="POST" action="{{ route('password.otp.send') }}">
+        <form id="send-otp-form" method="POST">
+
             @csrf
             <div class="mb-3">
                 <label for="email" class="form-label">Email</label>
                 <input type="email" id="email" name="email" class="form-control @error('email') is-invalid @enderror" required autocomplete="off" placeholder="Enter your email">
                 @error('email')
-                    <span class="invalid-feedback d-block"><strong>{{ $message }}</strong></span>
+                <span class="invalid-feedback d-block"><strong>{{ $message }}</strong></span>
                 @enderror
             </div>
             <button type="submit" class="btn btn-primary">Send OTP</button>
         </form>
+
+
+
+
+
+        <!-- Back Button -->
+        <a href="{{ route('login') }}" class="btn btn-secondary">
+            <i class="fas fa-arrow-left back-icon"></i>Back to Login Page
+        </a>
     </div>
 
     <!-- jQuery -->
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-    <!-- Bootstrap JS -->
+
+    <!-- Bootstrap Bundle (includes Popper) -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <!-- Optional: Axios for AJAX (alternative to jQuery) -->
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+
+    <script>
+        $(document).ready(function() {
+            $('#send-otp-form').submit(function(e) {
+                e.preventDefault(); // Prevent default form submission
+
+                let email = $('#email').val();
+                let _token = $('input[name="_token"]').val();
+
+                $.ajax({
+                    url: "{{ route('password.otp.send') }}",
+                    method: "POST",
+                    data: {
+                        email: email,
+                        _token: _token
+                    },
+                    beforeSend: function() {
+                        Swal.fire({
+                            title: 'Sending OTP...',
+                            allowOutsideClick: false,
+                            didOpen: () => {
+                                Swal.showLoading();
+                            }
+                        });
+                    },
+                    success: function(response) {
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Success!',
+                            text: response.message,
+                        }).then(() => {
+                            window.location.href = "{{ route('otp.verify') }}?email=" + encodeURIComponent(response.email);
+                        });
+                    },
+                    error: function(xhr) {
+                        let response = xhr.responseJSON;
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Error!',
+                            text: response?.message || 'Something went wrong!',
+                        });
+                    }
+                });
+            });
+        });
+    </script>
 </body>
 
 </html>

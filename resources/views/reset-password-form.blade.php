@@ -67,7 +67,7 @@
         .reset-container {
             background: rgba(255, 255, 255, 0.1);
             backdrop-filter: blur(10px);
-            border-radius: 20px;
+            border-radius: 0 0 20px 20px;
             padding: 2.5rem;
             width: 100%;
             max-width: 450px;
@@ -75,18 +75,31 @@
             border: 1px solid rgba(255, 255, 255, 0.18);
             position: relative;
             z-index: 1;
+            position: relative;
+
+            border-top: none;
+
+            margin-top: 6px;
+
         }
+
+
 
         .reset-container::before {
             content: "";
             position: absolute;
-            top: 0;
+            top: -6px;
+            /* Position just above the container */
             left: 0;
             width: 100%;
-            height: 5px;
+            height: 6px;
             background: linear-gradient(90deg, #ffc107, #ff6b6b, #4facfe, #00f2fe, #f093fb, #f5576c);
             z-index: 2;
+            border-radius: 20px 20px 0 0;
         }
+
+
+
 
         h3 {
             text-align: center;
@@ -113,6 +126,8 @@
             transform: translateX(-50%);
             border-radius: 3px;
         }
+
+
 
         .form-label {
             font-weight: 500;
@@ -175,6 +190,29 @@
             font-size: 0.875rem;
             color: #ff6b6b;
         }
+
+        .btn-back {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            width: 100%;
+            font-weight: 600;
+            padding: 0.8rem;
+            margin-top: 1rem;
+            transition: 0.3s;
+            border-radius: 10px;
+            color: white;
+            text-decoration: none;
+            display: block;
+            text-align: center;
+        }
+
+        .btn-back:hover {
+            background: rgba(255, 255, 255, 0.2);
+            box-shadow: 0 8px 20px rgba(255, 255, 255, 0.15);
+            transform: translateY(-2px);
+            color: white;
+        }
+
 
         .alert {
             border-radius: 10px;
@@ -246,19 +284,19 @@
         <h3>Reset Password</h3>
 
         @if(session('status'))
-        <div class="alert alert-success text-center">{{ session('status') }}</div>
+        <div class="alert alert-success text-center text-white">{{ session('status') }}</div>
         @endif
 
         @if(session('error'))
-        <div class="alert alert-danger text-center">{{ session('error') }}</div>
+        <div class="alert alert-danger text-center text-white">{{ session('error') }}</div>
         @endif
 
-        <form method="POST" action="{{ route('password.update') }}">
+        <form id="reset-password-form" method="POST">
             @csrf
             <input type="hidden" name="email" value="{{ $email }}">
 
             <div class="mb-3">
-                <label for="email-display" class="form-label fw-bold text-warning">Email:</label>
+                <label for="email-display" class="form-label fw-bold text-warning">Email</label>
                 <div class="p-2 border rounded bg-light text-dark">
                     {{ $email }}
                 </div>
@@ -291,12 +329,26 @@
             </div>
 
             <button type="submit" class="btn btn-primary">Reset Password</button>
+
+            <a href="{{ route('login') }}" class="btn-back mt-3">
+                <i class="fas fa-arrow-left me-2"></i> Kembali ke Login
+            </a>
         </form>
     </div>
 
     <!-- Bootstrap JS -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- jQuery -->
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+
+    <!-- Bootstrap Bundle (includes Popper) -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <!-- Optional: Axios for AJAX (alternative to jQuery) -->
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+
     <script>
         $(document).ready(function() {
             // Password toggle functionality
@@ -383,6 +435,45 @@
                     $('#password-match').text('Password tidak cocok').css('color', '#dc3545');
                 }
             }
+
+
+            $("#reset-password-form").submit(function(event) {
+                event.preventDefault();
+
+                let form = $(this);
+                let formData = form.serialize();
+
+                $.ajax({
+                    url: form.attr("action"),
+                    type: "POST",
+                    data: formData,
+                    success: function(response) {
+                        Swal.fire({
+                            title: "Success!",
+                            text: response.message,
+                            icon: "success",
+                            confirmButtonText: "OK"
+                        }).then(() => {
+                            window.location.href = "{{ route('login') }}";
+                        });
+                    },
+                    error: function(xhr) {
+                        let errors = xhr.responseJSON.errors;
+                        let errorMessage = "";
+
+                        $.each(errors, function(key, value) {
+                            errorMessage += value[0] + "\n";
+                        });
+
+                        Swal.fire({
+                            title: "Error!",
+                            text: errorMessage,
+                            icon: "error",
+                            confirmButtonText: "OK"
+                        });
+                    }
+                });
+            });
         });
     </script>
 </body>
