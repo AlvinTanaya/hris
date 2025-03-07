@@ -67,9 +67,10 @@ Route::middleware('auth')->group(function () {
     Route::get('/user/create', [UserController::class, 'create'])->name('user.create');
     Route::post('/user/store', [UserController::class, 'store'])->name('user.store');
     Route::get('/user/edit/{id}', [UserController::class, 'edit'])->name('user.edit');
+    Route::put('/user/update/{id}', [UserController::class, 'update'])->name('user.update');
     Route::get('/user/transfer/{id}', [UserController::class, 'transfer'])->name('user.transfer');
     Route::get('/user/history/{id}', [UserController::class, 'history'])->name('user.history');
-    Route::put('/user/update/{id}', [UserController::class, 'update'])->name('user.update');
+
     Route::put('/user/transfer_user/{id}', [UserController::class, 'transfer_user'])->name('user.transfer_user');
     Route::post('/user/extend-date/{id}', [UserController::class, 'extendDate'])->name('user.extend');
     Route::post('/employees/import', [UserController::class, 'import'])->name('employees.import');
@@ -136,7 +137,24 @@ Route::middleware('auth')->group(function () {
     Route::post('/announcement/store', [AnnouncementController::class, 'store'])->name('announcement.store');;
 
     // Time Management Routes  
-    Route::get('/work-shift', [TimeManagementController::class, 'workShift'])->name('time.work-shift');
+    Route::get('/time_management/rule_shift/index', [TimeManagementController::class, 'rule_index'])->name('time.rule.index');
+    Route::get('/time_management/rule_shift/create', [TimeManagementController::class, 'rule_create'])->name('time.rule.create');
+    Route::post('/time_management/rule_shift/store', [TimeManagementController::class, 'rule_store'])->name('time.rule.store');
+    Route::get('/time_management/rule_shift/edit/{id}', [TimeManagementController::class, 'rule_edit'])->name('time.rule.edit');
+    Route::put('/time_management/rule_shift/update/{id}', [TimeManagementController::class, 'rule_update'])->name('time.rule.update');
+
+    Route::get('/time_management/set_shift/index', [TimeManagementController::class, 'set_shift_index'])->name('time.set.shift.index');
+    Route::get('/time_management/set_shift/create', [TimeManagementController::class, 'set_shift_create'])->name('time.set.shift.create');
+    Route::post('/time_management/set_shift/store', [TimeManagementController::class, 'set_shift_store'])->name('time.set.shift.store');
+    Route::put('/time_management/set_shift/update/{id}', [TimeManagementController::class, 'set_shift_update']);
+    Route::delete('/time_management/set_shift/delete/{id}', [TimeManagementController::class, 'set_shift_destroy']);
+    Route::post('/time_management/set_shift/exchange', [TimeManagementController::class, 'exchangeShifts'])->name('time.set.shift.exchange');
+
+    Route::get('/time_management/employee_absent/index', [TimeManagementController::class, 'employee_absent_index'])->name('time.employee.absent.index');
+    Route::get('/time_management/employee_absent/attendance/data', [TimeManagementController::class, 'getAttendanceData'])->name('attendance.data');
+    Route::post('/time_management/employee_absent/attendance/import', [TimeManagementController::class, 'importAttendance'])->name('attendance.import');
+
+
     Route::get('/attendance', [TimeManagementController::class, 'attendance'])->name('time.attendance');
     Route::get('/leave', [TimeManagementController::class, 'leave'])->name('time.leave');
     Route::get('/overtime', [TimeManagementController::class, 'overtime'])->name('time.overtime');

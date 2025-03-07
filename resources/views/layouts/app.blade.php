@@ -45,6 +45,33 @@
             padding: 0;
         }
 
+        body::before {
+            content: "";
+            position: fixed;
+            top: -100px;
+            right: -50px;
+            width: 300px;
+            height: 300px;
+            border-radius: 50%;
+            background: linear-gradient(#ffc107, #ff6b6b);
+            opacity: 0.2;
+            z-index: -1;
+        }
+
+        body::after {
+            content: "";
+            position: fixed;
+            bottom: -100px;
+            left: -50px;
+            width: 200px;
+            height: 200px;
+            background: linear-gradient(#4facfe, #00f2fe);
+            opacity: 0.2;
+            z-index: -1;
+            clip-path: polygon(50% 0%, 100% 38%, 82% 100%, 18% 100%, 0% 38%);
+        }
+
+
         @keyframes gradientBG {
             0% {
                 background-position: 0% 50%;
@@ -75,6 +102,21 @@
             display: flex;
             flex-direction: column;
         }
+
+        .floating-shape {
+            position: fixed;
+            width: 150px;
+            height: 150px;
+            background: linear-gradient(#f093fb, #f5576c);
+            opacity: 0.2;
+            z-index: -1;
+            bottom: 50px;
+            right: 20%;
+            clip-path: polygon(25% 0%, 100% 0%, 75% 100%, 0% 100%);
+            transform: rotate(45deg);
+            animation: float 8s infinite ease-in-out;
+        }
+
 
 
 
@@ -136,7 +178,7 @@
             display: none;
             position: relative;
             z-index: 1001;
-            /* Memastikan dropdown tetap di atas */
+            animation: slideDown 0.3s ease-out;
         }
 
         #sidebar .dropdown-container.show {
@@ -144,10 +186,13 @@
             animation: slideDown 0.3s ease-out;
         }
 
+
+
         /* Pastikan dropdown item memiliki pointer events */
         #sidebar .dropdown-container .nav-link {
             pointer-events: auto;
         }
+
 
         @keyframes slideDown {
             from {
@@ -164,9 +209,13 @@
         #sidebar .dropdown-icon {
             margin-left: auto;
             transition: transform 0.3s;
+            font-size: 0.85rem;
         }
 
-        #sidebar .dropdown-toggle[aria-expanded="true"] .dropdown-icon {
+
+
+        #sidebar .dropdown-toggle[aria-expanded="true"] .dropdown-icon,
+        #sidebar .shift-dropdown.active .dropdown-icon {
             transform: rotate(90deg);
         }
 
@@ -397,6 +446,19 @@
             animation: rotation 1s linear infinite;
         }
 
+        .custom-card::before,
+        #sidebar::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: linear-gradient(90deg, #ffc107, #ff6b6b, #4facfe, #00f2fe, #f093fb, #f5576c);
+            z-index: 2;
+        }
+
+
         @keyframes rotation {
             0% {
                 transform: rotate(0deg);
@@ -404,6 +466,20 @@
 
             100% {
                 transform: rotate(360deg);
+            }
+        }
+
+        @keyframes float {
+            0% {
+                transform: rotate(45deg) translate(0, 0);
+            }
+
+            50% {
+                transform: rotate(50deg) translate(10px, -10px);
+            }
+
+            100% {
+                transform: rotate(45deg) translate(0, 0);
             }
         }
 
@@ -505,11 +581,51 @@
         #sidebarToggle.active i {
             transform: rotate(90deg);
         }
+
+
+        /* Custom styling for nested dropdowns */
+        .shift-submenu .nav-link {
+            padding-left: 2.5rem !important;
+            font-size: 0.9rem;
+        }
+
+        .shift-dropdown {
+            position: relative;
+        }
+
+        .shift-dropdown .dropdown-icon {
+            transition: transform 0.3s;
+        }
+
+        .shift-dropdown.active .dropdown-icon {
+            transform: rotate(90deg);
+        }
+
+        @media (max-width: 768px) {
+
+            /* Ensure dropdown arrows remain visible on mobile */
+            #sidebar.collapsed .dropdown-icon {
+                display: block !important;
+            }
+
+            /* Proper indentation for nested items */
+            .shift-submenu .nav-link {
+                padding-left: 3rem !important;
+            }
+
+            /* Improved mobile dropdown visibility */
+            #sidebar .dropdown-container {
+                background: rgba(0, 0, 0, 0.1);
+                border-radius: 8px;
+                margin: 0 0.7rem;
+            }
+        }
     </style>
 </head>
 
 <body>
-    <div id="sidebar" style="padding-top:0%">
+    <!-- Sidebar Navigation with Improved Dropdown Arrows -->
+    <div id="sidebar">
         <div class="logo-container">
             <a href="{{ url('/home') }}">
                 <img src="{{ asset('storage/logoTimurJayaIndosteel.png') }}" alt="Logo" class="logo">
@@ -518,11 +634,8 @@
 
         <div class="nav-menu">
             <ul class="nav flex-column">
-
-
-                @if (
-                Auth::user()->position == 'Manager'|| Auth::user()->position == 'Director'|| Auth::user()->position == 'General Manager'
-                )
+                <!-- Announcement for management -->
+                @if (Auth::user()->position == 'Manager'|| Auth::user()->position == 'Director'|| Auth::user()->position == 'General Manager')
                 <li class="nav-item">
                     <a href="{{ url('/announcement/index')}}" class="nav-link">
                         <i class="fa-solid fa-bullhorn"></i>
@@ -531,28 +644,32 @@
                 </li>
                 @endif
 
-                @if (
-                Auth::user()->department == 'Human Resources' ||
+                <!-- HR and Management Menu Items -->
+                @if (Auth::user()->department == 'Human Resources' ||
                 Auth::user()->department == 'General Manager' ||
                 Auth::user()->department == 'Director' ||
-                Auth::user()->position != 'Staff'
-                )
+                Auth::user()->position != 'Staff')
+
                 <li class="nav-item">
                     <a href="{{ url('/dashboard') }}" class="nav-link">
                         <i class="fa-solid fa-gauge"></i>
                         <span>Dashboard</span>
                     </a>
                 </li>
+
                 <li class="nav-item">
                     <a href="{{ url('/user/index') }}" class="nav-link">
                         <i class="fas fa-users"></i>
                         <span>Employee</span>
                     </a>
                 </li>
+
+                <!-- E-learning with consistent dropdown arrow -->
                 <li class="nav-item">
                     <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown">
                         <i class="fas fa-graduation-cap"></i>
-                        <span>E-learning &nbsp;</span>
+                        <span>E-learning</span>
+                        <!-- <i class="dropdown-icon fas fa-chevron-right ms-auto"></i> -->
                     </a>
                     <div class="dropdown-container">
                         <a href="{{ url('/elearning/index') }}" class="nav-link">
@@ -566,11 +683,12 @@
                     </div>
                 </li>
 
-                <!-- Rekruitmen Menu -->
+                <!-- Recruitment with consistent dropdown arrow -->
                 <li class="nav-item">
                     <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown">
                         <i class="fas fa-user-plus"></i>
-                        <span>Recruitment &nbsp;</span>
+                        <span>Recruitment</span>
+                        <!-- <i class="dropdown-icon fas fa-chevron-right ms-auto"></i> -->
                     </a>
                     <div class="dropdown-container">
                         <a href="{{ url('/recruitment/labor_demand/index/') }}" class="nav-link">
@@ -588,20 +706,35 @@
                     </div>
                 </li>
 
-                <!-- Time Management Menu -->
+                <!-- Time Management with consistent dropdown arrow -->
                 <li class="nav-item">
                     <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown">
                         <i class="fas fa-clock"></i>
-                        <span>Time Management &nbsp;</span>
+                        <span>Time Management</span>
+                        <!-- <i class="dropdown-icon fas fa-chevron-right ms-auto"></i> -->
                     </a>
                     <div class="dropdown-container">
-                        <a href="{{ url('/time/work-shift') }}" class="nav-link">
+                        <!-- Shift submenu with consistent dropdown arrow -->
+                        <a href="#" class="nav-link dropdown-toggle shift-dropdown">
                             <i class="fas fa-calendar-alt"></i>
-                            <span>Work Shift</span>
+                            <span>Shift</span>
+                            <!-- <i class="dropdown-icon fas fa-chevron-right ms-auto"></i> -->
                         </a>
-                        <a href="{{ url('/time/attendance') }}" class="nav-link">
+                        <div class="shift-submenu" style="display: none; padding-left: 15px;">
+                            <a href="{{ url('/time_management/rule_shift/index') }}" class="nav-link">
+                                <i class="fas fa-calendar-alt"></i>
+                                <span>Rule</span>
+                            </a>
+                            <a href="{{ url('/time_management/set_shift/index') }}" class="nav-link">
+                                <i class="fas fa-users-cog"></i>
+                                <span>Employee Shift</span>
+                            </a>
+                        </div>
+
+                        <!-- Other time management links -->
+                        <a href="{{ url('/time_management/employee_absent/index') }}" class="nav-link">
                             <i class="fas fa-user-clock"></i>
-                            <span>Absensi</span>
+                            <span>Employee Attendance</span>
                         </a>
                         <a href="{{ url('/time/leave') }}" class="nav-link">
                             <i class="fas fa-umbrella-beach"></i>
@@ -627,6 +760,7 @@
                 </li>
 
                 @else
+                <!-- Limited menu for Staff users -->
                 <li class="nav-item">
                     <a href="{{ url('/elearning/index2/' . Auth::user()->id) }}" class="nav-link">
                         <i class="fas fa-tasks"></i>
@@ -765,6 +899,43 @@
     @vite(['resources/js/app.js'])
     <script>
         $(document).ready(function() {
+            $('.shift-dropdown').on('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+
+                // Toggle active class for arrow rotation
+                $(this).toggleClass('active');
+
+                // Toggle the shift submenu with animation
+                $('.shift-submenu').slideToggle(300);
+
+                return false;
+            });
+
+            // Add floating shapes to the body
+            $('body').append('<div class="floating-shape"></div>');
+
+            // Make sure the Time Management dropdown works properly
+            $('.nav-link.dropdown-toggle').not('.shift-dropdown').on('click', function(e) {
+                e.preventDefault();
+
+                // Ensure the shift submenu is closed when another main dropdown is clicked
+                if (!$(this).hasClass('shift-dropdown') && !$(this).closest('.shift-submenu').length) {
+                    $('.shift-dropdown').removeClass('active');
+                    $('.shift-submenu').slideUp(300);
+                }
+            });
+
+            // Close shift submenu when clicking elsewhere
+            $(document).on('click', function(e) {
+                if (!$(e.target).closest('.shift-dropdown, .shift-submenu').length) {
+                    $('.shift-dropdown').removeClass('active');
+                    $('.shift-submenu').slideUp(300);
+                }
+            });
+
+
+
             // Create overlay element for mobile sidebar
             $('body').append('<div class="sidebar-overlay"></div>');
 
@@ -830,19 +1001,32 @@
             // PERBAIKAN: Handle sidebar dropdowns
             $('.dropdown-toggle').click(function(e) {
                 e.preventDefault();
-                e.stopPropagation(); // Menghentikan propagasi event ke parent
+                e.stopPropagation();
 
-                // Toggle dropdown container
-                $(this).siblings('.dropdown-container').slideToggle();
+                // Toggle dropdown container with animation
+                $(this).siblings('.dropdown-container').slideToggle(300);
 
-                // Toggle active class dan aria-expanded
-                $(this).toggleClass('active');
+                // Toggle aria-expanded state
                 let isExpanded = $(this).attr('aria-expanded') === 'true';
                 $(this).attr('aria-expanded', !isExpanded);
 
-                // PENTING: Jangan tutup sidebar saat dropdown diklik
+                // Focus handling for better accessibility
+                if (!isExpanded) {
+                    $(this).siblings('.dropdown-container').find('a:first').focus();
+                }
+
                 return false;
             });
+
+            $('.dropdown-toggle').keydown(function(e) {
+                // Space or Enter key
+                if (e.keyCode === 32 || e.keyCode === 13) {
+                    e.preventDefault();
+                    $(this).click();
+                }
+            });
+
+
 
             // Handle responsive layout
             function adjustForScreenSize() {
@@ -866,6 +1050,7 @@
                     }
                 }
             }
+
 
             // Initialize responsive behavior
             adjustForScreenSize();

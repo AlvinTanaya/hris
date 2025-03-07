@@ -6,7 +6,7 @@ namespace App\Http\Controllers;
 
 use App\Imports\EmployeesImport;
 use Maatwebsite\Excel\Facades\Excel;
-
+use Carbon\Carbon;
 use Illuminate\Bus\UpdatedBatchJobCounts;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -31,7 +31,7 @@ use App\Mail\DepartmentUpdateNotification;
 use App\Mail\NewEmployeeNotification;
 use App\Mail\WelcomeNewEmployee;
 
-use Carbon\Carbon;
+
 
 class UserController extends Controller
 {
@@ -449,7 +449,7 @@ class UserController extends Controller
 
     public function update(Request $request, $id)
     {
-        dd($request->department);
+        //dd($request->department);
         // Validasi input
 
 
