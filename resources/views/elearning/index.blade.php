@@ -15,12 +15,6 @@
     }
 
 
-
-    /* Background modal lebih gelap dengan efek blur */
-    /* .modal-backdrop {
-        background-color: rgba(0, 0, 0, 0.7) !important;
-        backdrop-filter: blur(5px);
-    } */
 </style>
 
 <h1 class="text-center text-warning" style="margin-bottom: 65px; margin-top:25px"><i class="fas fa-book"></i> E-learning</h1>

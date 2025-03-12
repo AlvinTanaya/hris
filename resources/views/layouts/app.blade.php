@@ -219,6 +219,11 @@
             transform: rotate(90deg);
         }
 
+        #sidebar .dropdown-toggle[aria-expanded="true"] .dropdown-icon,
+        #sidebar .timeOff-dropdown.active .dropdown-icon {
+            transform: rotate(90deg);
+        }
+
         .nav-menu {
             flex-grow: 1;
             overflow-y: auto;
@@ -601,6 +606,24 @@
             transform: rotate(90deg);
         }
 
+
+        .timeOff-submenu .nav-link {
+            padding-left: 2.5rem !important;
+            font-size: 0.9rem;
+        }
+
+        .timeOff-dropdown {
+            position: relative;
+        }
+
+        .timeOff-dropdown .dropdown-icon {
+            transition: transform 0.3s;
+        }
+
+        .timeOff-dropdown.active .dropdown-icon {
+            transform: rotate(90deg);
+        }
+
         @media (max-width: 768px) {
 
             /* Ensure dropdown arrows remain visible on mobile */
@@ -612,6 +635,11 @@
             .shift-submenu .nav-link {
                 padding-left: 3rem !important;
             }
+
+            .timeOff-submenu .nav-link {
+                padding-left: 3rem !important;
+            }
+
 
             /* Improved mobile dropdown visibility */
             #sidebar .dropdown-container {
@@ -727,35 +755,65 @@
                             </a>
                             <a href="{{ url('/time_management/set_shift/index') }}" class="nav-link">
                                 <i class="fas fa-users-cog"></i>
+                                <span>Set Shift</span>
+                            </a>
+                            <a href="{{ url('/time_management/change_shift/index/' . Auth::user()->id) }}" class="nav-link">
+                                <i class="fa-solid fa-user"></i>
                                 <span>Employee Shift</span>
                             </a>
                         </div>
-
-                        <!-- Other time management links -->
                         <a href="{{ url('/time_management/employee_absent/index') }}" class="nav-link">
                             <i class="fas fa-user-clock"></i>
-                            <span>Employee Attendance</span>
+                            <span>Attendance</span>
                         </a>
-                        <a href="{{ url('/time/leave') }}" class="nav-link">
-                            <i class="fas fa-umbrella-beach"></i>
-                            <span>Cuti</span>
+                        <!-- time_off submenu with consistent dropdown arrow -->
+                        <a href="#" class="nav-link dropdown-toggle timeOff-dropdown">
+                            <i class="fas fa-calendar-alt"></i>
+                            <span>Time Off</span>
                         </a>
-                        <a href="{{ url('/time/overtime') }}" class="nav-link">
+                        <div class="timeOff-submenu" style="display: none; padding-left: 15px;">
+                            <a href="{{ url('/time_management/time_off/policy/index') }}" class="nav-link">
+                                <i class="fa-solid fa-building-shield"></i>
+                                <span>Policy</span>
+                            </a>
+                            <a href="{{ url('/time_management/time_off/assign/index') }}" class="nav-link">
+                                <i class="fas fa-users-cog"></i>
+                                <span>Set Assign</span>
+                            </a>
+                            <a href="{{ url('/time_management/time_off/request/index' . Auth::user()->id) }}" class="nav-link">
+                                <i class="fa-solid fa-user-tie"></i>
+                                <span>Request Time Off</span>
+                            </a>
+                        </div>
+
+                        <a href="{{ url('/time_management/overtime/index') }}" class="nav-link">
                             <i class="fas fa-business-time"></i>
-                            <span>Lembur</span>
+                            <span>Overtime</span>
                         </a>
-                        <a href="{{ url('/time/resignation') }}" class="nav-link">
+                        <!-- <a href="{{ url('/time_management/overtime/index2/' . Auth::user()->id) }}" class="nav-link">
+                            <i class="fas fa-business-time"></i>
+                            <span>Overtime</span>
+                        </a> -->
+                        <a href="{{ url('/time_management/request_resign/index') }}" class="nav-link">
                             <i class="fas fa-door-open"></i>
                             <span>Resign</span>
                         </a>
+                        <!-- <a href="{{ url('/time_management/request_resign/index2/' . Auth::user()->id) }}" class="nav-link">
+                            <i class="fas fa-door-open"></i>
+                            <span>Resign</span>
+                        </a> -->
                         <a href="{{ url('/time/warning-verbal') }}" class="nav-link">
                             <i class="fas fa-exclamation-circle"></i>
                             <span>Teguran</span>
                         </a>
-                        <a href="{{ url('/time/warning-letter') }}" class="nav-link">
+                        <a href="{{ url('/time_management/warning_letter/index') }}" class="nav-link">
                             <i class="fas fa-exclamation-triangle"></i>
-                            <span>Surat Peringatan</span>
+                            <span>Warning Letter</span>
                         </a>
+                        <!-- <a href="{{ url('/time_management/warning_letter/index2/' . Auth::user()->id) }}" class="nav-link">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            <span>Warning Letter</span>
+                        </a> -->
                     </div>
                 </li>
 
@@ -766,6 +824,32 @@
                         <i class="fas fa-tasks"></i>
                         <span>E-learning Duty</span>
                     </a>
+                </li>
+
+                <li class="nav-item">
+                    <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown">
+                        <i class="fas fa-clock"></i>
+                        <span>Time Management</span>
+                        <!-- <i class="dropdown-icon fas fa-chevron-right ms-auto"></i> -->
+                    </a>
+                    <div class="dropdown-container">
+                        <a href="{{ url('/time_management/employee_shift/index2/' . Auth::user()->id) }}" class="nav-link">
+                            <i class="fa-solid fa-user"></i>
+                            <span>Employee Shift</span>
+                        </a>
+                        <a href="{{ url('/time_management/warning_letter/index2/' . Auth::user()->id) }}" class="nav-link">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            <span>Warning Letter</span>
+                        </a>
+                        <a href="{{ url('/time_management/overtime/index2/' . Auth::user()->id) }}" class="nav-link">
+                            <i class="fas fa-business-time"></i>
+                            <span>Overtime</span>
+                        </a>
+                        <a href="{{ url('/time_management/request_resign/index2/' . Auth::user()->id) }}" class="nav-link">
+                            <i class="fas fa-door-open"></i>
+                            <span>Resign</span>
+                        </a>
+                    </div>
                 </li>
                 @endif
             </ul>
@@ -896,6 +980,9 @@
     <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
     <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
 
+
+
+
     @vite(['resources/js/app.js'])
     <script>
         $(document).ready(function() {
@@ -908,6 +995,19 @@
 
                 // Toggle the shift submenu with animation
                 $('.shift-submenu').slideToggle(300);
+
+                return false;
+            });
+
+            $('.timeOff-dropdown').on('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+
+                // Toggle active class for arrow rotation
+                $(this).toggleClass('active');
+
+                // Toggle the timeOff submenu with animation
+                $('.timeOff-submenu').slideToggle(300);
 
                 return false;
             });
@@ -926,11 +1026,31 @@
                 }
             });
 
+            $('.nav-link.dropdown-toggle').not('.timeOff-dropdown').on('click', function(e) {
+                e.preventDefault();
+
+                // Ensure the shift submenu is closed when another main dropdown is clicked
+                if (!$(this).hasClass('shift-dropdown') && !$(this).closest('.timeOff-submenu').length) {
+                    $('.timeOff-dropdown').removeClass('active');
+                    $('.timeOff-submenu').slideUp(300);
+                }
+            });
+
+
+
             // Close shift submenu when clicking elsewhere
             $(document).on('click', function(e) {
                 if (!$(e.target).closest('.shift-dropdown, .shift-submenu').length) {
                     $('.shift-dropdown').removeClass('active');
                     $('.shift-submenu').slideUp(300);
+                }
+            });
+
+
+            $(document).on('click', function(e) {
+                if (!$(e.target).closest('.timeOff-dropdown, .timeOff-submenu').length) {
+                    $('.timeOff-dropdown').removeClass('active');
+                    $('.timeOff-submenu').slideUp(300);
                 }
             });
 
