@@ -22,7 +22,8 @@ class RequestTimeOff extends Model
         'reason',
         'status',
         'reason_declined',
-        'approved_by',
+        'file_reason_path',
+        'answered_by',
         'created_at',
         'updated_at',
     ];

@@ -482,6 +482,7 @@
 </div>
 
 
+
 @endsection
 
 @push('scripts')
@@ -657,14 +658,9 @@
             });
         });
 
-        // Show success message if present in session
-        @if(session('success'))
-        Swal.fire({
-            icon: 'success',
-            title: 'Success',
-            text: '{{ session('success ')}}'
-        });
-        @endif
+
     });
 </script>
+
+
 @endpush

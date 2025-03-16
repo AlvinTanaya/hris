@@ -780,9 +780,13 @@
                                 <i class="fas fa-users-cog"></i>
                                 <span>Set Assign</span>
                             </a>
-                            <a href="{{ url('/time_management/time_off/request/index' . Auth::user()->id) }}" class="nav-link">
+                            <a href="{{ url('time_management/time_off/request_time_off/index') }}" class="nav-link">
                                 <i class="fa-solid fa-user-tie"></i>
                                 <span>Request Time Off</span>
+                            </a>
+                            <a href="{{ url('/time_management/time_off/request_time_off/index2/' . Auth::user()->id) }}" class="nav-link">
+                                <i class="fa-solid fa-user-tie"></i>
+                                <span>Time Off</span>
                             </a>
                         </div>
 
@@ -790,10 +794,10 @@
                             <i class="fas fa-business-time"></i>
                             <span>Overtime</span>
                         </a>
-                        <!-- <a href="{{ url('/time_management/overtime/index2/' . Auth::user()->id) }}" class="nav-link">
+                        <a href="{{ url('/time_management/overtime/index2/' . Auth::user()->id) }}" class="nav-link">
                             <i class="fas fa-business-time"></i>
                             <span>Overtime</span>
-                        </a> -->
+                        </a>
                         <a href="{{ url('/time_management/request_resign/index') }}" class="nav-link">
                             <i class="fas fa-door-open"></i>
                             <span>Resign</span>
@@ -849,6 +853,10 @@
                             <i class="fas fa-door-open"></i>
                             <span>Resign</span>
                         </a>
+                        <a href="{{ url('/time_management/time_off/request_time_off/index2/' . Auth::user()->id) }}" class="nav-link">
+                            <i class="fa-solid fa-user-tie"></i>
+                            <span>Time Off</span>
+                        </a>
                     </div>
                 </li>
                 @endif
@@ -889,7 +897,7 @@
                         <div class="notification-header d-flex justify-content-between align-items-center p-3 border-bottom">
                             <h6 class="m-0">Notifications</h6>
                             <span class="badge bg-primary rounded-pill">
-                                {{ \App\Models\notification::where('users_id', Auth::id())->count() }}
+                                {{ \App\Models\notification::where('users_id', Auth::id())->where('status', 'Unread')->count() }}
                             </span>
                         </div>
                         <div class="notification-body">
@@ -900,12 +908,15 @@
                             ->take(3)
                             ->get();
 
+
+
                             $notificationMakers = \App\Models\User::whereIn('id', $notifications->pluck('maker_id'))
                             ->pluck('name', 'id');
                             @endphp
 
                             @if($notifications->count() > 0)
                             @foreach($notifications as $notification)
+
                             <div class="dropdown-item notification-item p-3 border-bottom {{ $notification->status == 'Unread' ? 'bg-light' : '' }}"
                                 data-id="{{ $notification->id }}">
                                 <div class="d-flex justify-content-between align-items-center">

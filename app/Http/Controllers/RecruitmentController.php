@@ -8,6 +8,8 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Auth;
+
 
 use App\Models\recruitment_demand;
 use App\Models\recruitment_applicant;
@@ -24,6 +26,7 @@ use App\Models\users_work_experience;
 use App\Models\users_language;
 use App\Models\users_training;
 use App\Models\users_organization;
+use App\Models\Notification;
 
 use App\Mail\InterviewScheduledMail;
 use App\Mail\InterviewRescheduledMail;
@@ -31,6 +34,10 @@ use App\Mail\ApplicantStatusMail;
 use App\Mail\PositionExchangedMail;
 use App\Mail\AcceptedApplicantMail;
 use App\Mail\NewEmployeeNotificationMail;
+use App\Mail\LaborDemandCreate;
+use App\Mail\LaborDemandUpdate;
+use App\Mail\LaborDemandApproved;
+use App\Mail\LaborDemandDeclined;
 
 use Carbon\Carbon;
 
@@ -101,21 +108,56 @@ class RecruitmentController extends Controller
         return view('recruitment/labor_demand/update', compact('demand'));
     }
 
-
     public function approve_labor_demand($id)
     {
-        recruitment_demand::where('id', $id)->update([
-            'status_demand' => 'Approved'
-        ]);
+        $demand = recruitment_demand::findOrFail($id);
+
+        // Update status
+        $demand->status_demand = 'Approved';
+        $demand->save();
+
+        // Send email to HR department users
+        $hrUsers = User::where('department', 'Human Resources')->get();
+        foreach ($hrUsers as $user) {
+            Mail::to($user->email)->send(new LaborDemandApproved($demand));
+
+            // Create notification for HR users
+            Notification::create([
+                'users_id' => $user->id,
+                'message' => "Labor demand request {$demand->recruitment_demand_id} for position: {$demand->position} in {$demand->department} department has been approved",
+                'type' => 'labor_demand_approved',
+                'maker_id' => Auth::user()->id,
+                'status' => 'Unread'
+            ]);
+        }
+
         return redirect()->route('recruitment.index')
             ->with('success', 'Job request has been approved successfully');
     }
+
     public function decline_labor_demand(Request $request, $id)
     {
-        recruitment_demand::where('id', $id)->update([
-            'status_demand' => 'Declined',
-            'declined_reason' => $request->declined_reason,
-        ]);
+        $demand = recruitment_demand::findOrFail($id);
+
+        // Update status and reason
+        $demand->status_demand = 'Declined';
+        $demand->declined_reason = $request->declined_reason;
+        $demand->save();
+
+        // Send email to HR department users
+        $hrUsers = User::where('department', 'Human Resources')->get();
+        foreach ($hrUsers as $user) {
+            Mail::to($user->email)->send(new LaborDemandDeclined($demand));
+
+            // Create notification for HR users
+            Notification::create([
+                'users_id' => $user->id,
+                'message' => "Labor demand request {$demand->recruitment_demand_id} for position: {$demand->position} has been declined with reason: {$request->declined_reason}",
+                'type' => 'labor_demand_declined',
+                'maker_id' => Auth::user()->id,
+                'status' => 'Unread'
+            ]);
+        }
 
         if ($request->ajax()) {
             return response()->json(['success' => true]);
@@ -156,7 +198,7 @@ class RecruitmentController extends Controller
         // Menggunakan ID yang unik  
         $lastId = recruitment_demand::max('id');
         $newId = $lastId ? $lastId + 1 : 1;
-        $validated['ptk_id'] = 'ptk_' . $newId;
+        $validated['recruitment_demand_id'] = 'ptk_' . $newId;
 
         // Proses input untuk menyimpan ke database  
         $validated['reason'] = implode("\n", array_map('trim', explode("\n", $request->reason)));
@@ -165,7 +207,25 @@ class RecruitmentController extends Controller
         $validated['skills'] = implode("\n", array_map('trim', explode("\n", $request->skills)));
 
         // Simpan data ke database  
-        recruitment_demand::create($validated);
+        $demand = recruitment_demand::create($validated);
+
+        // Send email to General Managers
+        $gmUsers = User::where('position', 'General Manager')
+            ->where('department', 'General Manager')
+            ->get();
+        // dd('coba');
+        foreach ($gmUsers as $user) {
+            Mail::to($user->email)->send(new LaborDemandCreate($demand));
+
+            // Create notification for GM
+            Notification::create([
+                'users_id' => $user->id,
+                'message' => "New labor demand request {$demand->recruitment_demand_id} for position: {$demand->position} in {$demand->department} department. Please review and respond.",
+                'type' => 'labor_demand_created',
+                'maker_id' => $request->maker_id,
+                'status' => 'Unread'
+            ]);
+        }
 
         return redirect()->route('recruitment.index')
             ->with('success', 'Job request has been created successfully');
@@ -173,7 +233,6 @@ class RecruitmentController extends Controller
 
     public function show_labor_demand($id)
     {
-        // dd($id);
         $demand = recruitment_demand::find($id);
 
         if (!$demand) {
@@ -203,6 +262,7 @@ class RecruitmentController extends Controller
             'skills' => $demand->skills,
         ]);
     }
+
     public function update_labor_demand(Request $request, $id)
     {
         // Validasi input  
@@ -224,21 +284,39 @@ class RecruitmentController extends Controller
         ]);
 
         try {
-
             $demand = recruitment_demand::findOrFail($id);
             $validated['updated_at'] = now();
             $validated['maker_id'] = $request->maker_id;
+
             if ($request->time_work_experience == null) {
                 $validated['time_work_experience'] = null;
             } else {
                 $validated['time_work_experience'] = $request->time_work_experience;
             }
+
             $validated['status_demand'] = $demand->status_demand;
             $validated['qty_fullfil'] = $demand->qty_fullfil;
-            $validated['ptk_id'] = $demand->ptk_id;
-
+            $validated['recruitment_demand_id'] = $demand->recruitment_demand_id;
 
             $demand->update($validated);
+
+            // Send email to General Managers
+            $gmUsers = User::where('position', 'General Manager')
+                ->where('department', 'General Manager')
+                ->get();
+
+            foreach ($gmUsers as $user) {
+                Mail::to($user->email)->send(new LaborDemandUpdate($demand));
+
+                // Create notification for GM
+                Notification::create([
+                    'users_id' => $user->id,
+                    'message' => "Labor demand request {$demand->recruitment_demand_id} for position: {$demand->position} has been updated. Please review the changes.",
+                    'type' => 'labor_demand_updated',
+                    'maker_id' => $request->maker_id,
+                    'status' => 'Unread'
+                ]);
+            }
 
             // Redirect dengan pesan sukses  
             return redirect()->route('recruitment.index')
@@ -250,6 +328,7 @@ class RecruitmentController extends Controller
                 ->withInput();
         }
     }
+
 
 
 
@@ -452,17 +531,17 @@ class RecruitmentController extends Controller
     private function calculateExperienceDurationScore($applicantId)
     {
         $experiences = recruitment_applicant_work_experience::where('applicant_id', $applicantId)->get();
-    
+
         $totalDuration = 0;
         $count = $experiences->count();
         $salaryScore = 0;
-    
+
         foreach ($experiences as $exp) {
             // Hitung durasi kerja dalam tahun
             $startDate = Carbon::parse($exp->working_start);
             $endDate = $exp->working_end ? Carbon::parse($exp->working_end) : Carbon::now();
             $totalDuration += $startDate->diffInYears($endDate);
-    
+
             // Hitung skor salary berdasarkan kategori
             if ($exp->salary >= 10000000) {
                 $salaryScore += 1.0;
@@ -470,25 +549,24 @@ class RecruitmentController extends Controller
                 $salaryScore += 0.6;
             } elseif ($exp->salary >= 2500000) {
                 $salaryScore += 0.4;
-            } 
-            else {
+            } else {
                 $salaryScore += 0.2;
             }
         }
-    
+
         // Normalisasi durasi kerja (maks 10 tahun = 1.0)
         $durationScore = min(1.0, $totalDuration / 10);
-    
+
         // Normalisasi jumlah pekerjaan (maks 5 pekerjaan = 1.0)
         $countScore = min(1.0, $count / 5);
-    
+
         // Normalisasi gaji (rata-rata dari semua salary score)
         $salaryScore = $count > 0 ? $salaryScore / $count : 0.2; // Default jika tidak ada pengalaman
-    
+
         // Gabungkan dengan bobot yang diberikan
         return (0.65 * $durationScore) + (0.15 * $countScore) + (0.2 * $salaryScore);
     }
-    
+
 
     // New calculation methods for the added criteria
     private function calculateTrainingScore($applicantId)

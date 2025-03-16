@@ -7,6 +7,10 @@ use App\Imports\EmployeesImport;
 use Maatwebsite\Excel\Facades\Excel;
 use Carbon\Carbon;
 use Carbon\CarbonPeriod;
+use DateTime;
+use DateInterval;
+use DatePeriod;
+
 use Illuminate\Bus\UpdatedBatchJobCounts;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -16,9 +20,6 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
-
-
-
 
 use App\Models\rule_shift;
 use App\Models\EmployeeShift;
@@ -34,7 +35,31 @@ use App\Models\TimeOffAssign;
 use App\Models\RequestTimeOff;
 
 use App\Mail\WarningLetterMail;
+use App\Mail\EmployeeShiftAssigned;
+use App\Mail\EmployeeShiftDeleted;
+use App\Mail\EmployeeShiftUpdated;
+use App\Mail\EmployeeShiftExchanged;
+use App\Mail\ShiftChangeApprovedMail;
+use App\Mail\ShiftChangeDeclinedMail;
+use App\Mail\ShiftChangeRequestMail;
+use App\Mail\ShiftChangeCancelledMail;
 use App\Mail\ResignationRequestMail;
+use App\Mail\ResignationUpdatedMail;
+use App\Mail\ResignationDeletedMail;
+use App\Mail\ResignationApprovedMail;
+use App\Mail\ResignationDeclinedMail;
+use App\Mail\OvertimeRequestMail;
+use App\Mail\OvertimeApprovedMail;
+use App\Mail\OvertimeDeclinedMail;
+use App\Mail\OvertimeCancelledMail;
+use App\Mail\TimeOffAssignUpdateMail;
+use App\Mail\TimeOffAssignCreateMail;
+use App\Mail\TimeOffAssignDestroyMail;
+use App\Mail\TimeOffRequestSubmitted;
+use App\Mail\TimeOffRequestCancelled;
+use App\Mail\TimeOffRequestApproved;
+use App\Mail\TimeOffRequestDeclined;
+
 
 class TimeManagementController extends Controller
 {
@@ -352,77 +377,79 @@ class TimeManagementController extends Controller
     }
 
 
+
     public function set_shift_store(Request $request)
     {
-        dd($request->all());
         $request->validate([
             'rule_id' => 'required',
             'startDate' => 'required|date',
             'shift_employees' => 'nullable|string',
         ]);
 
-
         if ($request->shift_employees) {
-
             $employeeIds = explode(',', $request->shift_employees);
 
             foreach ($employeeIds as $employeeId) {
-                EmployeeShift::create([
+                $shift = EmployeeShift::create([
                     'rule_id' => $request->rule_id,
                     'start_date' => $request->startDate,
                     'user_id' => $employeeId,
                 ]);
+
+                // Get user
+                $user = User::find($employeeId);
+                if ($user) {
+                    // Kirim email
+                    Mail::to($user->email)->send(new EmployeeShiftAssigned($user, $shift));
+
+                    // Buat notifikasi di database
+                    Notification::create([
+                        'users_id' => $user->id,
+                        'message' => "You have been assigned to the {$shift->rule->type} shift from {$shift->start_date} to " . ($shift->end_date ?? 'indefinitely') . ".",
+                        'type' => 'shift_assigned',
+                        'maker_id' => Auth::user()->id,
+                        'status' => 'Unread'
+                    ]);
+                }
             }
         }
-
-
-
 
         return redirect()->route('time.employee.shift.index')->with('success', 'Employee shift added successfully.');
     }
 
 
 
+
     public function set_shift_destroy($id)
     {
         $shift = EmployeeShift::findOrFail($id);
+        $user = $shift->user;
+
+        // Hapus shift
         $shift->delete();
+
+        // Kirim notifikasi ke user
+        Notification::create([
+            'users_id' => $user->id,
+            'message' => "We apologize for the inconvenience. There was an issue with your last shift assignment. Please wait for further information regarding your new shift, or contact the Human Resources department.",
+            'type' => 'shift_deleted',
+            'maker_id' => Auth::user()->id,
+            'status' => 'Unread'
+        ]);
+
+        // Kirim email ke user
+        Mail::to($user->email)->send(new EmployeeShiftDeleted($user));
 
         return response()->json(['message' => 'Shift deleted successfully.']);
     }
 
-    // Helper function to check if a date is Sunday
-    // Helper function to check if a date is Sunday
-    private function isSunday($date)
-    {
-        return Carbon::parse($date)->dayOfWeek === 0; // 0 is Sunday in Carbon
-    }
-
-    // Helper function to get the next non-Sunday date (for start dates)
-    private function getNextNonSundayDate($date)
-    {
-        $date = Carbon::parse($date);
-        if ($date->dayOfWeek === 0) { // If it's Sunday
-            return $date->addDay()->format('Y-m-d'); // Move to Monday
-        }
-        return $date->format('Y-m-d');
-    }
-
-    // Helper function to get the previous non-Sunday date (for end dates)
-    private function getPreviousNonSundayDate($date)
-    {
-        $date = Carbon::parse($date);
-        if ($date->dayOfWeek === 0) { // If it's Sunday
-            return $date->subDay()->format('Y-m-d'); // Move to Saturday
-        }
-        return $date->format('Y-m-d');
-    }
 
     public function set_shift_update(Request $request, $id)
     {
         $shift = EmployeeShift::findOrFail($id);
+        $user = $shift->user;
 
-        // Make sure the start date is not a Sunday (moves to Monday if it is)
+        // Make sure the start date is not a Sunday
         $startDate = $this->getNextNonSundayDate($request->start_date);
 
         $lastShift = EmployeeShift::where('user_id', $request->user_id)
@@ -444,30 +471,48 @@ class TimeManagementController extends Controller
                     'updated_at' => now(),
                 ]);
             } else if ($startDate > $lastShift->end_date) {
-                // Calculate end date for the previous shift
                 $endDate = Carbon::parse($startDate)->subDay()->format('Y-m-d');
-
-                // If the end date falls on Sunday, move back to Saturday
                 $endDate = $this->getPreviousNonSundayDate($endDate);
 
-                // Update previous shift's end_date
                 $shift->update([
                     'end_date' => $endDate,
                     'updated_at' => now(),
                 ]);
 
-                // Create new shift entry
-                EmployeeShift::create([
+                $newShift = EmployeeShift::create([
                     'rule_id' => $request->rule_id,
                     'start_date' => $startDate,
                     'user_id' => $request->user_id,
                 ]);
+
+
+
+                Mail::to($user->email)->send(new EmployeeShiftUpdated($user, $shift));
+
+                Notification::create([
+                    'users_id' => $user->id,
+                    'message' => "We sincerely apologize for the mistake. There has been a change in your shift assignment. You have now been reassigned to the {$shift->rule->type} shift from {$shift->start_date} onwards.",
+                    'type' => 'shift_updated',
+                    'maker_id' => Auth::user()->id,
+                    'status' => 'Unread'
+                ]);
             }
         } else {
-            // If there's no last shift, just update the shift
             $shift->update([
                 'rule_id' => $request->rule_id,
                 'start_date' => $startDate
+            ]);
+
+
+
+            Mail::to($user->email)->send(new EmployeeShiftUpdated($user, $shift));
+
+            Notification::create([
+                'users_id' => $user->id,
+                'message' => "We sincerely apologize for the mistake. There has been a change in your shift assignment. You have now been reassigned to the {$shift->rule->type} shift from {$shift->start_date} onwards.",
+                'type' => 'shift_updated',
+                'maker_id' => Auth::user()->id,
+                'status' => 'Unread'
             ]);
         }
 
@@ -477,22 +522,43 @@ class TimeManagementController extends Controller
         ]);
     }
 
+
+    // Helper function to get the next non-Sunday date (for start dates)
+    private function getNextNonSundayDate($date)
+    {
+        $date = Carbon::parse($date);
+        if ($date->dayOfWeek === 0) { // If it's Sunday
+            return $date->addDay()->format('Y-m-d'); // Move to Monday
+        }
+        return $date->format('Y-m-d');
+    }
+
+    // Helper function to get the previous non-Sunday date (for end dates)
+    private function getPreviousNonSundayDate($date)
+    {
+        $date = Carbon::parse($date);
+        if ($date->dayOfWeek === 0) { // If it's Sunday
+            return $date->subDay()->format('Y-m-d'); // Move to Saturday
+        }
+        return $date->format('Y-m-d');
+    }
+
+
+
     public function exchangeShifts(Request $request)
     {
         $request->validate([
             'start_date' => 'required|date',
         ]);
 
-        // Make sure the start date is not a Sunday (moves to Monday if it is)
         $startDate = $this->getNextNonSundayDate($request->start_date);
         $startDateCarbon = Carbon::parse($startDate);
 
-        // Get employees with active Morning or Afternoon shifts
         $employees = EmployeeShift::whereNull('end_date')
             ->join('rule_shift', 'employee_shift.rule_id', '=', 'rule_shift.id')
             ->join('users', 'employee_shift.user_id', '=', 'users.id')
             ->whereIn('rule_shift.type', ['Morning', 'Afternoon'])
-            ->select('employee_shift.*', 'rule_shift.type as shift_type', 'users.name as employee_name')
+            ->select('employee_shift.*', 'rule_shift.type as shift_type', 'users.id as user_id', 'users.name as employee_name', 'users.email as user_email')
             ->get();
 
         if ($employees->isEmpty()) {
@@ -505,13 +571,11 @@ class TimeManagementController extends Controller
         $updatedEmployees = [];
 
         foreach ($employees as $employee) {
-            // Find last shift with end_date
             $lastShift = EmployeeShift::where('user_id', $employee->user_id)
                 ->whereNotNull('end_date')
                 ->orderBy('id', 'desc')
                 ->first();
 
-            // Find new shift rule (Morning <-> Afternoon)
             $newShiftRule = rule_shift::where('type', $employee->shift_type === 'Morning' ? 'Afternoon' : 'Morning')->first();
 
             if (!$newShiftRule) {
@@ -521,32 +585,39 @@ class TimeManagementController extends Controller
                 ], 400);
             }
 
-            // If start_date same as current shift, just update rule_id
             if ($startDateCarbon->format('Y-m-d') == $employee->start_date) {
                 EmployeeShift::where('id', $employee->id)->update([
                     'rule_id' => $newShiftRule->id,
                     'updated_at' => now(),
                 ]);
+
                 $updatedEmployees[] = $employee->employee_name;
+
+                // Send email
+                Mail::to($employee->user_email)->send(new EmployeeShiftExchanged($employee, $newShiftRule));
+
+                // Send notification
+                Notification::create([
+                    'users_id' => $employee->user_id,
+                    'message' => "You have been assigned to a new shift: {$newShiftRule->type}.",
+                    'type' => 'shift_exchanged',
+                    'maker_id' => Auth::user()->id,
+                    'status' => 'Unread'
+                ]);
+
                 continue;
             }
 
-            // Validate with last shift
             if ($lastShift && $startDateCarbon <= Carbon::parse($lastShift->end_date)) {
                 continue;
             }
 
-            // Skip if start_date is earlier than current shift start_date
             if ($startDateCarbon < Carbon::parse($employee->start_date)) {
                 continue;
             }
 
-            // If start_date is after current shift start_date, update end_date and create new shift
             if ($startDateCarbon > Carbon::parse($employee->start_date)) {
-                // Calculate end date for the current shift
                 $endDate = $startDateCarbon->copy()->subDay()->format('Y-m-d');
-
-                // If end date falls on Sunday, move back to Saturday
                 $endDate = $this->getPreviousNonSundayDate($endDate);
 
                 EmployeeShift::where('id', $employee->id)->update([
@@ -554,13 +625,25 @@ class TimeManagementController extends Controller
                     'updated_at' => now(),
                 ]);
 
-                EmployeeShift::create([
+                $newShift = EmployeeShift::create([
                     'user_id' => $employee->user_id,
                     'rule_id' => $newShiftRule->id,
                     'start_date' => $startDate,
                 ]);
 
                 $updatedEmployees[] = $employee->employee_name;
+
+                // Send email
+                Mail::to($employee->user_email)->send(new EmployeeShiftExchanged($employee, $newShift));
+
+                // Send notification
+                Notification::create([
+                    'users_id' => $employee->user_id,
+                    'message' => "You have been assigned to a new shift: {$newShiftRule->type}.",
+                    'type' => 'shift_exchanged',
+                    'maker_id' => Auth::user()->id,
+                    'status' => 'Unread'
+                ]);
             }
         }
 
@@ -577,56 +660,43 @@ class TimeManagementController extends Controller
         ]);
     }
 
+
     public function approveShiftChange($id)
     {
         try {
             DB::beginTransaction();
 
-            $request = RequestShiftChange::with(['user', 'ruleShiftBefore', 'ruleShiftAfter', 'exchangeUser', 'ruleExchangeBefore', 'ruleExchangeAfter'])
-                ->findOrFail($id);
+            $request = RequestShiftChange::with(['user', 'ruleShiftAfter'])->findOrFail($id);
 
-            // Update request status
             $request->status_change = 'Approved';
             $request->answer_user_id = Auth::id();
             $request->save();
 
-            // Get the start and end dates of the request
             $startDate = Carbon::parse($request->date_change_start);
             $endDate = Carbon::parse($request->date_change_end);
 
-            // Process requesting user's shift change
-            $this->processUserShiftChange(
-                $request->user_id,
-                $request->rule_user_id_after,
-                $startDate,
-                $endDate
-            );
+            $this->processUserShiftChange($request->user_id, $request->rule_user_id_after, $startDate, $endDate);
 
-            //dd($request->rule_user_exchange_id_after);
-            // Handle exchange user if exists
             if ($request->user_exchange_id) {
-                // Jika ada exchangeUser, proses perubahan shift untuk pengguna tersebut
-                $this->processUserShiftChange(
-                    $request->user_exchange_id,
-                    $request->rule_user_exchange_id_after,
-                    $startDate,
-                    $endDate
-                );
-            }
-            // Jika user_exchange_id null tetapi ada rule_user_exchange_id_after
-            // Ini berarti user asli bertukar dengan shift type lain, bukan dengan user lain
-            else if ($request->rule_user_exchange_id_after) {
-                // Proses shift kedua untuk user yang sama, tetapi dengan rule yang berbeda
-                $this->processUserShiftChange(
-                    $request->user_id,
-                    $request->rule_user_exchange_id_after,
-                    $startDate,
-                    $endDate,
-                    true // Flag untuk menandai ini adalah shift kedua (opsional)
-                );
+                $this->processUserShiftChange($request->user_exchange_id, $request->rule_user_exchange_id_after, $startDate, $endDate);
+            } else if ($request->rule_user_exchange_id_after) {
+                $this->processUserShiftChange($request->user_id, $request->rule_user_exchange_id_after, $startDate, $endDate, true);
             }
 
             DB::commit();
+
+            // Send email
+            Mail::to($request->user->email)->send(new ShiftChangeApprovedMail($request));
+
+            // Create notification
+            Notification::create([
+                'users_id' => $request->user_id,
+                'message' => "Your shift change request has been approved.",
+                'type' => 'shift_change_approved',
+                'maker_id' => Auth::id(),
+                'status' => 'Unread'
+            ]);
+
             return response()->json(['success' => true]);
         } catch (\Exception $e) {
             DB::rollBack();
@@ -712,13 +782,24 @@ class TimeManagementController extends Controller
     public function declineShiftChange(Request $request, $id)
     {
         try {
-            $shiftChangeRequest = RequestShiftChange::findOrFail($id);
+            $shiftChangeRequest = RequestShiftChange::with('user')->findOrFail($id);
 
-            // Update request status
             $shiftChangeRequest->status_change = 'Declined';
             $shiftChangeRequest->declined_reason = $request->decline_reason;
             $shiftChangeRequest->answer_user_id = Auth::id();
             $shiftChangeRequest->save();
+
+            // Send email
+            Mail::to($shiftChangeRequest->user->email)->send(new ShiftChangeDeclinedMail($shiftChangeRequest));
+
+            // Create notification
+            Notification::create([
+                'users_id' => $shiftChangeRequest->user_id,
+                'message' => "Your shift change request has been declined.",
+                'type' => 'shift_change_declined',
+                'maker_id' => Auth::id(),
+                'status' => 'Unread'
+            ]);
 
             return response()->json(['success' => true]);
         } catch (\Exception $e) {
@@ -1414,6 +1495,24 @@ class TimeManagementController extends Controller
                 $shiftChange->date_change_start = $batch['start_date'];
                 $shiftChange->date_change_end = $batch['end_date'];
                 $shiftChange->save();
+
+                // Get HR users
+                $hrUsers = User::whereHas('department', function ($query) {
+                    $query->where('name', 'Human Resources')->where('employee_status', '!=', 'Inactive');
+                })->get();
+
+                // Create notifications & send emails
+                foreach ($hrUsers as $hr) {
+                    Notification::create([
+                        'users_id' => $hr->id,
+                        'message' => "New shift change request from {$shiftChange->user->name}.",
+                        'type' => 'shift_request',
+                        'maker_id' => Auth::user()->id,
+                        'status' => 'Unread'
+                    ]);
+
+                    Mail::to($hr->email)->send(new ShiftChangeRequestMail($shiftChange));
+                }
             }
         }
 
@@ -1581,6 +1680,25 @@ class TimeManagementController extends Controller
             }
 
             $request->delete();
+
+            // Get HR users
+            $hrUsers = User::whereHas('department', function ($query) {
+                $query->where('name', 'Human Resources')->where('employee_status', '!=', 'Inactive');
+            })->get();
+
+            // Create notifications & send emails
+            foreach ($hrUsers as $hr) {
+                Notification::create([
+                    'users_id' => $hr->id,
+                    'message' => "Shift change request from {$request->user->name} has been cancelled.",
+                    'type' => 'shift_cancelled',
+                    'maker_id' => Auth::user()->id,
+                    'status' => 'Unread'
+                ]);
+
+                Mail::to($hr->email)->send(new ShiftChangeCancelledMail($request));
+            }
+
 
             // Get updated pending count
             $pendingCount = RequestShiftChange::where('user_id', Auth::id())
@@ -1754,6 +1872,15 @@ class TimeManagementController extends Controller
         return view('time_management/request_resign/create', compact('id'));
     }
 
+
+    public function request_resign_edit($id)
+    {
+        $request_resign = RequestResign::findOrFail($id);
+        // Authorize that current user can edit this request
+
+        return view('time_management/request_resign/update', compact('request_resign'));
+    }
+
     public function request_resign_store(Request $request)
     {
         // Validate request
@@ -1793,13 +1920,6 @@ class TimeManagementController extends Controller
             ->with('success', 'Resignation request submitted successfully.');
     }
 
-    public function request_resign_edit($id)
-    {
-        $request_resign = RequestResign::findOrFail($id);
-        // Authorize that current user can edit this request
-
-        return view('time_management/request_resign/update', compact('request_resign'));
-    }
 
     public function request_resign_update(Request $request, $id)
     {
@@ -1814,10 +1934,10 @@ class TimeManagementController extends Controller
             ? $request->other_reason
             : $validated['resign_type'];
 
-        // Temukan request resign berdasarkan ID
+        // Find the resignation request
         $request_resign = RequestResign::findOrFail($id);
 
-        // Update data resignation request
+        // Update resignation request
         $request_resign->update([
             'resign_status' => 'Pending',
             'resign_type' => $temp,
@@ -1826,26 +1946,40 @@ class TimeManagementController extends Controller
             'updated_at' => now(),
         ]);
 
+        // Create notification
+        Notification::create([
+            'message' => 'Your resignation request has been updated. Please wait for management’s decision.',
+            'type' => 'resign',
+            'users_id' => $request_resign->user_id,
+            'status' => 'Unread',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        // Send email notification
+        $user = User::findOrFail($request_resign->user_id);
+        Mail::to($user->email)->send(new ResignationUpdatedMail($user, $request_resign));
+
         return redirect()->route('request.resign.index2', ['id' => $request_resign->user_id])
             ->with('success', 'Resignation request updated successfully.');
     }
-
     public function request_resign_destroy($id)
     {
-
-        // Temukan request berdasarkan ID
+        // Find resignation request
         $resignRequest = RequestResign::findOrFail($id);
-
         $userID = $resignRequest->user_id;
-        //dd($userID);
 
+        // Send email notification before deletion
+        $user = User::findOrFail($userID);
+        Mail::to($user->email)->send(new ResignationDeletedMail($user));
 
-        // Hapus request
+        // Delete request
         $resignRequest->delete();
 
         return redirect()->route('request.resign.index2', ['id' => $userID])
             ->with('success', 'Resignation request has been cancelled successfully.');
     }
+
 
 
     // Approve Resignation Request
@@ -1885,7 +2019,7 @@ class TimeManagementController extends Controller
 
         // Send email notification
         if ($employee->email) {
-            Mail::to($employee->email)->send(new \App\Mail\ResignationApprovedMail($employee, $resign_request, Auth::user()->name));
+            Mail::to($employee->email)->send(new ResignationApprovedMail($employee, $resign_request, Auth::user()->name));
         }
 
         return redirect()->route('request.resign.index')
@@ -1925,7 +2059,7 @@ class TimeManagementController extends Controller
 
         // Send email notification
         if ($employee->email) {
-            Mail::to($employee->email)->send(new \App\Mail\ResignationDeclinedMail($employee, $resign_request, Auth::user()->name, $validated['declined_reason']));
+            Mail::to($employee->email)->send(new ResignationDeclinedMail($employee, $resign_request, Auth::user()->name, $validated['declined_reason']));
         }
 
         return redirect()->route('request.resign.index')
@@ -2207,7 +2341,6 @@ class TimeManagementController extends Controller
     // Store a new overtime request
     public function overtime_store(Request $request)
     {
-
         //dd($request->all());
         $request->validate([
             'user_id' => 'required',
@@ -2219,7 +2352,8 @@ class TimeManagementController extends Controller
             'overtime_type' => 'required|in:Paid_Overtime,Overtime_Leave',
         ]);
 
-        EmployeeOvertime::create([
+        // Create overtime request
+        $overtime = EmployeeOvertime::create([
             'user_id' => $request->user_id,
             'date' => $request->date,
             'start_time' => $request->start_time,
@@ -2230,21 +2364,56 @@ class TimeManagementController extends Controller
             'approval_status' => 'Pending',
         ]);
 
+        // Get the employee who submitted the request
+        $employee = User::find($request->user_id);
+
+        // Find HR personnel that are active
+        $hr_personnel = User::where('department', 'Human Resources')
+            ->where('employee_status', '!=', 'Inactive')
+            ->get();
+
+        // Create notification for each HR personnel
+        foreach ($hr_personnel as $hr) {
+            Notification::create([
+                'users_id' => $hr->id,
+                'message' => "New overtime request from {$employee->name}.",
+                'type' => 'overtime_request',
+                'maker_id' => $request->user_id,
+                'status' => 'Unread'
+            ]);
+
+            // Send email notification to HR
+            Mail::to($hr->email)->send(new OvertimeRequestMail($overtime, $employee));
+        }
+
         return redirect()->route('overtime.index2', ['id' => $request->user_id])
             ->with('success', 'Overtime request submitted successfully');
     }
-
 
     // Approve an overtime request
     public function overtime_approve(Request $request, $id)
     {
         $overtime = EmployeeOvertime::findOrFail($id);
-
         $overtime->update([
             'approval_status' => 'Approved',
             'answer_user_id' => Auth::id(),
             'updated_at' => now(),
         ]);
+
+        // Get the employee who submitted the request
+        $employee = User::find($overtime->user_id);
+
+        // Create notification for the employee
+        Notification::create([
+            'users_id' => $overtime->user_id,
+            'message' => "Your overtime request for {$overtime->date} has been approved.",
+            'type' => 'overtime_approved',
+            'maker_id' => Auth::id(),
+            'status' => 'Unread'
+        ]);
+
+        // Send email notification to employee
+        Mail::to($employee->email)->send(new OvertimeApprovedMail($overtime));
 
         return redirect()->back()->with('success', 'Overtime request approved successfully');
     }
@@ -2257,13 +2426,27 @@ class TimeManagementController extends Controller
         ]);
 
         $overtime = EmployeeOvertime::findOrFail($id);
-
         $overtime->update([
             'approval_status' => 'Declined',
             'declined_reason' => $request->declined_reason,
             'answer_user_id' => Auth::id(),
             'updated_at' => now(),
         ]);
+
+        // Get the employee who submitted the request
+        $employee = User::find($overtime->user_id);
+
+        // Create notification for the employee
+        Notification::create([
+            'users_id' => $overtime->user_id,
+            'message' => "Your overtime request for {$overtime->date} has been declined.",
+            'type' => 'overtime_declined',
+            'maker_id' => Auth::id(),
+            'status' => 'Unread'
+        ]);
+
+        // Send email notification to employee
+        Mail::to($employee->email)->send(new OvertimeDeclinedMail($overtime));
 
         return redirect()->back()->with('success', 'Overtime request declined successfully');
     }
@@ -2278,11 +2461,31 @@ class TimeManagementController extends Controller
             return redirect()->back()->with('error', 'Only pending requests can be deleted');
         }
 
-        $overtime->delete();
+        // Get the employee who submitted the request
+        $employee = User::find($overtime->user_id);
 
+        // Find HR personnel that are active
+        $hr_personnel = User::where('department', 'Human Resources')
+            ->where('employee_status', '!=', 'Inactive')
+            ->get();
+
+        // Create notification for each HR personnel
+        foreach ($hr_personnel as $hr) {
+            Notification::create([
+                'users_id' => $hr->id,
+                'message' => "Overtime request from {$employee->name} has been cancelled.",
+                'type' => 'overtime_cancelled',
+                'maker_id' => $overtime->user_id,
+                'status' => 'Unread'
+            ]);
+
+            // Send email notification to HR personnel about the cancellation
+            Mail::to($hr->email)->send(new OvertimeCancelledMail($overtime, $employee));
+        }
+
+        $overtime->delete();
         return redirect()->back()->with('success', 'Overtime request deleted successfully');
     }
-
     /**
      * Time Off
      */
@@ -2423,44 +2626,6 @@ class TimeManagementController extends Controller
         ));
     }
 
-    public function time_off_assign_update(Request $request, $id)
-    {
-        $request->validate([
-            'balance' => 'required|numeric|min:0'
-        ]);
-
-        // Get the time off assignment
-        $assignment = DB::table('time_off_assign')
-            ->join('time_off_policy', 'time_off_assign.time_off_id', '=', 'time_off_policy.id')
-            ->where('time_off_assign.id', $id)
-            ->select('time_off_assign.*', 'time_off_policy.quota')
-            ->first();
-
-        // Check if balance exceeds quota
-        if ($request->balance > $assignment->quota) {
-            return back()->with('error', 'Balance cannot exceed the maximum quota.');
-        }
-
-        // Update the balance
-        DB::table('time_off_assign')
-            ->where('id', $id)
-            ->update([
-                'balance' => $request->balance,
-                'updated_at' => now()
-            ]);
-
-        return redirect()->route('time.off.assign.index')
-            ->with('success', 'Time off balance updated successfully.');
-    }
-
-    public function time_off_assign_destroy($id)
-    {
-        // Delete the time off assignment
-        DB::table('time_off_assign')->where('id', $id)->delete();
-
-        return redirect()->route('time.off.assign.index')
-            ->with('success', 'Time off assignment deleted successfully.');
-    }
     public function time_off_assign_create()
     {
         // Get time off policies with their quotas
@@ -2487,43 +2652,6 @@ class TimeManagementController extends Controller
             'time_management.time_off.assign.create',
             compact('timeOffPolicies', 'employees', 'departments', 'positions')
         );
-    }
-
-
-    public function getAssignedEmployees(Request $request)
-    {
-        $timeOffId = $request->input('time_off_id');
-
-        if (!$timeOffId) {
-            return response()->json(['employees' => []]);
-        }
-
-        // Get all user IDs who already have this time off policy
-        $assignedEmployees = DB::table('time_off_assign')
-            ->where('time_off_id', $timeOffId)
-            ->pluck('user_id')
-            ->toArray();
-
-        return response()->json(['employees' => $assignedEmployees]);
-    }
-
-
-    public function getTimeOffPolicyQuota(Request $request)
-    {
-        $timeOffId = $request->input('time_off_id');
-
-        if (!$timeOffId) {
-            return response()->json(['quota' => 0]);
-        }
-
-        $policy = DB::table('time_off_policy')
-            ->where('id', $timeOffId)
-            ->first();
-
-        return response()->json([
-            'quota' => $policy ? $policy->quota : 0,
-            'name' => $policy ? $policy->time_off_name : ''
-        ]);
     }
 
     public function time_off_assign_store(Request $request)
@@ -2570,6 +2698,29 @@ class TimeManagementController extends Controller
                 'updated_at' => now()
             ]);
 
+            // Get employee data
+            $employee = User::find($employeeId);
+
+            // Create notification
+            Notification::create([
+                'users_id' => $employeeId,
+                'message' => "You have been assigned {$policy->time_off_name} with a balance of {$balance} days.",
+                'type' => 'time_off_assign',
+                'maker_id' => Auth::user()->id,
+                'status' => 'Unread'
+            ]);
+
+            // Send email
+            if ($employee && $employee->email) {
+                $mailData = [
+                    'employee_name' => $employee->name,
+                    'time_off_name' => $policy->time_off_name,
+                    'balance' => $balance
+                ];
+
+                Mail::to($employee->email)->send(new TimeOffAssignCreateMail($mailData));
+            }
+
             $successCount++;
         }
 
@@ -2579,5 +2730,584 @@ class TimeManagementController extends Controller
         }
 
         return redirect()->route('time.off.assign.index')->with('success', $message);
+    }
+
+    public function time_off_assign_update(Request $request, $id)
+    {
+        $request->validate([
+            'balance' => 'required|numeric|min:0'
+        ]);
+
+        // Get the time off assignment
+        $assignment = DB::table('time_off_assign')
+            ->join('time_off_policy', 'time_off_assign.time_off_id', '=', 'time_off_policy.id')
+            ->join('users', 'time_off_assign.user_id', '=', 'users.id')
+            ->where('time_off_assign.id', $id)
+            ->select(
+                'time_off_assign.*',
+                'time_off_policy.quota',
+                'time_off_policy.time_off_name',
+                'users.name as employee_name',
+                'users.email'
+            )
+            ->first();
+
+        // Check if balance exceeds quota
+        if ($request->balance > $assignment->quota) {
+            return back()->with('error', 'Balance cannot exceed the maximum quota.');
+        }
+
+        $oldBalance = $assignment->balance;
+        $newBalance = $request->balance;
+
+        // Update the balance
+        DB::table('time_off_assign')
+            ->where('id', $id)
+            ->update([
+                'balance' => $newBalance,
+                'updated_at' => now()
+            ]);
+
+        // Create notification
+        Notification::create([
+            'users_id' => $assignment->user_id,
+            'message' => "Your {$assignment->time_off_name} balance has been updated from {$oldBalance} to {$newBalance} days.",
+            'type' => 'time_off_update',
+            'maker_id' => Auth::user()->id,
+            'status' => 'Unread'
+        ]);
+
+        // Send email
+        if ($assignment->email) {
+            $mailData = [
+                'employee_name' => $assignment->employee_name,
+                'time_off_name' => $assignment->time_off_name,
+                'old_balance' => $oldBalance,
+                'new_balance' => $newBalance
+            ];
+
+            Mail::to($assignment->email)->send(new TimeOffAssignUpdateMail($mailData));
+        }
+
+        return redirect()->route('time.off.assign.index')
+            ->with('success', 'Time off balance updated successfully.');
+    }
+
+    public function time_off_assign_destroy($id)
+    {
+        // Get the time off assignment details before deletion
+        $assignment = DB::table('time_off_assign')
+            ->join('time_off_policy', 'time_off_assign.time_off_id', '=', 'time_off_policy.id')
+            ->join('users', 'time_off_assign.user_id', '=', 'users.id')
+            ->where('time_off_assign.id', $id)
+            ->select(
+                'time_off_assign.*',
+                'time_off_policy.time_off_name',
+                'users.name as employee_name',
+                'users.email'
+            )
+            ->first();
+
+        if ($assignment) {
+            // Create notification
+            Notification::create([
+                'users_id' => $assignment->user_id,
+                'message' => "Your {$assignment->time_off_name} assignment has been removed.",
+                'type' => 'time_off_delete',
+                'maker_id' => Auth::user()->id,
+                'status' => 'Unread'
+            ]);
+
+            // Send email
+            if ($assignment->email) {
+                $mailData = [
+                    'employee_name' => $assignment->employee_name,
+                    'time_off_name' => $assignment->time_off_name
+                ];
+
+                Mail::to($assignment->email)->send(new TimeOffAssignDestroyMail($mailData));
+            }
+
+            // Delete the time off assignment
+            DB::table('time_off_assign')->where('id', $id)->delete();
+        }
+
+        return redirect()->route('time.off.assign.index')
+            ->with('success', 'Time off assignment deleted successfully.');
+    }
+
+
+
+    public function getAssignedEmployees(Request $request)
+    {
+        $timeOffId = $request->input('time_off_id');
+
+        if (!$timeOffId) {
+            return response()->json(['employees' => []]);
+        }
+
+        // Get all user IDs who already have this time off policy
+        $assignedEmployees = DB::table('time_off_assign')
+            ->where('time_off_id', $timeOffId)
+            ->pluck('user_id')
+            ->toArray();
+
+        return response()->json(['employees' => $assignedEmployees]);
+    }
+
+
+    public function getTimeOffPolicyQuota(Request $request)
+    {
+        $timeOffId = $request->input('time_off_id');
+
+        if (!$timeOffId) {
+            return response()->json(['quota' => 0]);
+        }
+
+        $policy = DB::table('time_off_policy')
+            ->where('id', $timeOffId)
+            ->first();
+
+        return response()->json([
+            'quota' => $policy ? $policy->quota : 0,
+            'name' => $policy ? $policy->time_off_name : ''
+        ]);
+    }
+
+
+
+
+    public function request_time_off_index(Request $request)
+    {
+        // Get all users, positions, departments, and time off policies for filters
+        $users = User::orderBy('name')->get();
+
+        // Get unique departments and positions
+        $departments = User::where('employee_status', '!=', 'Inactive')
+            ->whereNotNull('department')
+            ->distinct()
+            ->pluck('department');
+
+        $positions = User::where('employee_status', '!=', 'Inactive')
+            ->whereNotNull('position')
+            ->distinct()
+            ->pluck('position');
+
+        $timeOffPolicies = TimeOffPolicy::orderBy('time_off_name')->get();
+
+        // Build the query with joins
+        $query = RequestTimeOff::query()
+            ->join('users as u1', 'request_time_off.user_id', '=', 'u1.id') // User pemohon
+            ->leftJoin('users as u2', 'request_time_off.answered_by', '=', 'u2.id') // User yang menjawab
+            ->join('time_off_policy', 'request_time_off.time_off_id', '=', 'time_off_policy.id')
+            ->leftJoin('time_off_assign', function ($join) {
+                $join->on('request_time_off.user_id', '=', 'time_off_assign.user_id')
+                    ->on('request_time_off.time_off_id', '=', 'time_off_assign.time_off_id');
+            })
+            ->select(
+                'request_time_off.*',
+                'u1.name as user_name', // Nama user pemohon
+                'time_off_policy.time_off_name as time_off_name',
+                'u1.department',
+                'u1.position',
+                'u2.name as answered_by_name' // Nama user yang menjawab
+            );
+
+
+        // Apply filters - FIXED parameter names to match the form
+        if ($request->filled('employee')) {
+            $query->where('request_time_off.user_id', $request->employee);
+        }
+
+        if ($request->filled('position_request')) {
+            $query->where('users.position', $request->position_request);
+        }
+
+        if ($request->filled('department_request')) {
+            $query->where('users.department', $request->department_request);
+        }
+
+        if ($request->filled('time_off_type')) {
+            $query->where('request_time_off.time_off_id', $request->time_off_type);
+        }
+
+        if ($request->filled('date')) {
+            $date = $request->date;
+            $query->where(function ($q) use ($date) {
+                $q->where('request_time_off.start_date', '<=', $date)
+                    ->where('request_time_off.end_date', '>=', $date);
+            });
+        }
+
+        // Count statuses for the tabs
+        $pendingCount = (clone $query)->where('request_time_off.status', 'Pending')->count();
+        $approvedCount = (clone $query)->where('request_time_off.status', 'Approved')->count();
+        $declinedCount = (clone $query)->where('request_time_off.status', 'Declined')->count();
+
+        // Get pending requests
+        $pendingRequests = (clone $query)->where('request_time_off.status', 'Pending')
+            ->orderBy('request_time_off.created_at', 'desc')
+            ->get();
+
+        // Get approved requests
+        $approvedRequests = (clone $query)->where('request_time_off.status', 'Approved')
+            ->orderBy('request_time_off.updated_at', 'desc')
+            ->get();
+
+        // Get declined requests
+        $declinedRequests = (clone $query)->where('request_time_off.status', 'Declined')
+            ->orderBy('request_time_off.updated_at', 'desc')
+            ->get();
+
+        return view('time_management/time_off/request_time_off/index', compact(
+            'pendingRequests',
+            'approvedRequests',
+            'declinedRequests',
+            'users',
+            'positions',
+            'departments',
+            'timeOffPolicies',
+            'pendingCount',
+            'approvedCount',
+            'declinedCount'
+        ));
+    }
+
+
+    public function request_time_off_index2($id)
+    {
+        $employee = User::findOrFail($id);
+
+        // Get time off requests for this employee
+        $pendingRequests = RequestTimeOff::where('user_id', $id)
+            ->where('status', 'pending')
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        $approvedRequests = RequestTimeOff::where('user_id', $id)
+            ->where('status', 'approved')
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        $declinedRequests = RequestTimeOff::where('user_id', $id)
+            ->where('status', 'declined')
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        // Get time off assignments with policy information
+        $timeOffAssignments = DB::table('time_off_assign')
+            ->join('time_off_policy', 'time_off_assign.time_off_id', '=', 'time_off_policy.id')
+            ->where('time_off_assign.user_id', $id)
+            ->select(
+                'time_off_assign.id',
+                'time_off_assign.time_off_id',
+                'time_off_assign.balance',
+                'time_off_policy.time_off_name',
+                'time_off_policy.time_off_description',
+                'time_off_policy.quota'
+            )
+            ->get();
+
+        return view('time_management/time_off/request_time_off/index2', compact(
+            'employee',
+            'pendingRequests',
+            'approvedRequests',
+            'declinedRequests',
+            'timeOffAssignments'
+        ));
+    }
+
+    public function request_time_off_create($id)
+    {
+        $employee = User::findOrFail($id);
+
+        // Ambil data di mana end_date null atau masih berlaku
+        $timeOffTypes = TimeOffPolicy::whereNull('end_date')
+            ->orWhere('end_date', '>=', Carbon::today())
+            ->get();
+
+        return view('time_management.time_off.request_time_off.create', compact('employee', 'timeOffTypes'));
+    }
+
+    public function request_time_off_store(Request $request)
+    {
+        // Validate the request data
+        $validated = $request->validate([
+            'user_id' => 'required|exists:users,id',
+            'time_off_id' => 'required',
+            'start_date' => 'required|date',
+            'end_date' => 'required|date|after_or_equal:start_date',
+            'reason' => 'required|string|max:255',
+            'file_reason' => 'nullable|file|mimes:jpeg,png,jpg|max:2048',
+        ]);
+
+        // Create the time off request
+        $timeOffRequest = new RequestTimeOff();
+        $timeOffRequest->user_id = $request->user_id;
+        $timeOffRequest->time_off_id = $request->time_off_id;
+        $timeOffRequest->start_date = $request->start_date;
+        $timeOffRequest->end_date = $request->end_date;
+        $timeOffRequest->reason = $request->reason;
+        $timeOffRequest->status = 'pending';
+
+        // Handle file upload if present
+        if ($request->hasFile('file_reason')) {
+            $file = $request->file('file_reason');
+            $fileName = 'request_time_off_' . $request->time_off_id . '_' . $request->user_id . '.' . $file->getClientOriginalExtension();
+            $path = $file->storeAs('time_management/time_off', $fileName, 'public');
+            $timeOffRequest->file_reason_path = 'time_management/time_off/' . $fileName;
+        }
+
+        $timeOffRequest->save();
+
+        // Get the user who made the request
+        $user = User::find($request->user_id);
+
+        // Get HR personnel
+        $hr_personnel = User::where('department', 'Human Resources')
+            ->where('employee_status', '!=', 'Inactive')
+            ->get();
+
+        // Create notifications for HR personnel
+        foreach ($hr_personnel as $hr) {
+            Notification::create([
+                'users_id' => $hr->id,
+                'message' => "New time off request from {$user->name}.",
+                'type' => 'time_off_request',
+                'maker_id' => Auth::user()->id,
+                'status' => 'Unread'
+            ]);
+
+            // Send email notification to HR personnel
+            Mail::to($hr->email)->send(new TimeOffRequestSubmitted($timeOffRequest, $user));
+        }
+
+        return redirect()->route('request.time.off.index2', $request->user_id)
+            ->with('success', 'Time off request submitted successfully.');
+    }
+
+    public function request_time_off_destroy($id)
+    {
+        $request = RequestTimeOff::findOrFail($id);
+        $userId = $request->user_id;
+        $user = User::find($userId);
+
+        // Store request details before deletion for notifications
+        $requestDetails = [
+            'start_date' => $request->start_date,
+            'end_date' => $request->end_date,
+            'time_off_type' => $request->timeOffType->name ?? 'Time Off',
+        ];
+
+        // Get HR personnel
+        $hr_personnel = User::where('department', 'Human Resources')
+            ->where('employee_status', '!=', 'Inactive')
+            ->get();
+
+        // Create notifications for HR personnel about the cancelled request
+        foreach ($hr_personnel as $hr) {
+            Notification::create([
+                'users_id' => $hr->id,
+                'message' => "Time off request cancelled by {$user->name}.",
+                'type' => 'time_off_cancelled',
+                'maker_id' => Auth::user()->id,
+                'status' => 'Unread'
+            ]);
+
+            // Send email notification to HR personnel
+            Mail::to($hr->email)->send(new TimeOffRequestCancelled($request, $user));
+        }
+
+        $request->delete();
+
+        return redirect()->route('request.time.off.index2', $userId)
+            ->with('success', 'Time off request deleted successfully.');
+    }
+
+    public function request_time_off_approve($id)
+    {
+        $request = RequestTimeOff::findOrFail($id);
+
+        // Calculate the number of days requested
+        $startDate = new DateTime($request->start_date);
+        $endDate = new DateTime($request->end_date);
+        $interval = $startDate->diff($endDate);
+        $daysRequested = $interval->days + 1; // Including both start and end days
+
+        // Find the time off assignment record for this user and time off type
+        $timeOffAssignment = DB::table('time_off_assign')
+            ->where('user_id', $request->user_id)
+            ->where('time_off_id', $request->time_off_id)
+            ->first();
+
+        // Check if user has enough balance
+        if ($timeOffAssignment && $timeOffAssignment->balance >= $daysRequested) {
+            // Update the balance by subtracting the days requested
+            DB::table('time_off_assign')
+                ->where('user_id', $request->user_id)
+                ->where('time_off_id', $request->time_off_id)
+                ->update([
+                    'balance' => $timeOffAssignment->balance - $daysRequested,
+                    'updated_at' => now()
+                ]);
+
+            // Update the request status
+            $request->status = 'approved';
+            $request->answered_by = Auth::id();
+            $request->updated_at = now();
+            $request->save();
+
+            // Get the user who made the request
+            $user = User::find($request->user_id);
+
+            // Create notification for the user
+            Notification::create([
+                'users_id' => $request->user_id,
+                'message' => "Your time off request has been approved.",
+                'type' => 'time_off_approved',
+                'maker_id' => Auth::user()->id,
+                'status' => 'Unread'
+            ]);
+
+            // Send email notification to the user
+            Mail::to($user->email)->send(new TimeOffRequestApproved($request));
+
+            return redirect()->back()->with('success', 'Time off request approved successfully.');
+        } else {
+            // User doesn't have enough balance
+            return redirect()->back()->with('error', 'Cannot approve request. User does not have enough time off balance.');
+        }
+    }
+
+    public function request_time_off_decline(Request $httpRequest, $id)
+    {
+        $timeOffRequest = RequestTimeOff::findOrFail($id);
+        $timeOffRequest->status = 'Declined';
+        $timeOffRequest->answered_by = Auth::id();
+        $timeOffRequest->declined_reason = $httpRequest->declined_reason;
+        $timeOffRequest->updated_at = now();
+        $timeOffRequest->save();
+
+        // Get the user who made the request
+        $user = User::find($timeOffRequest->user_id);
+
+        // Create notification for the user
+        Notification::create([
+            'users_id' => $timeOffRequest->user_id,
+            'message' => "Your time off request has been declined.",
+            'type' => 'time_off_declined',
+            'maker_id' => Auth::user()->id,
+            'status' => 'Unread'
+        ]);
+
+        // Send email notification to the user
+        Mail::to($user->email)->send(new TimeOffRequestDeclined($timeOffRequest));
+
+        return redirect()->back()->with('success', 'Time off request declined successfully.');
+    }
+
+
+
+    public function checkBalance(Request $request)
+    {
+        $request->validate([
+            'user_id' => 'required|exists:users,id',
+            'time_off_id' => 'required',
+        ]);
+
+        try {
+            // Find the time off assignment record
+            $timeOffAssign = TimeOffAssign::where('user_id', $request->user_id)
+                ->where('time_off_id', $request->time_off_id)
+                ->first();
+
+            // Check if the record exists and has balance
+            if (!$timeOffAssign || $timeOffAssign->balance <= 0) {
+                return response()->json([
+                    'status' => 'success',
+                    'hasBalance' => false,
+                    'balance' => $timeOffAssign ? $timeOffAssign->balance : 0,
+                    'message' => 'User does not have available balance for this time off type.'
+                ]);
+            }
+
+            // Check for existing pending requests
+            $existingRequests = RequestTimeOff::where('user_id', $request->user_id)
+                ->where('status', 'pending')
+                ->get();
+
+            // If there are no existing requests, return success with the balance
+            if ($existingRequests->isEmpty()) {
+                return response()->json([
+                    'status' => 'success',
+                    'hasBalance' => true,
+                    'balance' => $timeOffAssign->balance,
+                    'message' => 'User has available balance for this time off type.',
+                    'hasConflicts' => false
+                ]);
+            }
+
+            // Create array of dates that are already requested
+            $unavailableDates = [];
+            foreach ($existingRequests as $request) {
+                $startDate = new DateTime($request->start_date);
+                $endDate = new DateTime($request->end_date);
+
+                // Create interval for one day
+                $interval = new DateInterval('P1D');
+
+                // Create date range
+                $dateRange = new DatePeriod($startDate, $interval, $endDate->modify('+1 day'));
+
+                // Add each date to the unavailable dates array
+                foreach ($dateRange as $date) {
+                    $unavailableDates[] = $date->format('Y-m-d');
+                }
+            }
+
+            // Get the next available date (1 day after the last unavailable date)
+            sort($unavailableDates);
+            $firstUnavailableDate = $unavailableDates[0] ?? null;
+            $lastUnavailableDate = end($unavailableDates) ?? null;
+
+            // Reset pointer after using end()
+            reset($unavailableDates);
+
+            // Format the next available dates
+            $nextAvailableDates = [];
+            if ($firstUnavailableDate) {
+                $beforeFirstDate = new DateTime($firstUnavailableDate);
+                $beforeFirstDate->modify('-1 day');
+                if ($beforeFirstDate >= new DateTime()) {
+                    $nextAvailableDates[] = $beforeFirstDate->format('Y-m-d');
+                }
+            }
+
+            if ($lastUnavailableDate) {
+                $afterLastDate = new DateTime($lastUnavailableDate);
+                $afterLastDate->modify('+1 day');
+                $nextAvailableDates[] = $afterLastDate->format('Y-m-d');
+            }
+
+            return response()->json([
+                'status' => 'success',
+                'hasBalance' => true,
+                'balance' => $timeOffAssign->balance,
+                'message' => 'User has available balance for this time off type.',
+                'hasConflicts' => !empty($unavailableDates),
+                'unavailableDates' => $unavailableDates,
+                'nextAvailableDates' => $nextAvailableDates,
+                'suggestions' => [
+                    'before' => !empty($firstUnavailableDate) ? 'Available before: ' . date('d M Y', strtotime($firstUnavailableDate . ' -1 day')) : null,
+                    'after' => !empty($lastUnavailableDate) ? 'Available after: ' . date('d M Y', strtotime($lastUnavailableDate . ' +1 day')) : null,
+                ]
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error checking time off balance: ' . $e->getMessage());
+            return response()->json([
+                'status' => 'error',
+                'message' => 'An error occurred while checking time off balance.'
+            ], 500);
+        }
     }
 }

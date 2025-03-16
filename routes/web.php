@@ -98,7 +98,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/recruitment/labor_demand/approve/{id}', [RecruitmentController::class, 'approve_labor_demand'])->name('recruitment.labor.demand.approve');
     Route::put('/recruitment/labor_demand/update/{id}', [RecruitmentController::class, 'update_labor_demand'])->name('recruitment.labor.demand.update');
     Route::post('/recruitment/labor_demand/store', [RecruitmentController::class, 'store_labor_demand'])->name('recruitment.labor.demand.store');
-    Route::get('/recruitment/labor_demand/{id}', [RecruitmentController::class, 'show_labor_demand']);
+    Route::get('/recruitment/labor_demand/{id}', [RecruitmentController::class, 'show_labor_demand'])->name('recruitment.labor.demand.show');;
     //AHP Recruitment 
     Route::get('/recruitment/ahp_recruitment/index', [RecruitmentController::class, 'index_ahp'])->name('recruitment.ahp');
     Route::post('/ahp/calculate', [RecruitmentController::class, 'calculate'])->name('ahp.calculate');
@@ -179,7 +179,7 @@ Route::middleware('auth')->group(function () {
     Route::post('time_management/overtime/decline/{id}', [TimeManagementController::class, 'overtime_decline'])->name('overtime.decline');
     Route::delete('time_management/overtime/{id}', [TimeManagementController::class, 'overtime_destroy'])->name('overtime.destroy');
 
-
+    // Time Off Policy Routes
     Route::get('time_management/time_off/policy/index', [TimeManagementController::class, 'time_off_policy_index'])->name('time.off.policy.index');
     Route::get('time_management/time_off/policy/create', [TimeManagementController::class, 'time_off_policy_create'])->name('time.off.policy.create');
     Route::post('time_management/time_off/policy/store', [TimeManagementController::class, 'time_off_policy_store'])->name('time.off.policy.store');
@@ -202,4 +202,16 @@ Route::middleware('auth')->group(function () {
         ->name('time.off.get.assigned.employees');
     Route::get('time_management/time_off/assign/quota', [TimeManagementController::class,  'getTimeOffPolicyQuota'])
         ->name('time.off.get.policy.quota');
+
+    // Time Off Request Routes
+    Route::get('time_management/time_off/request_time_off/index', [TimeManagementController::class, 'request_time_off_index'])->name('request.time.off.index');
+    Route::get('time_management/time_off/request_time_off/index2/{id}', [TimeManagementController::class, 'request_time_off_index2'])->name('request.time.off.index2');
+    Route::get('time_management/time_off/request_time_off/create/{id}', [TimeManagementController::class, 'request_time_off_create'])->name('request.time.off.create');
+    Route::post('time_management/time_off/request_time_off/store', [TimeManagementController::class, 'request_time_off_store'])->name('request.time.off.store');
+    Route::get('time_management/time_off/request_time_off/check-time-off-balance', [TimeManagementController::class,'checkBalance']);
+
+
+    Route::post('time_management/time_off/request_time_off/approve/{id}', [TimeManagementController::class, 'request_time_off_approve'])->name('request.time.off.approve');
+    Route::post('time_management/time_off/request_time_off/decline/{id}', [TimeManagementController::class, 'request_time_off_decline'])->name('request.time.off.decline');
+    Route::delete('time_management/time_off/request_time_off/{id}', [TimeManagementController::class, 'request_time_off_destroy'])->name('request.time.off.destroy');
 });

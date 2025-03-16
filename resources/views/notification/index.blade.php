@@ -123,8 +123,8 @@
                     <div class="notification-title text-white">
                         @php
                         $maker = $notificationMakers[$notification->maker_id] ?? null;
-                        $position = $maker->position ?? 'Unknown';
-                        $department = $maker->department ?? 'Unknown';
+                        $position = $maker->position ?? 'System';
+                        $department = $maker->department ?? 'System';
 
                         $displayTitle = ($position == $department) ? $position : "$position $department";
                         @endphp
