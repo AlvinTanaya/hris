@@ -227,7 +227,7 @@
                                 <a href="{{ route('recruitment.labor.demand.edit', $item->id) }}" class="btn btn-warning btn-sm me-2">
                                     <i class="fas fa-pencil"></i> Edit
                                 </a>
-                                @if (Auth::user()->department == 'Human Resources' && Auth::user()->position == 'General Manager')
+                                @if (Auth::user()->department == 'General Manager' && Auth::user()->position == 'General Manager')
                                 <a href="#" class="btn btn-success btn-sm me-2 approve-btn" data-id="{{ $item->id }}">
                                     <i class="fa-solid fa-thumbs-up"></i> Approve
                                 </a>

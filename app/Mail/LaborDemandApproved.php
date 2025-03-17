@@ -35,7 +35,7 @@ class LaborDemandApproved extends Mailable
                    ->markdown('emails.labor-demand-approved')
                    ->with([
                        'demand' => $this->demand,
-                       'url' => route('recruitment.labor.demand.show', $this->demand->id)
+                       'url' => route('welcome') 
                    ]);
     }
 }

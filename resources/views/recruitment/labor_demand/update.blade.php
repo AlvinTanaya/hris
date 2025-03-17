@@ -35,7 +35,7 @@
                         <select class="form-control" id="position" name="position" required>
                             <option value="" selected disabled>Select Position</option>
                             <option value="Director" {{ $demand->position == 'Director' ? 'selected' : '' }}>Director</option>
-                            <option value="General Manager" {{ old('position') == 'General Manager' ? 'selected' : '' }}>General Manager</option>
+                            <option value="General Manager" {{ $demand->position  == 'General Manager' ? 'selected' : '' }}>General Manager</option>
                             <option value="Manager" {{ $demand->position == 'Manager' ? 'selected' : '' }}>Manager</option>
                             <option value="Supervisor" {{ $demand->position == 'Supervisor' ? 'selected' : '' }}>Supervisor</option>
                             <option value="Staff" {{ $demand->position == 'Staff' ? 'selected' : '' }}>Staff</option>
@@ -52,7 +52,7 @@
                             <option value="Director" {{ $demand->department == 'Director' ? 'selected' : '' }}>
                                 Director
                             </option>
-                            <option value="General Manager" {{ old('department') == 'General Manager' ? 'selected' : '' }}>
+                            <option value="General Manager" {{ $demand->position == 'General Manager' ? 'selected' : '' }}>
                                 General Manager
                             </option>
                             <option value="Human Resources" {{ $demand->department == 'Human Resources' ? 'selected' : '' }}>

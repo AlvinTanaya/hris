@@ -175,7 +175,7 @@ class RecruitmentController extends Controller
             'position' => 'required|string|max:255',
             'opening_date' => 'required|date',
             'closing_date' => 'required|date',
-            'status_job' => 'required|string|max:255',
+
             'reason' => 'required|string|max:255',
             'qty_needed' => 'required|integer',
             'gender' => 'required|string|max:255',
@@ -183,11 +183,18 @@ class RecruitmentController extends Controller
             'education' => 'required|string|max:255',
             'major' => 'required|string|max:255',
             'experience' => 'required|string|max:255',
-            'length_of_working' => 'required|integer',
+            'status_job' => 'required|string|in:Full Time,Part Time,Contract',
+            'length_of_working' => [
+                'nullable',  // Default nullable
+                'required_if:status_job,Part Time,Contract', // Required only if status_job is Part Time or Contract
+                'integer',  // Example: Ensuring it's a valid number
+            ],
+
             'skills' => 'required|string|max:255',
             'time_work_experience' => 'nullable|string|max:255',
         ]);
 
+      
         // Tambahkan status dan informasi tambahan  
         $validated['status_demand'] = 'Pending';
         $validated['qty_fullfil'] = 0;
@@ -196,15 +203,19 @@ class RecruitmentController extends Controller
         $validated['maker_id'] = $request->maker_id;
 
         // Menggunakan ID yang unik  
-        $lastId = recruitment_demand::max('id');
-        $newId = $lastId ? $lastId + 1 : 1;
+        $count = recruitment_demand::count(); // Get total number of records
+        $newId = $count + 1; // Increment count to generate the new ID
         $validated['recruitment_demand_id'] = 'ptk_' . $newId;
+        
 
         // Proses input untuk menyimpan ke database  
         $validated['reason'] = implode("\n", array_map('trim', explode("\n", $request->reason)));
         $validated['job_goal'] = implode("\n", array_map('trim', explode("\n", $request->job_goal)));
         $validated['experience'] = implode("\n", array_map('trim', explode("\n", $request->experience)));
         $validated['skills'] = implode("\n", array_map('trim', explode("\n", $request->skills)));
+
+
+        //dd($validated);
 
         // Simpan data ke database  
         $demand = recruitment_demand::create($validated);
@@ -231,37 +242,7 @@ class RecruitmentController extends Controller
             ->with('success', 'Job request has been created successfully');
     }
 
-    public function show_labor_demand($id)
-    {
-        $demand = recruitment_demand::find($id);
 
-        if (!$demand) {
-            return response()->json(['message' => 'Labor Demand not found'], 404);
-        }
-
-        return response()->json([
-            'id' => $demand->id,
-            'recruitment_demand_id' => $demand->recruitment_demand_id,
-            'status_demand' => $demand->status_demand,
-            'department' => $demand->department,
-            'position' => $demand->position,
-            'opening_date' => $demand->opening_date,
-            'closing_date' => $demand->closing_date,
-            'status_job' => $demand->status_job,
-            'reason' => $demand->reason,
-            'qty_needed' => $demand->qty_needed,
-            'qty_fullfil' => $demand->qty_fullfil,
-            'gender' => $demand->gender,
-            'job_goal' => $demand->job_goal,
-            'education' => $demand->education,
-            'major' => $demand->major,
-            'experience' => $demand->experience,
-            'length_of_working' => $demand->length_of_working,
-            'time_work_experience' => $demand->time_work_experience,
-            'declined_reason' => $demand->declined_reason,
-            'skills' => $demand->skills,
-        ]);
-    }
 
     public function update_labor_demand(Request $request, $id)
     {
@@ -271,7 +252,7 @@ class RecruitmentController extends Controller
             'position' => 'required|string|max:255',
             'opening_date' => 'required|date',
             'closing_date' => 'required|date',
-            'status_job' => 'required|string|max:255',
+           
             'reason' => 'required|string|max:255',
             'qty_needed' => 'required|integer',
             'gender' => 'required|string|max:255',
@@ -279,7 +260,12 @@ class RecruitmentController extends Controller
             'education' => 'required|string|max:255',
             'major' => 'required|string|max:255',
             'experience' => 'required|string|max:255',
-            'length_of_working' => 'required|integer',
+            'status_job' => 'required|string|in:Full Time,Part Time,Contract',
+            'length_of_working' => [
+                'nullable',  // Default nullable
+                'required_if:status_job,Part Time,Contract', // Required only if status_job is Part Time or Contract
+                'integer',  // Example: Ensuring it's a valid number
+            ],
             'skills' => 'required|string|max:255',
         ]);
 
@@ -327,6 +313,38 @@ class RecruitmentController extends Controller
                 ->with('error', 'Failed to update job request: ' . $e->getMessage())
                 ->withInput();
         }
+    }
+
+    public function show_labor_demand($id)
+    {
+        $demand = recruitment_demand::find($id);
+
+        if (!$demand) {
+            return response()->json(['message' => 'Labor Demand not found'], 404);
+        }
+
+        return response()->json([
+            'id' => $demand->id,
+            'recruitment_demand_id' => $demand->recruitment_demand_id,
+            'status_demand' => $demand->status_demand,
+            'department' => $demand->department,
+            'position' => $demand->position,
+            'opening_date' => $demand->opening_date,
+            'closing_date' => $demand->closing_date,
+            'status_job' => $demand->status_job,
+            'reason' => $demand->reason,
+            'qty_needed' => $demand->qty_needed,
+            'qty_fullfil' => $demand->qty_fullfil,
+            'gender' => $demand->gender,
+            'job_goal' => $demand->job_goal,
+            'education' => $demand->education,
+            'major' => $demand->major,
+            'experience' => $demand->experience,
+            'length_of_working' => $demand->length_of_working,
+            'time_work_experience' => $demand->time_work_experience,
+            'declined_reason' => $demand->declined_reason,
+            'skills' => $demand->skills,
+        ]);
     }
 
 

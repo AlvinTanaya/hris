@@ -24,6 +24,8 @@ Route::get('/', function () {
     }
     return view('welcome');
 })->name('welcome');
+Route::get('login', [App\Http\Controllers\Auth\LoginController::class, 'showLoginForm'])->name('login');
+Route::post('login', [App\Http\Controllers\Auth\LoginController::class, 'login']);
 
 
 
@@ -33,8 +35,6 @@ Route::get('/job_vacancy/index', [VacancyController::class, 'index'])->name('job
 Route::get('/job_vacancy/create/{id}', [VacancyController::class, 'create'])->name('job_vacancy.create');
 Route::post('/job_vacancy/store/{id}', [VacancyController::class, 'store'])->name('job_vacancy.store');
 
-Route::get('login', [App\Http\Controllers\Auth\LoginController::class, 'showLoginForm'])->name('login');
-Route::post('login', [App\Http\Controllers\Auth\LoginController::class, 'login']);
 
 
 // Password Reset Routes

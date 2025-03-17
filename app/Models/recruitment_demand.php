@@ -28,7 +28,7 @@ class recruitment_demand extends Model
         'gender',
         'job_goal',
         'education',
-        'majot',
+        'major',
         'experience',
         'length_of_working',
         'time_work_experience',
