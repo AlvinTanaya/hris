@@ -738,7 +738,7 @@
                 <li class="nav-item">
                     <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown">
                         <i class="fas fa-clock"></i>
-                        <span>Time Management</span>
+                        <span>Time Management HR</span>
                         <!-- <i class="dropdown-icon fas fa-chevron-right ms-auto"></i> -->
                     </a>
                     <div class="dropdown-container">
@@ -757,10 +757,7 @@
                                 <i class="fas fa-users-cog"></i>
                                 <span>Set Shift</span>
                             </a>
-                            <a href="{{ url('/time_management/change_shift/index/' . Auth::user()->id) }}" class="nav-link">
-                                <i class="fa-solid fa-user"></i>
-                                <span>Employee Shift</span>
-                            </a>
+
                         </div>
                         <a href="{{ url('/time_management/employee_absent/index') }}" class="nav-link">
                             <i class="fas fa-user-clock"></i>
@@ -784,20 +781,20 @@
                                 <i class="fa-solid fa-user-tie"></i>
                                 <span>Request Time Off</span>
                             </a>
-                            <a href="{{ url('/time_management/time_off/request_time_off/index2/' . Auth::user()->id) }}" class="nav-link">
+                            <!-- <a href="{{ url('/time_management/time_off/request_time_off/index2/' . Auth::user()->id) }}" class="nav-link">
                                 <i class="fa-solid fa-user-tie"></i>
                                 <span>Time Off</span>
-                            </a>
+                            </a> -->
                         </div>
 
                         <a href="{{ url('/time_management/overtime/index') }}" class="nav-link">
                             <i class="fas fa-business-time"></i>
                             <span>Overtime</span>
                         </a>
-                        <a href="{{ url('/time_management/overtime/index2/' . Auth::user()->id) }}" class="nav-link">
+                        <!-- <a href="{{ url('/time_management/overtime/index2/' . Auth::user()->id) }}" class="nav-link">
                             <i class="fas fa-business-time"></i>
                             <span>Overtime</span>
-                        </a>
+                        </a> -->
                         <a href="{{ url('/time_management/request_resign/index') }}" class="nav-link">
                             <i class="fas fa-door-open"></i>
                             <span>Resign</span>
@@ -820,7 +817,35 @@
                         </a> -->
                     </div>
                 </li>
-
+                <li class="nav-item">
+                    <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown">
+                        <i class="fas fa-clock"></i>
+                        <span>Time Management Employee</span>
+                        <!-- <i class="dropdown-icon fas fa-chevron-right ms-auto"></i> -->
+                    </a>
+                    <div class="dropdown-container">
+                        <a href="{{ url('/time_management/change_shift/index/' . Auth::user()->id) }}" class="nav-link">
+                            <i class="fa-solid fa-user"></i>
+                            <span>Employee Shift</span>
+                        </a>
+                        <a href="{{ url('/time_management/warning_letter/index2/' . Auth::user()->id) }}" class="nav-link">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            <span>Warning Letter</span>
+                        </a>
+                        <a href="{{ url('/time_management/overtime/index2/' . Auth::user()->id) }}" class="nav-link">
+                            <i class="fas fa-business-time"></i>
+                            <span>Overtime</span>
+                        </a>
+                        <a href="{{ url('/time_management/request_resign/index2/' . Auth::user()->id) }}" class="nav-link">
+                            <i class="fas fa-door-open"></i>
+                            <span>Resign</span>
+                        </a>
+                        <a href="{{ url('/time_management/time_off/request_time_off/index2/' . Auth::user()->id) }}" class="nav-link">
+                            <i class="fa-solid fa-user-tie"></i>
+                            <span>Time Off</span>
+                        </a>
+                    </div>
+                </li>
                 @else
                 <!-- Limited menu for Staff users -->
                 <li class="nav-item">
@@ -837,7 +862,8 @@
                         <!-- <i class="dropdown-icon fas fa-chevron-right ms-auto"></i> -->
                     </a>
                     <div class="dropdown-container">
-                        <a href="{{ url('/time_management/employee_shift/index2/' . Auth::user()->id) }}" class="nav-link">
+
+                        <a href="{{ url('/time_management/change_shift/index/' . Auth::user()->id) }}" class="nav-link">
                             <i class="fa-solid fa-user"></i>
                             <span>Employee Shift</span>
                         </a>

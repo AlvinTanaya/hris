@@ -136,7 +136,7 @@
         </div>
 
         <div class="email-content">
-            <p class="greeting">Hello {{ $employee->name }},</p>
+            <p class="greeting">Hello, {{ $employee->name }}</p>
 
             <p class="message">
                 We regret to inform you that your overtime request has been <strong>declined</strong>.

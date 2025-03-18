@@ -20,7 +20,7 @@ class ShiftChangeDeclinedMail extends Mailable
     public function build()
     {
         return $this->subject('Shift Change Declined')
-            ->view('emails.shift_declined')
+            ->view('emails.shift_change_declined')
             ->with([
                 'userName' => $this->request->user->name,
                 'reason' => $this->request->declined_reason,

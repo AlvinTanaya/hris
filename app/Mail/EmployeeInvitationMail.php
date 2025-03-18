@@ -14,13 +14,16 @@ class EmployeeInvitationMail extends Mailable
     public $messageContent;
     public $makerName;
 
+    public $userName;
+
     /**
      * Create a new message instance.
      */
-    public function __construct($messageContent, $makerName)
+    public function __construct($messageContent, $makerName, $userName)
     {
         $this->messageContent = $messageContent;
         $this->makerName = $makerName;
+        $this->userName = $userName;
     }
 
     /**
@@ -33,6 +36,7 @@ class EmployeeInvitationMail extends Mailable
                     ->with([
                         'messageContent' => $this->messageContent,
                         'makerName' => $this->makerName,
+                        'userName' => $this->userName,
                     ]);
     }
 }

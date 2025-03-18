@@ -12,10 +12,12 @@ class OvertimeApprovedMail extends Mailable
     use Queueable, SerializesModels;
 
     public $overtime;
+    public $employee;
 
-    public function __construct(EmployeeOvertime $overtime)
+    public function __construct(EmployeeOvertime $overtime,  $employee)
     {
         $this->overtime = $overtime;
+        $this->employee = $employee;
     }
 
     public function build()
@@ -23,7 +25,8 @@ class OvertimeApprovedMail extends Mailable
         return $this->subject('Overtime Request Approved')
                     ->view('emails.overtime_approved')
                     ->with([
-                        'overtime' => $this->overtime
+                        'overtime' => $this->overtime,
+                        'employee' => $this->employee
                     ]);
     }
 }

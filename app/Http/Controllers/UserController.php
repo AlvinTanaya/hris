@@ -1050,6 +1050,7 @@ class UserController extends Controller
 
         // Kirim email notifikasi
         Mail::to($user->email)->send(new TransferNotification(
+            $user,
             $request->old_position,
             $request->old_department,
             $request->new_position,

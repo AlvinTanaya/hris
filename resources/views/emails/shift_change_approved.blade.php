@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Overtime Request Approved</title>
+    <title>Shift Change Request Approved</title>
     <style>
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -95,6 +95,21 @@
             vertical-align: top;
         }
 
+        .next-steps {
+            background-color: #ecfdf5;
+            padding: 15px 20px;
+            margin-bottom: 25px;
+            border-radius: 4px;
+            border: 1px solid #d1fae5;
+        }
+
+        .next-steps h3 {
+            margin-top: 0;
+            margin-bottom: 15px;
+            color: #10b981;
+            font-size: 16px;
+        }
+
         .button-container {
             text-align: center;
             margin: 30px 0;
@@ -132,56 +147,71 @@
 <body>
     <div class="email-container">
         <div class="email-header">
-            <h1>Overtime Request Approved</h1>
+            <h1>Shift Change Request Approved</h1>
         </div>
 
         <div class="email-content">
-            <p class="greeting">Hello, {{ $employee->name }}</p>
+            <p class="greeting">Dear {{ $userName }},</p>
 
             <p class="message">
-                We are pleased to inform you that your overtime request has been <strong>approved</strong>.
+                We are pleased to inform you that your shift change request has been <strong>approved</strong>. Your schedule has been updated in our system according to your request.
             </p>
-
             <div class="details-box">
-                <h3>Approved Overtime Details:</h3>
-                <table class="details-table">
-                    <tr>
-                        <th>Date:</th>
-                        <td>{{ $overtime->date }}</td>
-                    </tr>
-                    <tr>
-                        <th>Time Period:</th>
-                        <td>{{ $overtime->start_time }} - {{ $overtime->end_time }}</td>
-                    </tr>
-                    <tr>
-                        <th>Duration:</th>
-                        <td>{{ $overtime->total_hours }} hours</td>
-                    </tr>
-                    <tr>
-                        <th>Type:</th>
-                        <td>{{ $overtime->overtime_type }}</td>
-                    </tr>
+                <p><strong>New Schedule Details:</strong></p>
+                <p><strong>New Shift:</strong> <strong>{{ $newShift }}</strong></p>
+                <p><strong>Start Date:</strong> {{ $startDate }}</p>
+                <p><strong>End Date:</strong> {{ $endDate }}</p>
+                <p><strong>Status:</strong> <strong style="color: #10b981;">Approved</strong></p>
+
+                <table style="width: 100%; border-collapse: collapse; margin-top: 10px;">
+                    <thead>
+                        <tr style="background-color: #dbeafe;">
+                            <th style="padding: 8px; text-align: left; border: 1px solid #bfdbfe;">Day</th>
+                            <th style="padding: 8px; text-align: left; border: 1px solid #bfdbfe;">Hour In</th>
+                            <th style="padding: 8px; text-align: left; border: 1px solid #bfdbfe;">Hour Out</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @forelse($scheduleDetails as $schedule)
+                        <tr>
+                            <td style="padding: 8px; border: 1px solid #bfdbfe;">{{ $schedule['day'] }}</td>
+                            <td style="padding: 8px; border: 1px solid #bfdbfe;">{{ $schedule['hour_in'] }}</td>
+                            <td style="padding: 8px; border: 1px solid #bfdbfe;">{{ $schedule['hour_out'] }}</td>
+                        </tr>
+                        @empty
+                        <tr>
+                            <td colspan="3" style="padding: 8px; border: 1px solid #bfdbfe; text-align: center;">No schedule details available</td>
+                        </tr>
+                        @endforelse
+                    </tbody>
                 </table>
             </div>
 
+
+            <div class="next-steps">
+                <h3>Important Information</h3>
+                <p>Please ensure that you are familiar with the working hours of your new shift and make any necessary personal arrangements before the start date. If you have any questions about your new schedule, please contact your supervisor.</p>
+            </div>
+
             <p class="message">
-                Please ensure that you record your overtime hours accurately in the timesheet system. Your additional hours will be reflected in your next payroll cycle.
+                Thank you for your cooperation in managing this shift change. We appreciate your flexibility and commitment to our operations.
             </p>
 
             <div class="button-container">
-                <a href="{{ route('welcome') }}" class="button">Go to Website</a>
+                <a href="{{ route('welcome') }}" class="button">View Schedule</a>
             </div>
 
             <div class="signature">
                 <p>
-                    Thank you for your commitment,<br>
+                    Best Regards,<br>
                     <strong>{{ config('app.name') }}</strong>
                 </p>
             </div>
         </div>
 
         <div class="email-footer">
-            &copy; {{ date('Y') }} {{ config('app.name') }}. All rights reserved.
+            <p>This is an automated email. Please do not reply to this message.</p>
+            <p>&copy; {{ date('Y') }} PT. Timur Jaya Indosteel. All rights reserved.</p>
         </div>
     </div>
 </body>

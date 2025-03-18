@@ -213,5 +213,7 @@ Route::middleware('auth')->group(function () {
 
     Route::post('time_management/time_off/request_time_off/approve/{id}', [TimeManagementController::class, 'request_time_off_approve'])->name('request.time.off.approve');
     Route::post('time_management/time_off/request_time_off/decline/{id}', [TimeManagementController::class, 'request_time_off_decline'])->name('request.time.off.decline');
-    Route::delete('time_management/time_off/request_time_off/{id}', [TimeManagementController::class, 'request_time_off_destroy'])->name('request.time.off.destroy');
+    Route::delete('time_management/time_off/request_time_off/destroy/{id}', [TimeManagementController::class, 'request_time_off_destroy'])->name('request.time.off.destroy');
+
+
 });

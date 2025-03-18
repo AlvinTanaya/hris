@@ -26,6 +26,12 @@ class ResignationDeclinedMail extends Mailable
     public function build()
     {
         return $this->subject('Resignation Request Declined')
-            ->view('emails.resignation_declined');
+            ->view('emails.resignation_declined')
+            ->with([
+                'employee' => $this->employee,
+                'request' => $this->request,
+                'decliner' => $this->decliner,
+                'reason' => $this->reason
+            ]);
     }
 }

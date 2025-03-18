@@ -13,17 +13,22 @@ class OvertimeDeclinedMail extends Mailable
 
     public $overtime;
 
-    public function __construct(EmployeeOvertime $overtime)
+    public $employee;
+
+
+    public function __construct(EmployeeOvertime $overtime,     $employee)
     {
         $this->overtime = $overtime;
+        $this->employee = $employee;
     }
 
     public function build()
     {
         return $this->subject('Overtime Request Declined')
-                    ->view('emails.overtime_declined')
-                    ->with([
-                        'overtime' => $this->overtime
-                    ]);
+            ->view('emails.overtime_declined')
+            ->with([
+                'overtime' => $this->overtime,
+                'employee' => $this->employee
+            ]);
     }
 }

@@ -106,17 +106,40 @@
         <div class="email-content">
             <p class="message">Hello {{ $name }},</p>
             <p class="message">We are pleased to inform you that you have been assigned a new shift: <strong>{{ $type }}</strong>.</p>
-            
+
+            <!-- Replace the existing schedule details section with this table -->
             <div class="details-box">
                 <p><strong>Schedule Details:</strong></p>
                 <p><strong>Start Date:</strong> {{ $start_date }}</p>
                 <p><strong>End Date:</strong> {{ $end_date }}</p>
                 <p><strong>Shift Schedule:</strong></p>
-                <pre>{{ $scheduleDetails }}</pre>
+
+                <table style="width: 100%; border-collapse: collapse; margin-top: 10px;">
+                    <thead>
+                        <tr style="background-color: #dbeafe;">
+                            <th style="padding: 8px; text-align: left; border: 1px solid #bfdbfe;">Day</th>
+                            <th style="padding: 8px; text-align: left; border: 1px solid #bfdbfe;">Hour In</th>
+                            <th style="padding: 8px; text-align: left; border: 1px solid #bfdbfe;">Hour Out</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @forelse($scheduleDetails as $schedule)
+                        <tr>
+                            <td style="padding: 8px; border: 1px solid #bfdbfe;">{{ $schedule['day'] }}</td>
+                            <td style="padding: 8px; border: 1px solid #bfdbfe;">{{ $schedule['hour_in'] }}</td>
+                            <td style="padding: 8px; border: 1px solid #bfdbfe;">{{ $schedule['hour_out'] }}</td>
+                        </tr>
+                        @empty
+                        <tr>
+                            <td colspan="3" style="padding: 8px; border: 1px solid #bfdbfe; text-align: center;">No schedule details available</td>
+                        </tr>
+                        @endforelse
+                    </tbody>
+                </table>
             </div>
 
             <p class="message">Please review your schedule and reach out to the Human Resources department if you have any questions or concerns.</p>
-            
+
             <div class="button-container">
                 <a href="{{ route('welcome') }}" class="button">Go to Website</a>
             </div>

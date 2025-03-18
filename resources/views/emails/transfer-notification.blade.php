@@ -151,7 +151,7 @@
         </div>
 
         <div class="email-content">
-            <p class="greeting">Dear {{ $employeeName }},</p>
+            <p class="greeting">Dear {{ $user->name }},</p>
 
             <p class="message">
                 We are writing to inform you about a change in your employment status or position.

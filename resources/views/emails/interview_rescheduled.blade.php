@@ -117,9 +117,9 @@
 
             <p class="message">We apologize for any inconvenience caused and appreciate your understanding. Kindly confirm your availability for the new schedule.</p>
             
-            <div class="button-container">
+            <!-- <div class="button-container">
                 <a href="{{ route('welcome') }}" class="button">Confirm Availability</a>
-            </div>
+            </div> -->
 
             <div class="signature">
                 <p>Best regards,</p>

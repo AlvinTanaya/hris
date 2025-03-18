@@ -15,9 +15,11 @@ class TransferNotification extends Mailable
     public $newPosition;
     public $newDepartment;
     public $transferType;
+    public $user;
 
-    public function __construct($oldPosition, $oldDepartment, $newPosition, $newDepartment, $transferType)
+    public function __construct($user, $oldPosition, $oldDepartment, $newPosition, $newDepartment, $transferType)
     {
+        $this->user = $user;
         $this->oldPosition = $oldPosition;
         $this->oldDepartment = $oldDepartment;
         $this->newPosition = $newPosition;

@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Mail;
 
 use Illuminate\Bus\Queueable;
@@ -23,6 +24,11 @@ class ResignationApprovedMail extends Mailable
     public function build()
     {
         return $this->subject('Resignation Request Approved')
-                    ->view('emails.resignation_approved');
+            ->view('emails.resignation_approved')
+            ->with([
+                'employee' => $this->employee,
+                'request' => $this->request,
+                'approver' => $this->approver
+            ]);
     }
 }

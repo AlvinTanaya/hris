@@ -181,7 +181,7 @@
                                 <select class="form-control" id="department" name="department" required>
                                     <option selected disabled>Choose Department</option>
                                     <option value="Director" {{ old('department', $user->department) == 'Director' ? 'selected' : '' }}>Director</option>
-                                    <option value="General Manager" {{ old('department') == 'General Manager' ? 'selected' : '' }}>General Manager</option>
+                                    <option value="General Manager" {{ old('department', $user->department) == 'General Manager' ? 'selected' : '' }}>General Manager</option>
                                     <option value="Human Resources" {{ old('department', $user->department) == 'Human Resources' ? 'selected' : '' }}>Human Resources</option>
                                     <option value="Finance and Accounting" {{ old('department', $user->department) == 'Finance and Accounting' ? 'selected' : '' }}>Finance and Accounting</option>
 

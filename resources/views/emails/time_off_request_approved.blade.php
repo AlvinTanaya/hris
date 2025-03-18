@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Overtime Request Approved</title>
+    <title>Time Off Request Approved</title>
     <style>
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -95,6 +95,21 @@
             vertical-align: top;
         }
 
+        .next-steps {
+            background-color: #ecfdf5;
+            padding: 15px 20px;
+            margin-bottom: 25px;
+            border-radius: 4px;
+            border: 1px solid #d1fae5;
+        }
+
+        .next-steps h3 {
+            margin-top: 0;
+            margin-bottom: 15px;
+            color: #10b981;
+            font-size: 16px;
+        }
+
         .button-container {
             text-align: center;
             margin: 30px 0;
@@ -132,56 +147,70 @@
 <body>
     <div class="email-container">
         <div class="email-header">
-            <h1>Overtime Request Approved</h1>
+            <h1>Time Off Request Approved</h1>
         </div>
 
         <div class="email-content">
-            <p class="greeting">Hello, {{ $employee->name }}</p>
+            <p class="greeting">Dear {{ $user->name }},</p>
 
             <p class="message">
-                We are pleased to inform you that your overtime request has been <strong>approved</strong>.
+                We are pleased to inform you that your time off request has been <strong>approved</strong>. Your time off has been scheduled in our system according to your request.
             </p>
 
             <div class="details-box">
-                <h3>Approved Overtime Details:</h3>
+                <h3>Request Details:</h3>
                 <table class="details-table">
                     <tr>
-                        <th>Date:</th>
-                        <td>{{ $overtime->date }}</td>
+                        <th>Time Off Type:</th>
+                        <td>{{ $policy->time_off_name ?? 'N/A' }}</td>
                     </tr>
                     <tr>
-                        <th>Time Period:</th>
-                        <td>{{ $overtime->start_time }} - {{ $overtime->end_time }}</td>
+                        <th>Time Off Description:</th>
+                        <td>{{ $policy->time_off_description ?? 'N/A' }}</td>
                     </tr>
                     <tr>
-                        <th>Duration:</th>
-                        <td>{{ $overtime->total_hours }} hours</td>
+                        <th>Start Date:</th>
+                        <td>{{ date('F d, Y', strtotime($timeOffRequest->start_date)) }}</td>
                     </tr>
                     <tr>
-                        <th>Type:</th>
-                        <td>{{ $overtime->overtime_type }}</td>
+                        <th>End Date:</th>
+                        <td>{{ date('F d, Y', strtotime($timeOffRequest->end_date)) }}</td>
+                    </tr>
+                    <tr>
+                        <th>Total Days:</th>
+                        <td>{{ \Carbon\Carbon::parse($timeOffRequest->start_date)->diffInDays(\Carbon\Carbon::parse($timeOffRequest->end_date)) + 1 }} days</td>
+                    </tr>
+                    <tr>
+                        <th>Status:</th>
+                        <td><strong style="color: #10b981;">Approved</strong></td>
                     </tr>
                 </table>
             </div>
 
+            <div class="next-steps">
+                <h3>Important Information</h3>
+                <p>Please ensure that you have completed all necessary preparations before your time off period begins. If you need to make any changes to your approved time off, please submit a new request as soon as possible.</p>
+            </div>
+
             <p class="message">
-                Please ensure that you record your overtime hours accurately in the timesheet system. Your additional hours will be reflected in your next payroll cycle.
+                Thank you for following the proper procedures for requesting time off. We hope you enjoy your time away and return refreshed.
             </p>
 
             <div class="button-container">
-                <a href="{{ route('welcome') }}" class="button">Go to Website</a>
+                <a href="{{ route('welcome') }}" class="button">View My Requests</a>
             </div>
 
             <div class="signature">
                 <p>
-                    Thank you for your commitment,<br>
+                    Best Regards,<br>
                     <strong>{{ config('app.name') }}</strong>
                 </p>
             </div>
         </div>
 
         <div class="email-footer">
-            &copy; {{ date('Y') }} {{ config('app.name') }}. All rights reserved.
+            <p>This is an automated email. Please do not reply to this message.</p>
+            <p>&copy; {{ date('Y') }} PT. Timur Jaya Indosteel. All rights reserved.</p>
         </div>
     </div>
 </body>

@@ -327,7 +327,7 @@
                                 $('#duration-info').nextAll('.alert').remove();
 
                                 // Add warning about unavailable dates
-                                let warningMessage = '<div class="alert alert-warning mt-3"><i class="fas fa-exclamation-triangle"></i> You already have pending requests for some dates.</div>';
+                                let warningMessage = '<div class="alert alert-warning mt-3"><i class="fas fa-exclamation-triangle"></i> You already have pending or Approved requests for some dates.</div>';
 
                                 // Add suggestions if available
                                 if (response.suggestions) {

@@ -471,7 +471,7 @@
         // Delete confirmation with SweetAlert
         $('.delete-btn').click(function() {
             const id = $(this).data('id');
-            const deleteUrl = `{{ url('time_management/time_off/request_time_off') }}/${id}`;
+            const deleteUrl = `{{ url('time_management/time_off/request_time_off/destroy/') }}/${id}`;
 
             Swal.fire({
                 title: 'Delete Time Off Request',

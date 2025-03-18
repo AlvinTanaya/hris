@@ -127,7 +127,7 @@
             </p>
 
             <div class="button-container">
-                <a href="{{ route('wekcome') }}" class="button">Go to Website</a>
+                <a href="{{ route('welcome') }}" class="button">Go to Website</a>
             </div>
 
             <div class="signature">

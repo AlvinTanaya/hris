@@ -116,9 +116,9 @@
 
             <p class="message">Should you have any questions or need to reschedule, please feel free to contact us.</p>
             
-            <div class="button-container">
+            <!-- <div class="button-container">
                 <a href="{{ route('welcome') }}" class="button">Confirm Attendance</a>
-            </div>
+            </div> -->
 
             <div class="signature">
                 <p>Best regards,</p>

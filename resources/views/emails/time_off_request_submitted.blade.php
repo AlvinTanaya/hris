@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Overtime Request Approved</title>
+    <title>Time Off Request Submitted</title>
     <style>
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -25,7 +25,7 @@
         }
 
         .email-header {
-            background-color: #10b981;
+            background-color: #2563eb;
             color: white;
             padding: 20px 30px;
         }
@@ -50,12 +50,12 @@
         }
 
         .message strong {
-            color: #10b981;
+            color: #2563eb;
         }
 
         .details-box {
             background-color: #f8fafc;
-            border-left: 4px solid #10b981;
+            border-left: 4px solid #2563eb;
             padding: 15px 20px;
             margin-bottom: 25px;
             border-radius: 0 4px 4px 0;
@@ -64,7 +64,7 @@
         .details-box h3 {
             margin-top: 0;
             margin-bottom: 15px;
-            color: #10b981;
+            color: #2563eb;
             font-size: 16px;
         }
 
@@ -93,6 +93,21 @@
             padding: 10px 5px;
             text-align: left;
             vertical-align: top;
+        }
+
+        .next-steps {
+            background-color: #dbeafe;
+            padding: 15px 20px;
+            margin-bottom: 25px;
+            border-radius: 4px;
+            border: 1px solid #bfdbfe;
+        }
+
+        .next-steps h3 {
+            margin-top: 0;
+            margin-bottom: 15px;
+            color: #2563eb;
+            font-size: 16px;
         }
 
         .button-container {
@@ -132,56 +147,86 @@
 <body>
     <div class="email-container">
         <div class="email-header">
-            <h1>Overtime Request Approved</h1>
+            <h1>New Time Off Request Submitted</h1>
         </div>
 
         <div class="email-content">
-            <p class="greeting">Hello, {{ $employee->name }}</p>
+            <p class="greeting">Dear HR Team Member,</p>
 
             <p class="message">
-                We are pleased to inform you that your overtime request has been <strong>approved</strong>.
+                A new time off request has been submitted by <strong>{{ $user->name }}</strong>. Please review the request details below.
             </p>
 
             <div class="details-box">
-                <h3>Approved Overtime Details:</h3>
+                <h3>Request Details:</h3>
                 <table class="details-table">
                     <tr>
-                        <th>Date:</th>
-                        <td>{{ $overtime->date }}</td>
+                        <th>Employee:</th>
+                        <td>{{ $user->name }}</td>
                     </tr>
                     <tr>
-                        <th>Time Period:</th>
-                        <td>{{ $overtime->start_time }} - {{ $overtime->end_time }}</td>
+                        <th>Employee ID:</th>
+                        <td>{{ $user->employee_id ?? 'N/A' }}</td>
                     </tr>
                     <tr>
-                        <th>Duration:</th>
-                        <td>{{ $overtime->total_hours }} hours</td>
+                        <th>Department:</th>
+                        <td>{{ $user->department ?? 'N/A' }}</td>
                     </tr>
                     <tr>
-                        <th>Type:</th>
-                        <td>{{ $overtime->overtime_type }}</td>
+                        <th>Time Off Type:</th>
+                        <td>{{ $policy->time_off_name ?? 'N/A' }}</td>
+                    </tr>
+                    <tr>
+                        <th>Time Off Description:</th>
+                        <td>{{ $policy->time_off_description ?? 'N/A' }}</td>
+                    </tr>
+                    <tr>
+                        <th>Start Date:</th>
+                        <td>{{ date('F d, Y', strtotime($timeOffRequest->start_date)) }}</td>
+                    </tr>
+                    <tr>
+                        <th>End Date:</th>
+                        <td>{{ date('F d, Y', strtotime($timeOffRequest->end_date)) }}</td>
+                    </tr>
+                    <tr>
+                        <th>Total Days:</th>
+                        <td>{{ \Carbon\Carbon::parse($timeOffRequest->start_date)->diffInDays(\Carbon\Carbon::parse($timeOffRequest->end_date)) + 1 }} days</td>
+                    </tr>
+                    <tr>
+                        <th>Reason:</th>
+                        <td>{{ $timeOffRequest->reason }}</td>
+                    </tr>
+                    <tr>
+                        <th>Status:</th>
+                        <td><span style="color: #f59e0b; font-weight: bold;">{{ ucfirst($timeOffRequest->status) }}</span></td>
+                    </tr>
+                    <tr>
+                        <th>Date Submitted:</th>
+                        <td>{{ date('F d, Y H:i', strtotime($timeOffRequest->created_at)) }}</td>
                     </tr>
                 </table>
             </div>
 
-            <p class="message">
-                Please ensure that you record your overtime hours accurately in the timesheet system. Your additional hours will be reflected in your next payroll cycle.
-            </p>
+            <div class="next-steps">
+                <h3>Action Required</h3>
+                <p>Please review this request and take appropriate action. Check the employee's remaining balance before approval. The employee will be notified once the request has been processed.</p>
+            </div>
 
             <div class="button-container">
-                <a href="{{ route('welcome') }}" class="button">Go to Website</a>
+                <a href="{{ route('welcome') }}" class="button">Review Request</a>
             </div>
 
             <div class="signature">
                 <p>
-                    Thank you for your commitment,<br>
+                    Best Regards,<br>
                     <strong>{{ config('app.name') }}</strong>
                 </p>
             </div>
         </div>
 
         <div class="email-footer">
-            &copy; {{ date('Y') }} {{ config('app.name') }}. All rights reserved.
+            <p>This is an automated email. Please do not reply to this message.</p>
+            <p>&copy; {{ date('Y') }} PT. Timur Jaya Indosteel. All rights reserved.</p>
         </div>
     </div>
 </body>

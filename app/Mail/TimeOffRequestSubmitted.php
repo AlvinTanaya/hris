@@ -7,6 +7,7 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
 use Illuminate\Queue\SerializesModels;
 use App\Models\RequestTimeOff;
+use App\Models\TimeOffPolicy;
 use App\Models\User;
 
 class TimeOffRequestSubmitted extends Mailable
@@ -15,16 +16,18 @@ class TimeOffRequestSubmitted extends Mailable
 
     public $timeOffRequest;
     public $user;
+    public $policy;
 
     /**
      * Create a new message instance.
      *
      * @return void
      */
-    public function __construct(RequestTimeOff $timeOffRequest, User $user)
+    public function __construct(RequestTimeOff $timeOffRequest, User $user, TimeOffPolicy $policy)
     {
         $this->timeOffRequest = $timeOffRequest;
         $this->user = $user;
+        $this->policy = $policy;
     }
 
     /**
@@ -34,11 +37,13 @@ class TimeOffRequestSubmitted extends Mailable
      */
     public function build()
     {
+      
         return $this->subject('New Time Off Request Submitted')
-                    ->view('emails.time_off_request_submitted')
-                    ->with([
-                        'timeOffRequest' => $this->timeOffRequest,
-                        'user' => $this->user,
-                    ]);
+            ->view('emails.time_off_request_submitted')
+            ->with([
+                'timeOffRequest' => $this->timeOffRequest,
+                'user' => $this->user,
+                'policy' => $this->policy,
+            ]);
     }
 }

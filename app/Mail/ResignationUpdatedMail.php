@@ -29,6 +29,10 @@ class ResignationUpdatedMail extends Mailable
     public function build()
     {
         return $this->subject('Your Resignation Request has been Updated')
-                    ->view('emails.resignation_updated');
+            ->view('emails.resignation_updated')
+            ->with([
+                'user' => $this->user,
+                'resignRequest' => $this->resignRequest
+            ]);
     }
 }

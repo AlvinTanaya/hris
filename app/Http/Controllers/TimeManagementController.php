@@ -399,13 +399,17 @@ class TimeManagementController extends Controller
                 // Get user
                 $user = User::find($employeeId);
                 if ($user) {
+                    // Get rule_shift to access the type
+                    $ruleShift = rule_shift::find($request->rule_id);
+                    $shiftType = $ruleShift ? $ruleShift->type : 'unknown';
+
                     // Kirim email
                     Mail::to($user->email)->send(new EmployeeShiftAssigned($user, $shift));
 
                     // Buat notifikasi di database
                     Notification::create([
                         'users_id' => $user->id,
-                        'message' => "You have been assigned to the {$shift->rule->type} shift from {$shift->start_date} to " . ($shift->end_date ?? 'indefinitely') . ".",
+                        'message' => "You have been assigned to the {$shiftType} shift from {$shift->start_date} to " . ($shift->end_date ?? 'indefinitely') . ".",
                         'type' => 'shift_assigned',
                         'maker_id' => Auth::user()->id,
                         'status' => 'Unread'
@@ -416,9 +420,6 @@ class TimeManagementController extends Controller
 
         return redirect()->route('time.employee.shift.index')->with('success', 'Employee shift added successfully.');
     }
-
-
-
 
     public function set_shift_destroy($id)
     {
@@ -443,7 +444,6 @@ class TimeManagementController extends Controller
         return response()->json(['message' => 'Shift deleted successfully.']);
     }
 
-
     public function set_shift_update(Request $request, $id)
     {
         $shift = EmployeeShift::findOrFail($id);
@@ -457,6 +457,10 @@ class TimeManagementController extends Controller
             ->orderBy('id', 'desc')
             ->first();
 
+        // Get rule_shift to access the type
+        $ruleShift = rule_shift::find($request->rule_id);
+        $shiftType = $ruleShift ? $ruleShift->type : 'unknown';
+
         if (!empty($lastShift)) {
             if ($startDate <= $lastShift->end_date) {
                 return response()->json([
@@ -469,6 +473,16 @@ class TimeManagementController extends Controller
                 $shift->update([
                     'rule_id' => $request->rule_id,
                     'updated_at' => now(),
+                ]);
+
+                Mail::to($user->email)->send(new EmployeeShiftUpdated($user, $shift));
+
+                Notification::create([
+                    'users_id' => $user->id,
+                    'message' => "We sincerely apologize for the mistake. There has been a change in your shift assignment. You have now been reassigned to the {$shiftType} shift from {$shift->start_date} onwards.",
+                    'type' => 'shift_updated',
+                    'maker_id' => Auth::user()->id,
+                    'status' => 'Unread'
                 ]);
             } else if ($startDate > $lastShift->end_date) {
                 $endDate = Carbon::parse($startDate)->subDay()->format('Y-m-d');
@@ -485,13 +499,11 @@ class TimeManagementController extends Controller
                     'user_id' => $request->user_id,
                 ]);
 
-
-
                 Mail::to($user->email)->send(new EmployeeShiftUpdated($user, $shift));
 
                 Notification::create([
                     'users_id' => $user->id,
-                    'message' => "We sincerely apologize for the mistake. There has been a change in your shift assignment. You have now been reassigned to the {$shift->rule->type} shift from {$shift->start_date} onwards.",
+                    'message' => "We sincerely apologize for the mistake. There has been a change in your shift assignment. You have now been reassigned to the {$shiftType} shift from {$shift->start_date} onwards.",
                     'type' => 'shift_updated',
                     'maker_id' => Auth::user()->id,
                     'status' => 'Unread'
@@ -503,13 +515,11 @@ class TimeManagementController extends Controller
                 'start_date' => $startDate
             ]);
 
-
-
             Mail::to($user->email)->send(new EmployeeShiftUpdated($user, $shift));
 
             Notification::create([
                 'users_id' => $user->id,
-                'message' => "We sincerely apologize for the mistake. There has been a change in your shift assignment. You have now been reassigned to the {$shift->rule->type} shift from {$shift->start_date} onwards.",
+                'message' => "We sincerely apologize for the mistake. There has been a change in your shift assignment. You have now been reassigned to the {$shiftType} shift from {$shift->start_date} onwards.",
                 'type' => 'shift_updated',
                 'maker_id' => Auth::user()->id,
                 'status' => 'Unread'
@@ -521,29 +531,6 @@ class TimeManagementController extends Controller
             'message' => 'Shift updated successfully.'
         ]);
     }
-
-
-    // Helper function to get the next non-Sunday date (for start dates)
-    private function getNextNonSundayDate($date)
-    {
-        $date = Carbon::parse($date);
-        if ($date->dayOfWeek === 0) { // If it's Sunday
-            return $date->addDay()->format('Y-m-d'); // Move to Monday
-        }
-        return $date->format('Y-m-d');
-    }
-
-    // Helper function to get the previous non-Sunday date (for end dates)
-    private function getPreviousNonSundayDate($date)
-    {
-        $date = Carbon::parse($date);
-        if ($date->dayOfWeek === 0) { // If it's Sunday
-            return $date->subDay()->format('Y-m-d'); // Move to Saturday
-        }
-        return $date->format('Y-m-d');
-    }
-
-
 
     public function exchangeShifts(Request $request)
     {
@@ -586,15 +573,18 @@ class TimeManagementController extends Controller
             }
 
             if ($startDateCarbon->format('Y-m-d') == $employee->start_date) {
-                EmployeeShift::where('id', $employee->id)->update([
-                    'rule_id' => $newShiftRule->id,
-                    'updated_at' => now(),
-                ]);
+                $updatedShift = tap(EmployeeShift::where('id', $employee->id))
+                    ->update([
+                        'rule_id' => $newShiftRule->id,
+                        'updated_at' => now(),
+                    ])
+                    ->first(); // Ambil data setelah update
 
                 $updatedEmployees[] = $employee->employee_name;
 
                 // Send email
-                Mail::to($employee->user_email)->send(new EmployeeShiftExchanged($employee, $newShiftRule));
+                Mail::to($employee->user_email)->send(new EmployeeShiftExchanged($employee, $updatedShift));
+
 
                 // Send notification
                 Notification::create([
@@ -661,6 +651,7 @@ class TimeManagementController extends Controller
     }
 
 
+
     public function approveShiftChange($id)
     {
         try {
@@ -683,7 +674,7 @@ class TimeManagementController extends Controller
                 $this->processUserShiftChange($request->user_id, $request->rule_user_exchange_id_after, $startDate, $endDate, true);
             }
 
-            DB::commit();
+
 
             // Send email
             Mail::to($request->user->email)->send(new ShiftChangeApprovedMail($request));
@@ -697,12 +688,64 @@ class TimeManagementController extends Controller
                 'status' => 'Unread'
             ]);
 
+            DB::commit();
+
             return response()->json(['success' => true]);
         } catch (\Exception $e) {
             DB::rollBack();
             return response()->json(['success' => false, 'message' => $e->getMessage()]);
         }
     }
+
+    public function declineShiftChange(Request $request, $id)
+    {
+        try {
+            $shiftChangeRequest = RequestShiftChange::with('user')->findOrFail($id);
+
+            $shiftChangeRequest->status_change = 'Declined';
+            $shiftChangeRequest->declined_reason = $request->decline_reason;
+            $shiftChangeRequest->answer_user_id = Auth::id();
+            $shiftChangeRequest->save();
+
+            // Send email
+            Mail::to($shiftChangeRequest->user->email)->send(new ShiftChangeDeclinedMail($shiftChangeRequest));
+
+            // Create notification
+            Notification::create([
+                'users_id' => $shiftChangeRequest->user_id,
+                'message' => "Your shift change request has been declined.",
+                'type' => 'shift_change_declined',
+                'maker_id' => Auth::id(),
+                'status' => 'Unread'
+            ]);
+
+            return response()->json(['success' => true]);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()]);
+        }
+    }
+
+
+    // Helper function to get the next non-Sunday date (for start dates)
+    private function getNextNonSundayDate($date)
+    {
+        $date = Carbon::parse($date);
+        if ($date->dayOfWeek === 0) { // If it's Sunday
+            return $date->addDay()->format('Y-m-d'); // Move to Monday
+        }
+        return $date->format('Y-m-d');
+    }
+
+    // Helper function to get the previous non-Sunday date (for end dates)
+    private function getPreviousNonSundayDate($date)
+    {
+        $date = Carbon::parse($date);
+        if ($date->dayOfWeek === 0) { // If it's Sunday
+            return $date->subDay()->format('Y-m-d'); // Move to Saturday
+        }
+        return $date->format('Y-m-d');
+    }
+
 
     private function processUserShiftChange($userId, $newRuleId, $startDate, $endDate, $isSecondaryShift = false)
     {
@@ -779,33 +822,7 @@ class TimeManagementController extends Controller
             'updated_at' => now()
         ]);
     }
-    public function declineShiftChange(Request $request, $id)
-    {
-        try {
-            $shiftChangeRequest = RequestShiftChange::with('user')->findOrFail($id);
 
-            $shiftChangeRequest->status_change = 'Declined';
-            $shiftChangeRequest->declined_reason = $request->decline_reason;
-            $shiftChangeRequest->answer_user_id = Auth::id();
-            $shiftChangeRequest->save();
-
-            // Send email
-            Mail::to($shiftChangeRequest->user->email)->send(new ShiftChangeDeclinedMail($shiftChangeRequest));
-
-            // Create notification
-            Notification::create([
-                'users_id' => $shiftChangeRequest->user_id,
-                'message' => "Your shift change request has been declined.",
-                'type' => 'shift_change_declined',
-                'maker_id' => Auth::id(),
-                'status' => 'Unread'
-            ]);
-
-            return response()->json(['success' => true]);
-        } catch (\Exception $e) {
-            return response()->json(['success' => false, 'message' => $e->getMessage()]);
-        }
-    }
 
     /**
      * Display attendance page
@@ -1497,10 +1514,7 @@ class TimeManagementController extends Controller
                 $shiftChange->save();
 
                 // Get HR users
-                $hrUsers = User::whereHas('department', function ($query) {
-                    $query->where('name', 'Human Resources')->where('employee_status', '!=', 'Inactive');
-                })->get();
-
+                $hrUsers = User::where('department', 'Human Resources')->where('employee_status', '!=', 'Inactive')->get();
                 // Create notifications & send emails
                 foreach ($hrUsers as $hr) {
                     Notification::create([
@@ -1679,12 +1693,11 @@ class TimeManagementController extends Controller
                 ]);
             }
 
-            $request->delete();
+
 
             // Get HR users
-            $hrUsers = User::whereHas('department', function ($query) {
-                $query->where('name', 'Human Resources')->where('employee_status', '!=', 'Inactive');
-            })->get();
+            $hrUsers = User::where('department', 'Human Resources')->where('employee_status', '!=', 'Inactive')->get();
+
 
             // Create notifications & send emails
             foreach ($hrUsers as $hr) {
@@ -1705,6 +1718,8 @@ class TimeManagementController extends Controller
                 ->where('status_change', 'Pending')
                 ->count();
 
+
+            $request->delete();
             return response()->json([
                 'success' => true,
                 'message' => 'Shift change request deleted successfully.',
@@ -2412,8 +2427,10 @@ class TimeManagementController extends Controller
             'status' => 'Unread'
         ]);
 
+        // dd("coba");
+
         // Send email notification to employee
-        Mail::to($employee->email)->send(new OvertimeApprovedMail($overtime));
+        Mail::to($employee->email)->send(new OvertimeApprovedMail($overtime, $employee));
 
         return redirect()->back()->with('success', 'Overtime request approved successfully');
     }
@@ -2446,7 +2463,7 @@ class TimeManagementController extends Controller
         ]);
 
         // Send email notification to employee
-        Mail::to($employee->email)->send(new OvertimeDeclinedMail($overtime));
+        Mail::to($employee->email)->send(new OvertimeDeclinedMail($overtime,     $employee));
 
         return redirect()->back()->with('success', 'Overtime request declined successfully');
     }
@@ -3031,6 +3048,7 @@ class TimeManagementController extends Controller
 
     public function request_time_off_store(Request $request)
     {
+
         // Validate the request data
         $validated = $request->validate([
             'user_id' => 'required|exists:users,id',
@@ -3050,15 +3068,22 @@ class TimeManagementController extends Controller
         $timeOffRequest->reason = $request->reason;
         $timeOffRequest->status = 'pending';
 
+        // Simpan request terlebih dahulu agar mendapatkan ID
+        $timeOffRequest->save();
+
         // Handle file upload if present
         if ($request->hasFile('file_reason')) {
             $file = $request->file('file_reason');
-            $fileName = 'request_time_off_' . $request->time_off_id . '_' . $request->user_id . '.' . $file->getClientOriginalExtension();
+
+            // Ambil ID setelah save
+            $fileName = 'request_time_off_' . $timeOffRequest->id . '_' . $request->time_off_id . '_' . $request->user_id . '.' . $file->getClientOriginalExtension();
             $path = $file->storeAs('time_management/time_off', $fileName, 'public');
+
+            // Simpan path file setelah upload
             $timeOffRequest->file_reason_path = 'time_management/time_off/' . $fileName;
+            $timeOffRequest->save();
         }
 
-        $timeOffRequest->save();
 
         // Get the user who made the request
         $user = User::find($request->user_id);
@@ -3067,6 +3092,8 @@ class TimeManagementController extends Controller
         $hr_personnel = User::where('department', 'Human Resources')
             ->where('employee_status', '!=', 'Inactive')
             ->get();
+
+
 
         // Create notifications for HR personnel
         foreach ($hr_personnel as $hr) {
@@ -3078,8 +3105,11 @@ class TimeManagementController extends Controller
                 'status' => 'Unread'
             ]);
 
+            $timeOffPolicy = TimeOffPolicy::where('id',  $timeOffRequest->time_off_id)->first();
+
+
             // Send email notification to HR personnel
-            Mail::to($hr->email)->send(new TimeOffRequestSubmitted($timeOffRequest, $user));
+            Mail::to($hr->email)->send(new TimeOffRequestSubmitted($timeOffRequest, $user,  $timeOffPolicy));
         }
 
         return redirect()->route('request.time.off.index2', $request->user_id)
@@ -3088,40 +3118,46 @@ class TimeManagementController extends Controller
 
     public function request_time_off_destroy($id)
     {
-        $request = RequestTimeOff::findOrFail($id);
-        $userId = $request->user_id;
-        $user = User::find($userId);
+        try {
+            $request = RequestTimeOff::findOrFail($id);
+            $userId = $request->user_id;
+            $user = User::find($userId);
 
-        // Store request details before deletion for notifications
-        $requestDetails = [
-            'start_date' => $request->start_date,
-            'end_date' => $request->end_date,
-            'time_off_type' => $request->timeOffType->name ?? 'Time Off',
-        ];
+            // Store request details before deletion for notifications
+            $requestDetails = [
+                'start_date' => $request->start_date,
+                'end_date' => $request->end_date,
+                'time_off_type' => $request->timeOffType->name ?? 'Time Off',
+            ];
 
-        // Get HR personnel
-        $hr_personnel = User::where('department', 'Human Resources')
-            ->where('employee_status', '!=', 'Inactive')
-            ->get();
+            // Get HR personnel
+            $hr_personnel = User::where('department', 'Human Resources')
+                ->where('employee_status', '!=', 'Inactive')
+                ->get();
 
-        // Create notifications for HR personnel about the cancelled request
-        foreach ($hr_personnel as $hr) {
-            Notification::create([
-                'users_id' => $hr->id,
-                'message' => "Time off request cancelled by {$user->name}.",
-                'type' => 'time_off_cancelled',
-                'maker_id' => Auth::user()->id,
-                'status' => 'Unread'
-            ]);
+            // Create notifications for HR personnel about the cancelled request
+            foreach ($hr_personnel as $hr) {
+                Notification::create([
+                    'users_id' => $hr->id,
+                    'message' => "Time off request cancelled by {$user->name}.",
+                    'type' => 'time_off_cancelled',
+                    'maker_id' => Auth::user()->id,
+                    'status' => 'Unread'
+                ]);
 
-            // Send email notification to HR personnel
-            Mail::to($hr->email)->send(new TimeOffRequestCancelled($request, $user));
+                $timeOffPolicy = TimeOffPolicy::where('id',  $request->time_off_id)->first();
+
+                // Send email notification to HR personnel
+                Mail::to($hr->email)->send(new TimeOffRequestCancelled($request, $user,     $timeOffPolicy));
+            }
+
+
+
+            $request->delete();
+            return response()->json(['success' => 'Time off request deleted successfully.']);
+        } catch (\Exception $e) {
+            return response()->json(['error' => $e->getMessage()], 500);
         }
-
-        $request->delete();
-
-        return redirect()->route('request.time.off.index2', $userId)
-            ->with('success', 'Time off request deleted successfully.');
     }
 
     public function request_time_off_approve($id)
@@ -3169,8 +3205,10 @@ class TimeManagementController extends Controller
                 'status' => 'Unread'
             ]);
 
+
+            $timeOffPolicy = TimeOffPolicy::where('id',  $request->time_off_id)->first();
             // Send email notification to the user
-            Mail::to($user->email)->send(new TimeOffRequestApproved($request));
+            Mail::to($user->email)->send(new TimeOffRequestApproved($request, $user, $timeOffPolicy));
 
             return redirect()->back()->with('success', 'Time off request approved successfully.');
         } else {
@@ -3200,8 +3238,10 @@ class TimeManagementController extends Controller
             'status' => 'Unread'
         ]);
 
+        $timeOffPolicy = TimeOffPolicy::where('id',  $timeOffRequest->time_off_id)->first();
+
         // Send email notification to the user
-        Mail::to($user->email)->send(new TimeOffRequestDeclined($timeOffRequest));
+        Mail::to($user->email)->send(new TimeOffRequestDeclined($timeOffRequest, $user, $timeOffPolicy));
 
         return redirect()->back()->with('success', 'Time off request declined successfully.');
     }
@@ -3233,8 +3273,12 @@ class TimeManagementController extends Controller
 
             // Check for existing pending requests
             $existingRequests = RequestTimeOff::where('user_id', $request->user_id)
-                ->where('status', 'pending')
+                ->where(function ($query) {
+                    $query->where('status', 'pending')
+                        ->orWhere('status', 'approved');
+                })
                 ->get();
+
 
             // If there are no existing requests, return success with the balance
             if ($existingRequests->isEmpty()) {

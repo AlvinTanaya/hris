@@ -104,8 +104,8 @@
         </div>
 
         <div class="email-content">
-            <p class="message">Hello Team,</p>
-            
+            <p class="message">Hello, {{ $userName }}</p>
+
             <div class="details-box">
                 <p>{{ $messageContent }}</p>
             </div>

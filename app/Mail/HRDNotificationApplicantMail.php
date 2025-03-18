@@ -15,12 +15,14 @@ class HRDNotificationApplicantMail extends Mailable
 
     public function __construct($query)
     {
-        $this->$query = $query;
+        $this->query = $query;
     }
-
+    
     public function build()
     {
         return $this->subject('New Job Applicant Notification')
-                    ->view('emails.hrd_notification_applicant');
+                    ->view('emails.hrd_notification_applicant')
+                    ->with(['query' => $this->query]); // Kirim query ke view
     }
+    
 }

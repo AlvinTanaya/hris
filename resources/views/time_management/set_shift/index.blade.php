@@ -729,7 +729,7 @@
                 </div>
             </div>
 
-         
+
         </div>
 
 
@@ -909,6 +909,12 @@
             e.preventDefault();
             let shiftId = $('#editShiftId').val();
 
+            // Show processing state
+            const submitButton = $(this).find('button[type="submit"]');
+            const originalButtonText = submitButton.html();
+            submitButton.prop('disabled', true);
+            submitButton.html('<i class="fas fa-spinner fa-spin"></i> Processing...');
+
             $.ajax({
                 url: `/time_management/set_shift/update/${shiftId}`,
                 type: 'PUT',
@@ -919,15 +925,29 @@
                     start_date: $('#editStartDate').val()
                 },
                 success: function(response) {
+                    // Reset button state
+                    submitButton.html(originalButtonText);
+                    submitButton.prop('disabled', false);
+
                     handleAjaxResponse(response, 'Shift Updated', 'Employee shift has been updated successfully!');
                 },
-                error: handleAjaxError
+                error: function(xhr, status, error) {
+                    // Reset button state
+                    submitButton.html(originalButtonText);
+                    submitButton.prop('disabled', false);
+
+                    handleAjaxError(xhr, status, error);
+                }
             });
         });
 
         // Delete Shift with Confirmation
         $('.deleteShiftBtn').on('click', function() {
             let shiftId = $(this).data('id');
+
+            // Store the delete button reference
+            const deleteButton = $(this);
+            const originalButtonText = deleteButton.html();
 
             Swal.fire({
                 title: "Are you sure?",
@@ -939,6 +959,10 @@
                 confirmButtonText: "Yes, delete it!"
             }).then((result) => {
                 if (result.isConfirmed) {
+                    // Show processing state
+                    deleteButton.prop('disabled', true);
+                    deleteButton.html('<i class="fas fa-spinner fa-spin"></i> Deleting...');
+
                     $.ajax({
                         url: `/time_management/set_shift/delete/${shiftId}`,
                         type: 'DELETE',
@@ -946,9 +970,17 @@
                             _token: '{{ csrf_token() }}'
                         },
                         success: function(response) {
+                            // Reset button state
+                            deleteButton.html(originalButtonText);
+                            deleteButton.prop('disabled', false);
+
                             handleAjaxResponse(response, 'Deleted!', 'Employee shift has been deleted.');
                         },
                         error: function() {
+                            // Reset button state
+                            deleteButton.html(originalButtonText);
+                            deleteButton.prop('disabled', false);
+
                             Swal.fire({
                                 icon: 'error',
                                 title: 'Error',
@@ -959,18 +991,36 @@
                 }
             });
         });
-
         // Exchange Shift Form Submission
         $("#exchangeShiftForm").submit(function(event) {
             event.preventDefault();
+
+            // Show processing state
+            const submitButton = $(this).find('button[type="submit"]');
+            const originalButtonText = submitButton.html();
+            submitButton.prop('disabled', true);
+            submitButton.html('<i class="fas fa-spinner fa-spin"></i> Processing...');
+
             $.ajax({
                 url: "{{ route('time.set.shift.exchange') }}",
                 type: "POST",
                 data: $(this).serialize(),
                 success: function(response) {
+                    // Reset button state
+                    submitButton.html(originalButtonText);
+                    submitButton.prop('disabled', false);
+
+                    // Handle success response
                     handleAjaxResponse(response, 'Success!', response.message);
                 },
-                error: handleAjaxError
+                error: function(xhr, status, error) {
+                    // Reset button state
+                    submitButton.html(originalButtonText);
+                    submitButton.prop('disabled', false);
+
+                    // Handle error
+                    handleAjaxError(xhr, status, error);
+                }
             });
         });
 

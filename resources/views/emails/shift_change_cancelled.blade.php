@@ -139,7 +139,7 @@
             <p class="greeting">Hello,</p>
 
             <p class="message">
-                This is to inform you that the shift change request submitted by <strong>{{ $name }}</strong> has been <strong>cancelled</strong>.
+                This is to inform you that the shift change request submitted by <strong>{{ $requestDetails->user->name }}</strong> has been <strong>cancelled</strong>.
             </p>
 
             <div class="details-box">
@@ -147,11 +147,7 @@
                 <table class="details-table">
                     <tr>
                         <th>Employee:</th>
-                        <td>{{ $name }}</td>
-                    </tr>
-                    <tr>
-                        <th>Reason:</th>
-                        <td>{{ $reason }}</td>
+                        <td>{{ $requestDetails->user->name }}</td>
                     </tr>
                     <tr>
                         <th>Status:</th>

@@ -152,8 +152,20 @@ class AnnouncementController extends Controller
                 ]);
             }
 
+            $user = User::find($request->maker_id);
+
+            if ($user) {
+                if ($user->position == $user->department) {
+                    $userName = "{$user->name} - {$user->position}";
+                } else {
+                    $userName = "{$user->name} - {$user->position} ({$user->department})";
+                }
+            } else {
+                $userName = 'Employee';
+            }
+
             // Kirim email dengan nama pembuat pengumuman
-            Mail::to($emails)->send(new EmployeeInvitationMail($request->message, $makerName));
+            Mail::to($emails)->send(new EmployeeInvitationMail($request->message, $makerName, $userName));
         }
 
         return redirect()->route('announcement.index')->with('success', 'Announcement added successfully!');

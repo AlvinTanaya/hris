@@ -10,7 +10,7 @@
 
 
 <div class="container-fluid">
-    <div class="row mb-4">
+    <div class="row mb-5 mt-5">
         <div class="col-12 text-center">
             <h1 class="text-warning"><i class="fas fa-calendar-alt me-2"></i>Time Off Assignments</h1>
         </div>
@@ -215,29 +215,6 @@
                 "search": "Search:"
             }
         });
-
-
-        // Handle edit button click
-        $('.edit-balance').click(function() {
-            const id = $(this).data('id');
-            const balance = $(this).data('balance');
-            const quota = $(this).data('quota');
-            const employee = $(this).data('employee');
-            const policy = $(this).data('policy');
-
-            console.log('asdasdad');
-
-            $('#employee-name').text(employee);
-            $('#policy-name').text(policy);
-            $('#max-quota').text(quota);
-            $('#balance').val(balance);
-            $('#editBalanceForm').attr('action', "{{ route('time.off.assign.update', '') }}/" + id);
-
-            // Reset error message
-            $('#balance-error').hide();
-            $('#balance').removeClass('is-invalid');
-        });
-
         // Validate balance doesn't exceed quota
         $('#balance').on('input', function() {
             const balance = parseFloat($(this).val()) || 0;
@@ -254,6 +231,26 @@
             }
         });
 
+
+        // Handle edit button click
+        $('.edit-balance').click(function() {
+            const id = $(this).data('id');
+            const balance = $(this).data('balance');
+            const quota = $(this).data('quota');
+            const employee = $(this).data('employee');
+            const policy = $(this).data('policy');
+
+            $('#employee-name').text(employee);
+            $('#policy-name').text(policy);
+            $('#max-quota').text(quota);
+            $('#balance').val(balance);
+            $('#editBalanceForm').attr('action', "{{ route('time.off.assign.update', '') }}/" + id);
+
+            // Reset error message
+            $('#balance-error').hide();
+            $('#balance').removeClass('is-invalid');
+        });
+
         // Handle delete button click with SweetAlert2
         $('.delete-assignment').click(function() {
             const id = $(this).data('id');
@@ -263,9 +260,9 @@
             Swal.fire({
                 title: 'Delete Time Off Assignment',
                 html: `<p>Are you sure you want to delete this time off assignment?</p>
-                       <p><strong>Employee:</strong> ${employee}</p>
-                       <p><strong>Time Off Policy:</strong> ${policy}</p>
-                       <p class="text-danger">This action cannot be undone.</p>`,
+               <p><strong>Employee:</strong> ${employee}</p>
+               <p><strong>Time Off Policy:</strong> ${policy}</p>
+               <p class="text-danger">This action cannot be undone.</p>`,
                 icon: 'warning',
                 showCancelButton: true,
                 confirmButtonColor: '#dc3545',
@@ -274,28 +271,105 @@
                 cancelButtonText: 'Cancel'
             }).then((result) => {
                 if (result.isConfirmed) {
-                    // Create and submit the form
-                    const form = document.createElement('form');
-                    form.method = 'POST';
-                    form.action = "{{ route('time.off.assign.destroy', '') }}/" + id;
+                    // Show processing state
+                    Swal.fire({
+                        title: 'Processing...',
+                        html: '<div class="d-flex justify-content-center"><div class="spinner-border text-primary" role="status"><span class="sr-only">Loading...</span></div></div><p class="mt-2">Please wait while we process your request.</p>',
+                        allowOutsideClick: false,
+                        showConfirmButton: false
+                    });
 
-                    const csrfToken = document.createElement('input');
-                    csrfToken.type = 'hidden';
-                    csrfToken.name = '_token';
-                    csrfToken.value = "{{ csrf_token() }}";
+                    // Create and submit the form with AJAX
+                    const formData = new FormData();
+                    formData.append('_token', "{{ csrf_token() }}");
+                    formData.append('_method', 'DELETE');
 
-                    const method = document.createElement('input');
-                    method.type = 'hidden';
-                    method.name = '_method';
-                    method.value = 'DELETE';
-
-                    form.appendChild(csrfToken);
-                    form.appendChild(method);
-                    document.body.appendChild(form);
-                    form.submit();
+                    $.ajax({
+                        url: "{{ route('time.off.assign.destroy', '') }}/" + id,
+                        type: 'POST',
+                        data: formData,
+                        processData: false,
+                        contentType: false,
+                        success: function(response) {
+                            // Show success message
+                            Swal.fire({
+                                title: 'Success!',
+                                text: 'Time off assignment has been deleted successfully.',
+                                icon: 'success',
+                                confirmButtonColor: '#28a745'
+                            }).then(() => {
+                                // Reload the page to reflect changes
+                                location.reload();
+                            });
+                        },
+                        error: function(xhr) {
+                            // Show error message
+                            Swal.fire({
+                                title: 'Error!',
+                                text: 'An error occurred while processing your request.',
+                                icon: 'error',
+                                confirmButtonColor: '#dc3545'
+                            });
+                        }
+                    });
                 }
             });
         });
+
+        // For the edit form submission
+        $('#editBalanceForm').submit(function(e) {
+            e.preventDefault();
+
+            // Show processing state
+            Swal.fire({
+                title: 'Processing...',
+                html: '<div class="d-flex justify-content-center"><div class="spinner-border text-primary" role="status"><span class="sr-only">Loading...</span></div></div><p class="mt-2">Please wait while we update the balance.</p>',
+                allowOutsideClick: false,
+                showConfirmButton: false
+            });
+
+            const formData = new FormData(this);
+
+            $.ajax({
+                url: $(this).attr('action'),
+                type: 'POST',
+                data: formData,
+                processData: false,
+                contentType: false,
+                success: function(response) {
+                    // Show success message
+                    Swal.fire({
+                        title: 'Success!',
+                        text: 'Time off balance has been updated successfully.',
+                        icon: 'success',
+                        confirmButtonColor: '#28a745'
+                    }).then(() => {
+                        // Close the modal and reload the page
+                        $('#editBalanceModal').modal('hide');
+                        location.reload();
+                    });
+                },
+                error: function(xhr) {
+                    // Show error message or validation errors
+                    if (xhr.status === 422) {
+                        const errors = xhr.responseJSON.errors;
+                        if (errors.balance) {
+                            $('#balance-error').text(errors.balance[0]).show();
+                            $('#balance').addClass('is-invalid');
+                        }
+                        Swal.close();
+                    } else {
+                        Swal.fire({
+                            title: 'Error!',
+                            text: 'An error occurred while processing your request.',
+                            icon: 'error',
+                            confirmButtonColor: '#dc3545'
+                        });
+                    }
+                }
+            });
+        });
+
     });
 </script>
 @endpush
