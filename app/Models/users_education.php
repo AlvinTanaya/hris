@@ -19,6 +19,8 @@ class users_education extends Model
         'degree',
         'educational_place',
         'educational_city',
+        'educational_province',
+        'transcript_file_path',
         'start_education',
         'end_education',
         'grade',

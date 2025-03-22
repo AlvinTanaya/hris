@@ -18,6 +18,7 @@ class users_training extends Model
         'users_id',
         'training_name',
         'training_city',
+        'training_province',
         'start_date',
         'end_date',
         'created_at',

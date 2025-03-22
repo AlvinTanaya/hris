@@ -12,27 +12,47 @@ class WarningLetterMail extends Mailable
     use Queueable, SerializesModels;
 
     public $user;
-    public $count;
+    public $type;
+    public $typeCount;
     public $reason;
     public $maker;
+    public $isUpdate;
+    public $oldType;
 
-    public function __construct($user, $count, $reason, $maker)
+    public function __construct($user, $type, $typeCount, $reason, $maker, $isUpdate = false, $oldType = null)
     {
         $this->user = $user;
-        $this->count = $count;
+        $this->type = $type;
+        $this->typeCount = $typeCount;
         $this->reason = $reason;
         $this->maker = $maker;
+        $this->isUpdate = $isUpdate;
+        $this->oldType = $oldType;
     }
 
     public function build()
     {
-        return $this->subject('Warning Letter Notification')
+        // Check if this is an SP3 warning (termination)
+        $isTermination = $this->type === 'SP3';
+        
+        // Determine the subject based on whether this is an update or a new warning
+        $subject = $this->isUpdate
+            ? "Warning Letter Update: {$this->type} #{$this->typeCount}"
+            : ($isTermination 
+                ? 'IMPORTANT: Final Warning Letter - Employment Termination' 
+                : "Warning Letter Notification: {$this->type} #{$this->typeCount}");
+        
+        return $this->subject($subject)
             ->view('emails.warning_letter')
             ->with([
                 'user' => $this->user,
-                'count' => $this->count,
+                'type' => $this->type,
+                'typeCount' => $this->typeCount,
                 'reason' => $this->reason,
-                'maker' => $this->maker
+                'maker' => $this->maker,
+                'isTermination' => $isTermination,
+                'isUpdate' => $this->isUpdate,
+                'oldType' => $this->oldType
             ]);
     }
 }

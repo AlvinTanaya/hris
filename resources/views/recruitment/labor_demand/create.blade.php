@@ -32,20 +32,20 @@
                             <i class="fas fa-building"></i> Department
                         </label>
                         <select class="form-control" id="department" name="department" required>
-                            <option value="" selected disabled>Select Department</option>
-                            <option value="Director" {{ old('department') == 'Director' ? 'selected' : '' }}>
-                                Director
-                            </option>
-                            <option value="General Manager" {{ old('department') == 'General Manager' ? 'selected' : '' }}>
-                                General Manager
-                            </option>
-                            <option value="Human Resources" {{ old('department') == 'Human Resources' ? 'selected' : '' }}>
-                                Human Resources
-                            </option>
-                            <option value="Finance and Accounting" {{ old('department') == 'Finance and Accounting' ? 'selected' : '' }}>
-                                Finance and Accounting
-                            </option>
-
+                            <option selected disabled>Choose Department</option>
+                            <option value="Director" {{ old('department') == 'Director' ? 'selected' : '' }}>Director</option>
+                            <option value="General Manager" {{ old('department') == 'General Manager' ? 'selected' : '' }}>General Manager</option>
+                            <option value="Human Resources" {{ old('department') == 'Human Resources' ? 'selected' : '' }}>Human Resources</option>
+                            <option value="Finance and Accounting" {{ old('department') == 'Finance and Accounting' ? 'selected' : '' }}>Finance and Accounting</option>
+                            <option value="Administration" {{ old('department') == 'Administration' ? 'selected' : '' }}>Administration</option>
+                            <option value="Checker" {{ old('department') == 'Checker' ? 'selected' : '' }}>Checker</option>
+                            <option value="Marketing" {{ old('department') == 'Marketing' ? 'selected' : '' }}>Marketing</option>
+                            <option value="Driver" {{ old('department') == 'Driver' ? 'selected' : '' }}>Driver</option>
+                            <option value="Internal Audit" {{ old('department') == 'Internal Audit' ? 'selected' : '' }}>Internal Audit</option>
+                            <option value="Audit" {{ old('department') == 'Audit' ? 'selected' : '' }}>Audit</option>
+                            <option value="Information Technology" {{ old('department') == 'Information Technology' ? 'selected' : '' }}>Information Technology</option>
+                            <option value="Cleaning" {{ old('department') == 'Cleaning' ? 'selected' : '' }}>Cleaning</option>
+                            <option value="Security" {{ old('department') == 'Security' ? 'selected' : '' }}>Security</option>
                         </select>
                     </div>
                 </div>

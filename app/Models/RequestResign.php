@@ -17,6 +17,7 @@ class RequestResign extends Model
         'resign_date',
         'resign_reason',
         'resign_status',
+        'file_path',
         'declined_reason',
         'response_user_id',
         'created_at',

@@ -9,6 +9,9 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/css/select2.min.css" rel="stylesheet">
+
+
     <style>
         body {
             font-family: 'Poppins', sans-serif;
@@ -223,6 +226,44 @@
         .section-container {
             position: relative;
         }
+
+        .select2-container .select2-selection--single {
+            height: 100%;
+            padding: 0.375rem 0.75rem;
+            border-radius: 0.25rem;
+            border: 1px solid #ced4da;
+            background-color: #3d5a98;
+            color: #ffffff;
+            display: flex;
+            align-items: center;
+            /* Pusatkan teks secara vertikal */
+        }
+
+        .select2-container--default .select2-selection--single .select2-selection__rendered {
+            line-height: normal;
+            /* Pastikan line-height normal */
+            color: #ffffff;
+        }
+
+        .select2-container--default .select2-selection--single .select2-selection__arrow {
+            height: auto;
+            display: flex;
+            align-items: center;
+            /* Pusatkan arrow */
+        }
+
+        .select2-dropdown {
+            background-color: #3d5a98;
+            color: #ffffff;
+        }
+
+        .select2-results__option {
+            color: #ffffff;
+        }
+
+        .select2-results__option--highlighted {
+            background-color: #1f3b73;
+        }
     </style>
 
 </head>
@@ -280,9 +321,9 @@
                     <div class="col-md-4 mx-auto">
                         <div class="upload-card text-center">
                             <i class="fas fa-trophy"></i>
-                            <h5 class="text-warning mb-3">Achievements</h5>
+                            <h5 class="text-warning mb-3">Achievements (PDF)</h5>
                             <input type="file" class="form-control" name="achievement_path" accept=".pdf" onchange="handleAchievementFiles(this)">
-                            <div id="achievementPreview" class="mt-3"></div>
+                            <div id="achievementPreview"></div>
                         </div>
                     </div>
                 </div>
@@ -297,7 +338,7 @@
                         <label class="form-label">Expected Salary</label>
                         <div class="input-group">
                             <span class="input-group-text">Rp</span>
-                            <input type="number" class="form-control" name="expected_salary" required>
+                            <input type="number" class="form-control" name="expected_salary" placeholder="5000000" required>
                         </div>
                         <small class="text-white">Masukkan gaji yang diharapkan tanpa "." atau ",".</small>
                     </div>
@@ -334,31 +375,14 @@
                         <input type="tel" placeholder="08XXXXXXXXXX" pattern="08[0-9]{10,12}" class="form-control" name="phone_number" required>
                     </div>
                     <div class="col-md-6">
-                        <label class="form-label">NIK</label>
+                        <label class="form-label">Emergency Contact</label>
+                        <input type="tel" placeholder="08XXXXXXXXXX" pattern="08[0-9]{10,12}" class="form-control" name="emergency_contact" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">NIK (KTP)</label>
                         <input type="text" class="form-control" name="ID_number" required>
                     </div>
                     <div class="col-md-6">
-                        <label class="form-label">Place of Birth</label>
-                        <input type="text" class="form-control" name="birth_place" required>
-                    </div>
-                    <div class="col-md-6">
-                        <label class="form-label">Date of Birth</label>
-                        <input type="date" class="form-control" name="birth_date" required>
-                    </div>
-                    <div class="col-md-4">
-                        <label for="blood_type" class="form-label">
-                            <i class="fas fa-tint"></i> Blood Type
-                        </label>
-                        <select class="form-control" id="blood_type" name="blood_type">
-                            <option selected disabled>Choose Blood Type</option>
-                            @foreach(['A', 'B', 'AB', 'O'] as $blood)
-                            <option value="{{ $blood }}">
-                                {{ $blood }}
-                            </option>
-                            @endforeach
-                        </select>
-                    </div>
-                    <div class="col-md-4">
                         <label class="form-label">Religion</label>
                         <select class="form-select" name="religion" required>
                             <option value="" disabled>Select Religion</option>
@@ -370,7 +394,7 @@
                             <option value="Konghucu">Konghucu</option>
                         </select>
                     </div>
-                    <div class="col-md-4">
+                    <div class="col-md-6">
                         <label class="form-label">Gender</label>
                         <select class="form-select" name="gender" required>
                             <option value="" disabled>Select Gender</option>
@@ -378,6 +402,30 @@
                             <option value="Female">Female</option>
                         </select>
                     </div>
+                    <div class="col-md-6">
+                        <label for="blood_type" class="form-label">
+                            <i class="fas fa-tint"></i> Blood Type
+                        </label>
+                        <select class="form-control" id="blood_type" name="blood_type">
+                            <option selected disabled>Choose Blood Type</option>
+                            @foreach(['-','A', 'B', 'AB', 'O'] as $blood)
+                            <option value="{{ $blood }}">
+                                {{ $blood }}
+                            </option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Place of Birth</label>
+                        <input type="text" class="form-control" name="birth_place" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Date of Birth</label>
+                        <input type="date" class="form-control" name="birth_date" required>
+                    </div>
+
+
+
                     <div class="col-md-6">
                         <label class="form-label">ID Card Address</label>
                         <textarea class="form-control" name="ID_address" rows="3" required></textarea>
@@ -387,10 +435,22 @@
                         <textarea class="form-control" name="domicile_address" rows="3" required></textarea>
                     </div>
                     <div class="col-md-6">
+                        <label class="form-label">Distance Between Domicile Address to Company Location</label>
+                        <select class="form-select" name="distance" required>
+                            <option value="" selected disabled>Select Distance</option>
+                            <option value="0-3">0-3 KM</option>
+                            <option value="3-5">3-5 KM</option>
+                            <option value="5-10">5-10 KM</option>
+                            <option value="10-15">10-15 KM</option>
+                            <option value="15+">15+ KM</option>
+                        </select>
+                    </div>
+
+                    <div class="col-md-3">
                         <label class="form-label">Weight (kg)</label>
                         <input type="number" class="form-control" name="weight">
                     </div>
-                    <div class="col-md-6">
+                    <div class="col-md-3">
                         <label class="form-label">Height (cm)</label>
                         <input type="number" class="form-control" name="height">
                     </div>
@@ -554,134 +614,165 @@
 
         </form>
     </div>
-    <!-- jQuery -->
-    <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
-
-    <!-- SweetAlert2 -->
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-
-    <script>
-        $(document).ready(function() {
-            // Checkbox handling
-            const $checkboxes = $(".license-checkbox");
-            const $licenseNumbers = $(".license-number");
-            const $noLicenseCheckbox = $("#noLicense");
-
-            $checkboxes.on("change", function() {
-                $(this).closest(".card-body").find(".license-number").prop("disabled", !$(this).is(":checked"));
-
-                if ($(this).is(":checked")) {
-                    $noLicenseCheckbox.prop("checked", false);
-                }
-            });
-
-            $noLicenseCheckbox.on("change", function() {
-                if ($(this).is(":checked")) {
-                    $checkboxes.prop("checked", false);
-                    $licenseNumbers.prop("disabled", true);
-                }
-            });
 
 
-            // Initial cards
-            if ($('#educationContainer').children().length === 0) addEducation();
-            if ($('#familyContainer').children().length === 0) addFamily();
-            if ($('#languageContainer').children().length === 0) addLanguage();
+</body>
 
-            // Form submission
-            $('#jobApplicationForm').on('submit', function(e) {
-                e.preventDefault();
+</html>
 
-                // Validation checks
-                if ($('#educationContainer').children().length === 0) {
-                    Swal.fire({
-                        icon: 'warning',
-                        title: 'Missing Education Record',
-                        text: 'Please add at least one education record before submitting.'
-                    });
-                    return;
-                }
+<!-- jQuery -->
+<script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/js/select2.min.js"></script>
+<!-- SweetAlert2 -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
-                if ($('#familyContainer').children().length === 0) {
-                    Swal.fire({
-                        icon: 'warning',
-                        title: 'Missing Family Record',
-                        text: 'Please add at least one family record before submitting.'
-                    });
-                    return;
-                }
+<script>
+    $(document).ready(function() {
+        // Checkbox handling
+        const $checkboxes = $(".license-checkbox");
+        const $licenseNumbers = $(".license-number");
+        const $noLicenseCheckbox = $("#noLicense");
 
-                if ($('#languageContainer').children().length === 0) {
-                    Swal.fire({
-                        icon: 'warning',
-                        title: 'Missing Language Record',
-                        text: 'Please add at least one language record before submitting.'
-                    });
-                    return;
-                }
+        $checkboxes.on("change", function() {
+            $(this).closest(".card-body").find(".license-number").prop("disabled", !$(this).is(":checked"));
 
-                // Similar checks for family and language...
+            if ($(this).is(":checked")) {
+                $noLicenseCheckbox.prop("checked", false);
+            }
+        });
 
+        $noLicenseCheckbox.on("change", function() {
+            if ($(this).is(":checked")) {
+                $checkboxes.prop("checked", false);
+                $licenseNumbers.prop("disabled", true);
+            }
+        });
+
+
+        // Initial cards
+        if ($('#educationContainer').children().length === 0) addEducation();
+        if ($('#familyContainer').children().length === 0) addFamily();
+        if ($('#languageContainer').children().length === 0) addLanguage();
+
+        // Form submission
+        $('#jobApplicationForm').on('submit', function(e) {
+            e.preventDefault();
+
+            // Validation checks
+            if ($('#educationContainer').children().length === 0) {
                 Swal.fire({
-                    title: 'Are you sure?',
-                    text: 'Make sure all your information is correct before submitting.',
-                    icon: 'question',
-                    showCancelButton: true,
-                    confirmButtonText: 'Yes, submit!',
-                    cancelButtonText: 'Cancel'
-                }).then((result) => {
-                    if (result.isConfirmed) {
-                        Swal.fire({
-                            icon: 'success',
-                            title: 'Submitted!',
-                            text: 'Your application has been successfully submitted.',
-                            showConfirmButton: false,
-                            timer: 2000
-                        });
-
-                        setTimeout(() => {
-                            $(this).unbind('submit').submit();
-                        }, 2000);
-                    }
+                    icon: 'warning',
+                    title: 'Missing Education Record',
+                    text: 'Please add at least one education record before submitting.'
                 });
+                return;
+            }
+
+            if ($('#familyContainer').children().length === 0) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Missing Family Record',
+                    text: 'Please add at least one family record before submitting.'
+                });
+                return;
+            }
+
+            if ($('#languageContainer').children().length === 0) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Missing Language Record',
+                    text: 'Please add at least one language record before submitting.'
+                });
+                return;
+            }
+
+            // Similar checks for family and language...
+
+            Swal.fire({
+                title: 'Are you sure?',
+                text: 'Make sure all your information is correct before submitting.',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: 'Yes, submit!',
+                cancelButtonText: 'Cancel'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Submitted!',
+                        text: 'Your application has been successfully submitted.',
+                        showConfirmButton: false,
+                        timer: 2000
+                    });
+
+                    setTimeout(() => {
+                        $(this).unbind('submit').submit();
+                    }, 2000);
+                }
             });
 
 
+            $('.province-dropdown').each(function() {
+                loadProvinces($(this));
+            });
 
+            // Set up province change handlers
+            $(document).on('change', '.province-dropdown', function() {
+                const provinceId = $(this).val();
+                const cardId = $(this).data('card');
+                loadCities(provinceId, $(`.city-dropdown[data-card="${cardId}"]`));
+            });
 
-            $(document).on("input", ".list-textarea", function() {
-                let lines = $(this).val().split("\n");
-                for (let i = 0; i < lines.length; i++) {
-                    if (lines[i] && !lines[i].startsWith("- ")) {
-                        lines[i] = "- " + lines[i].trim();
+            // Grade input validation based on education level
+            $(document).on('change', '.education-level', function() {
+                const level = $(this).val();
+                const $gradeInput = $(this).closest('.row').find('.grade-input');
+
+                if (['SMA', 'SMK'].includes(level)) {
+                    $gradeInput.attr({
+                        'min': '0',
+                        'max': '100',
+                        'step': '0.01',
+                        'placeholder': 'Enter grade (0-100)'
+                    });
+                } else if (['D3', 'S1', 'S2'].includes(level)) {
+                    $gradeInput.attr({
+                        'min': '0',
+                        'max': '4',
+                        'step': '0.01',
+                        'placeholder': 'Enter GPA (0-4)'
+                    });
+                }
+            });
+
+            // Validate grade input values
+            $(document).on('input', '.grade-input', function() {
+                const level = $(this).closest('.row').find('.education-level').val();
+                const value = parseFloat($(this).val());
+
+                if (['SMA', 'SMK'].includes(level)) {
+                    if (value < 0 || value > 100) {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Invalid Grade',
+                            text: 'Grade must be between 0 and 100!',
+                        });
+                        $(this).val('');
+                    }
+                } else if (['D3', 'S1', 'S2'].includes(level)) {
+                    if (value < 0 || value > 4) {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Invalid GPA',
+                            text: 'GPA must be between 0 and 4!',
+                        });
+                        $(this).val('');
                     }
                 }
-                $(this).val(lines.join("\n"));
             });
 
-            $(document).on("keydown", ".list-textarea", function(event) {
-                let cursorPos = this.selectionStart;
-                let value = $(this).val();
-                let lines = value.split("\n");
-                let currentLineIndex = value.substr(0, cursorPos).split("\n").length - 1;
-                let currentLine = lines[currentLineIndex] || "";
-
-                // Backspace: Jika kursor ada di awal baris yang hanya berisi "- ", hapus barisnya
-                if (event.key === "Backspace" && currentLine.trim() === "-") {
-                    event.preventDefault();
-                    lines.splice(currentLineIndex, 1); // Hapus baris kosong
-                    $(this).val(lines.join("\n"));
-                    this.setSelectionRange(cursorPos - 2, cursorPos - 2); // Pindah kursor mundur
-                }
-
-                // Enter: Tambah baris baru dengan "- "
-                if (event.key === "Enter") {
-                    event.preventDefault();
-                    let newText = value + "\n- ";
-                    $(this).val(newText);
-                    this.setSelectionRange(newText.length, newText.length);
-                }
-            });
+            // Initialize language dropdowns for any existing cards
+            updateLanguageDropdowns();
 
 
 
@@ -689,19 +780,339 @@
 
 
 
-        // File preview functions
-        function previewImage(input) {
-            if (input.files && input.files[0]) {
-                const file = input.files[0];
+
+        $(document).on("input", ".list-textarea", function() {
+            let lines = $(this).val().split("\n");
+            for (let i = 0; i < lines.length; i++) {
+                if (lines[i] && !lines[i].startsWith("- ")) {
+                    lines[i] = "- " + lines[i].trim();
+                }
+            }
+            $(this).val(lines.join("\n"));
+        });
+
+        $(document).on("keydown", ".list-textarea", function(event) {
+            let cursorPos = this.selectionStart;
+            let value = $(this).val();
+            let lines = value.split("\n");
+            let currentLineIndex = value.substr(0, cursorPos).split("\n").length - 1;
+            let currentLine = lines[currentLineIndex] || "";
+
+            // Backspace: Jika kursor ada di awal baris yang hanya berisi "- ", hapus barisnya
+            if (event.key === "Backspace" && currentLine.trim() === "-") {
+                event.preventDefault();
+                lines.splice(currentLineIndex, 1); // Hapus baris kosong
+                $(this).val(lines.join("\n"));
+                this.setSelectionRange(cursorPos - 2, cursorPos - 2); // Pindah kursor mundur
+            }
+
+            // Enter: Tambah baris baru dengan "- "
+            if (event.key === "Enter") {
+                event.preventDefault();
+                let newText = value + "\n- ";
+                $(this).val(newText);
+                this.setSelectionRange(newText.length, newText.length);
+            }
+        });
+
+
+        $("#cityDropdown").select2({
+
+            allowClear: true,
+            width: '100%',
+
+        });
+
+
+
+
+    });
+
+
+
+    // File preview functions
+    function previewImage(input) {
+        if (input.files && input.files[0]) {
+            const file = input.files[0];
+            const maxSize = 2 * 1024 * 1024; // 2MB
+
+            if (file.size > maxSize) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'File Too Large',
+                    text: 'Image size should not exceed 2MB!',
+                });
+                $(input).val('');
+                return;
+            }
+
+            if (!file.type.match('image.*')) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Invalid File Type',
+                    text: 'Please select an image file!',
+                });
+                $(input).val('');
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                $('#profilePreview').attr('src', e.target.result);
+            }
+            reader.readAsDataURL(file);
+        }
+    }
+
+    function previewIDCard(input) {
+        if (input.files && input.files[0]) {
+            const file = input.files[0];
+            const maxSize = 5 * 1024 * 1024; // 5MB
+
+            if (file.size > maxSize) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'File Too Large',
+                    text: 'ID Card size should not exceed 5MB!',
+                });
+                $(input).val('');
+                return;
+            }
+
+            const allowedTypes = ['image/jpeg', 'image/png'];
+            if (!allowedTypes.includes(file.type)) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Invalid File Type',
+                    text: 'Please select a JPG or PNG file!',
+                });
+                $(input).val('');
+                return;
+            }
+
+            $('#idCardFileName').html('<i class="fas fa-file me-2"></i>' + file.name);
+            $('#idCardPreview').show();
+        }
+    }
+
+    function previewCV(input) {
+        if (input.files && input.files[0]) {
+            const file = input.files[0];
+            const maxSize = 5 * 1024 * 1024; // 5MB
+
+            if (file.size > maxSize) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'File Too Large',
+                    text: 'CV size should not exceed 5MB!',
+                });
+                $(input).val('');
+                return;
+            }
+
+            if (file.type !== 'application/pdf') {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Invalid File Type',
+                    text: 'Please select a PDF file!',
+                });
+                $(input).val('');
+                return;
+            }
+
+            $('#cvFileName').html('<i class="fas fa-file me-2"></i>' + file.name);
+            $('#cvPreview').show();
+        }
+    }
+
+    function handleAchievementFiles(input) {
+        const $preview = $('#achievementPreview');
+        $preview.empty();
+
+        if (input.files.length > 0) {
+            const $fileList = $('<div>').addClass('mt-3');
+
+            $.each(input.files, function(index, file) {
+                const $fileItem = $('<div>')
+                    .addClass('text-light')
+                    .html('<i class="fas fa-file me-2"></i>' + file.name);
+                $fileList.append($fileItem);
+            });
+
+            $preview.append($fileList);
+        }
+    }
+
+    // Update card numbers
+    function updateCardNumbers(containerId) {
+        $(`#${containerId} .experience-card`).each(function(index) {
+            $(this).find('.card-number').text(index + 1);
+        });
+    }
+
+    // Remove card function
+    function removeCard(button, containerId, callback) {
+        Swal.fire({
+            title: 'Are you sure?',
+            text: 'This action cannot be undone!',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Yes, remove it!',
+            cancelButtonText: 'Cancel',
+            reverseButtons: true
+        }).then((result) => {
+            if (result.isConfirmed) {
+                $(button).closest('.experience-card').remove();
+                updateCardNumbers(containerId);
+
+                // Call the callback function if provided (for language dropdown updates)
+                if (typeof callback === 'function') {
+                    callback();
+                }
+
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Deleted!',
+                    text: 'The item has been removed.',
+                    showConfirmButton: false,
+                    timer: 1500
+                });
+            }
+        });
+    }
+
+    // Add card functions
+    function addEducation() {
+        const $container = $('#educationContainer');
+        const cardCount = $container.children().length + 1;
+        const $card = $('<div>').addClass('experience-card');
+        const cardId = `education-${cardCount}`;
+
+        $card.html(`
+    <div class="card-number">${cardCount}</div>
+    <div class="card-header">
+        <h4 class="text-warning m-0">Education #${cardCount}</h4>
+        <button type="button" class="btn-remove" onclick="removeCard(this, 'educationContainer')">
+            <i class="fas fa-trash"></i>
+        </button>
+    </div>
+    <div class="row g-3">
+        <div class="col-md-6">
+            <label class="form-label">Level</label>
+            <select class="form-select education-level" name="degree[]" required>
+                <option value="" selected disabled>Select Level</option>
+                <option value="SMA">SMA</option>
+                <option value="SMK">SMK</option>
+                <option value="D3">D3</option>
+                <option value="S1">S1</option>
+                <option value="S2">S2</option>
+            </select>
+        </div>
+        <div class="col-md-6">
+            <label class="form-label">Institution Name</label>
+            <input type="text" class="form-control" name="educational_place[]" required>
+        </div>
+        <div class="col-md-6">
+            <label class="form-label">Province</label>
+            <select class="form-select province-dropdown" data-card="${cardId}" name="education_province[]" required>
+                <option value="" disabled selected>Select Province</option>
+            </select>
+        </div>
+        <div class="col-md-6">
+            <label class="form-label">City</label>
+            <select class="form-select city-dropdown" data-card="${cardId}" name="education_city[]" required>
+                <option value="" disabled selected>Select City</option>
+            </select>
+        </div>
+        <div class="col-md-6">
+            <label class="form-label">Major/Specialization</label>
+            <input type="text" class="form-control" name="major[]" required>
+        </div>
+        <div class="col-md-6">
+            <label class="form-label">Grade/GPA</label>
+            <input type="number" step="0.01" class="form-control grade-input" name="grade[]" min="0" required>
+        </div>
+        <div class="col-md-6">
+            <label class="form-label">Start Date</label>
+            <input type="date" class="form-control" name="start_education[]" required>
+        </div>
+        <div class="col-md-6">
+            <label class="form-label">End Date</label>
+            <input type="date" class="form-control" name="end_education[]" required>
+        </div>
+  
+        <div class="col-md-12">
+            <label class="form-label">Certificate/Diploma</label>
+            <input type="file" class="form-control" name="education_certificate[]" accept="image/*" required>
+            <small class="text-white">Upload image file (max 2MB)</small>
+        </div>
+    </div>
+`);
+
+        // Add validation for dates
+        $card.find('input[name="end_education[]"]').on('change', function() {
+            const startDate = $(this).closest('.row').find('input[name="start_education[]"]').val();
+            const endDate = $(this).val();
+
+            if (startDate && endDate && new Date(endDate) <= new Date(startDate)) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Invalid Date',
+                    text: 'End date must be after start date!',
+                });
+                $(this).val('');
+            }
+        });
+
+        // Add validation for grade input based on education level
+        $card.find('.education-level').on('change', function() {
+            const level = $(this).val();
+            const $gradeInput = $(this).closest('.row').find('.grade-input');
+
+            if (['SMA', 'SMK'].includes(level)) {
+                $gradeInput.attr({
+                    'min': '0',
+                    'max': '100',
+                    'step': '0.01',
+                    'placeholder': 'Enter grade (0-100)'
+                });
+            } else if (['D3', 'S1', 'S2'].includes(level)) {
+                $gradeInput.attr({
+                    'min': '0',
+                    'max': '4',
+                    'step': '0.01',
+                    'placeholder': 'Enter GPA (0-4)'
+                });
+            }
+
+            // Tambahkan event listener untuk mencegah nilai di luar batas
+            $gradeInput.off('input').on('input', function() {
+                let min = parseFloat($(this).attr('min'));
+                let max = parseFloat($(this).attr('max'));
+                let value = parseFloat($(this).val());
+
+                if (value < min) {
+                    $(this).val(min);
+                } else if (value > max) {
+                    $(this).val(max);
+                }
+            });
+        });
+
+
+        // Add validation for file size
+        $card.find('input[name="education_certificate[]"]').on('change', function() {
+            if (this.files && this.files[0]) {
+                const file = this.files[0];
                 const maxSize = 2 * 1024 * 1024; // 2MB
 
                 if (file.size > maxSize) {
                     Swal.fire({
                         icon: 'error',
                         title: 'File Too Large',
-                        text: 'Image size should not exceed 2MB!',
+                        text: 'Certificate image should not exceed 2MB!',
                     });
-                    $(input).val('');
+                    $(this).val('');
                     return;
                 }
 
@@ -711,565 +1122,502 @@
                         title: 'Invalid File Type',
                         text: 'Please select an image file!',
                     });
-                    $(input).val('');
+                    $(this).val('');
                     return;
                 }
-
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    $('#profilePreview').attr('src', e.target.result);
-                }
-                reader.readAsDataURL(file);
             }
-        }
+        });
 
-        function previewIDCard(input) {
-            if (input.files && input.files[0]) {
-                const file = input.files[0];
-                const maxSize = 5 * 1024 * 1024; // 5MB
+        $container.append($card);
 
-                if (file.size > maxSize) {
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'File Too Large',
-                        text: 'ID Card size should not exceed 5MB!',
-                    });
-                    $(input).val('');
-                    return;
-                }
+        // Load provinces for this card
+        loadProvinces($card.find('.province-dropdown'));
 
-                const allowedTypes = ['image/jpeg', 'image/png'];
-                if (!allowedTypes.includes(file.type)) {
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Invalid File Type',
-                        text: 'Please select a JPG or PNG file!',
-                    });
-                    $(input).val('');
-                    return;
-                }
+        // Set up city dropdown to update when province changes
+        $card.find('.province-dropdown').on('change', function() {
+            const provinceId = $(this).val();
+            const cardId = $(this).data('card');
+            loadCities(provinceId, $(`.city-dropdown[data-card="${cardId}"]`));
+        });
+    }
 
-                $('#idCardFileName').html('<i class="fas fa-file me-2"></i>' + file.name);
-                $('#idCardPreview').show();
-            }
-        }
 
-        function previewCV(input) {
-            if (input.files && input.files[0]) {
-                const file = input.files[0];
-                const maxSize = 5 * 1024 * 1024; // 5MB
 
-                if (file.size > maxSize) {
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'File Too Large',
-                        text: 'CV size should not exceed 5MB!',
-                    });
-                    $(input).val('');
-                    return;
-                }
+    function addTraning() {
+        const $container = $('#trainingContainer');
+        const cardCount = $container.children().length + 1;
+        const $card = $('<div>').addClass('experience-card');
+        const cardId = `training-${cardCount}`;
 
-                if (file.type !== 'application/pdf') {
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Invalid File Type',
-                        text: 'Please select a PDF file!',
-                    });
-                    $(input).val('');
-                    return;
-                }
-
-                $('#cvFileName').html('<i class="fas fa-file me-2"></i>' + file.name);
-                $('#cvPreview').show();
-            }
-        }
-
-        function handleAchievementFiles(input) {
-            const $preview = $('#achievementPreview');
-            $preview.empty();
-
-            if (input.files.length > 0) {
-                const $fileList = $('<div>').addClass('mt-2');
-
-                $.each(input.files, function(index, file) {
-                    const $fileItem = $('<div>')
-                        .addClass('text-light')
-                        .html('<i class="fas fa-file me-2"></i>' + file.name);
-                    $fileList.append($fileItem);
-                });
-
-                $preview.append($fileList);
-            }
-        }
-
-        // Update card numbers
-        function updateCardNumbers(containerId) {
-            $(`#${containerId} .experience-card`).each(function(index) {
-                $(this).find('.card-number').text(index + 1);
-            });
-        }
-
-        // Remove card function
-        function removeCard(button, containerId) {
-            Swal.fire({
-                title: 'Are you sure?',
-                text: 'This action cannot be undone!',
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonText: 'Yes, remove it!',
-                cancelButtonText: 'Cancel',
-                reverseButtons: true
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    $(button).closest('.experience-card').remove();
-                    updateCardNumbers(containerId);
-
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'Deleted!',
-                        text: 'The item has been removed.',
-                        showConfirmButton: false,
-                        timer: 1500
-                    });
-                }
-            });
-        }
-
-        // Add card functions
-        function addEducation() {
-            const $container = $('#educationContainer');
-            const cardCount = $container.children().length + 1;
-            const $card = $('<div>').addClass('experience-card');
-
-            $card.html(`
+        $card.html(`
         <div class="card-number">${cardCount}</div>
         <div class="card-header">
-            <h4 class="text-warning m-0">Education #${cardCount}</h4>
-            <button type="button" class="btn-remove" onclick="removeCard(this, 'educationContainer')">
+            <h4 class="text-warning m-0">Training #${cardCount}</h4>
+            <button type="button" class="btn-remove" onclick="removeCard(this, 'trainingContainer')">
                 <i class="fas fa-trash"></i>
             </button>
         </div>
         <div class="row g-3">
-            <div class="col-md-6">
-                <label class="form-label">Level</label>
-                <select class="form-select" name="degree[]" onchange="toggleOtherDegree(this)" required>
-                    <option value="" disabled>Select Level</option>
-                    <option value="SD">SD</option>
-                    <option value="SMP">SMP</option>
-                    <option value="SMA">SMA</option>
-                    <option value="SMK">SMK</option>
-                    <option value="D3">D3</option>
-                    <option value="S1">S1</option>
-                    <option value="S2">S2</option>
-                    <option value="S3">S3</option>
-                   
-                </select>
-           
+            <div class="col-md-12">
+                <label class="form-label">Training Name</label>
+                <input type="text" class="form-control" name="training_name[]" required>
             </div>
             <div class="col-md-6">
-                <label class="form-label">Institution Name</label>
-                <input type="text" class="form-control" name="educational_place[]" required>
+                <label class="form-label">Province</label>
+                <select class="form-select province-dropdown" data-card="${cardId}" name="training_province[]" required>
+                    <option value="" disabled selected>Select Province</option>
+                </select>
             </div>
             <div class="col-md-6">
                 <label class="form-label">City</label>
-                <input type="text" class="form-control" name="education_city[]" required>
+                <select class="form-select city-dropdown" data-card="${cardId}" name="training_city[]" required>
+                    <option value="" disabled selected>Select City</option>
+                </select>
             </div>
             <div class="col-md-6">
-                <label class="form-label">Major/Specialization</label>
-                <input type="text" class="form-control" name="major[]" required>
-            </div>
-            <div class="col-md-4">
                 <label class="form-label">Start Date</label>
-                <input type="date" class="form-control" name="start_education[]" required>
+                <input type="date" class="form-control" name="start_training[]" required>
             </div>
-            <div class="col-md-4">
+            <div class="col-md-6">
                 <label class="form-label">End Date</label>
-                <input type="date" class="form-control" name="end_education[]" required>
-            </div>
-            <div class="col-md-4">
-                <label class="form-label">Grade/GPA</label>
-                <input type="number" step="0.01" class="form-control" name="grade[]" required>
+                <input type="date" class="form-control" name="end_training[]" required>
             </div>
         </div>
     `);
-            $card.find('input[name="end_education[]"]').on('change', function() {
-                const startDate = $(this).closest('.row').find('input[name="start_education[]"]').val();
-                const endDate = $(this).val();
 
-                if (startDate && endDate && new Date(endDate) <= new Date(startDate)) {
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Invalid Date',
-                        text: 'End date must be after start date!',
-                    });
-                    $(this).val('');
-                }
-            });
+        $card.find('input[name="end_training[]"]').on('change', function() {
+            const startDate = $(this).closest('.row').find('input[name="start_training[]"]').val();
+            const endDate = $(this).val();
+
+            if (startDate && endDate && new Date(endDate) <= new Date(startDate)) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Invalid Date',
+                    text: 'End date must be after start date!',
+                });
+                $(this).val('');
+            }
+        });
+
+        $container.append($card);
+
+        // Load provinces for this card
+        loadProvinces($card.find('.province-dropdown'));
+
+        // Set up city dropdown to update when province changes
+        $card.find('.province-dropdown').on('change', function() {
+            const provinceId = $(this).val();
+            const cardId = $(this).data('card');
+            loadCities(provinceId, $(`.city-dropdown[data-card="${cardId}"]`));
+        });
+    }
+
+    function addOrganization() {
+        const $container = $('#organizationContainer');
+        const cardCount = $container.children().length + 1;
+        const $card = $('<div>').addClass('experience-card');
+        const cardId = `org-${cardCount}`;
+
+        $card.html(`
+    <div class="card-number">${cardCount}</div>
+    <div class="card-header">
+        <h4 class="text-warning m-0">Organization #${cardCount}</h4>
+        <button type="button" class="btn-remove" onclick="removeCard(this, 'organizationContainer')">
+            <i class="fas fa-trash"></i>
+        </button>
+    </div>
+    <div class="row g-3">
+        <div class="col-md-6">
+            <label class="form-label">Organization Name</label>
+            <input type="text" class="form-control" name="org_name[]" required>
+        </div>
+        <div class="col-md-6">
+            <label class="form-label">Position</label>
+            <input type="text" class="form-control" name="org_position[]" required>
+        </div>
+        <div class="col-md-6">
+                <label class="form-label">Province</label>
+                <select class="form-select province-dropdown" data-card="${cardId}" name="org_province[]" required>
+                    <option value="" disabled selected>Select Province</option>
+                </select>
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">City</label>
+                <select class="form-select city-dropdown" data-card="${cardId}" name="org_city[]" required>
+                    <option value="" disabled selected>Select City</option>
+                </select>
+            </div>
+      
+        <div class="col-md-12">
+            <label class="form-label">Activity Type</label>
+            <textarea class="form-control list-textarea" name="activity_type[]" required rows="3" placeholder="- list your activity"></textarea>
+        </div>
+        <div class="col-md-6">
+            <label class="form-label">Start Date</label>
+            <input type="date" class="form-control" name="org_start_date[]" required>
+        </div>
+        <div class="col-md-6">
+            <label class="form-label">End Date</label>
+            <input type="date" class="form-control" name="org_end_date[]" required>
+        </div>
+    
+    </div>
+`);
+        $card.find('input[name="org_end_date[]"]').on('change', function() {
+            const startDate = $(this).closest('.row').find('input[name="org_start_date[]"]').val();
+            const endDate = $(this).val();
+
+            if (startDate && endDate && new Date(endDate) <= new Date(startDate)) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Invalid Date',
+                    text: 'End date must be after start date!',
+                });
+                $(this).val('');
+            }
+        });
+
+        $container.append($card);
+
+        // Load provinces for this card
+        loadProvinces($card.find('.province-dropdown'));
+
+        // Set up city dropdown to update when province changes
+        $card.find('.province-dropdown').on('change', function() {
+            const provinceId = $(this).val();
+            const cardId = $(this).data('card');
+            loadCities(provinceId, $(`.city-dropdown[data-card="${cardId}"]`));
+        });
+    }
 
 
-            $container.append($card);
-        }
+    // Family Cards
+    function addFamily() {
+        const $container = $('#familyContainer');
+        const cardCount = $container.children().length + 1;
+        const $card = $('<div>').addClass('experience-card');
 
-        function addTraning() {
-            const $container = $('#trainingContainer');
-            const cardCount = $container.children().length + 1;
-            const $card = $('<div>').addClass('experience-card');
-
-            $card.html(`
+        $card.html(`
                 <div class="card-number">${cardCount}</div>
                 <div class="card-header">
-                    <h4 class="text-warning m-0">Training #${cardCount}</h4>
-                    <button type="button" class="btn-remove" onclick="removeCard(this, 'trainingContainer')">
+                    <h4 class="text-warning m-0">Family Member #${cardCount}</h4>
+                    <button type="button" class="btn-remove" onclick="removeCard(this, 'familyContainer')">
                         <i class="fas fa-trash"></i>
                     </button>
                 </div>
                 <div class="row g-3">
+                    <!-- Full Name -->
                     <div class="col-md-6">
-                        <label class="form-label">Training Name</label>
-                        <input type="text" class="form-control" name="training_name[]" required>
+                        <label class="form-label">Full Name</label>
+                        <input type="text" class="form-control" name="family_name[]" required>
                     </div>
+                    <!-- Relationship -->
                     <div class="col-md-6">
-                        <label class="form-label">City</label>
-                        <input type="text" class="form-control" name="training_city[]" required>
+                        <label class="form-label">Relationship</label>
+                        <select class="form-select" name="relation[]" required>
+                            <option value="" disabled>Select Relationship</option>
+                            <option value="Father">Father</option>
+                            <option value="Mother">Mother</option>
+                            <option value="Husband">Husband</option>
+                            <option value="Wife">Wife</option>
+                            <option value="Child">Child</option>
+                            <option value="Sibling">Sibling</option>
+                        </select>
                     </div>
+                    <!-- Phone Number -->
                     <div class="col-md-6">
-                        <label class="form-label">Start Date</label>
-                        <input type="date" class="form-control" name="start_training[]" required>
+                        <label class="form-label">Phone Number</label>
+                        <input type="tel" placeholder="08XXXXXXXXXX" pattern="08[0-9]{10,12}" class="form-control" name="family_phone[]" required>
                     </div>
+                    <!-- Gender -->
                     <div class="col-md-6">
-                        <label class="form-label">End Date</label>
-                        <input type="date" class="form-control" name="end_training[]" required>
+                        <label class="form-label">Gender</label>
+                        <select class="form-select" name="gender_family[]" required>
+                            <option value="" disabled>Select Gender</option>
+                            <option value="Male">Male</option>
+                            <option value="Female">Female</option>
+                        </select>
+                    </div>
+                    <!-- Hidden Fields -->
+                    <div class="col-md-6 d-none">
+                        <label class="form-label">Date of Birth</label>
+                        <input type="date" class="form-control" name="birth_date_family[]" required>
+                    </div>
+                    <div class="col-md-6 d-none">
+                        <label class="form-label">Place of Birth</label>
+                        <input type="text" class="form-control" name="birth_place_family[]" required>
+                    </div>
+                    <div class="col-md-12 d-none">
+                        <label class="form-label">Address</label>
+                        <textarea class="form-control" name="address[]" required rows="2"></textarea>
+                    </div>
+                    <div class="col-md-6 d-none">
+                        <label class="form-label">ID Number</label>
+                        <input type="number" class="form-control" name="ID_number_family[]" required>
+                    </div>
+                    <div class="col-md-6 d-none">
+                        <label class="form-label">Occupation</label>
+                        <input type="text" class="form-control" name="job[]" required>
                     </div>
                 </div>
             `);
-            $card.find('input[name="end_training[]"]').on('change', function() {
-                const startDate = $(this).closest('.row').find('input[name="start_training[]"]').val();
-                const endDate = $(this).val();
 
-                if (startDate && endDate && new Date(endDate) <= new Date(startDate)) {
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Invalid Date',
-                        text: 'End date must be after start date!',
-                    });
-                    $(this).val('');
-                }
-            });
+        $container.append($card);
+    }
 
 
-            $container.append($card);
-        }
+    function addLanguage() {
+        const $container = $('#languageContainer');
+        const cardCount = $container.children().length + 1;
+        const $card = $('<div>').addClass('experience-card');
 
-
-        // Family Cards
-        function addFamily() {
-            const $container = $('#familyContainer');
-            const cardCount = $container.children().length + 1;
-            const $card = $('<div>').addClass('experience-card');
-
-            $card.html(`
-        <div class="card-number">${cardCount}</div>
-        <div class="card-header">
-            <h4 class="text-warning m-0">Family Member #${cardCount}</h4>
-            <button type="button" class="btn-remove" onclick="removeCard(this, 'familyContainer')">
-                <i class="fas fa-trash"></i>
-            </button>
+        $card.html(`
+    <div class="card-number">${cardCount}</div>
+    <div class="card-header">
+        <h4 class="text-warning m-0">Language Proficiency #${cardCount}</h4>
+        <button type="button" class="btn-remove" onclick="removeCard(this, 'languageContainer', updateLanguageDropdowns)">
+            <i class="fas fa-trash"></i>
+        </button>
+    </div>
+    <div class="row g-3">
+        <div class="col-md-12">
+            <label class="form-label">Language</label>
+            <select class="form-select language-select" name="language[]" required>
+                <option value="" selected disabled>Select Language</option>
+                <option value="Indonesian">Indonesian</option>
+                <option value="English">English</option>
+                <option value="Mandarin">Mandarin</option>
+                <option value="Japanese">Japanese</option>
+                <option value="Other">Other</option>
+            </select>
+            <input type="text" class="form-control mt-2 d-none other-language" name="other_language[]" placeholder="Specify language">
         </div>
-        <div class="row g-3">
-            <div class="col-md-6">
-                <label class="form-label">Full Name</label>
-                <input type="text" class="form-control" name="family_name[]" required>
-            </div>
-            <div class="col-md-6">
-                <label class="form-label">Relationship</label>
-                <select class="form-select" name="relation[]" required>
-                    <option value="" disabled>Select Relationship</option>
-                    <option value="Ayah">Ayah</option>
-                    <option value="Ibu">Ibu</option>
-                    <option value="Suami">Suami</option>
-                    <option value="Istri">Istri</option>
-                    <option value="Anak">Anak</option>
-                    <option value="Saudara">Saudara</option>
-                </select>
-            </div>
-            <div class="col-md-6">
-                <label class="form-label">Date of Birth</label>
-                <input type="date" class="form-control" name="birth_date_family[]" required>
-            </div>
-            <div class="col-md-6">
-                <label class="form-label">Place of Birth</label>
-                <input type="text" class="form-control" name="birth_place_family[]" required>
-            </div>
-            <div class="col-md-12">
-                <label class="form-label">Address</label>
-                <textarea class="form-control" name="address[]" required rows="2"></textarea>
-            </div>
-            <div class="col-md-6">
-                <label class="form-label">Gender</label>
-                <select class="form-select" name="gender_family[]" required>
-                    <option value="" disabled>Select Gender</option>
-                    <option value="Male">Male</option>
-                    <option value="Female">Female</option>
-                </select>
-            </div>
-            <div class="col-md-6">
-                <label class="form-label">ID Number</label>
-                <input type="number" class="form-control" name="ID_number_family[]" required>
-            </div>
-            <div class="col-md-6">
-                <label class="form-label">Phone Number</label>
-                <input type="tel" placeholder="08XXXXXXXXXX" pattern="08[0-9]{10,12}" class="form-control" name="family_phone[]" required>
-
-    
-            </div>
-            <div class="col-md-6">
-                <label class="form-label">Occupation</label>
-                <input type="text" class="form-control" name="job[]" required>
-            </div>
+        <div class="col-md-6">
+            <label class="form-label">Verbal Proficiency</label>
+            <select class="form-select" name="verbal_proficiency[]" required>
+                <option value="" selected disabled>Select Level</option>
+                <option value="Active">Active</option>
+                <option value="Passive">Passive</option>
+            </select>
         </div>
-    `);
-
-            $container.append($card);
-        }
-
-
-        function addLanguage() {
-            const $container = $('#languageContainer');
-            const cardCount = $container.children().length + 1;
-            const $card = $('<div>').addClass('experience-card');
-
-            $card.html(`
-        <div class="card-number">${cardCount}</div>
-        <div class="card-header">
-            <h4 class="text-warning m-0">Language Proficiency #${cardCount}</h4>
-            <button type="button" class="btn-remove" onclick="removeCard(this, 'languageContainer')">
-                <i class="fas fa-trash"></i>
-            </button>
+        <div class="col-md-6">
+            <label class="form-label">Written Proficiency</label>
+            <select class="form-select" name="written_proficiency[]" required>
+                <option value="" selected disabled>Select Level</option>
+                <option value="Active">Active</option>
+                <option value="Passive">Passive</option>
+            </select>
         </div>
-        <div class="row g-3">
-            <div class="col-md-12">
-                <label class="form-label">Language</label>
-                <select class="form-select" name="language[]" required>
-                    <option value="" disabled>Select Language</option>
-                    <option value="Indonesian">Indonesian</option>
-                    <option value="English">English</option>
-                    <option value="Mandarin">Mandarin</option>
-                    <option value="Japanese">Japanese</option>
-                    <option value="Arabic">Arabic</option>
-                    <option value="other">Other</option>
-                </select>
-                <input type="text" class="form-control mt-2 d-none other-language" name="other_language[]" placeholder="Specify language">
-            </div>
-            <div class="col-md-6">
-                <label class="form-label">Verbal Proficiency</label>
-                <select class="form-select" name="verbal_proficiency[]" required>
-                    <option value="" disabled>Select Level</option>
-                    <option value="Active">Active</option>
-                    <option value="Passive">Passive</option>
-                </select>
-            </div>
-            <div class="col-md-6">
-                <label class="form-label">Written Proficiency</label>
-                <select class="form-select" name="written_proficiency[]" required>
-                    <option value="" disabled>Select Level</option>
-                    <option value="Active">Active</option>
-                    <option value="Passive">Passive</option>
-                </select>
-            </div>
+    </div>
+`);
+
+        // Add change event handler for language select
+        $card.find('select[name="language[]"]').on('change', function() {
+            const $otherInput = $(this).siblings('.other-language');
+            $otherInput.toggleClass('d-none', $(this).val() !== 'other');
+            $otherInput.prop('required', $(this).val() === 'other');
+
+            // Update all language dropdowns after selection
+            updateLanguageDropdowns();
+        });
+
+        $container.append($card);
+        updateLanguageDropdowns();
+    }
+
+
+
+    function addWorkExperience() {
+        const $container = $('#workExperienceContainer');
+        const cardCount = $container.children().length + 1;
+        const $card = $('<div>').addClass('experience-card');
+        const cardId = `work-${cardCount}`;
+
+        $card.html(`
+    <div class="card-number">${cardCount}</div>
+    <div class="card-header">
+        <h4 class="text-warning m-0">Work Experience #${cardCount}</h4>
+        <button type="button" class="btn-remove" onclick="removeCard(this, 'workExperienceContainer')">
+            <i class="fas fa-trash"></i>
+        </button>
+    </div>
+    <div class="row g-3">
+        <div class="col-md-6">
+            <label class="form-label">Company Name</label>
+            <input type="text" class="form-control" name="company_name[]" required>
         </div>
-    `);
-
-            // Add change event handler for language select
-            $card.find('select[name="language[]"]').on('change', function() {
-                const $otherInput = $(this).siblings('.other-language');
-                $otherInput.toggleClass('d-none', $(this).val() !== 'other');
-                $otherInput.prop('required', $(this).val() === 'other');
-            });
-
-            $container.append($card);
-        }
-
-
-        function addOrganization() {
-            const $container = $('#organizationContainer');
-            const cardCount = $container.children().length + 1;
-            const $card = $('<div>').addClass('experience-card');
-
-            $card.html(`
-        <div class="card-number">${cardCount}</div>
-        <div class="card-header">
-            <h4 class="text-warning m-0">Organization #${cardCount}</h4>
-            <button type="button" class="btn-remove" onclick="removeCard(this, 'organizationContainer')">
-                <i class="fas fa-trash"></i>
-            </button>
+        <div class="col-md-6">
+            <label class="form-label">Position</label>
+            <input type="text" class="form-control" name="position[]" required>
         </div>
-        <div class="row g-3">
-            <div class="col-md-4">
-                <label class="form-label">Organization Name</label>
-                <input type="text" class="form-control" name="org_name[]" required>
-            </div>
-                <div class="col-md-4">
-                <label class="form-label">City</label>
-                <input type="text" class="form-control" name="org_city[]" required>
-            </div>
-            <div class="col-md-4">
-                <label class="form-label">Position</label>
-                <input type="text" class="form-control" name="org_position[]" required>
-            </div>
-            <div class="col-md-12">
-                <label class="form-label">Activity Type</label>
-                <textarea class="form-control list-textarea" name="activity_type[]" required rows="3" placeholder="- list your activity"></textarea>
-            </div>
-            <div class="col-md-6">
-                <label class="form-label">Start Date</label>
-                <input type="date" class="form-control" name="org_start_date[]" required>
-            </div>
-            <div class="col-md-6">
-                <label class="form-label">End Date</label>
-                <input type="date" class="form-control" name="org_end_date[]" required>
-            </div>
         
+        <div class="col-md-12">
+            <label class="form-label">Company Address</label>
+            <textarea class="form-control" name="company_address[]" required rows="2"></textarea>
         </div>
-    `);
-            $card.find('input[name="org_end_date[]"]').on('change', function() {
-                const startDate = $(this).closest('.row').find('input[name="org_start_date[]"]').val();
-                const endDate = $(this).val();
-
-                if (startDate && endDate && new Date(endDate) <= new Date(startDate)) {
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Invalid Date',
-                        text: 'End date must be after start date!',
-                    });
-                    $(this).val('');
-                }
-            });
-
-            $container.append($card);
-        }
-
-        function addWorkExperience() {
-            const $container = $('#workExperienceContainer');
-            const cardCount = $container.children().length + 1;
-            const $card = $('<div>').addClass('experience-card');
-
-            $card.html(`
-        <div class="card-number">${cardCount}</div>
-        <div class="card-header">
-            <h4 class="text-warning m-0">Work Experience #${cardCount}</h4>
-            <button type="button" class="btn-remove" onclick="removeCard(this, 'workExperienceContainer')">
-                <i class="fas fa-trash"></i>
-            </button>
+        <div class="col-md-6">
+            <label class="form-label">Company Phone</label>
+            <input type="tel" placeholder="08XXXXXXXXXX" pattern="08[0-9]{10,12}" class="form-control" name="company_phone[]" required>
         </div>
-        <div class="row g-3">
-            <div class="col-md-6">
-                <label class="form-label">Company Name</label>
-                <input type="text" class="form-control" name="company_name[]" required>
+        <div class="col-md-6">
+            <label class="form-label">Previous Salary</label>
+            <div class="input-group">
+                <span class="input-group-text">Rp</span>
+                <input type="number" class="form-control" name="previous_salary[]" placeholder="5000000"  required>
             </div>
-            <div class="col-md-6">
-                <label class="form-label">Position</label>
-                <input type="text" class="form-control" name="position[]" required>
-            </div>
-            <div class="col-md-12">
-                <label class="form-label">Company Address</label>
-                <textarea class="form-control" name="company_address[]" required rows="2"></textarea>
-            </div>
-            <div class="col-md-6">
-                <label class="form-label">Company Phone</label>
-                <input type="tel" placeholder="08XXXXXXXXXX" pattern="08[0-9]{10,12}" class="form-control" name="company_phone[]" required>
-            </div>
-            <div class="col-md-6">
-                <label class="form-label">Previous Salary</label>
-                <div class="input-group">
-                    <span class="input-group-text">Rp</span>
-                    <input type="number" class="form-control" name="previous_salary[]" required>
-                </div>
-                <small class="text-white">Masukkan gaji tanpa "." atau ",".</small>
-            </div>
-
-            
-            <div class="col-md-6">
-                <label class="form-label">Supervisor Name</label>
-                <input type="text" class="form-control" name="supervisor_name[]" required>
-            </div>
-            <div class="col-md-6">
-                <label class="form-label">Supervisor Phone</label>
-                <input type="tel" placeholder="08XXXXXXXXXX" pattern="08[0-9]{10,12}" class="form-control" name="supervisor_phone[]" required>
-            </div>
-            <div class="col-md-6">
-                <label class="form-label">Start Date</label>
-                <input type="date" class="form-control" name="working_start[]" required>
-            </div>
-            <div class="col-md-6">
-                <label class="form-label">End Date</label>
-                <input type="date" class="form-control" name="working_end[]" required>
-            </div>
-            <div class="col-md-12">
-                <label class="form-label">Job Description</label>
-                <textarea class="form-control list-textarea" name="job_description[]" required rows="3" placeholder="- list your job description"></textarea>
-            </div>
-            
-            <div class="col-md-12">
-                <label class="form-label">Reason for Leaving</label>
-                <textarea class="form-control list-textarea" name="leaving_reason[]" required rows="3" placeholder="- list your reason to leave"></textarea>
-            </div>
-            <div class="col-md-6">
-                <label class="form-label">Benefits Received</label>
-                <textarea class="form-control list-textarea" name="previous_benefits[]" rows="3" placeholder="- list your previous benefits"></textarea>
-            </div>
-            <div class="col-md-6">
-                <label class="form-label">Facilities Provided</label>
-                <textarea class="form-control list-textarea" name="previous_facilities[]" rows="3" placeholder="- list your previous facilities"></textarea>
-            </div>
+            <small class="text-white">Masukkan gaji tanpa "." atau ",".</small>
         </div>
-    `);
+        <div class="col-md-6">
+            <label class="form-label">Supervisor Name</label>
+            <input type="text" class="form-control" name="supervisor_name[]" required>
+        </div>
+        <div class="col-md-6">
+            <label class="form-label">Supervisor Phone</label>
+            <input type="tel" placeholder="08XXXXXXXXXX" pattern="08[0-9]{10,12}" class="form-control" name="supervisor_phone[]" required>
+        </div>
+        <div class="col-md-6">
+            <label class="form-label">Start Date</label>
+            <input type="date" class="form-control" name="working_start[]" required>
+        </div>
+        <div class="col-md-6">
+            <label class="form-label">End Date</label>
+            <input type="date" class="form-control" name="working_end[]" required>
+        </div>
+        <div class="col-md-12">
+            <label class="form-label">Job Description</label>
+            <textarea class="form-control list-textarea" name="job_description[]" required rows="3" placeholder="- list your job description"></textarea>
+        </div>
+        <div class="col-md-12">
+            <label class="form-label">Reason for Leaving</label>
+            <textarea class="form-control list-textarea" name="leaving_reason[]" required rows="3" placeholder="- list your reason to leave"></textarea>
+        </div>
+        <div class="col-md-6">
+            <label class="form-label">Benefits Received</label>
+            <textarea class="form-control list-textarea" name="previous_benefits[]" rows="3" placeholder="- list your previous benefits"></textarea>
+        </div>
+        <div class="col-md-6">
+            <label class="form-label">Facilities Provided</label>
+            <textarea class="form-control list-textarea" name="previous_facilities[]" rows="3" placeholder="- list your previous facilities"></textarea>
+        </div>
+    </div>
+`);
 
-            // Add change event handler for end date validation
-            // Validasi End Date untuk Working Experience
-            $card.find('input[name="working_end[]"]').on('change', function() {
-                const startDate = $(this).closest('.row').find('input[name="working_start[]"]').val();
-                const endDate = $(this).val();
+        // Add change event handler for end date validation
+        $card.find('input[name="working_end[]"]').on('change', function() {
+            const startDate = $(this).closest('.row').find('input[name="working_start[]"]').val();
+            const endDate = $(this).val();
 
-                if (startDate && endDate && new Date(endDate) <= new Date(startDate)) {
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Invalid Date',
-                        text: 'End date must be after start date!',
-                    });
-                    $(this).val('');
-                }
-            });
-
-            $container.append($card);
-        }
-        // Toggle other language
-
-        function toggleOtherLanguage(select) {
-            const $otherInput = $(select).parent().find('.other-language');
-            $otherInput.toggleClass('d-none', $(select).val() !== 'other');
-            $otherInput.prop('required', $(select).val() === 'other');
-        }
-    </script>
-    @if(session('error'))
-    <script>
-        Swal.fire({
-            icon: 'error',
-            title: 'Oops...',
-            text: "{{ session('error') }}",
+            if (startDate && endDate && new Date(endDate) <= new Date(startDate)) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Invalid Date',
+                    text: 'End date must be after start date!',
+                });
+                $(this).val('');
+            }
         });
-    </script>
-    @endif
 
-    @if(session('success'))
-    <script>
-        Swal.fire({
-            icon: 'success',
-            title: 'Success!',
-            text: "{{ session('success') }}",
+        $container.append($card);
+
+    }
+
+    function loadProvinces($dropdown) {
+        $.ajax({
+            url: "https://alamat.thecloudalert.com/api/provinsi/get/",
+            type: "GET",
+            success: function(response) {
+                if (response.result) {
+                    let provinces = response.result;
+                    $dropdown.empty().append('<option value="" disabled selected>Select Province</option>');
+
+                    provinces.forEach(function(province) {
+                        $dropdown.append(`<option value="${province.id}">${province.text}</option>`);
+                    });
+                }
+            },
+            error: function(xhr, status, error) {
+                console.error("Error fetching provinces:", error);
+            }
         });
-    </script>
-    @endif
+    }
 
-</body>
+    function loadCities(provinceId, $dropdown) {
+        if (!provinceId) return;
 
-</html>
+        $.ajax({
+            url: `https://alamat.thecloudalert.com/api/kabkota/get/?d_provinsi_id=${provinceId}`,
+            type: "GET",
+            success: function(response) {
+                if (response.result) {
+                    let cities = response.result;
+                    $dropdown.empty().append('<option value="" disabled selected>Select City</option>');
+
+                    cities.forEach(function(city) {
+                        $dropdown.append(`<option value="${city.id}">${city.text}</option>`);
+                    });
+                }
+            },
+            error: function(xhr, status, error) {
+                console.error("Error fetching cities:", error);
+            }
+        });
+    }
+
+    function toggleOtherLanguage(select) {
+        const $otherInput = $(select).parent().find('.other-language');
+        $otherInput.toggleClass('d-none', $(select).val() !== 'other');
+        $otherInput.prop('required', $(select).val() === 'other');
+    }
+
+    function updateLanguageDropdowns() {
+        // Get all selected language values
+        const selectedLanguages = [];
+        $('.language-select').each(function() {
+            const value = $(this).val();
+            if (value && value !== 'other') {
+                selectedLanguages.push(value);
+            }
+        });
+
+        // Update each dropdown
+        $('.language-select').each(function() {
+            const currentValue = $(this).val();
+
+            // Store current selection
+            const $select = $(this);
+            $select.find('option').each(function() {
+                const optionValue = $(this).val();
+
+                // Skip the empty, 'other', or currently selected option
+                if (!optionValue || optionValue === 'other' || optionValue === currentValue) {
+                    return;
+                }
+
+                // Disable if already selected in another dropdown
+                const isSelected = selectedLanguages.includes(optionValue);
+                const isCurrentlySelected = optionValue === currentValue;
+
+                $(this).prop('disabled', isSelected && !isCurrentlySelected);
+            });
+        });
+    }
+</script>
+@if(session('error'))
+<script>
+    Swal.fire({
+        icon: 'error',
+        title: 'Oops...',
+        text: "{{ session('error') }}",
+    });
+</script>
+@endif
+
+@if(session('success'))
+<script>
+    Swal.fire({
+        icon: 'success',
+        title: 'Success!',
+        text: "{{ session('success') }}",
+    });
+</script>
+@endif

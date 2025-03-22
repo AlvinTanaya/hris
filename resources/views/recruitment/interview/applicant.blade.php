@@ -493,14 +493,54 @@
                                         </div>
 
                                         <div class="info-group">
+                                            <strong>Phone Number</strong>
+                                            <p id="applicantPhoneNumber"></p>
+                                        </div>
+                                        <div class="info-group">
+                                            <strong>Emergency Contact</strong>
+                                            <p id="applicantEmergencyContact"></p>
+                                        </div>
+
+                                        <div class="info-group">
                                             <strong>Weight</strong>
                                             <p id="applicantWeight"></p>
+                                        </div>
+                                        <div class="info-group">
+                                            <strong>Height</strong>
+                                            <p id="applicantHeight"></p>
+                                        </div>
+
+                                        <div class="info-group">
+                                            <strong>BPJS Employment</strong>
+                                            <p id="applicantBPJSEmployment"></p>
                                         </div>
 
 
                                         <div class="info-group">
                                             <strong>BPJS Health</strong>
                                             <p id="applicantBPJSHealth"></p>
+                                        </div>
+
+
+
+
+
+
+                                    </div>
+
+                                    <div class="col-md-6">
+                                        <div class="info-group">
+                                            <strong>Domicile Address</strong>
+                                            <p id="applicantDomicileAddress"></p>
+                                        </div>
+                                        <div class="info-group">
+                                            <strong>Distance Company to Address</strong>
+                                            <p id="applicantDistance"></p>
+                                        </div>
+
+                                        <div class="info-group">
+                                            <strong>SIM</strong>
+                                            <p id="applicantSim">-</p>
                                         </div>
 
                                         <div class="info-group">
@@ -515,40 +555,21 @@
                                         </div>
 
 
+
                                         <div class="info-group">
-                                            <strong>SIM</strong>
-                                            <p id="applicantSim">-</p>
+                                            <strong>Expected Benefit</strong>
+                                            <p id="applicantExpectedBenefit"></p>
                                         </div>
 
 
 
-
-                                    </div>
-
-                                    <div class="col-md-6">
-                                        <div class="info-group">
-                                            <strong>Domicile Address</strong>
-                                            <p id="applicantDomicileAddress"></p>
-                                        </div>
-                                        <div class="info-group">
-                                            <strong>Height</strong>
-                                            <p id="applicantHeight"></p>
-                                        </div>
-
-                                        <div class="info-group">
-                                            <strong>BPJS Employment</strong>
-                                            <p id="applicantBPJSEmployment"></p>
-                                        </div>
 
                                         <div class="info-group">
                                             <strong>Status Applicant</strong>
                                             <p id="applicantStatus"></p>
                                         </div>
 
-                                        <div class="info-group">
-                                            <strong>Expected Benefit</strong>
-                                            <p id="applicantExpectedBenefit"></p>
-                                        </div>
+
 
 
 
@@ -861,35 +882,25 @@
         let familyHtml = '<div class="row g-4">';
         response.family.forEach(member => {
             familyHtml += `
-            <div class="col-md-6 col-lg-4">
-                <div class="card h-100 border-0 shadow-sm">
-                    <div class="card-header bg-primary text-white">
-                        <h5 class="card-title mb-0">${member.relation}</h5>
+        <div class="col-md-6 col-lg-4">
+            <div class="card h-100 border-0 shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="card-title mb-0">${member.relation ?? "-"}</h5>
+                </div>
+                <div class="card-body">
+                    <h6 class="card-subtitle mb-3 text-black">${member.name ?? "-"}</h6>
+                    
+                    <div class="mb-2">
+                        <i class="fas fa-phone me-2"></i>${member.phone_number ?? "-"}
                     </div>
-                    <div class="card-body">
-                        <h6 class="card-subtitle mb-3 text-primary">${member.name}</h6>
-                        <div class="mb-2">
-                            <i class="fas fa-briefcase me-2"></i>${member.job}
-                        </div>
-                        <div class="mb-2">
-                            <i class="fas fa-calendar me-2"></i>${formatDate(member.birth_date)}
-                        </div>
-                        <div class="mb-2">
-                            <i class="fas fa-map-marker-alt me-2"></i>${member.birth_place}
-                        </div>
-                        <div class="mb-2">
-                            <i class="fas fa-phone me-2"></i>${member.phone_number}
-                        </div>
-                        <div class="mb-2">
-                            <i class="fas fa-id-card me-2"></i>${member.ID_number}
-                        </div>
-                        <div class="mb-2">
-                            <i class="fas fa-home me-2"></i>${member.address}
-                        </div>
+                    <div class="mb-2">
+                        <i class="fas fa-id-card me-2"></i>${member.gender ?? "-"}
                     </div>
+                
                 </div>
             </div>
-        `;
+        </div>
+    `;
         });
         familyHtml += '</div>';
         $('#familyDetails').html(familyHtml);
@@ -900,37 +911,46 @@
         let educationHtml = '<div class="education-timeline">';
         response.education.sort((a, b) => new Date(b.end_education) - new Date(a.end_education))
             .forEach(edu => {
+                let transcriptBtn = edu.transcript_file_path ?
+                    `<a href="/storage/${edu.transcript_file_path}" target="_blank" class="btn btn-sm btn-primary">
+                    <i class="fa-solid fa-file-pdf me-2"></i>View Transcript
+               </a>` :
+                    "";
+
                 educationHtml += `
-                <div class="timeline-item">
-                    <div class="timeline-marker"></div>
-                    <div class="timeline-content card border-0 shadow-sm">
-                        <div class="card-body">
-                            <h5 class="text-primary mb-2">${edu.degree}</h5>
-                            <h6 class="mb-3">${edu.educational_place}</h6>
-                            <div class="mb-2">
-                            <i class="fa-solid fa-city me-2"></i> ${edu.educational_city}
-                            </div>
-                            <div class="mb-2">
-                                <i class="fas fa-graduation-cap me-2"></i>${edu.major}
-                            </div>
-                            <div class="mb-2">
-                                <i class="fa-solid fa-marker me-2"></i> ${edu.grade}
-                            </div>
-                            <div class="text-muted">
-                                <i class="fas fa-calendar me-2"></i>
-                                ${formatDate(edu.start_education)} - ${formatDate(edu.end_education)}
-                            </div>
-                        </div>
+        <div class="timeline-item">
+            <div class="timeline-marker"></div>
+            <div class="timeline-content card border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="text-primary mb-2">${edu.degree ?? "-"}</h5>
+                        ${transcriptBtn}
+                    </div>
+                    <h6 class="mb-3">${edu.educational_place ?? "-"}</h6>
+                    <div class="mb-2">
+                        <i class="fa-solid fa-tree-city me-2"></i> ${edu.educational_province ?? "-"}
+                    </div>
+                    <div class="mb-2">
+                        <i class="fa-solid fa-city me-2"></i> ${edu.educational_city ?? "-"}
+                    </div>
+                    <div class="mb-2">
+                        <i class="fas fa-graduation-cap me-2"></i>${edu.major ?? "-"}
+                    </div>
+                    <div class="mb-2">
+                        <i class="fa-solid fa-marker me-2"></i> ${edu.grade ?? "-"}
+                    </div>
+                    <div class="text-muted">
+                        <i class="fas fa-calendar me-2"></i>
+                        ${formatDate(edu.start_education) ?? "-"} - ${formatDate(edu.end_education) ?? "-"}
                     </div>
                 </div>
-            `;
+            </div>
+        </div>
+    `;
             });
         educationHtml += '</div>';
         $('#educationDetails').html(educationHtml);
     }
-
-
-
 
     // Populate work experience with modern cards
     function populateWorkExperience(response) {
@@ -938,95 +958,98 @@
         response.experience.sort((a, b) => new Date(b.end_date) - new Date(a.end_date))
             .forEach(exp => {
                 experienceHtml += `
-            <div class="timeline-item">
-                <div class="timeline-marker"></div>
-                <div class="timeline-content card border-0 shadow-sm">    
-                    <div class="card-body">
-                        <div class="d-flex justify-content-between align-items-start mb-3">
-                            <div>
-                                <h5 class="text-primary mb-1">${exp.company_name}</h5>
-                                <h6 class="mb-0">${exp.position}</h6>
-                            </div>
-                            <span class="badge bg-secondary">
-                                ${formatDate(exp.working_start)} - ${formatDate(exp.working_end)}
-                            </span>
+        <div class="timeline-item">
+            <div class="timeline-marker"></div>
+            <div class="timeline-content card border-0 shadow-sm">    
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start mb-3">
+                        <div>
+                            <h5 class="text-primary mb-1">${exp.company_name ?? "-"}</h5>
+                            <h6 class="mb-0">${exp.position ?? "-"}</h6>
                         </div>
-                        <div class="row g-3">
-                            <div class="col-md-6">
-                                <div class="mb-2">
-                                    <i class="fas fa-map-marker-alt me-2"></i>${exp.company_address}
+                        <span class="badge bg-secondary">
+                            ${formatDate(exp.working_start) ?? "-"} - ${formatDate(exp.working_end) ?? "-"}
+                        </span>
+                    </div>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <div class="mb-2">
+                                <i class="fas fa-map-marker-alt me-2"></i>${exp.company_address ?? "-"}
+                            </div>
+                            <div class="mb-2">
+                                <i class="fas fa-phone me-2"></i>${exp.company_phone ?? "-"}
+                            </div>
+                            <div class="mb-2">
+                                <i class="fas fa-dollar-sign me-2"></i>Rp. ${exp.salary ? parseInt(exp.salary).toLocaleString('id-ID') : "-"}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-2">
+                                <i class="fas fa-user me-2"></i>Supervisor: ${exp.supervisor_name ?? "-"}
+                            </div>
+                            <div class="mb-2">
+                                <i class="fas fa-phone me-2"></i>Supervisor: ${exp.supervisor_phone ?? "-"}
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <div class="row">
+                                <div class="col-md-6">
+                                <h6 class="mb-2">Job Description</h6>
+                                    ${formatList(exp.job_desc) ?? "-"}
+                    
                                 </div>
-                                <div class="mb-2">
-                                    <i class="fas fa-phone me-2"></i>${exp.company_phone}
-                                </div>
-                                <div class="mb-2">
-                                    <i class="fas fa-dollar-sign me-2"></i>Rp. ${parseInt(exp.salary).toLocaleString('id-ID')}
+                                <div class="col-md-6">
+                                <h6 class="mb-2">Reason for Leaving</h6>
+                                ${formatList(exp.reason) ?? "-"}
                                 </div>
                             </div>
-                            <div class="col-md-6">
-                                <div class="mb-2">
-                                    <i class="fas fa-user me-2"></i>Supervisor: ${exp.supervisor_name}
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <h6 class="mb-2">Benefits</h6>
+                                    ${formatList(exp.benefit) ?? "-"}
+                    
                                 </div>
-                                <div class="mb-2">
-                                    <i class="fas fa-phone me-2"></i>Supervisor: ${exp.supervisor_phone}
-                                </div>
-                            </div>
-                            <div class="col-12">
-                                <div class="row">
-                                    <div class="col-md-6">
-                                    <h6 class="mb-2">Job Description</h6>
-                                        ${formatList(exp.job_desc)}
-                        
-                                    </div>
-                                    <div class="col-md-6">
-                                    <h6 class="mb-2">Reason for Leaving</h6>
-                                    ${formatList(exp.reason)}
-                                    </div>
-                                </div>
-                                <div class="row">
-                                    <div class="col-md-6">
-                                        <h6 class="mb-2">Benefits</h6>
-                                        ${formatList(exp.benefit)}
-                        
-                                    </div>
-                                    <div class="col-md-6">
-                                        <h6 class="mb-2">Facilities</h6>
-                                        ${formatList(exp.facility)}
-                                    </div>
+                                <div class="col-md-6">
+                                    <h6 class="mb-2">Facilities</h6>
+                                    ${formatList(exp.facility) ?? "-"}
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
-        `;
+        </div>
+    `;
             });
         experienceHtml += '</div>';
         $('#experienceDetails').html(experienceHtml);
     }
-
 
     function populateWorkTraining(response) {
         let trainingHtml = '<div class="education-timeline">';
         response.training.sort((a, b) => new Date(b.end_date) - new Date(a.end_date))
             .forEach(tra => {
                 trainingHtml += `
-                <div class="timeline-item">
-                    <div class="timeline-marker"></div>
-                    <div class="timeline-content card border-0 shadow-sm">
-                        <div class="card-body">
-                            <h5 class="text-primary mb-2">${tra.training_name}</h5>
-                            <div class="mb-2">
-                            <i class="fa-solid fa-city me-2"></i> ${tra.training_city}
-                            </div>
-                            <div class="text-muted">
-                                <i class="fas fa-calendar me-2"></i>
-                                ${formatDate(tra.start_date)} - ${formatDate(tra.end_date)}
-                            </div>
+            <div class="timeline-item">
+                <div class="timeline-marker"></div>
+                <div class="timeline-content card border-0 shadow-sm">
+                    <div class="card-body">
+                        <h5 class="text-primary mb-2">${tra.training_name ?? "-"}</h5>
+                        <div class="mb-2">
+                        <i class="fa-solid fa-city me-2"></i> ${tra.training_city ?? "-"}
+                        </div>
+                        <div class="mb-2">
+                        <i class="fa-solid fa-tree-city me-2"></i> ${tra.training_province ?? "-"}
+                        </div>
+                 
+                        <div class="text-muted">
+                            <i class="fas fa-calendar me-2"></i>
+                            ${formatDate(tra.start_date) ?? "-"} - ${formatDate(tra.end_date) ?? "-"}
                         </div>
                     </div>
                 </div>
-            `;
+            </div>
+        `;
             });
         trainingHtml += '</div>';
         $('#trainingDetails').html(trainingHtml);
@@ -1037,68 +1060,67 @@
         response.organization.sort((a, b) => new Date(b.end_date) - new Date(a.end_date))
             .forEach(org => {
                 orgHtml += `
-            <div class="timeline-item">
-                <div class="timeline-marker"></div>
-                <div class="timeline-content card border-0 shadow-sm">    
-                    <div class="card-body">
-                        <div class="d-flex justify-content-between align-items-start mb-3">
-                            <div>
-                                <h5 class="text-primary mb-1">${org.organization_name}</h5>
-                                <p class="text-muted mb-2">${org.position}</p>
-                            </div>
-                            <span class="badge bg-secondary">
-                                ${formatDate(org.start_date)} - ${formatDate(org.end_date)}
-                            </span>
+        <div class="timeline-item">
+            <div class="timeline-marker"></div>
+            <div class="timeline-content card border-0 shadow-sm">    
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start mb-3">
+                        <div>
+                            <h5 class="text-primary mb-1">${org.organization_name ?? "-"}</h5>
+                            <p class="text-muted mb-2">${org.position ?? "-"}</p>
                         </div>
-
-                        <div class="mb-2">
-                            <i class="fa-solid fa-city me-2"></i> ${org.organization_name}
-                        </div>
-                        <div class="row">
-                            <div class="col-md-12">
-                                <h6>Activity</h6>
-                                ${formatList(org.activity_type)}
-                
-                            </div>
+                        <span class="badge bg-secondary">
+                            ${formatDate(org.start_date) ?? "-"} - ${formatDate(org.end_date) ?? "-"}
+                        </span>
+                    </div>
+                    <div class="mb-2">
+                        <i class="fa-solid fa-tree-city me-2"></i> ${org.province ?? "-"}
+                    </div>
+                    <div class="mb-2">
+                        <i class="fa-solid fa-city me-2"></i> ${org.city ?? "-"}
+                    </div>
+                 
+                 
+                    <div class="row">
+                        <div class="col-md-12">
+                            <h6>Activity</h6>
+                            ${formatList(org.activity_type) ?? "-"}
+            
                         </div>
                     </div>
                 </div>
             </div>
-        `;
+        </div>
+    `;
             });
         orgHtml += '</div>';
         $('#organizationDetails').html(orgHtml);
     }
 
-
-
     function populateLanguages(response) {
-
-
-
         let languageHtml = '<div class="row g-4">';
         response.language.forEach(lang => {
             languageHtml += `
-            <div class="col-md-6">
-                <div class="card border-0 shadow-sm h-100">
-                    <div class="card-body">
-                        <h5 class="text-primary mb-3">${lang.language}</h5>
-                        <div class="d-flex justify-content-between align-items-center mb-2">
-                            <span class="text-muted">Written</span>
-                            <span class="badge ${lang.written === 'Active' ? 'bg-success' : 'bg-secondary'}">
-                                ${lang.written}
-                            </span>
-                        </div>
-                        <div class="d-flex justify-content-between align-items-center">
-                            <span class="text-muted">Verbal</span>
-                            <span class="badge ${lang.verbal === 'Active' ? 'bg-success' : 'bg-secondary'}">
-                                ${lang.verbal}
-                            </span>
-                        </div>
+        <div class="col-md-6">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <h5 class="text-primary mb-3">${lang.language ?? "-"}</h5>
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="text-muted">Written</span>
+                        <span class="badge ${lang.written === 'Active' ? 'bg-success' : 'bg-secondary'}">
+                            ${lang.written ?? "-"}
+                        </span>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span class="text-muted">Verbal</span>
+                        <span class="badge ${lang.verbal === 'Active' ? 'bg-success' : 'bg-secondary'}">
+                            ${lang.verbal ?? "-"}
+                        </span>
                     </div>
                 </div>
             </div>
-        `;
+        </div>
+    `;
         });
         languageHtml += '</div>';
         $('#languageDetails').html(languageHtml);
@@ -1173,7 +1195,7 @@
                 method: 'GET',
                 success: function(response) {
                     // Populate personal information
-                    console.log(response.applicant.cv_path);
+
                     $('#applicantPhoto').attr('src', '/storage/' + response.applicant.photo_profile_path);
                     $('#applicantCVFrame').attr('src', '/storage/' + response.applicant.cv_path);
                     $('#applicantIDCard').attr('src', '/storage/' + response.applicant.ID_card_path);
@@ -1188,20 +1210,26 @@
                     $('#applicantSim').html(formatSim(response.applicant.sim, response.applicant.sim_number));
 
 
-                    $('#applicantName').text(response.applicant.name);
-                    $('#applicantEmail').text(response.applicant.email);
-                    $('#applicantPhoneNumber').text(response.applicant.phone_number);
-                    $('#applicantIDNumber').text(response.applicant.ID_number);
-                    $('#applicantBirth').text(response.applicant.birth_place + " / " + response.applicant.birth_date);
-                    $('#applicantBirthPlace').text(response.applicant.birth_place);
-                    $('#applicantReligion').text(response.applicant.religion);
-                    $('#applicantGender').text(response.applicant.gender);
-                    $('#applicantDomicileAddress').text(response.applicant.domicile_address);
-                    $('#applicantIDAddress').text(response.applicant.ID_address);
-                    $('#applicantWeight').text(response.applicant.weight + " kg");
-                    $('#applicantHeight').text(response.applicant.height + " cm");
-                    $('#applicantBPJSHealth').text(response.applicant.bpjs_health);
-                    $('#applicantBPJSEmployment').text(response.applicant.bpjs_employment);
+                    $('#applicantName').text(response.applicant.name ?? "-");
+                    $('#applicantEmail').text(response.applicant.email ?? "-");
+                    $('#applicantPhoneNumber').text(response.applicant.phone_number ?? "-");
+                    $('#applicantIDNumber').text(response.applicant.ID_number ?? "-");
+                    $('#applicantBirth').text((response.applicant.birth_place && response.applicant.birth_date) ? response.applicant.birth_place + " / " + response.applicant.birth_date : "-");
+                    $('#applicantBirthPlace').text(response.applicant.birth_place ?? "-");
+                    $('#applicantReligion').text(response.applicant.religion ?? "-");
+                    $('#applicantGender').text(response.applicant.gender ?? "-");
+                    $('#applicantDomicileAddress').text(response.applicant.domicile_address ?? "-");
+                    $('#applicantIDAddress').text(response.applicant.ID_address ?? "-");
+                    $('#applicantWeight').text(response.applicant.weight ? response.applicant.weight + " kg" : "-");
+                    $('#applicantHeight').text(response.applicant.height ? response.applicant.height + " cm" : "-");
+                    $('#applicantBPJSHealth').text(response.applicant.bpjs_health ?? "-");
+                    $('#applicantBPJSEmployment').text(response.applicant.bpjs_employment ?? "-");
+                    $('#applicantPhoneNumber').text(response.applicant.phone_number ?? "-");
+                    $('#applicantDistance').text(response.applicant.distance ?? "-");
+                    $('#applicantEmergencyContact').text(response.applicant.emergency_contact ?? "-");
+
+
+
                     const status = response.applicant.status_applicant;
                     const statusElement = $('#applicantStatus');
 

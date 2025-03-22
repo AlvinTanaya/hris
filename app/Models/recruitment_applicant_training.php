@@ -18,6 +18,7 @@ class recruitment_applicant_training extends Model
         'applicant_id',
         'training_namee',
         'training_city',
+        'training_province',
         'start_date',
         'end_date',
         'created_at',

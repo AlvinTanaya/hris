@@ -80,6 +80,7 @@
                     <thead class="table-dark">
                         <tr>
                             <th style="width:8%">Profile</th>
+
                             <th>Name</th>
                             <!-- <th>Email</th> -->
                             <!-- <th>Phone Number</th> -->
@@ -100,7 +101,8 @@
                                     class="rounded-circle"
                                     style="width: 40px; height: 40px; object-fit: cover; border: 2px solid blue;">
                             </td>
-                            <td>{{ $item->name }}</td>
+
+                            <td>({{ $item->employee_id }}) - {{ $item->name }}</td>
                             <!-- <td>{{ $item->email }}</td> -->
                             <!-- <td>{{ $item->phone_number }}</td> -->
 
@@ -255,6 +257,16 @@
                             <li><b>contract_start_date</b> - (Opsional, jika Contract/Part Time)</li>
                             <li><b>contract_end_date</b> - (Opsional, jika Contract/Part Time)</li>
                             <li><b>join_date</b> - Tanggal Bergabung (YYYY-MM-DD)</li>
+                            <li><b>NPWP</b> - Format XX.XXX.XXX.X-XXX.XXX</li>
+                            <li><b>bpjs_employment</b> - BPJS Ketenagakerjaan</li>
+                            <li><b>bpjs_health</b> - BPJS Kesehatan</li>
+                            <li><b>exit_date</b> - Tanggal Keluar (YYYY-MM-DD, Opsional)</li>
+                            <li><b>status</b> - Status Pajak (TK/0, TK/1, TK/2, TK/3, K/1, K/2, K/3)</li>
+                            <li><b>bank_name</b> - Nama Bank (Bank Central Asia (BCA), Bank Mandiri, Bank Rakyat Indonesia (BRI), Bank Negara Indonesia (BNI), Bank CIMB Niaga, Bank Tabungan Negara (BTN), Bank Danamon, Bank Permata, Bank Panin, Bank OCBC NISP, Bank Maybank Indonesia, Bank Mega, Bank Bukopin, Bank Sinarmas)</li>
+                            <li><b>bank_number</b> - Nomor Rekening</li>
+                            <li><b>emergency_contact</b> - Kontak Darurat (08XXXXXXXXXX)</li>
+                            <li><b>degree</b> - Pendidikan Terakhir (SMA/SMK/S1/S2)</li>
+                            <li><b>major</b> - Jurusan</li>
                         </ul>
                     </div>
 

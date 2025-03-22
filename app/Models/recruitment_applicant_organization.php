@@ -20,6 +20,7 @@ class recruitment_applicant_organization extends Model
         'activity_type',
         'position',
         'city',
+        'province',
         'start_date',
         'end_date',
         'created_at',

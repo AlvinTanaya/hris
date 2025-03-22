@@ -79,7 +79,7 @@
                                 <select class="form-control @error('overtime_type') is-invalid @enderror" id="overtime_type" name="overtime_type" required>
                                     <option value="">-- Select Type --</option>
                                     <option value="Paid_Overtime" {{ old('overtime_type') == 'Paid_Overtime' ? 'selected' : '' }}>Paid Overtime</option>
-                                    <option value="Overtime_Leave" {{ old('overtime_type') == 'Overtime_Leave' ? 'selected' : '' }}>Overtime Leave</option>
+                                    <!-- <option value="Overtime_Leave" {{ old('overtime_type') == 'Overtime_Leave' ? 'selected' : '' }}>Overtime Leave</option> -->
                                 </select>
                                 @error('overtime_type')
                                 <span class="invalid-feedback">{{ $message }}</span>

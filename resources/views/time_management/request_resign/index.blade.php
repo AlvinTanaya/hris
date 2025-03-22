@@ -90,6 +90,7 @@
                             <th>Resignation Type</th>
                             <th>Resignation Date</th>
                             <th>Reason</th>
+                            <th>View File</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
@@ -101,6 +102,17 @@
                             <td>{{ $item->resign_type }}</td>
                             <td>{{ \Carbon\Carbon::parse($item->resign_date)->format('d M Y') }}</td>
                             <td>{{ $item->resign_reason }}</td>
+                            <td>
+                                @if($item->file_path)
+                                <button type="button" class="btn btn-info btn-sm view-file-btn"
+                                    data-file="{{ asset('storage/' . $item->file_path) }}"
+                                    data-employee="{{ $item->employee_name }}">
+                                    <i class="fas fa-file-image"></i> View
+                                </button>
+                                @else
+                                <span class="badge bg-secondary">No File</span>
+                                @endif
+                            </td>
                             <td>
                                 @if(\Carbon\Carbon::now()->gte(\Carbon\Carbon::parse($item->resign_date)))
                                 <button type="button" class="btn btn-success btn-sm approve-btn"
@@ -148,6 +160,7 @@
                             <th>Resignation Type</th>
                             <th>Resignation Date</th>
                             <th>Reason</th>
+                            <th>View File</th>
                             <th>Approved By</th>
                         </tr>
                     </thead>
@@ -159,6 +172,17 @@
                             <td>{{ $item->resign_type }}</td>
                             <td>{{ \Carbon\Carbon::parse($item->resign_date)->format('d M Y') }}</td>
                             <td>{{ $item->resign_reason }}</td>
+                            <td>
+                                @if($item->file_path)
+                                <button type="button" class="btn btn-info btn-sm view-file-btn"
+                                    data-file="{{ asset('storage/' . $item->file_path) }}"
+                                    data-employee="{{ $item->employee_name }}">
+                                    <i class="fas fa-file-image"></i> View
+                                </button>
+                                @else
+                                <span class="badge bg-secondary">No File</span>
+                                @endif
+                            </td>
                             <td>{{ $item->response_name }} ({{ $item->response_user_id }})</td>
                         </tr>
                         @endforeach
@@ -187,6 +211,7 @@
                             <th>Resignation Type</th>
                             <th>Resignation Date</th>
                             <th>Reason</th>
+                            <th>View File</th>
                             <th>Declined Reason</th>
                             <th>Declined By</th>
                         </tr>
@@ -199,6 +224,17 @@
                             <td>{{ $item->resign_type }}</td>
                             <td>{{ \Carbon\Carbon::parse($item->resign_date)->format('d M Y') }}</td>
                             <td>{{ $item->resign_reason }}</td>
+                            <td>
+                                @if($item->file_path)
+                                <button type="button" class="btn btn-info btn-sm view-file-btn"
+                                    data-file="{{ asset('storage/' . $item->file_path) }}"
+                                    data-employee="{{ $item->employee_name }}">
+                                    <i class="fas fa-file-image"></i> View
+                                </button>
+                                @else
+                                <span class="badge bg-secondary">No File</span>
+                                @endif
+                            </td>
                             <td>{{ $item->declined_reason }}</td>
                             <td>{{ $item->response_name }} ({{ $item->response_user_id }})</td>
                         </tr>
@@ -240,6 +276,28 @@
     </div>
 </div>
 
+<!-- File View Modal -->
+<div class="modal fade" id="fileViewModal" tabindex="-1" aria-labelledby="fileViewModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-info text-white">
+                <h5 class="modal-title" id="fileViewModalLabel">Documentary Evidence</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body text-center">
+                <h6 id="file-employee-name" class="mb-3"></h6>
+                <img id="file-image" src="" alt="Documentary Evidence" class="img-fluid" style="max-height: 70vh;">
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <a id="download-file" href="" class="btn btn-primary" download>
+                    <i class="fas fa-download"></i> Download
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
 @endsection
 
 @push('scripts')
@@ -263,6 +321,16 @@
             $('#employee-name').text(employeeName + ' - ' + employeePosition);
             $('#declineForm').attr('action', "{{ url('time_management/request_resign/decline') }}/" + id);
             $('#declineModal').modal('show');
+        });
+
+        $('.view-file-btn').on('click', function() {
+            const fileUrl = $(this).data('file');
+            const employeeName = $(this).data('employee');
+
+            $('#file-employee-name').text('Employee: ' + employeeName);
+            $('#file-image').attr('src', fileUrl);
+            $('#download-file').attr('href', fileUrl);
+            $('#fileViewModal').modal('show');
         });
 
         // Handle Approve button click - now using SweetAlert2

@@ -1178,7 +1178,6 @@ class TimeManagementController extends Controller
     {
         $employees = User::where('employee_status', '!=', 'Inactive')->get();
 
-
         // Get unique departments and positions
         $departments = User::where('employee_status', '!=', 'Inactive')
             ->whereNotNull('department')
@@ -1190,7 +1189,6 @@ class TimeManagementController extends Controller
             ->distinct()
             ->pluck('position');
 
-
         // Join employee_warning_letter with users table
         $warning_letter = DB::table('employee_warning_letter as ewl')
             ->join('users as u1', 'ewl.user_id', '=', 'u1.id')
@@ -1201,7 +1199,6 @@ class TimeManagementController extends Controller
                 'u1.department as employee_department',
                 'u1.position as employee_position',
                 'u1.employee_id as employee_id',
-
                 'u2.name as maker_name',
                 'u2.department as maker_department',
                 'u2.position as maker_position',
@@ -1210,9 +1207,204 @@ class TimeManagementController extends Controller
             ->whereIn('ewl.user_id', $employees->pluck('id'))
             ->get();
 
-
-
         return view('time_management/warning_letter/index', compact('warning_letter', 'employees', 'departments', 'positions'));
+    }
+
+    public function getAvailableWarningTypes(Request $request)
+    {
+        $userId = $request->user_id;
+        $available_types = [];
+        $message = '';
+
+        if ($userId) {
+            // Get current date
+            $currentDate = Carbon::now();
+
+            // Check if employee has any ST1 or ST2 in the last 3 months
+            $hasST1Last3Months = DB::table('employee_warning_letter')
+                ->where('user_id', $userId)
+                ->where('type', 'ST1')
+                ->where('created_at', '>=', $currentDate->copy()->subMonths(3))
+                ->exists();
+
+            $hasST2Last3Months = DB::table('employee_warning_letter')
+                ->where('user_id', $userId)
+                ->where('type', 'ST2')
+                ->where('created_at', '>=', $currentDate->copy()->subMonths(3))
+                ->exists();
+
+            // Check if employee has SP1, SP2, or SP3 in the last 6 months
+            $hasSP1Last6Months = DB::table('employee_warning_letter')
+                ->where('user_id', $userId)
+                ->where('type', 'SP1')
+                ->where('created_at', '>=', $currentDate->copy()->subMonths(6))
+                ->exists();
+
+            $hasSP2Last6Months = DB::table('employee_warning_letter')
+                ->where('user_id', $userId)
+                ->where('type', 'SP2')
+                ->where('created_at', '>=', $currentDate->copy()->subMonths(6))
+                ->exists();
+
+            $hasSP3Last6Months = DB::table('employee_warning_letter')
+                ->where('user_id', $userId)
+                ->where('type', 'SP3')
+                ->where('created_at', '>=', $currentDate->copy()->subMonths(6))
+                ->exists();
+
+            // Check if employee has ever received any formal warning (ST or SP)
+            $hasAnyFormalWarning = DB::table('employee_warning_letter')
+                ->where('user_id', $userId)
+                ->whereIn('type', ['ST1', 'ST2', 'SP1', 'SP2', 'SP3'])
+                ->exists();
+
+            // Add Verbal warning if employee has never received any formal warning
+            if (!$hasAnyFormalWarning) {
+                $available_types['Verbal'] = 'Verbal Warning';
+            }
+
+            // Add ST1 if not received in last 3 months
+            if (!$hasST1Last3Months) {
+                $available_types['ST1'] = 'ST1 (Surat Teguran 1)';
+            } else {
+                $message .= 'ST1 is not available - employee received ST1 within the last 3 months. ';
+            }
+
+            // Add ST2 if not received in last 3 months
+            if (!$hasST2Last3Months) {
+                $available_types['ST2'] = 'ST2 (Surat Teguran 2)';
+            } else {
+                $message .= 'ST2 is not available - employee received ST2 within the last 3 months. ';
+            }
+
+            // Add SP1 if not received in last 6 months
+            if (!$hasSP1Last6Months) {
+                $available_types['SP1'] = 'SP1 (Surat Peringatan 1)';
+            } else {
+                $message .= 'SP1 is not available - employee received SP1 within the last 6 months. ';
+            }
+
+            // Add SP2 if not received in last 6 months
+            if (!$hasSP2Last6Months) {
+                $available_types['SP2'] = 'SP2 (Surat Peringatan 2)';
+            } else {
+                $message .= 'SP2 is not available - employee received SP2 within the last 6 months. ';
+            }
+
+            // Add SP3 if not received in last 6 months
+            if (!$hasSP3Last6Months) {
+                $available_types['SP3'] = 'SP3 (Surat Peringatan 3)';
+            } else {
+                $message .= 'SP3 is not available - employee received SP3 within the last 6 months. ';
+            }
+        }
+
+        return response()->json([
+            'available_types' => $available_types,
+            'message' => $message
+        ]);
+    }
+
+    public function getAvailableWarningTypesForEdit(Request $request)
+    {
+        $userId = $request->user_id;
+        $warningId = $request->warning_id; // ID of the warning letter being edited
+        $available_types = [];
+        $message = '';
+
+        if ($userId) {
+            // Get current date
+            $currentDate = Carbon::now();
+
+            // Check if employee has any ST1 or ST2 in the last 3 months (excluding current warning)
+            $hasST1Last3Months = DB::table('employee_warning_letter')
+                ->where('user_id', $userId)
+                ->where('type', 'ST1')
+                ->where('id', '!=', $warningId) // Exclude current warning
+                ->where('created_at', '>=', $currentDate->copy()->subMonths(3))
+                ->exists();
+
+            $hasST2Last3Months = DB::table('employee_warning_letter')
+                ->where('user_id', $userId)
+                ->where('type', 'ST2')
+                ->where('id', '!=', $warningId) // Exclude current warning
+                ->where('created_at', '>=', $currentDate->copy()->subMonths(3))
+                ->exists();
+
+            // Check if employee has SP1, SP2, or SP3 in the last 6 months (excluding current warning)
+            $hasSP1Last6Months = DB::table('employee_warning_letter')
+                ->where('user_id', $userId)
+                ->where('type', 'SP1')
+                ->where('id', '!=', $warningId) // Exclude current warning
+                ->where('created_at', '>=', $currentDate->copy()->subMonths(6))
+                ->exists();
+
+            $hasSP2Last6Months = DB::table('employee_warning_letter')
+                ->where('user_id', $userId)
+                ->where('type', 'SP2')
+                ->where('id', '!=', $warningId) // Exclude current warning
+                ->where('created_at', '>=', $currentDate->copy()->subMonths(6))
+                ->exists();
+
+            $hasSP3Last6Months = DB::table('employee_warning_letter')
+                ->where('user_id', $userId)
+                ->where('type', 'SP3')
+                ->where('id', '!=', $warningId) // Exclude current warning
+                ->where('created_at', '>=', $currentDate->copy()->subMonths(6))
+                ->exists();
+
+            // Check if employee has ever received any formal warning (excluding current warning)
+            $hasAnyFormalWarning = DB::table('employee_warning_letter')
+                ->where('user_id', $userId)
+                ->where('id', '!=', $warningId) // Exclude current warning
+                ->whereIn('type', ['ST1', 'ST2', 'SP1', 'SP2', 'SP3'])
+                ->exists();
+
+            // Add Verbal warning if employee has never received any formal warning
+            if (!$hasAnyFormalWarning) {
+                $available_types['Verbal'] = 'Verbal Warning';
+            }
+
+            // Add ST1 if not received in last 3 months
+            if (!$hasST1Last3Months) {
+                $available_types['ST1'] = 'ST1 (Surat Teguran 1)';
+            } else {
+                $message .= 'ST1 is not available - employee received ST1 within the last 3 months. ';
+            }
+
+            // Add ST2 if not received in last 3 months
+            if (!$hasST2Last3Months) {
+                $available_types['ST2'] = 'ST2 (Surat Teguran 2)';
+            } else {
+                $message .= 'ST2 is not available - employee received ST2 within the last 3 months. ';
+            }
+
+            // Add SP1 if not received in last 6 months
+            if (!$hasSP1Last6Months) {
+                $available_types['SP1'] = 'SP1 (Surat Peringatan 1)';
+            } else {
+                $message .= 'SP1 is not available - employee received SP1 within the last 6 months. ';
+            }
+
+            // Add SP2 if not received in last 6 months
+            if (!$hasSP2Last6Months) {
+                $available_types['SP2'] = 'SP2 (Surat Peringatan 2)';
+            } else {
+                $message .= 'SP2 is not available - employee received SP2 within the last 6 months. ';
+            }
+
+            // Add SP3 if not received in last 6 months
+            if (!$hasSP3Last6Months) {
+                $available_types['SP3'] = 'SP3 (Surat Peringatan 3)';
+            } else {
+                $message .= 'SP3 is not available - employee received SP3 within the last 6 months. ';
+            }
+        }
+
+        return response()->json([
+            'available_types' => $available_types,
+            'message' => $message
+        ]);
     }
 
     public function warning_letter_index2($id)
@@ -1248,26 +1440,33 @@ class TimeManagementController extends Controller
         $request->validate([
             'user_id' => 'required|exists:users,id',
             'reason_warning' => 'required|string',
-            'maker_id' => 'required|exists:users,id'
+            'maker_id' => 'required|exists:users,id',
+            'type' => 'required|string'
         ]);
 
         $user = User::findOrFail($request->user_id);
         $maker = User::findOrFail($request->maker_id);
 
-        // Hitung jumlah warning letter saat ini
-        $count = WarningLetter::where('user_id', $request->user_id)->count() + 1;
+        // Hitung jumlah warning letter berdasarkan tipe
+        $typeCount = WarningLetter::where('user_id', $request->user_id)
+            ->where('type', $request->type)
+            ->count() + 1;
 
-        // Simpan Warning Letter
+        // Simpan Warning Letter dengan tipe
         WarningLetter::create([
             'user_id' => $request->user_id,
             'maker_id' => $request->maker_id,
+            'type' => $request->type,
             'reason_warning' => $request->reason_warning
         ]);
 
-        // Jika warning letter sudah mencapai 3, ubah status employee menjadi Inactive
-        if ($count >= 3) {
+        // Ubah status employee menjadi Inactive jika menerima SP3
+        if ($request->type === 'SP3') {
             $user->update(['employee_status' => 'Inactive']);
         }
+
+        // Prepare notification message with type and count
+        $notificationMessage = "You received warning letter {$request->type} #{$typeCount}: " . $request->reason_warning;
 
         // Cek apakah notifikasi sudah ada
         $notification = Notification::where('users_id', $request->user_id)
@@ -1277,68 +1476,122 @@ class TimeManagementController extends Controller
         if ($notification) {
             // Update notifikasi yang sudah ada
             $notification->update([
-                'message' => "You received warning letter #$count: " . $request->reason_warning,
+                'message' => $notificationMessage,
                 'status' => 'Unread'
             ]);
         } else {
             // Buat notifikasi baru jika belum ada
             Notification::create([
                 'users_id' => $request->user_id,
-                'message' => "You received warning letter #$count: " . $request->reason_warning,
+                'message' => $notificationMessage,
                 'type' => 'warning_letter',
                 'maker_id' => $request->maker_id,
                 'status' => 'Unread'
             ]);
         }
 
-        // Kirim Email
-        Mail::to($user->email)->send(new WarningLetterMail($user, $count, $request->reason_warning, $maker));
+        // Kirim Email dengan informasi tipe warning dan hitungan per tipe
+        Mail::to($user->email)->send(new WarningLetterMail($user, $request->type, $typeCount, $request->reason_warning, $maker, false));
 
         return redirect()->route('warning.letter.index')->with('success', 'Warning letter created successfully');
     }
-
     public function warning_letter_update(Request $request, $id)
     {
         $request->validate([
             'user_id' => 'required|exists:users,id',
             'reason_warning' => 'required|string',
-            'maker_id' => 'required|exists:users,id'
+            'maker_id' => 'required|exists:users,id',
+            'type' => 'required|string'
         ]);
 
         $warning_letter = WarningLetter::findOrFail($id);
         $user = User::findOrFail($request->user_id);
         $maker = User::findOrFail($request->maker_id);
 
-        // Hitung jumlah warning letter yang sudah ada
-        $count = WarningLetter::where('user_id', $request->user_id)->count();
+        // Check if the type has changed
+        $typeChanged = $warning_letter->type !== $request->type;
+
+        // Get the current warning letter type count (excluding the one being updated)
+        $typeCount = WarningLetter::where('user_id', $request->user_id)
+            ->where('type', $request->type)
+            ->where('id', '!=', $id) // Exclude the current warning letter
+            ->count() + 1;
+
+        // Store the old type for reference
+        $oldType = $warning_letter->type;
 
         // Update warning letter
         $warning_letter->update([
             'user_id' => $request->user_id,
             'maker_id' => $request->maker_id,
+            'type' => $request->type,
             'reason_warning' => $request->reason_warning
         ]);
 
-        // Update notifikasi jika sudah ada
+        // If changed to SP3, update employee status
+        if ($request->type === 'SP3') {
+            $user->update(['employee_status' => 'Inactive']);
+        }
+
+        // If changed from SP3 to something else, check if we need to reactivate the employee
+        if ($oldType === 'SP3' && $request->type !== 'SP3') {
+            // Check if there are any other SP3 warnings for this user
+            $hasOtherSP3 = WarningLetter::where('user_id', $request->user_id)
+                ->where('type', 'SP3')
+                ->where('id', '!=', $id)
+                ->exists();
+
+            // If no other SP3 exists, reactivate the employee
+            if (!$hasOtherSP3) {
+                $user->update(['employee_status' => 'Active']);
+            }
+        }
+
+        // Prepare notification message
+        $notificationMessage = "";
+        if ($typeChanged) {
+            $notificationMessage = "Your warning letter has been updated from {$oldType} to {$request->type} #{$typeCount}: " . $request->reason_warning;
+        } else {
+            $notificationMessage = "Your {$request->type} warning letter #{$typeCount} has been updated: " . $request->reason_warning;
+        }
+
+        // Update notification if it exists
         $notification = Notification::where('users_id', $request->user_id)
             ->where('type', 'warning_letter')
             ->first();
 
         if ($notification) {
             $notification->update([
-                'message' => "Your warning letter #$count reason has been updated to: " . $request->reason_warning,
+                'message' => $notificationMessage,
                 'status' => 'Unread',
-                'upadted_at' => now()
-
+                'updated_at' => now() // Fixed typo 'upadted_at' to 'updated_at'
+            ]);
+        } else {
+            // Create a new notification if it doesn't exist
+            Notification::create([
+                'users_id' => $request->user_id,
+                'message' => $notificationMessage,
+                'type' => 'warning_letter',
+                'maker_id' => $request->maker_id,
+                'status' => 'Unread'
             ]);
         }
 
-        // Kirim Email
-        Mail::to($user->email)->send(new WarningLetterMail($user, $count, $request->reason_warning, $maker));
+        // Send email with updated information
+        Mail::to($user->email)->send(new WarningLetterMail(
+            $user,
+            $request->type,
+            $typeCount,
+            $request->reason_warning,
+            $maker,
+            true,
+            $oldType
+        ));
+
+
 
         return redirect()->route('warning.letter.index')->with('success', 'Warning letter updated successfully');
     }
-
 
     /**
      * Display Change Shift
@@ -1898,11 +2151,13 @@ class TimeManagementController extends Controller
 
     public function request_resign_store(Request $request)
     {
+
         // Validate request
         $validated = $request->validate([
             'resign_type' => 'required',
             'resign_date' => 'required|date',
             'resign_reason' => 'required',
+            'file_reason' => 'nullable|file|mimes:jpeg,png,jpg|max:2048',
         ]);
 
         $temp = ($validated['resign_type'] == 'Other' && $request->other_reason != null)
@@ -1917,6 +2172,22 @@ class TimeManagementController extends Controller
             'resign_reason' => $validated['resign_reason'],
             'resign_status' => 'Pending',
         ]);
+
+        // Handle file upload
+        if ($request->hasFile('file_path')) {
+            $file = $request->file('file_path');
+
+
+
+            // Create filename using resignation ID
+            $fileName = 'request_resign_' . $resignation->id . '_' . $request->user_id . '.' . $file->getClientOriginalExtension();
+
+            $path = $file->storeAs('time_management/resign', $fileName, 'public');
+
+            // Update resignation record with file path
+            $resignation->file_path = 'time_management/resign/' . $fileName;
+            $resignation->save();
+        }
 
         // Send email to user
         Mail::to(Auth::user()->email)->send(new ResignationRequestMail(Auth::user(), $validated['resign_date']));
@@ -1935,15 +2206,18 @@ class TimeManagementController extends Controller
             ->with('success', 'Resignation request submitted successfully.');
     }
 
-
     public function request_resign_update(Request $request, $id)
     {
         // Validate request
+
         $validated = $request->validate([
             'resign_type' => 'required',
             'resign_date' => 'required|date',
             'resign_reason' => 'required',
+            'file_reason' => 'nullable|file|mimes:jpeg,png,jpg|max:2048',
         ]);
+
+
 
         $temp = ($validated['resign_type'] == 'Other' && $request->other_reason != null)
             ? $request->other_reason
@@ -1961,9 +2235,27 @@ class TimeManagementController extends Controller
             'updated_at' => now(),
         ]);
 
+        // Handle file upload
+        if ($request->hasFile('file_path')) {
+            $file = $request->file('file_path');
+
+            // Delete old file if exists
+            if ($request_resign->file_path && Storage::disk('public')->exists($request_resign->file_path)) {
+                Storage::disk('public')->delete($request_resign->file_path);
+            }
+
+            // Create filename using resignation ID
+            $fileName = 'request_resign_' . $request_resign->id . '_' . $request_resign->user_id . '.' . $file->getClientOriginalExtension();
+            $path = $file->storeAs('time_management/resign', $fileName, 'public');
+
+            // Update resignation record with file path
+            $request_resign->file_path = 'time_management/resign/' . $fileName;
+            $request_resign->save();
+        }
+
         // Create notification
         Notification::create([
-            'message' => 'Your resignation request has been updated. Please wait for management’s decision.',
+            'message' => 'Your resignation request has been updated. Please wait for  management’s decision.',
             'type' => 'resign',
             'users_id' => $request_resign->user_id,
             'status' => 'Unread',
@@ -1978,6 +2270,9 @@ class TimeManagementController extends Controller
         return redirect()->route('request.resign.index2', ['id' => $request_resign->user_id])
             ->with('success', 'Resignation request updated successfully.');
     }
+
+
+
     public function request_resign_destroy($id)
     {
         // Find resignation request
@@ -3083,6 +3378,7 @@ class TimeManagementController extends Controller
             $timeOffRequest->file_reason_path = 'time_management/time_off/' . $fileName;
             $timeOffRequest->save();
         }
+
 
 
         // Get the user who made the request

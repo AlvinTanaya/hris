@@ -38,6 +38,7 @@ use App\Mail\LaborDemandCreate;
 use App\Mail\LaborDemandUpdate;
 use App\Mail\LaborDemandApproved;
 use App\Mail\LaborDemandDeclined;
+use App\Mail\LaborDemandRevised;
 
 use Carbon\Carbon;
 
@@ -94,6 +95,7 @@ class RecruitmentController extends Controller
         ));
     }
 
+
     public function create_labor_demand()
     {
         return view('recruitment/labor_demand/create');
@@ -111,60 +113,155 @@ class RecruitmentController extends Controller
     public function approve_labor_demand($id)
     {
         $demand = recruitment_demand::findOrFail($id);
-
+    
         // Update status
         $demand->status_demand = 'Approved';
         $demand->save();
-
-        // Send email to HR department users
-        $hrUsers = User::where('department', 'Human Resources')->get();
-        foreach ($hrUsers as $user) {
-            Mail::to($user->email)->send(new LaborDemandApproved($demand));
-
-            // Create notification for HR users
+    
+        // Check if maker exists
+        $sendTo = null;
+        if (!empty($demand->maker_id)) {
+            $sendTo = User::where('id', $demand->maker_id)->first();
+        }
+    
+        // If maker doesn't exist, send to HR
+        if ($sendTo === null) {
+            $hrUsers = User::where('department', 'Human Resources')->get();
+            foreach ($hrUsers as $user) {
+                Mail::to($user->email)->send(new LaborDemandApproved($demand));
+    
+                // Create notification for HR users
+                Notification::create([
+                    'users_id' => $user->id,
+                    'message' => "Labor demand request {$demand->recruitment_demand_id} for position: {$demand->position} in {$demand->department} department has been approved",
+                    'type' => 'labor_demand_approved',
+                    'maker_id' => Auth::user()->id,
+                    'status' => 'Unread'
+                ]);
+            }
+        } else {
+            // Send to maker only
+            Mail::to($sendTo->email)->send(new LaborDemandApproved($demand));
+    
+            // Create notification for maker
             Notification::create([
-                'users_id' => $user->id,
+                'users_id' => $sendTo->id,
                 'message' => "Labor demand request {$demand->recruitment_demand_id} for position: {$demand->position} in {$demand->department} department has been approved",
                 'type' => 'labor_demand_approved',
                 'maker_id' => Auth::user()->id,
                 'status' => 'Unread'
             ]);
         }
-
+    
         return redirect()->route('recruitment.index')
             ->with('success', 'Job request has been approved successfully');
     }
-
+    
     public function decline_labor_demand(Request $request, $id)
     {
         $demand = recruitment_demand::findOrFail($id);
-
+    
         // Update status and reason
         $demand->status_demand = 'Declined';
-        $demand->declined_reason = $request->declined_reason;
+        $demand->response = $request->response;
         $demand->save();
-
-        // Send email to HR department users
-        $hrUsers = User::where('department', 'Human Resources')->get();
-        foreach ($hrUsers as $user) {
-            Mail::to($user->email)->send(new LaborDemandDeclined($demand));
-
-            // Create notification for HR users
+    
+        // Check if maker exists
+        $sendTo = null;
+        if (!empty($demand->maker_id)) {
+            $sendTo = User::where('id', $demand->maker_id)->first();
+        }
+    
+        // If maker doesn't exist, send to HR
+        if ($sendTo === null) {
+            $hrUsers = User::where('department', 'Human Resources')->get();
+            foreach ($hrUsers as $user) {
+                Mail::to($user->email)->send(new LaborDemandDeclined($demand));
+    
+                // Create notification for HR users
+                Notification::create([
+                    'users_id' => $user->id,
+                    'message' => "Labor demand request {$demand->recruitment_demand_id} for position: {$demand->position} has been declined with reason: {$request->response}",
+                    'type' => 'labor_demand_declined',
+                    'maker_id' => Auth::user()->id,
+                    'status' => 'Unread'
+                ]);
+            }
+        } else {
+            // Send to maker only
+            Mail::to($sendTo->email)->send(new LaborDemandDeclined($demand));
+    
+            // Create notification for maker
             Notification::create([
-                'users_id' => $user->id,
-                'message' => "Labor demand request {$demand->recruitment_demand_id} for position: {$demand->position} has been declined with reason: {$request->declined_reason}",
+                'users_id' => $sendTo->id,
+                'message' => "Labor demand request {$demand->recruitment_demand_id} for position: {$demand->position} has been declined with reason: {$request->response}",
                 'type' => 'labor_demand_declined',
                 'maker_id' => Auth::user()->id,
                 'status' => 'Unread'
             ]);
         }
-
+    
         if ($request->ajax()) {
             return response()->json(['success' => true]);
         }
-
+    
         return redirect()->route('recruitment.index')
             ->with('success', 'Job request has been declined successfully');
+    }
+    
+    public function revise_labor_demand(Request $request, $id)
+    {
+        $demand = recruitment_demand::findOrFail($id);
+    
+        // Remove the dd() debugging line
+        // dd($demand->maker_id);
+    
+        // Update status and revision reason
+        $demand->status_demand = 'Revised';
+        $demand->response_reason = $request->revision_reason;
+        $demand->save();
+    
+        // Check if maker exists
+        $sendTo = null;
+        if (!empty($demand->maker_id)) {
+            $sendTo = User::where('id', $demand->maker_id)->first();
+        }
+    
+        // If maker doesn't exist, send to HR
+        if ($sendTo === null) {
+            $hrUsers = User::where('department', 'Human Resources')->get();
+            foreach ($hrUsers as $user) {
+                Mail::to($user->email)->send(new LaborDemandRevised($demand));
+    
+                // Create notification for HR users
+                Notification::create([
+                    'users_id' => $user->id,
+                    'message' => "Labor demand request {$demand->recruitment_demand_id} for position: {$demand->position} requires revision: {$request->revision_reason}",
+                    'type' => 'labor_demand_revised',
+                    'maker_id' => Auth::user()->id,
+                    'status' => 'Unread'
+                ]);
+            }
+        } else {
+            // Send to maker only
+            Mail::to($sendTo->email)->send(new LaborDemandRevised($demand));
+    
+            // Create notification for maker
+            Notification::create([
+                'users_id' => $sendTo->id,
+                'message' => "Labor demand request {$demand->recruitment_demand_id} for position: {$demand->position} requires revision: {$request->revision_reason}",
+                'type' => 'labor_demand_revised',
+                'maker_id' => Auth::user()->id,
+                'status' => 'Unread'
+            ]);
+        }
+    
+        if ($request->ajax()) {
+            return response()->json(['success' => true]);
+        }
+    
+        return redirect()->route('recruitment.index')
+            ->with('success', 'Job request has been sent for revision');
     }
 
     public function store_labor_demand(Request $request)
@@ -194,7 +291,7 @@ class RecruitmentController extends Controller
             'time_work_experience' => 'nullable|string|max:255',
         ]);
 
-      
+
         // Tambahkan status dan informasi tambahan  
         $validated['status_demand'] = 'Pending';
         $validated['qty_fullfil'] = 0;
@@ -206,7 +303,7 @@ class RecruitmentController extends Controller
         $count = recruitment_demand::count(); // Get total number of records
         $newId = $count + 1; // Increment count to generate the new ID
         $validated['recruitment_demand_id'] = 'ptk_' . $newId;
-        
+
 
         // Proses input untuk menyimpan ke database  
         $validated['reason'] = implode("\n", array_map('trim', explode("\n", $request->reason)));
@@ -252,7 +349,7 @@ class RecruitmentController extends Controller
             'position' => 'required|string|max:255',
             'opening_date' => 'required|date',
             'closing_date' => 'required|date',
-           
+
             'reason' => 'required|string|max:255',
             'qty_needed' => 'required|integer',
             'gender' => 'required|string|max:255',
@@ -342,7 +439,7 @@ class RecruitmentController extends Controller
             'experience' => $demand->experience,
             'length_of_working' => $demand->length_of_working,
             'time_work_experience' => $demand->time_work_experience,
-            'declined_reason' => $demand->declined_reason,
+            'response' => $demand->response,
             'skills' => $demand->skills,
         ]);
     }

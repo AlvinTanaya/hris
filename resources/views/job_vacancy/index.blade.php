@@ -166,6 +166,48 @@
             right: 10%;
         }
 
+        /* Add this to your existing style section */
+        .pagination {
+            --bs-pagination-color: #fff;
+            --bs-pagination-bg: rgba(255, 255, 255, 0.1);
+            --bs-pagination-border-color: rgba(255, 255, 255, 0.18);
+            --bs-pagination-hover-color: #1e3c72;
+            --bs-pagination-hover-bg: #ffc107;
+            --bs-pagination-hover-border-color: #ffc107;
+            --bs-pagination-focus-color: #1e3c72;
+            --bs-pagination-focus-bg: #ffc107;
+            --bs-pagination-active-color: #1e3c72;
+            --bs-pagination-active-bg: #ffc107;
+            --bs-pagination-active-border-color: #ffc107;
+            --bs-pagination-disabled-color: rgba(255, 255, 255, 0.5);
+            --bs-pagination-disabled-bg: rgba(255, 255, 255, 0.05);
+            --bs-pagination-disabled-border-color: rgba(255, 255, 255, 0.1);
+            justify-content: flex-end;
+            /* Geser pagination ke kanan */
+        }
+
+        .small.text-muted {
+            display: none !important;
+            /* Sembunyikan teks tambahan */
+        }
+
+
+
+        .page-link {
+            backdrop-filter: blur(5px);
+            border-radius: 8px;
+            margin: 0 3px;
+        }
+
+        .page-item.active .page-link {
+            font-weight: bold;
+        }
+
+        .pagination-info {
+            font-size: 0.9rem;
+            text-align: center;
+        }
+
         @keyframes float {
             0% {
                 transform: translate(0, 0) rotate(0deg);
@@ -189,194 +231,217 @@
     <div class="shape shape-1"></div>
     <div class="shape shape-2"></div>
     <div class="shape shape-3"></div>
+
     <body>
 
 
 
-    <!-- Back Button (Ditempatkan dalam Container) -->
-    <div class="container mt-3">
-        <a href="{{ route('welcome') }}" class="btn btn-danger mt-4 px-4">
-            <i class="fas fa-arrow-left me-2"></i> Back
-        </a>
-    </div>
-
-
-    <!-- Header -->
-    <div class="header">
-
-        <img src="{{ asset('storage/logoTimurJayaIndosteel.png') }}" alt="Timur Jaya Indosteel" class="logo mb-4" style="  border-radius: 8px;">
-        <h1 class="display-4 fw-bold mt-4">Career Opportunities</h1>
-    </div>
-
-    <!-- Filters -->
-    <div class="container">
-
-
-        <div class="filters-section">
-            <form action="{{ route('job_vacancy.index') }}" method="GET" class="row g-3">
-                <div class="col-md-4">
-                    <label class="form-label">Department</label>
-                    <select class="form-select" name="department">
-                        <option value="">All Departments</option>
-                        @foreach($demand->pluck('department')->unique() as $dept)
-                        <option value="{{ $dept }}" {{ request('department') == $dept ? 'selected' : '' }}>
-                            {{ $dept }}
-                        </option>
-                        @endforeach
-                    </select>
-                </div>
-                <div class="col-md-4">
-                    <label class="form-label">Position</label>
-                    <select class="form-select" name="position">
-                        <option value="">All Positions</option>
-                        @foreach($demand->pluck('position')->unique() as $position)
-                        <option value="{{ $position }}" {{ request('position') == $position ? 'selected' : '' }}>
-                            {{ $position }}
-                        </option>
-                        @endforeach
-                    </select>
-                </div>
-                <div class="col-md-4">
-                    <label class="form-label">Filter by Date</label>
-                    <input type="date" class="form-control" name="filter_date" value="{{ request('filter_date') }}">
-                </div>
-                <div class="col-12 text-center">
-                    <button type="submit" class="btn btn-apply">
-                        <i class="fas fa-filter me-2"></i>Apply Filters
-                    </button>
-                </div>
-            </form>
+        <!-- Back Button (Ditempatkan dalam Container) -->
+        <div class="container mt-3">
+            <a href="{{ route('welcome') }}" class="btn btn-danger mt-4 px-4">
+                <i class="fas fa-arrow-left me-2"></i> Back
+            </a>
         </div>
 
-        <!-- Job Listings -->
-        <div class="row">
-            @foreach($demand as $vacancy)
-            <div class="col-lg-6">
-                <div class="job-card">
-                    <div class="d-flex justify-content-between align-items-start">
-                        <div>
-                            <h3 class="job-title d-flex align-items-center">
-                                {{ $vacancy->position }}
-                                <span class="department-badge ms-2">
-                                    <i class="fas fa-building"></i> {{ $vacancy->department }}
-                                </span>
-                            </h3>
-                        </div>
-                        <span class="badge bg-warning text-dark">
-                            <i class="fas fa-users me-1"></i>{{ $vacancy->qty_needed }} Positions
-                        </span>
+
+        <!-- Header -->
+        <div class="header">
+
+            <img src="{{ asset('storage/logoTimurJayaIndosteel.png') }}" alt="Timur Jaya Indosteel" class="logo mb-4" style="  border-radius: 8px;">
+            <h1 class="display-4 fw-bold mt-4">Career Opportunities</h1>
+        </div>
+
+        <!-- Filters -->
+        <div class="container">
+
+
+            <div class="filters-section">
+                <form action="{{ route('job_vacancy.index') }}" method="GET" class="row g-3">
+                    <div class="col-md-4">
+                        <label class="form-label">Department</label>
+                        <select class="form-select" name="department">
+                            <option value="">All Departments</option>
+                            @foreach($demand->pluck('department')->unique() as $dept)
+                            <option value="{{ $dept }}" {{ request('department') == $dept ? 'selected' : '' }}>
+                                {{ $dept }}
+                            </option>
+                            @endforeach
+                        </select>
                     </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Position</label>
+                        <select class="form-select" name="position">
+                            <option value="">All Positions</option>
+                            @foreach($demand->pluck('position')->unique() as $position)
+                            <option value="{{ $position }}" {{ request('position') == $position ? 'selected' : '' }}>
+                                {{ $position }}
+                            </option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Filter by Date</label>
+                        <input type="date" class="form-control" name="filter_date" value="{{ request('filter_date') }}">
+                    </div>
+                    <div class="col-12 text-center">
+                        <button type="submit" class="btn btn-apply">
+                            <i class="fas fa-filter me-2"></i>Apply Filters
+                        </button>
+                    </div>
+                </form>
+            </div>
 
-                    <div class="job-info">
-                        <!-- Basic Info -->
-                        <div class="mb-3">
-                            <h6 class="fw-bold text-warning">
-                                <i class="fas fa-info-circle me-2"></i>Basic Requirements
-                            </h6>
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <p>
-                                        <i class="fas fa-venus-mars me-2"></i>Gender:
-                                        {{ $vacancy->gender == 'Both' ? 'Male/Female' : $vacancy->gender }}
-                                    </p>
-                                    <p>
-                                        <i class="fas fa-graduation-cap me-2"></i>Education:
-                                        {{ $vacancy->education }}
-                                    </p>
-                                    <p>
-                                        <i class="fas fa-toggle-on me-2"></i>Status:
-                                        {{ $vacancy->status_job }}
-                                    </p>
+            <!-- Job Listings -->
+            <div class="row">
+                @foreach($demand as $vacancy)
+                <!-- Your existing job card code -->
+                <div class="col-lg-12">
+                    <div class="job-card">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <h3 class="job-title d-flex align-items-center">
+                                    {{ $vacancy->position }}
+                                    <span class="department-badge ms-2">
+                                        <i class="fas fa-building"></i> {{ $vacancy->department }}
+                                    </span>
+                                </h3>
+                            </div>
+                            <span class="badge bg-warning text-dark">
+                                <i class="fas fa-users me-1"></i>{{ $vacancy->qty_needed }} Quota
+                            </span>
+                        </div>
 
+                        <div class="job-info">
+                            <!-- Basic Info -->
+                            <div class="mb-3">
+                                <h6 class="fw-bold text-warning">
+                                    <i class="fas fa-info-circle me-2"></i>Basic Requirements
+                                </h6>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <p>
+                                            <i class="fas fa-venus-mars me-2"></i>Gender:
+                                            {{ $vacancy->gender == 'Both' ? 'Male/Female' : $vacancy->gender }}
+                                        </p>
+                                        <p>
+                                            <i class="fas fa-graduation-cap me-2"></i>Education:
+                                            {{ $vacancy->education }}
+                                        </p>
+                                        <p>
+                                            <i class="fas fa-toggle-on me-2"></i>Status:
+                                            {{ $vacancy->status_job }}
+                                        </p>
+
+                                    </div>
+                                    <div class="col-md-6">
+                                        <p>
+                                            <i class="fas fa-briefcase me-2"></i>Experience:
+                                            {{ str_replace(['1_12_', '1_3_', '3_5_', '5_plus_'], ['1-12 ', '1-3 ', '3-5 ', '5+ '], $vacancy->time_work_experience) }}
+                                        </p>
+                                        <p>
+                                            <i class="fas fa-book me-2"></i>Major:
+                                            {{ $vacancy->major }}
+                                        </p>
+
+                                        @if ($vacancy->length_of_working !== null)
+                                        <p>
+                                            <i class="fas fa-clock me-2"></i>Working Period:
+                                            {{ $vacancy->length_of_working }} months
+                                        </p>
+                                        @endif
+
+                                    </div>
                                 </div>
-                                <div class="col-md-6">
-                                    <p>
-                                        <i class="fas fa-briefcase me-2"></i>Experience:
-                                        {{ str_replace(['1_12_', '1_3_', '3_5_', '5_plus_'], ['1-12 ', '1-3 ', '3-5 ', '5+ '], $vacancy->time_work_experience) }}
-                                    </p>
-                                    <p>
-                                        <i class="fas fa-book me-2"></i>Major:
-                                        {{ $vacancy->major }}
-                                    </p>
+                            </div>
 
-                                    <p>
-                                        <i class="fas fa-clock me-2"></i>Working Period:
-                                        {{ $vacancy->length_of_working }} months
-                                    </p>
-                                </div>
+                            <!-- Di dalam job-card -->
+                            <div class="mb-3">
+                                <h6 class="fw-bold text-warning">
+                                    <i class="fas fa-bullseye me-2"></i>Job Purpose
+                                </h6>
+                                <ul class="list-unstyled">
+                                    @foreach(explode("\n", $vacancy->job_goal) as $purpose)
+                                    @if(trim($purpose))
+                                    <li class="mb-1">
+                                        <i class="fas fa-chevron-right text-warning me-2"></i>
+                                        {{ trim(str_replace('-', '', $purpose)) }}
+                                    </li>
+                                    @endif
+                                    @endforeach
+                                </ul>
+                            </div>
+
+                            <div class="mb-3">
+                                <h6 class="fw-bold text-warning">
+                                    <i class="fas fa-star me-2"></i>Required Skills
+                                </h6>
+                                <ul class="list-unstyled">
+                                    @foreach(explode("\n", $vacancy->skills) as $skill)
+                                    @if(trim($skill))
+                                    <li class="mb-1">
+                                        <i class="fas fa-chevron-right text-warning me-2"></i>
+                                        {{ trim(str_replace('-', '', $skill)) }}
+                                    </li>
+                                    @endif
+                                    @endforeach
+                                </ul>
                             </div>
                         </div>
 
-                        <!-- Di dalam job-card -->
-                        <div class="mb-3">
-                            <h6 class="fw-bold text-warning">
-                                <i class="fas fa-bullseye me-2"></i>Job Purpose
-                            </h6>
-                            <ul class="list-unstyled">
-                                @foreach(explode("\n", $vacancy->job_goal) as $purpose)
-                                @if(trim($purpose))
-                                <li class="mb-1">
-                                    <i class="fas fa-chevron-right text-warning me-2"></i>
-                                    {{ trim(str_replace('-', '', $purpose)) }}
-                                </li>
-                                @endif
-                                @endforeach
-                            </ul>
-                        </div>
+                        <div class="d-flex justify-content-between align-items-center mt-4">
+                            <div class="text-light small">
+                                <div><i class="far fa-calendar-plus me-1"></i>
+                                    Open: {{ \Carbon\Carbon::parse($vacancy->opening_date)->format('d M Y') }}</div>
+                                <div><i class="far fa-calendar-minus me-1"></i>
+                                    Close: {{ \Carbon\Carbon::parse($vacancy->closing_date)->format('d M Y') }}</div>
+                            </div>
+                            <a href="{{ route('job_vacancy.create', ['id' => $vacancy->id]) }}" class="btn btn-apply">
+                                <i class="fas fa-paper-plane me-2"></i>Apply Now
+                            </a>
 
-                        <div class="mb-3">
-                            <h6 class="fw-bold text-warning">
-                                <i class="fas fa-star me-2"></i>Required Skills
-                            </h6>
-                            <ul class="list-unstyled">
-                                @foreach(explode("\n", $vacancy->skills) as $skill)
-                                @if(trim($skill))
-                                <li class="mb-1">
-                                    <i class="fas fa-chevron-right text-warning me-2"></i>
-                                    {{ trim(str_replace('-', '', $skill)) }}
-                                </li>
-                                @endif
-                                @endforeach
-                            </ul>
                         </div>
-                    </div>
-
-                    <div class="d-flex justify-content-between align-items-center mt-4">
-                        <div class="text-light small">
-                            <div><i class="far fa-calendar-plus me-1"></i>
-                                Open: {{ \Carbon\Carbon::parse($vacancy->opening_date)->format('d M Y') }}</div>
-                            <div><i class="far fa-calendar-minus me-1"></i>
-                                Close: {{ \Carbon\Carbon::parse($vacancy->closing_date)->format('d M Y') }}</div>
-                        </div>
-                        <a href="{{ route('job_vacancy.create', ['id' => $vacancy->id]) }}" class="btn btn-apply">
-                            <i class="fas fa-paper-plane me-2"></i>Apply Now
-                        </a>
-
                     </div>
                 </div>
+                @endforeach
+
+                <!-- Pagination links -->
+                @if ($demand->hasPages())
+                <div class="d-flex justify-content-between align-items-center mt-4 mb-5">
+                    <span class="text-white">
+                        Showing {{ $demand->firstItem() }} to {{ $demand->lastItem() }} of {{ $demand->total() }} results
+                    </span>
+                    @if ($demand->hasPages())
+                    {{ $demand->links('pagination::bootstrap-5') }}
+                    @endif
+                </div>
+
+                @endif
             </div>
-            @endforeach
+
         </div>
-    </div>
 
 
-    <!-- Scripts -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <script>
-        $(document).ready(function() {
-            // Date filter validation
-            $('input[name="end_date"]').change(function() {
-                var startDate = $('input[name="start_date"]').val();
-                var endDate = $(this).val();
 
-                if (startDate && endDate && startDate > endDate) {
-                    alert('End date must be after start date');
-                    $(this).val('');
-                }
-            });
-        });
-    </script>
-</body>
+
+
+    </body>
 
 </html>
+
+<!-- Scripts -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+    $(document).ready(function() {
+        // Date filter validation
+        $('input[name="end_date"]').change(function() {
+            var startDate = $('input[name="start_date"]').val();
+            var endDate = $(this).val();
+
+            if (startDate && endDate && startDate > endDate) {
+                alert('End date must be after start date');
+                $(this).val('');
+            }
+        });
+    });
+</script>

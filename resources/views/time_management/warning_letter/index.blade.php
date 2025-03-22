@@ -68,6 +68,7 @@
                         <tr>
                             <th style="width: 5%;">NO</th>
                             <th>Employee</th>
+                            <th>Type</th>
                             <th style="width: 40%;">Reason</th>
                             <th>Maker</th>
                             <th>Actions</th>
@@ -78,7 +79,7 @@
                         <tr>
                             <td>{{ $index + 1 }}</td>
                             <td>{{ $item->employee_name }} ({{ $item->employee_id }}) - {{ $item->employee_position }}</td>
-
+                            <td>{{$item->type}}</td>
                             <td>{{$item->reason_warning}}</td>
                             <td>{{ $item->maker_name }} ({{ $item->maker_id }}) - {{ $item->maker_position }}</td>
                             <td>

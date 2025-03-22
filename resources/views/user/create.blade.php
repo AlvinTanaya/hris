@@ -19,6 +19,35 @@
         text-align: center;
         max-width: 20%;
     }
+
+    .delete-bank-row {
+        height: 38px;
+        /* Match height with other buttons */
+        margin-bottom: 0;
+        /* Remove bottom margin */
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    /* Remove extra space */
+    .bank-row {
+        display: flex;
+        align-items: flex-end;
+        /* Align all elements to bottom */
+        margin-bottom: 1rem;
+    }
+
+    /* Ensure consistent sizing */
+    .bank-row .col-md-2 {
+        display: flex;
+        align-items: flex-end;
+    }
+
+    /* Make sure button fills available space */
+    .delete-bank-row {
+        width: 100%;
+    }
 </style>
 <a href="{{ route('user.index') }}" class="btn btn-danger px-5 mb-3">
     <i class="fas fa-arrow-left me-2"></i>Back
@@ -55,7 +84,7 @@
         </li>
 
     </ul>
-    <form action="{{ route('user.create') }}" method="POST" enctype="multipart/form-data">
+    <form action="{{ route('user.store') }}" method="POST" enctype="multipart/form-data">
         @csrf
         @method('PUT')
 
@@ -115,20 +144,6 @@
                             <div class="col-md-4 mb-3"></div>
                         </div>
 
-                        <!-- <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label for="employee_id" class="form-label">
-                                    <i class="fas fa-id-badge"></i> Employee ID
-                                </label>
-                                <input type="text" class="form-control" id="employee_id" name="employee_id" value="{{ old('employee_id') }}" required>
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label for="join_date" class="form-label">
-                                    <i class="fas fa-calendar-alt"></i> Join Date
-                                </label>
-                                <input type="date" class="form-control" id="join_date" name="join_date" value="{{ old('join_date') }}" required>
-                            </div>
-                        </div> -->
 
 
                         <div class="row">
@@ -138,20 +153,15 @@
                                 </label>
                                 <input type="text" class="form-control" id="name" name="name" value="{{ old('name') }}" required>
                             </div>
+
                             <div class="col-md-6 mb-3">
-                                <label for="user_status" class="form-label">
-                                    <i class="fas fa-ban"></i> User Status
+                                <label for="join_date" class="form-label">
+                                    <i class="fas fa-calendar-alt"></i> Join Date
                                 </label>
-                                <select class="form-control" id="user_status" name="user_status" required>
-                                    <option selected disabled>Choose Status</option>
-                                    <option value="Unbanned" {{ old('user_status') == 'Unbanned' ? 'selected' : '' }}>Unbanned</option>
-                                    <option value="Banned" {{ old('user_status') == 'Banned' ? 'selected' : '' }}>Banned</option>
-                                </select>
+                                <input type="date" class="form-control" id="join_date" name="join_date" value="{{ old('join_date') }}" required>
                             </div>
 
-
                         </div>
-
 
 
 
@@ -179,10 +189,52 @@
                                     <option value="General Manager" {{ old('department') == 'General Manager' ? 'selected' : '' }}>General Manager</option>
                                     <option value="Human Resources" {{ old('department') == 'Human Resources' ? 'selected' : '' }}>Human Resources</option>
                                     <option value="Finance and Accounting" {{ old('department') == 'Finance and Accounting' ? 'selected' : '' }}>Finance and Accounting</option>
+                                    <option value="Administration" {{ old('department') == 'Administration' ? 'selected' : '' }}>Administration</option>
+                                    <option value="Checker" {{ old('department') == 'Checker' ? 'selected' : '' }}>Checker</option>
+                                    <option value="Marketing" {{ old('department') == 'Marketing' ? 'selected' : '' }}>Marketing</option>
+                                    <option value="Driver" {{ old('department') == 'Driver' ? 'selected' : '' }}>Driver</option>
+                                    <option value="Internal Audit" {{ old('department') == 'Internal Audit' ? 'selected' : '' }}>Internal Audit</option>
+                                    <option value="Audit" {{ old('department') == 'Audit' ? 'selected' : '' }}>Audit</option>
+                                    <option value="Information Technology" {{ old('department') == 'Information Technology' ? 'selected' : '' }}>Information Technology</option>
+                                    <option value="Cleaning" {{ old('department') == 'Cleaning' ? 'selected' : '' }}>Cleaning</option>
+                                    <option value="Security" {{ old('department') == 'Security' ? 'selected' : '' }}>Security</option>
+                                </select>
 
+                            </div>
+                        </div>
+
+
+
+                        <div class="row">
+
+                            <div class="col-md-6 mb-3">
+                                <label for="user_status" class="form-label">
+                                    <i class="fas fa-ban"></i> User Status
+                                </label>
+                                <select class="form-control" id="user_status" name="user_status" required>
+                                    <option selected disabled>Choose Status</option>
+                                    <option value="Unbanned" {{ old('user_status') == 'Unbanned' ? 'selected' : '' }}>Unbanned</option>
+                                    <option value="Banned" {{ old('user_status') == 'Banned' ? 'selected' : '' }}>Banned</option>
+                                </select>
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label for="status" class="form-label">
+                                    <i class="fa-solid fa-ring"></i> Status
+                                </label>
+                                <select class="form-control" id="status" name="status" required>
+                                    <option selected disabled>Choose Status</option>
+                                    <option value="TK/0">TK/0</option>
+                                    <option value="TK/1">TK/1</option>
+                                    <option value="TK/2">TK/2</option>
+                                    <option value="TK/3">TK/3</option>
+                                    <option value="K/1">K/1</option>
+                                    <option value="K/2">K/2</option>
+                                    <option value="K/3">K/3</option>
                                 </select>
                             </div>
                         </div>
+
 
                         <div class="row">
                             <!-- Employee Status -->
@@ -199,10 +251,10 @@
                                 </select>
                             </div>
                             <div class="col-md-6 mb-3">
-                                <label for="join_date" class="form-label">
-                                    <i class="fas fa-calendar-alt"></i> Join Date
+                                <label for="npwp" class="form-label">
+                                    <i class="fa-solid fa-credit-card"></i> NPWP
                                 </label>
-                                <input type="date" class="form-control" id="join_date" name="join_date" value="{{ old('join_date') }}" required>
+                                <input type="text" class="form-control" id="npwp" name="npwp">
                             </div>
                         </div>
 
@@ -240,6 +292,57 @@
                                     <i class="fas fa-id-card"></i> BPJS Kesehatan
                                 </label>
                                 <input type="text" class="form-control" id="bpjs_health" name="bpjs_health" value="{{ old('bpjs_health') }}" required>
+                            </div>
+                        </div>
+                        <!-- Bank Information Card -->
+                        <!-- Bank Information Card -->
+
+                        <div class="card mb-4">
+                            <div class="card-header bg-primary text-white">
+                                <h5 class="mb-0"><i class="fa-solid fa-university"></i> Bank Information</h5>
+                            </div>
+                            <div class="card-body">
+                                <div id="bank-container">
+
+                                    <div class="row bank-row mb-3">
+                                        <div class="col-md-6">
+                                            <label for="bank_name_0" class="form-label"><i class="fa-solid fa-piggy-bank"></i> Bank Name</label>
+                                            <select class="form-control bank-name-select" id="bank_name_0" name="bank_name[]" required>
+                                                <option value="" selected disabled>Select Bank</option>
+                                                <option value="Bank Central Asia (BCA)">Bank Central Asia (BCA)</option>
+                                                <option value="Bank Mandiri">Bank Mandiri</option>
+                                                <option value="Bank Rakyat Indonesia (BRI)">Bank Rakyat Indonesia (BRI)</option>
+                                                <option value="Bank Negara Indonesia (BNI)">Bank Negara Indonesia (BNI)</option>
+                                                <option value="Bank CIMB Niaga">Bank CIMB Niaga</option>
+                                                <option value="Bank Tabungan Negara (BTN)">Bank Tabungan Negara (BTN)</option>
+                                                <option value="Bank Danamon">Bank Danamon</option>
+                                                <option value="Bank Permata">Bank Permata</option>
+                                                <option value="Bank Panin">Bank Panin</option>
+                                                <option value="Bank OCBC NISP">Bank OCBC NISP</option>
+                                                <option value="Bank Maybank Indonesia">Bank Maybank Indonesia</option>
+                                                <option value="Bank Mega">Bank Mega</option>
+                                                <option value="Bank Bukopin">Bank Bukopin</option>
+                                                <option value="Bank Sinarmas">Bank Sinarmas</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-5">
+                                            <label for="bank_number_0" class="form-label">
+                                                <i class="fa-solid fa-credit-card"></i> Bank Number</label>
+                                            <input type="number" class="form-control bank-number-input" id="bank_number_0" name="bank_number[]" required>
+                                        </div>
+                                        <div class="col-md-1">
+                                            <label class="form-label">&nbsp;</label>
+                                            <button type="button" class="btn btn-danger btn-block delete-bank-row"><i class="fa-solid fa-trash"></i></button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Button to add new bank row -->
+                                <div class="mt-5 d-flex justify-content-end">
+                                    <button type="button" id="add-bank-btn" class="btn btn-success">
+                                        <i class="fa-solid fa-plus"></i> Add Bank
+                                    </button>
+                                </div>
                             </div>
                         </div>
 
@@ -309,19 +412,50 @@
 
                         <div class="row">
                             <div class="col-md-6 mb-3">
+
+                                <label class="form-label"><i class="fa-solid fa-location-dot"></i> Distance Between Domicile Address to Company Location</label>
+                                <select class="form-select" name="distance" required>
+                                    <option value="" selected disabled>Select Distance</option>
+                                    <option value="0-3">0-3 KM</option>
+                                    <option value="3-5">3-5 KM</option>
+                                    <option value="5-10">5-10 KM</option>
+                                    <option value="10-15">10-15 KM</option>
+                                    <option value="15+">15+ KM</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6 mb-3">
                                 <label for="email" class="form-label">
                                     <i class="fas fa-envelope"></i> Email
                                 </label>
                                 <input type="email" class="form-control" id="email" name="email" value="{{ old('email') }}" required>
                             </div>
+                        </div>
+                        <div class="row">
                             <div class="col-md-6 mb-3">
                                 <label for="phone_number" class="form-label">
                                     <i class="fas fa-phone"></i> Phone Number
                                 </label>
-                                <input type="number" class="form-control" id="phone_number" name="phone_number" value="{{ old('phone_number') }}" required>
-                            </div>
-                        </div>
+                                <input type="tel" class="form-control" id="phone_number" name="phone_number"
+                                    pattern="08[0-9]{9,12}"
+                                    maxlength="14"
+                                    minlength="11"
+                                    placeholder="Example: 081234567890"
+                                    required>
 
+                                <small class="text-muted">Enter a mobile number starting with 08 (11-14 digits)</small>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="emergency_contact" class="form-label"><i class="fa-solid fa-phone"></i> Emergency Contact</label>
+                                <input type="tel" class="form-control" id="emergency_contact" name="emergency_contact"
+                                    pattern="08[0-9]{9,12}"
+                                    maxlength="14"
+                                    minlength="11"
+                                    placeholder="Example: 081234567890"
+                                    required>
+                                <small class="text-muted">Enter a mobile number starting with 08 (11-14 digits)</small>
+                            </div>
+
+                        </div>
                         <div class="row">
                             <div class="col-md-6 mb-3">
                                 <label for="gender" class="form-label">
@@ -415,7 +549,7 @@
                                 <label for="id_card" class="form-label">
                                     <i class="fas fa-id-card"></i> Upload ID Card (JPG/PNG)
                                 </label>
-                                <input type="file" class="form-control" id="id_card" name="id_card" accept="image/jpeg, image/png" required>
+                                <input type="file" class="form-control" id="id_card" name="id_card" accept="image/jpeg, image/png">
                             </div>
 
                             <!-- Upload CV -->
@@ -423,14 +557,14 @@
                                 <label for="cv" class="form-label">
                                     <i class="fas fa-file-alt"></i> Upload CV (PDF)
                                 </label>
-                                <input type="file" class="form-control" id="cv" name="cv" accept=".pdf" required>
+                                <input type="file" class="form-control" id="cv" name="cv" accept=".pdf">
                             </div>
 
                             <div class="col-md-4 mb-3">
                                 <label for="achievement" class="form-label">
                                     <i class="fas fa-file-alt"></i> Upload Achievement (PDF)
                                 </label>
-                                <input type="file" class="form-control" id="achievement" name="achievement" accept=".pdf" required>
+                                <input type="file" class="form-control" id="achievement" name="achievement" accept=".pdf">
                             </div>
                         </div>
 
@@ -444,70 +578,7 @@
 
                         <div id="familyMembersContainer" class="mt-4">
 
-                            <!-- Initial empty card -->
-                            <!-- <div class="card mb-3 family-card">
-                                <div class="card-header bg-primary text-white">
-                                    <span class="family-index fw-bold">Family #1</span>
-                                </div>
-                                <div class="card-body">
 
-                                    <div class="row g-3">
-                                        <div class="col-md-6">
-                                            <label class="form-label">Name</label>
-                                            <input type="text" class="form-control" placeholder="Name" name="name_family[]" value="{{ old('name_family') }}">
-                                        </div>
-                                        <div class="col-md-6">
-                                            <label class="form-label">Relationship</label>
-                                            <select class="form-select" name="relation[]" required>
-                                                <option disabled value="" disabled>Select Relationship</option>
-                                                <option value="Ayah">Ayah</option>
-                                                <option value="Ibu">Ibu</option>
-                                                <option value="Suami">Suami</option>
-                                                <option value="Istri">Istri</option>
-                                                <option value="Anak">Anak</option>
-                                                <option value="Saudara">Saudara</option>
-                                            </select>
-                                        </div>
-                                        <div class="col-md-6">
-                                            <label class="form-label">Birth Date</label>
-                                            <input type="date" class="form-control" placeholder="Birth Date" name="birth_date_family[]" value="{{ old('birth_date_family') }}">
-                                        </div>
-                                        <div class="col-md-6">
-                                            <label class="form-label">Birth Place</label>
-                                            <input type="text" class="form-control" placeholder="Birth Place" name="birth_place_family[]" value="{{ old('birth_place_family') }}">
-                                        </div>
-                                        <div class="col-md-6">
-                                            <label class="form-label">KTP Number</label>
-                                            <input type="text" class="form-control" placeholder="KTP Number" name="ID_number_family[]" value="{{ old('ID_number_family') }}">
-                                        </div>
-                                        <div class="col-md-6">
-                                            <label class="form-label">Phone Number</label>
-                                            <input type="text" class="form-control" placeholder="Phone Number" name="phone_number_family[]" value="{{ old('phone_number_family') }}">
-                                        </div>
-                                        <div class="col-md-6">
-                                            <label class="form-label">Address</label>
-                                            <input type="text" class="form-control" placeholder="Address" name="address_family[]" value="{{ old('address_family') }}">
-                                        </div>
-                                        <div class="col-md-3">
-                                            <label class="form-label">Gender</label>
-                                            <select class="form-control" name="gender_family[]">
-                                                <option selected disabled>Choose Gender</option>
-                                                <option value="Male" {{ old('gender_family') == 'Male' ? 'selected' : '' }}>Male</option>
-                                                <option value="Female" {{ old('gender_family') == 'Female' ? 'selected' : '' }}>Female</option>
-                                            </select>
-                                        </div>
-                                        <div class="col-md-3">
-                                            <label class="form-label">Job</label>
-                                            <input type="text" class="form-control" placeholder="Job" name="job[]" value="{{ old('job') }}">
-                                        </div>
-                                    </div>
-                                    <div class="text-end mt-3">
-                                        <button type="button" class="btn btn-danger btn-sm remove-family-card">
-                                            <i class="fas fa-trash me-1"></i>Remove
-                                        </button>
-                                    </div>
-                                </div>
-                            </div> -->
 
                         </div>
 
@@ -525,59 +596,7 @@
 
                         <div id="educationContainer" class="mt-4">
 
-                            <!-- Initial empty card -->
-                            <!-- <div class="card mb-3 education-card">
-                                <div class="card-header bg-primary text-white">
-                                    <span class="education-index fw-bold">Education #1</span>
-                                </div>
-                                <div class="card-body">
-                                    <div class="row g-3">
-                                        <div class="col-md-6">
-                                            <label class="form-label">Degree</label>
-                                            <select class="form-select" name="education_level[]">
-                                                <option selected disabled> -- Choose Degree --</option>
-                                                <option value="SD">SD</option>
-                                                <option value="SMP">SMP</option>
-                                                <option value="SMA">SMA</option>
-                                                <option value="SMK">SMK</option>
-                                                <option value="D3">D3</option>
-                                                <option value="S1">S1</option>
-                                                <option value="S2">S2</option>
-                                                <option value="S3">S3</option>
-                                            </select>
-                                        </div>
-                                        <div class="col-md-6">
-                                            <label class="form-label">Educational Place</label>
-                                            <input type="text" class="form-control" name="education_place[]" placeholder="Educational Place" value="{{ old('education_place.0') }}">
-                                        </div>
-                                        <div class="col-md-6">
-                                            <label class="form-label">City</label>
-                                            <input type="text" class="form-control" name="educational_city[]" placeholder="City" value="{{ old('educational_city.0') }}">
-                                        </div>
-                                        <div class="col-md-6">
-                                            <label class="form-label">Major</label>
-                                            <input type="text" class="form-control" name="major[]" placeholder="Major" value="{{ old('major.0') }}">
-                                        </div>
-                                        <div class="col-md-6">
-                                            <label class="form-label">Start Date</label>
-                                            <input type="date" class="form-control" name="start_education[]" value="{{ old('start_education.0') }}">
-                                        </div>
-                                        <div class="col-md-6">
-                                            <label class="form-label">End Date</label>
-                                            <input type="date" class="form-control" name="end_education[]" value="{{ old('end_education.0') }}">
-                                        </div>
-                                        <div class="col-md-6">
-                                            <label class="form-label">Grade</label>
-                                            <input type="text" class="form-control" name="grade[]" placeholder="Grade" value="{{ old('grade.0') }}">
-                                        </div>
-                                    </div>
-                                    <div class="text-end mt-3">
-                                        <button type="button" class="btn btn-danger btn-sm remove-education-card">
-                                            <i class="fas fa-trash me-1"></i>Remove
-                                        </button>
-                                    </div>
-                                </div>
-                            </div> -->
+
 
                         </div>
 
@@ -596,73 +615,7 @@
 
                         <div id="workExperienceContainer" class="mt-4">
 
-                            <!-- Initial empty card -->
-                            <!-- <div class="card mb-3 work-card">
-                                <div class="card-header bg-primary text-white">
-                                    <span class="work-index fw-bold">Work Experience #1</span>
-                                </div>
-                                <div class="card-body">
-                                    <div class="row g-3">
-                                        <div class="col-md-6">
-                                            <label class="form-label">Company Name</label>
-                                            <input type="text" class="form-control" name="company_name[]" placeholder="Company Name" value="{{ old('company_name.0') }}">
-                                        </div>
-                                        <div class="col-md-6">
-                                            <label class="form-label">Position</label>
-                                            <input type="text" class="form-control" name="position[]" placeholder="Position" value="{{ old('position.0') }}">
-                                        </div>
-                                        <div class="col-md-6">
-                                            <label class="form-label">Start Date</label>
-                                            <input type="date" class="form-control" name="start_work[]" value="{{ old('start_work.0') }}">
-                                        </div>
-                                        <div class="col-md-6">
-                                            <label class="form-label">End Date</label>
-                                            <input type="date" class="form-control" name="end_work[]" value="{{ old('end_work.0') }}">
-                                        </div>
-                                        <div class="col-md-6">
-                                            <label class="form-label">Company Address</label>
-                                            <input type="text" class="form-control" name="company_address[]" placeholder="Company Address" value="{{ old('company_address.0') }}">
-                                        </div>
-                                        <div class="col-md-6">
-                                            <label class="form-label">Company Phone</label>
-                                            <input type="text" class="form-control" name="company_phone[]" placeholder="Company Phone" value="{{ old('company_phone.0') }}">
-                                        </div>
-                                        <div class="col-md-6">
-                                            <label class="form-label">Salary</label>
-                                            <input type="text" class="form-control" name="salary[]" placeholder="Salary" value="{{ old('salary.0') }}">
-                                        </div>
-                                        <div class="col-md-6">
-                                            <label class="form-label">Supervisor Name</label>
-                                            <input type="text" class="form-control" name="supervisor_name[]" placeholder="Supervisor Name" value="{{ old('supervisor_name.0') }}">
-                                        </div>
-                                        <div class="col-md-6">
-                                            <label class="form-label">Supervisor Phone</label>
-                                            <input type="text" class="form-control" name="supervisor_phone[]" placeholder="Supervisor Phone" value="{{ old('supervisor_phone.0') }}">
-                                        </div>
-                                        <div class="col-md-6">
-                                            <label class="form-label">Job Description</label>
-                                            <textarea class="form-control" name="job_desc[]" placeholder="Job Description" rows="2">{{ old('job_desc.0') }}</textarea>
-                                        </div>
-                                        <div class="col-md-6">
-                                            <label class="form-label">Reason for Leaving</label>
-                                            <textarea class="form-control" name="reason[]" placeholder="Reason for Leaving" rows="2">{{ old('reason.0') }}</textarea>
-                                        </div>
-                                        <div class="col-md-6">
-                                            <label class="form-label">Benefits</label>
-                                            <textarea class="form-control" name="benefit[]" placeholder="Benefits" rows="2">{{ old('benefit.0') }}</textarea>
-                                        </div>
-                                        <div class="col-md-12">
-                                            <label class="form-label">Facilities</label>
-                                            <textarea class="form-control" name="facility[]" placeholder="Facilities" rows="2">{{ old('facility.0') }}</textarea>
-                                        </div>
-                                    </div>
-                                    <div class="text-end mt-3">
-                                        <button type="button" class="btn btn-danger btn-sm remove-work-card">
-                                            <i class="fas fa-trash me-1"></i>Remove
-                                        </button>
-                                    </div>
-                                </div>
-                            </div> -->
+
 
                         </div>
 
@@ -679,41 +632,7 @@
 
                         <div id="languageContainer" class="mt-4">
 
-                            <!-- Initial empty card -->
-                            <!-- <div class="card mb-3 language-card">
-                                <div class="card-header bg-primary text-white">
-                                    <span class="language-index fw-bold">Language #1</span>
-                                </div>
-                                <div class="card-body">
-                                    <div class="row g-3">
-                                        <div class="col-md-6">
-                                            <label class="form-label">Language</label>
-                                            <input type="text" class="form-control" name="language[]" placeholder="Language" value="{{ old('language.0') }}">
-                                        </div>
-                                        <div class="col-md-3">
-                                            <label class="form-label">Verbal</label>
-                                            <select class="form-select" name="verbal[]">
-                                                <option selected disabled>-- Select Level --</option>
-                                                <option value="Passive">Passive</option>
-                                                <option value="Active">Active</option>
-                                            </select>
-                                        </div>
-                                        <div class="col-md-3">
-                                            <label class="form-label">Written</label>
-                                            <select class="form-select" name="written[]">
-                                                <option selected disabled>-- Select Level --</option>
-                                                <option value="Passive">Passive</option>
-                                                <option value="Active">Active</option>
-                                            </select>
-                                        </div>
-                                    </div>
-                                    <div class="text-end mt-3">
-                                        <button type="button" class="btn btn-danger btn-sm remove-language-card">
-                                            <i class="fas fa-trash me-1"></i>Remove
-                                        </button>
-                                    </div>
-                                </div>
-                            </div> -->
+
 
                         </div>
 
@@ -730,37 +649,6 @@
 
                         <div id="trainingContainer" class="mt-4">
 
-                            <!-- Initial empty card -->
-                            <!-- <div class="card mb-3 training-card">
-                                <div class="card-header bg-primary text-white">
-                                    <span class="training-index fw-bold">Training #1</span>
-                                </div>
-                                <div class="card-body">
-                                    <div class="row g-3">
-                                        <div class="col-md-6">
-                                            <label class="form-label">Training Name</label>
-                                            <input type="text" class="form-control" name="training_name[]" placeholder="Training Name" value="{{ old('training_name.0') }}">
-                                        </div>
-                                        <div class="col-md-6">
-                                            <label class="form-label">City</label>
-                                            <input type="text" class="form-control" name="training_city[]" placeholder="City" value="{{ old('training_city.0') }}">
-                                        </div>
-                                        <div class="col-md-6">
-                                            <label class="form-label">Start Date</label>
-                                            <input type="date" class="form-control" name="training_start_date[]" value="{{ old('training_start_date.0') }}">
-                                        </div>
-                                        <div class="col-md-6">
-                                            <label class="form-label">End Date</label>
-                                            <input type="date" class="form-control" name="training_end_date[]" value="{{ old('training_end_date.0') }}">
-                                        </div>
-                                    </div>
-                                    <div class="text-end mt-3">
-                                        <button type="button" class="btn btn-danger btn-sm remove-training-card">
-                                            <i class="fas fa-trash me-1"></i>Remove
-                                        </button>
-                                    </div>
-                                </div>
-                            </div> -->
 
                         </div>
 
@@ -777,45 +665,6 @@
 
                         <div id="organizationContainer" class="mt-4">
 
-                            <!-- Initial empty card -->
-                            <!-- <div class="card mb-3 organization-card">
-                                <div class="card-header bg-primary text-white">
-                                    <span class="organization-index fw-bold">Organization #1</span>
-                                </div>
-                                <div class="card-body">
-                                    <div class="row g-3">
-                                        <div class="col-md-6">
-                                            <label class="form-label">Organization Name</label>
-                                            <input type="text" class="form-control" name="organization_name[]" placeholder="Organization Name" value="{{ old('organization_name.0') }}">
-                                        </div>
-                                        <div class="col-md-6">
-                                            <label class="form-label">Activity Type</label>
-                                            <input type="text" class="form-control" name="activity_type[]" placeholder="Activity Type" value="{{ old('activity_type.0') }}">
-                                        </div>
-                                        <div class="col-md-6">
-                                            <label class="form-label">Position</label>
-                                            <input type="text" class="form-control" name="position[]" placeholder="Position" value="{{ old('position.0') }}">
-                                        </div>
-                                        <div class="col-md-6">
-                                            <label class="form-label">City</label>
-                                            <input type="text" class="form-control" name="organization_city[]" placeholder="City" value="{{ old('organization_city.0') }}">
-                                        </div>
-                                        <div class="col-md-6">
-                                            <label class="form-label">Start Date</label>
-                                            <input type="date" class="form-control" name="organization_start_date[]" value="{{ old('organization_start_date.0') }}">
-                                        </div>
-                                        <div class="col-md-6">
-                                            <label class="form-label">End Date</label>
-                                            <input type="date" class="form-control" name="organization_end_date[]" value="{{ old('organization_end_date.0') }}">
-                                        </div>
-                                    </div>
-                                    <div class="text-end mt-3">
-                                        <button type="button" class="btn btn-danger btn-sm remove-organization-card">
-                                            <i class="fas fa-trash me-1"></i>Remove
-                                        </button>
-                                    </div>
-                                </div>
-                            </div> -->
 
                         </div>
 
@@ -842,24 +691,6 @@
 @push('scripts')
 
 <script>
-    function checkNoLicense() {
-        let anyChecked = $(".license-checkbox:checked").length > 0;
-        $("#noLicense").prop("checked", !anyChecked);
-    }
-
-
-    function toggleContractFields() {
-        let status = $("#employee_status").val();
-
-        if (status === "Part Time" || status === "Contract") {
-            $("#contract_dates_wrapper").show();
-            $("#contract_start_date, #contract_end_date").attr("required", true);
-        } else {
-            $("#contract_dates_wrapper").hide();
-            $("#contract_start_date, #contract_end_date").removeAttr("required");
-        }
-    }
-
     function updateFamilyNumbers() {
         $('.family-card').each(function(index) {
             $(this).find('.family-index').text(`Family #${index + 1}`);
@@ -900,8 +731,264 @@
     }
 
 
+    function toggleContractFields() {
+        let status = $("#employee_status").val();
+
+        if (status === "Part Time" || status === "Contract") {
+            $("#contract_dates_wrapper").show();
+            $("#contract_start_date, #contract_end_date").attr("required", true);
+        } else {
+            $("#contract_dates_wrapper").hide();
+            $("#contract_start_date, #contract_end_date").removeAttr("required");
+        }
+    }
+
+
+
+    function checkNoLicense() {
+        let anyChecked = $(".license-checkbox:checked").length > 0;
+        $("#noLicense").prop("checked", !anyChecked);
+    }
+
+
+
+
+
+
+    function loadProvinces() {
+        $.ajax({
+            url: 'https://alamat.thecloudalert.com/api/provinsi/get/',
+            type: 'GET',
+            dataType: 'json',
+            success: function(response) {
+                if (response.result) {
+                    var options = '<option value="" disabled selected>Select Province</option>';
+                    $.each(response.result, function(i, province) {
+                        options += `<option value="${province.text}" data-id="${province.id}">${province.text}</option>`; // Pakai text sebagai value & simpan ID di data-id
+                    });
+
+                    $('.province-dropdown').html(options);
+                }
+            },
+            error: function(xhr, status, error) {
+                console.error('Error loading provinces:', error);
+            }
+        });
+    }
+
+    // Function to load cities based on selected province ID
+    function loadCities(provinceId, cityDropdownId) {
+        $.ajax({
+            url: 'https://alamat.thecloudalert.com/api/kabkota/get/',
+            type: 'GET',
+            data: {
+                d_provinsi_id: provinceId // Kirim ID ke API
+            },
+            dataType: 'json',
+            success: function(response) {
+                if (response.result) {
+                    var options = '<option value="" disabled selected>Select City</option>';
+                    $.each(response.result, function(i, city) {
+                        options += `<option value="${city.text}">${city.text}</option>`; // Tetap pakai text sebagai value
+                    });
+
+                    $('#' + cityDropdownId).html(options);
+                }
+            },
+            error: function(xhr, status, error) {
+                console.error('Error loading cities:', error);
+            }
+        });
+    }
+
+
+    // Update the language select options
+    function updateLanguageOptions() {
+        // Get all language dropdowns
+        $('.language-select').each(function(index) {
+            const currentValue = $(this).val();
+
+            // Reset options
+            $(this).find('option:not(:first)').remove();
+
+            // Add available options that are not selected elsewhere
+            const availableLanguages = [{
+                    value: 'Indonesian',
+                    text: 'Indonesian'
+                },
+                {
+                    value: 'English',
+                    text: 'English'
+                },
+                {
+                    value: 'Mandarin',
+                    text: 'Mandarin'
+                },
+                {
+                    value: 'Japanese',
+                    text: 'Japanese'
+                },
+                {
+                    value: 'Other',
+                    text: 'Other'
+                }
+            ];
+
+            availableLanguages.forEach(function(lang) {
+                // Add if it's the current selection or not selected elsewhere
+                if (lang.value === currentValue || !selectedLanguages.includes(lang.value)) {
+                    $(this).append(`<option value="${lang.value}">${lang.text}</option>`);
+                }
+            }, this);
+
+            // Set back the current value
+            if (currentValue) {
+                $(this).val(currentValue);
+            }
+
+            // Toggle "Other" text input visibility when needed
+            toggleOtherLanguageInput($(this));
+        });
+    }
+
+    // Function to toggle the "Other" language input field
+    function toggleOtherLanguageInput(selectElement) {
+        const otherInput = selectElement.closest('.card-body').find('.other-language');
+        if (selectElement.val() === 'Other') {
+            otherInput.removeClass('d-none');
+        } else {
+            otherInput.addClass('d-none');
+        }
+    }
+
+    // Counter untuk ID unik
+    var rowCount = 1;
+    let selectedLanguages = [];
 
     $(document).ready(function() {
+
+        $('form').on('submit', function(e) {
+            // Check for any incomplete bank rows
+            let hasError = false;
+            $('.bank-row').each(function() {
+                const bankName = $(this).find('.bank-name-select').val();
+                const bankNumber = $(this).find('.bank-number-input').val();
+
+                // If one field is filled but the other is empty
+                if ((bankName && !bankNumber) || (!bankName && bankNumber)) {
+                    hasError = true;
+
+                    // Mark empty fields
+                    if (!bankName) $(this).find('.bank-name-select').addClass('is-invalid');
+                    if (!bankNumber) $(this).find('.bank-number-input').addClass('is-invalid');
+                }
+            });
+
+            // Prevent form submission if errors exist
+            if (hasError) {
+                e.preventDefault();
+                alert('Please complete both Bank Name and Bank Number for all entries.');
+                // Scroll to bank section
+                $('html, body').animate({
+                    scrollTop: $('#bank-container').offset().top - 50
+                }, 300);
+            }
+        });
+
+        // Add new bank row
+        $('#add-bank-btn').on('click', function() {
+            // Get the count for generating a new ID
+            const newIndex = $('.bank-row').length;
+
+            // Create a new row with proper IDs
+            const bankOptions = `
+                <option value="" selected disabled>Select Bank</option>
+                <option value="Bank Central Asia (BCA)">Bank Central Asia (BCA)</option>
+                <option value="Bank Mandiri">Bank Mandiri</option>
+                <option value="Bank Rakyat Indonesia (BRI)">Bank Rakyat Indonesia (BRI)</option>
+                <option value="Bank Negara Indonesia (BNI)">Bank Negara Indonesia (BNI)</option>
+                <option value="Bank CIMB Niaga">Bank CIMB Niaga</option>
+                <option value="Bank Tabungan Negara (BTN)">Bank Tabungan Negara (BTN)</option>
+                <option value="Bank Danamon">Bank Danamon</option>
+                <option value="Bank Permata">Bank Permata</option>
+                <option value="Bank Panin">Bank Panin</option>
+                <option value="Bank OCBC NISP">Bank OCBC NISP</option>
+                <option value="Bank Maybank Indonesia">Bank Maybank Indonesia</option>
+                <option value="Bank Mega">Bank Mega</option>
+                <option value="Bank Bukopin">Bank Bukopin</option>
+                <option value="Bank Sinarmas">Bank Sinarmas</option>
+            `;
+
+            const newRow = `
+                <div class="row bank-row mb-3">
+                    <div class="col-md-6">
+                        <label for="bank_name_${newIndex}" class="form-label"><i class="fa-solid fa-piggy-bank"></i> Bank Name</label>
+                        <select class="form-control bank-name-select" id="bank_name_${newIndex}" name="bank_name[]" required>
+                            ${bankOptions}
+                        </select>
+                    </div>
+                    <div class="col-md-5">
+                        <label for="bank_number_${newIndex}" class="form-label">
+                            <i class="fa-solid fa-credit-card"></i> Bank Number</label>
+                        <input type="number" class="form-control bank-number-input" id="bank_number_${newIndex}" name="bank_number[]" required>
+                    </div>
+                    <div class="col-md-1">
+                        <label class="form-label">&nbsp;</label>
+                        <button type="button" class="btn btn-danger btn-block delete-bank-row"><i class="fa-solid fa-trash"></i></button>
+                    </div>
+                </div>
+            `;
+
+            // Add the new row to the container
+            $('#bank-container').append(newRow);
+        });
+
+        // Delete bank row
+        $(document).on('click', '.delete-bank-row', function() {
+            if ($('.bank-row').length > 1) {
+                $(this).closest('.bank-row').remove();
+            } else {
+                // Clear fields if this is the last row
+                $(this).closest('.bank-row').find('select, input').val('').removeClass('is-invalid');
+            }
+        });
+
+        // Clear validation errors when input changes
+        $(document).on('change input', '.bank-name-select, .bank-number-input', function() {
+            $(this).removeClass('is-invalid');
+        });
+
+
+
+
+        $('.language-select').on('change', function() {
+            toggleOtherLanguageInput($(this));
+        });
+
+        // Initialize existing fields
+        $('.language-select').each(function() {
+            toggleOtherLanguageInput($(this));
+        });
+
+        updateLanguageOptions();
+
+        loadProvinces();
+
+
+        // Function to load provinces for all dropdowns
+        $(document).on('change', '.province-dropdown', function() {
+            var provinceText = $(this).val(); // Ini tetap text
+            var provinceId = $(this).find(':selected').data('id'); // Ambil ID dari data-id
+            var cityDropdownId = $(this).closest('.row').find('.city-dropdown').attr('id');
+
+            console.log("Selected Province:", provinceText, "| Province ID:", provinceId);
+
+            if (provinceId) {
+                loadCities(provinceId, cityDropdownId);
+            }
+        });
+
+
         $('#position').change(function() {
             var position = $(this).val();
             var department = $('#department');
@@ -1040,12 +1127,13 @@
                                 <label class="form-label">Relationship</label>
                                 <select class="form-select" name="relation[]" required>
                                     <option disabled value="" disabled>Select Relationship</option>
-                                    <option value="Ayah">Ayah</option>
-                                    <option value="Ibu">Ibu</option>
-                                    <option value="Suami">Suami</option>
-                                    <option value="Istri">Istri</option>
-                                    <option value="Anak">Anak</option>
-                                    <option value="Saudara">Saudara</option>
+                                    <option value="Father">Father</option>
+                                    <option value="Mother">Mother</option>
+                                    <option value="Husband">Husband</option>
+                                    <option value="Wife">Wife</option>
+                                    <option value="Child">Child</option>
+                                    <option value="Sibling">Sibling</option>
+
                                 </select>
                             </div>
                             <div class="col-md-6">
@@ -1111,16 +1199,14 @@
                 <div class="row g-3">
                     <div class="col-md-6">
                         <label class="form-label">Degree</label>
-                        <select class="form-select" name="education_level[]">
+                        <select class="form-select education-level" name="education_level[]">
                             <option selected disabled> -- Choose Degree --</option>
-                            <option value="SD">SD</option>
-                            <option value="SMP">SMP</option>
+                    
                             <option value="SMA">SMA</option>
                             <option value="SMK">SMK</option>
                             <option value="D3">D3</option>
                             <option value="S1">S1</option>
                             <option value="S2">S2</option>
-                            <option value="S3">S3</option>
                         </select>
                     </div>
                     <div class="col-md-6">
@@ -1128,13 +1214,18 @@
                         <input type="text" class="form-control" name="education_place[]" placeholder="Educational Place">
                     </div>
                     <div class="col-md-6">
-                        <label class="form-label">City</label>
-                        <input type="text" class="form-control" name="educational_city[]" placeholder="City">
+                        <label class="form-label">Province</label>
+                        <select class="form-select province-dropdown" name="education_province[]" required>
+                            <option value="" disabled selected>Select Province</option>
+                        </select>
                     </div>
                     <div class="col-md-6">
-                        <label class="form-label">Major</label>
-                        <input type="text" class="form-control" name="educational_major[]" placeholder="Major">
+                        <label class="form-label">City</label>
+                        <select class="form-select city-dropdown" id="educationCity${$('.education-card').length + 1}" name="education_city[]" required>
+                            <option value="" disabled selected>Select City</option>
+                        </select>
                     </div>
+                  
                     <div class="col-md-6">
                         <label class="form-label">Start Date</label>
                         <input type="date" class="form-control education-start-date" name="start_education[]" value="">
@@ -1144,8 +1235,16 @@
                         <input type="date" class="form-control education-end-date" name="end_education[]" value="">
                     </div>
                     <div class="col-md-6">
+                        <label class="form-label">Major</label>
+                        <input type="text" class="form-control" name="educational_major[]" placeholder="Major">
+                    </div>
+                    <div class="col-md-3">
                         <label class="form-label">Grade</label>
-                        <input type="text" class="form-control" name="grade[]" placeholder="Grade" value="">
+                        <input type="text" class="form-control education-grade" name="grade[]" placeholder="Grade" value="">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Certificate</label>
+                        <input type="file" class="form-control" name="education_certificate[]" accept="image/*">
                     </div>
                 </div>
                 <div class="text-end mt-3">
@@ -1159,56 +1258,53 @@
 
             $('#educationContainer').append(newEducationCard);
             updateEducationNumbers();
+            loadProvinces();
         });
 
+        // Add validation for grade based on education level
+        $(document).on('change', '.education-level', function() {
+            const level = $(this).val();
+            const gradeInput = $(this).closest('.row').find('.education-grade');
+
+            if (level === 'SMP' || level === 'SMA' || level === 'SMK') {
+                gradeInput.attr('placeholder', 'Grade (0-100)');
+                gradeInput.data('type', 'score');
+            } else {
+                gradeInput.attr('placeholder', 'GPA (0-4)');
+                gradeInput.data('type', 'gpa');
+            }
+        });
+
+        // Validate grade input
+        $(document).on('input', '.education-grade', function() {
+            const value = parseFloat($(this).val());
+            const type = $(this).data('type');
+
+            if (type === 'score') {
+                if (value < 0 || value > 100 || isNaN(value)) {
+                    $(this).addClass('is-invalid');
+                    if (!$(this).next('.invalid-feedback').length) {
+                        $(this).after('<div class="invalid-feedback">Score must be between 0 and 100</div>');
+                    }
+                } else {
+                    $(this).removeClass('is-invalid');
+                    $(this).next('.invalid-feedback').remove();
+                }
+            } else if (type === 'gpa') {
+                if (value < 0 || value > 4 || isNaN(value)) {
+                    $(this).addClass('is-invalid');
+                    if (!$(this).next('.invalid-feedback').length) {
+                        $(this).after('<div class="invalid-feedback">GPA must be between 0 and 4</div>');
+                    }
+                } else {
+                    $(this).removeClass('is-invalid');
+                    $(this).next('.invalid-feedback').remove();
+                }
+            }
+        });
         // Validasi tanggal saat pengguna mengubah End Date
         $(document).on('change', '.education-end-date', function() {
             const startDate = $(this).closest('.row').find('.education-start-date').val();
-            const endDate = $(this).val();
-
-            if (startDate && endDate && new Date(endDate) <= new Date(startDate)) {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Invalid Date',
-                    text: 'End date must be after start date!',
-                });
-                $(this).val('');
-            }
-        });
-
-        // Validasi tanggal untuk Work Experience
-        $(document).on('change', '.work-end-date', function() {
-            const startDate = $(this).closest('.row').find('.work-start-date').val();
-            const endDate = $(this).val();
-
-            if (startDate && endDate && new Date(endDate) <= new Date(startDate)) {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Invalid Date',
-                    text: 'End date must be after start date!',
-                });
-                $(this).val('');
-            }
-        });
-
-        // Validasi tanggal untuk Training
-        $(document).on('change', '.training-end-date', function() {
-            const startDate = $(this).closest('.row').find('.training-start-date').val();
-            const endDate = $(this).val();
-
-            if (startDate && endDate && new Date(endDate) <= new Date(startDate)) {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Invalid Date',
-                    text: 'End date must be after start date!',
-                });
-                $(this).val('');
-            }
-        });
-
-        // Validasi tanggal untuk Organization
-        $(document).on('change', '.organization-end-date', function() {
-            const startDate = $(this).closest('.row').find('.organization-start-date').val();
             const endDate = $(this).val();
 
             if (startDate && endDate && new Date(endDate) <= new Date(startDate)) {
@@ -1311,6 +1407,25 @@
             updateWorkNumbers();
         });
 
+        // Validasi tanggal untuk Work Experience
+        $(document).on('change', '.work-end-date', function() {
+            const startDate = $(this).closest('.row').find('.work-start-date').val();
+            const endDate = $(this).val();
+
+            if (startDate && endDate && new Date(endDate) <= new Date(startDate)) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Invalid Date',
+                    text: 'End date must be after start date!',
+                });
+                $(this).val('');
+            }
+        });
+
+
+
+
+        // Update the language card template
         $('#addLanguage').on('click', function() {
             const languageCount = $('.language-card').length + 1;
             const newLanguageCard = `
@@ -1322,7 +1437,15 @@
                         <div class="row g-3">
                             <div class="col-md-6">
                                 <label class="form-label">Language</label>
-                                <input type="text" class="form-control" name="language[]" placeholder="Language" value="">
+                                <select class="form-select language-select" name="language[]">
+                                    <option selected disabled>-- Select Language --</option>
+                                    <option value="Indonesian">Indonesian</option>
+                                    <option value="English">English</option>
+                                    <option value="Mandarin">Mandarin</option>
+                                    <option value="Japanese">Japanese</option>
+                                    <option value="Other">Other</option>
+                                </select>
+                                <input type="text" class="form-control mt-2 d-none other-language" name="other_language[]" placeholder="Specify language">
                             </div>
                             <div class="col-md-3">
                                 <label class="form-label">Verbal</label>
@@ -1350,18 +1473,52 @@
                 </div>
                 `;
             $('#languageContainer').append(newLanguageCard);
-
-            // Update language indices
             updateLanguageIndices();
+            updateLanguageOptions();
+
+            // Add change event handler for the new dropdown
+            $('.language-select').off('change').on('change', function() {
+                toggleOtherLanguageInput($(this));
+            });
         });
 
-        // Remove language card
+
+        // Handle language selection
+        $(document).on('change', '.language-select', function() {
+            // Get the selected value
+            const selectedValue = $(this).val();
+
+            // Update the selected languages array
+            selectedLanguages = [];
+            $('.language-select').each(function() {
+                const value = $(this).val();
+                if (value && value !== '' && value !== 'Other') {
+                    selectedLanguages.push(value);
+                }
+            });
+
+            // Update available options
+            updateLanguageOptions();
+        });
+
+        // Handle removal of language card
         $(document).on('click', '.remove-language-card', function() {
             $(this).closest('.language-card').remove();
-
-            // Update language indices
             updateLanguageIndices();
+
+            // Update the selected languages array
+            selectedLanguages = [];
+            $('.language-select').each(function() {
+                const value = $(this).val();
+                if (value && value !== '' && value !== 'Other') {
+                    selectedLanguages.push(value);
+                }
+            });
+
+            // Update available options
+            updateLanguageOptions();
         });
+
 
         // Training Card Management
         $('#addTraining').on('click', function() {
@@ -1373,13 +1530,21 @@
                     </div>
                     <div class="card-body">
                         <div class="row g-3">
-                            <div class="col-md-6">
+                            <div class="col-md-12">
                                 <label class="form-label">Training Name</label>
                                 <input type="text" class="form-control" name="training_name[]" placeholder="Training Name" value="">
                             </div>
                             <div class="col-md-6">
+                                <label class="form-label">Province</label>
+                                <select class="form-select province-dropdown" name="training_province[]" required>
+                                    <option value="" disabled selected>Select Province</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
                                 <label class="form-label">City</label>
-                                <input type="text" class="form-control" name="training_city[]" placeholder="City" value="">
+                                <select class="form-select city-dropdown" id="trainingCity${trainingCount}" name="training_city[]" required>
+                                    <option value="" disabled selected>Select City</option>
+                                </select>
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label">Start Date</label>
@@ -1402,6 +1567,7 @@
 
             // Update training indices
             updateTrainingIndices();
+            loadProvinces();
         });
 
         // Remove training card
@@ -1413,54 +1579,78 @@
         });
 
 
+        // Validasi tanggal untuk Training
+        $(document).on('change', '.training-end-date', function() {
+            const startDate = $(this).closest('.row').find('.training-start-date').val();
+            const endDate = $(this).val();
+
+            if (startDate && endDate && new Date(endDate) <= new Date(startDate)) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Invalid Date',
+                    text: 'End date must be after start date!',
+                });
+                $(this).val('');
+            }
+        });
+
+
         $('#addOrganization').on('click', function() {
             const organizationCount = $('.organization-card').length + 1;
             const newOrganizationCard = `
-    <div class="card mb-3 organization-card">
-        <div class="card-header bg-primary text-white">
-            <span class="organization-index fw-bold">Organization #${organizationCount}</span>
-        </div>
-        <div class="card-body">
-            <div class="row g-3">
-                <div class="col-md-6">
-                    <label class="form-label">Organization Name</label>
-                    <input type="text" class="form-control" name="organization_name[]" placeholder="Organization Name" value="">
+        <div class="card mb-3 organization-card">
+            <div class="card-header bg-primary text-white">
+                <span class="organization-index fw-bold">Organization #${organizationCount}</span>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label">Organization Name</label>
+                        <input type="text" class="form-control" name="organization_name[]" placeholder="Organization Name" value="">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Position</label>
+                        <input type="text" class="form-control" name="organization_position[]" placeholder="Position" value="">
+                    </div>
+                    <div class="col-md-12">
+                        <label class="form-label">Activity Type</label>
+                        <textarea class="form-control list-textarea" name="activity_type[]" placeholder=" -Activity Type" rows="2"></textarea>
+                    </div>
+                 
+                    <div class="col-md-6">
+                        <label class="form-label">Province</label>
+                        <select class="form-select province-dropdown" name="organization_province[]" required>
+                            <option value="" disabled selected>Select Province</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">City</label>
+                        <select class="form-select city-dropdown" id="organizationCity${organizationCount}" name="organization_city[]" required>
+                            <option value="" disabled selected>Select City</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Start Date</label>
+                        <input type="date" class="form-control organization-start-date" name="organization_start_date[]" value="">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">End Date</label>
+                        <input type="date" class="form-control organization-end-date" name="organization_end_date[]" value="">
+                    </div>
                 </div>
-                <div class="col-md-6">
-                    <label class="form-label">Activity Type</label>
-                    <textarea class="form-control list-textarea" name="activity_type[]"  placeholder=" -Activity Type" rows="2">{{ old('facility.0') }}</textarea>
-
-                </div>
-                <div class="col-md-6">
-                    <label class="form-label">Position</label>
-                    <input type="text" class="form-control" name="position[]" placeholder="Position" value="">
-                </div>
-                <div class="col-md-6">
-                    <label class="form-label">City</label>
-                    <input type="text" class="form-control" name="organization_city[]" placeholder="City" value="">
-                </div>
-                <div class="col-md-6">
-                    <label class="form-label">Start Date</label>
-                    <input type="date" class="form-control organization-start-date" name="organization_start_date[]" value="">
-                </div>
-                <div class="col-md-6">
-                    <label class="form-label">End Date</label>
-                    <input type="date" class="form-control organization-end-date" name="organization_end_date[]" value="">
+                <div class="text-end mt-3">
+                    <button type="button" class="btn btn-danger btn-sm remove-organization-card">
+                        <i class="fas fa-trash me-1"></i>Remove
+                    </button>
                 </div>
             </div>
-            <div class="text-end mt-3">
-                <button type="button" class="btn btn-danger btn-sm remove-organization-card">
-                    <i class="fas fa-trash me-1"></i>Remove
-                </button>
-            </div>
         </div>
-    </div>
     `;
             $('#organizationContainer').append(newOrganizationCard);
-
-            // Update organization indices
             updateOrganizationIndices();
+            loadProvinces();
         });
+
 
         // Remove organization card
         $(document).on('click', '.remove-organization-card', function() {
@@ -1469,6 +1659,23 @@
             // Update organization indices
             updateOrganizationIndices();
         });
+
+
+        // Validasi tanggal untuk Organization
+        $(document).on('change', '.organization-end-date', function() {
+            const startDate = $(this).closest('.row').find('.organization-start-date').val();
+            const endDate = $(this).val();
+
+            if (startDate && endDate && new Date(endDate) <= new Date(startDate)) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Invalid Date',
+                    text: 'End date must be after start date!',
+                });
+                $(this).val('');
+            }
+        });
+
 
 
 

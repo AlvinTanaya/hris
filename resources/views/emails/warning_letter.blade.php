@@ -120,34 +120,43 @@
 <body>
     <div class="email-container">
         <div class="email-header">
-            <h1>Warning Letter Notification</h1>
+            <h1>{{ $isUpdate ? 'Warning Letter Update' : 'Warning Letter Notification' }}</h1>
         </div>
 
         <div class="email-content">
             <p class="greeting">Dear {{ $user->name }},</p>
 
             <div class="warning-box">
-                <h3>Warning Letter Issued</h3>
-                @if ($count == 1)
-                    <p>This is your <strong>first warning letter</strong>.</p>
+                @if ($isUpdate)
+                    <h3>Warning Letter Updated</h3>
+                    @if ($oldType != $type)
+                        <p>Your warning letter has been <strong>updated from {{ $oldType }} to {{ $type }} #{{ $typeCount }}</strong>.</p>
+                    @else
+                        <p>Your <strong>{{ $type }} warning letter #{{ $typeCount }}</strong> has been updated.</p>
+                    @endif
                 @else
-                    <p>This is your <strong>warning letter #{{ $count }}</strong>.</p>
+                    <h3>Warning Letter Issued</h3>
+                    @if ($typeCount == 1)
+                        <p>This is your <strong>first {{ $type }} warning letter</strong>.</p>
+                    @else
+                        <p>This is your <strong>{{ $type }} warning letter #{{ $typeCount }}</strong>.</p>
+                    @endif
                 @endif
                 <p><strong>Reason:</strong> {{ $reason }}</p>
             </div>
 
-            @if ($count >= 3)
+            @if ($isTermination ?? false)
                 <div class="details-box">
                     <h3>Important Notice</h3>
                     <p>
-                        You have received <strong>3 or more warnings</strong>. Please note that further violations may result in termination of your employment.
+                        You have received an <strong>SP3 (Final Warning)</strong>. As per company policy, your employment status has been changed to inactive.
                     </p>
                 </div>
             @endif
 
             <div class="details-box">
-                <h3>Issued By</h3>
-                <p>This warning letter was issued by: <strong>{{ $maker->name }}</strong>.</p>
+                <h3>{{ $isUpdate ? 'Updated By' : 'Issued By' }}</h3>
+                <p>This warning letter was {{ $isUpdate ? 'updated' : 'issued' }} by: <strong>{{ $maker->name }}</strong>.</p>
             </div>
 
             <p class="message">

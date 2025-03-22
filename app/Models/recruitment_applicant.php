@@ -35,6 +35,7 @@ class recruitment_applicant extends Model
         'achievement_path',
         'sim',
         'sim_number',
+        'emergency_contact',
         'expected_salary',
         'expected_facility',
         'expected_benefit',
@@ -43,6 +44,7 @@ class recruitment_applicant extends Model
         'interview_note',
         'exchange_note',
         'status_note',
+        'distance',
         'created_at',
         'updated_at'
     ];

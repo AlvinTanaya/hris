@@ -17,7 +17,7 @@
                     <thead class="table-dark">
                         <tr>
                             <th style="width: 5%;">NO</th>
-
+                            <th>Type</th>
                             <th style="width: 50%;">Reason</th>
                             <th>From</th>
                         </tr>
@@ -26,7 +26,7 @@
                         @foreach ($warning_letter as $index => $item)
                         <tr>
                             <td>{{ $index + 1 }}</td>
-
+                            <td>{{$item->type}}</td>
                             <td>{{$item->reason_warning}}</td>
                             <td>{{ $item->name }} ({{ $item->employee_id }}) - {{ $item->position }}</td>
                         </tr>

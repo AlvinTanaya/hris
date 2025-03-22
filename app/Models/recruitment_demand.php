@@ -32,7 +32,7 @@ class recruitment_demand extends Model
         'experience',
         'length_of_working',
         'time_work_experience',
-        'declined_reason',
+        'response_reason',
         'skills',
         'created_at',
         'updated_at',

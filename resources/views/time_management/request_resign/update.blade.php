@@ -16,7 +16,7 @@
                         <i class="fas fa-exclamation-circle me-2"></i>This request has already been {{ strtolower($request_resign->resign_status) }} and cannot be edited.
                     </div>
                     @else
-                    <form action="{{ route('request.resign.update', $request_resign->id) }}" method="POST" id="resignForm">
+                    <form action="{{ route('request.resign.update', $request_resign->id) }}" method="POST" id="resignForm" enctype="multipart/form-data">
                         @csrf
                         @method('PUT')
                         <input type="hidden" name="user_id" value="{{$request_resign->user_id}}">
@@ -50,17 +50,31 @@
                             <small class="text-muted">Please provide details about your decision to resign</small>
                         </div>
 
+                        <div class="mb-4">
+                            <label for="file_path" class="form-label">Documentary Evidence <span class="text-danger">*</span></label>
+                            <input type="file" class="form-control" id="file_path" name="file_path" accept=".jpeg,.jpg,.png">
+                            <small class="text-muted">Please upload supporting documents (JPEG, PNG, or JPG format)</small>
+
+                            @if($request_resign->file_path)
+                            <div class="mt-2">
+                                <p class="mb-1">Current file:</p>
+                                <img src="{{ asset('storage/' . $request_resign->file_path) }}" alt="Current evidence" class="img-thumbnail" style="max-height: 150px;">
+                            </div>
+                            @endif
+                        </div>
+
                         <div class="alert alert-info">
                             <i class="fas fa-info-circle me-2"></i> Please note:
                             <ul class="mb-0 mt-2">
                                 <li>Your resignation request will be reviewed by management</li>
-                                <li>The standard notice period is typically 2-4 weeks</li>
+                                <li>The standard notice period is a minimum of 1 month.</li>
+
                                 <li>All company property must be returned before your last day</li>
                             </ul>
                         </div>
 
                         <div class="d-flex justify-content-between mt-4">
-                            <a href="{{ route('request.resign.index') }}" class="btn btn-danger">
+                            <a href="{{ route('request.resign.index2', ['id' => $request_resign->user_id]) }}" class="btn btn-danger">
                                 <i class="fas fa-arrow-left me-2"></i>Cancel
                             </a>
                             <button type="submit" class="btn btn-success">
@@ -79,37 +93,34 @@
 @push('scripts')
 <script>
     $(document).ready(function() {
-        // Ambil tanggal created_at dari Blade dalam format YYYY-MM-DD
+        // Get created_at date from Blade in YYYY-MM-DD format
         let createdAt = new Date("{{ $request_resign->created_at->format('Y-m-d') }}");
 
-        // Set batas minimal dan maksimal berdasarkan createdAt
-        let twoWeeksFromCreated = new Date(createdAt);
-        let sixMonthsFromCreated = new Date(createdAt);
+        // Set minimum date to 1 month from created date
+        let oneMonthFromCreated = new Date(createdAt);
+        oneMonthFromCreated.setMonth(createdAt.getMonth() + 1); // 1 month from created date
 
-        twoWeeksFromCreated.setDate(createdAt.getDate() + 14); // Minimal 2 minggu
-        sixMonthsFromCreated.setMonth(createdAt.getMonth() + 6); // Maksimal 6 bulan
-
-        let minDate = twoWeeksFromCreated.toISOString().split('T')[0];
-        let maxDate = sixMonthsFromCreated.toISOString().split('T')[0];
+        let minDate = oneMonthFromCreated.toISOString().split('T')[0];
 
         $('#resign_date').attr('min', minDate);
-        $('#resign_date').attr('max', maxDate);
+        // Remove max date attribute to make it unlimited
+        $('#resign_date').removeAttr('max');
 
-        // Validasi ketika user memilih tanggal
+        // Validate when user selects a date
         $('#resign_date').on('change', function() {
             let selectedDate = new Date($(this).val());
             let selectedDateStr = selectedDate.toISOString().split('T')[0];
-            let twoWeeksStr = minDate; // Sudah dalam format YYYY-MM-DD
+            let oneMonthStr = minDate; // Already in YYYY-MM-DD format
 
-            console.log("Selected:", selectedDateStr, "Min Allowed:", twoWeeksStr);
+            console.log("Selected:", selectedDateStr, "Min Allowed:", oneMonthStr);
 
-            if (selectedDateStr < twoWeeksStr) {
+            if (selectedDateStr < oneMonthStr) {
                 $('#dateWarning').removeClass('d-none');
+                $('#dateWarning').text('The selected date is less than the required 1-month notice period.');
             } else {
                 $('#dateWarning').addClass('d-none');
             }
         });
-
 
         $('#resign_type').on('change', function() {
             if ($(this).val() === 'Other') {

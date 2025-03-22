@@ -116,6 +116,7 @@
                         <option value="Pending" {{ request('status_demand') == 'Pending' ? 'selected' : '' }}>Pending</option>
                         <option value="Approved" {{ request('status_demand') == 'Approved' ? 'selected' : '' }}>Approved</option>
                         <option value="Declined" {{ request('status_demand') == 'Declined' ? 'selected' : '' }}>Declined</option>
+                        <option value="Revised" {{ request('status_demand') == 'Revised' ? 'selected' : '' }}>Revised</option>
                     </select>
                 </div>
                 <div class="col-md-4">
@@ -204,12 +205,18 @@
                                 <span class="badge bg-danger fs-6 p-2"
                                     data-bs-toggle="tooltip"
                                     data-bs-placement="top"
-                                    title="Reason: {{ $item->declined_reason }}">
+                                    title="Reason: {{ $item->response_reason }}">
+                                    {{ $item->status_demand }}
+                                </span>
+                                @elseif($item->status_demand == 'Revised')
+                                <span class="badge bg-primary fs-6 p-2"
+                                    data-bs-toggle="tooltip"
+                                    data-bs-placement="top"
+                                    title="Revision: {{ $item->response_reason }}">
                                     {{ $item->status_demand }}
                                 </span>
                                 @endif
                             </td>
-
 
 
 
@@ -223,7 +230,7 @@
                             <td>{{ $item->maker_name }}</td>
 
                             <td class="d-flex">
-                                @if($item->status_demand == 'Pending')
+                                @if($item->status_demand == 'Pending' || $item->status_demand == 'Revised')
                                 <a href="{{ route('recruitment.labor.demand.edit', $item->id) }}" class="btn btn-warning btn-sm me-2">
                                     <i class="fas fa-pencil"></i> Edit
                                 </a>
@@ -234,6 +241,11 @@
                                 <a href="#" class="btn btn-danger btn-sm me-2 decline-btn" data-id="{{ $item->id }}">
                                     <i class="fa-solid fa-thumbs-down"></i> Decline
                                 </a>
+                                @if($item->status_demand != 'Revised')
+                                <a href="#" class="btn btn-primary btn-sm me-2 revise-btn" data-id="{{ $item->id }}">
+                                    <i class="fa-solid fa-pencil-alt"></i> Revise
+                                </a>
+                                @endif
                                 @endif
                                 @else
                                 <a disabled class="btn btn-secondary btn-sm me-2">
@@ -258,14 +270,11 @@
                                     data-experience="{{ $item->experience }}"
                                     data-length-of-working="{{ $item->length_of_working ?? 'N/A'}}"
                                     data-time-work-experience="{{ $item->time_work_experience }}"
-                                    data-declined-reason="{{ $item->declined_reason ?? 'N/A' }}"
+                                    data-declined-reason="{{ $item->response_reason ?? 'N/A' }}"
                                     data-skills="{{ $item->skills }}">
                                     <i class="fas fa-eye"></i> View
                                 </button>
-
                                 @endif
-
-
                             </td>
                         </tr>
                         @endforeach
@@ -288,14 +297,39 @@
                 <form id="declineForm" method="POST">
                     @csrf
                     <div class="mb-3">
-                        <label for="declined_reason" class="form-label">Decline Reason</label>
-                        <textarea class="form-control" id="declined_reason" name="declined_reason" rows="3" required></textarea>
+                        <label for="response_reason" class="form-label">Decline Reason</label>
+                        <textarea class="form-control" id="response_reason" name="response_reason" rows="3" required></textarea>
                     </div>
                 </form>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
                 <button type="button" class="btn btn-danger" id="confirmDecline">Submit</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Revise Modal -->
+<div class="modal fade" id="reviseModal" tabindex="-1" aria-labelledby="reviseModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title text-white" id="reviseModalLabel">Revision Request for Labor Demand</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="reviseForm" method="POST">
+                    @csrf
+                    <div class="mb-3">
+                        <label for="revision_reason" class="form-label">Revision Reason</label>
+                        <textarea class="form-control" id="revision_reason" name="revision_reason" rows="3" required></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="confirmRevise">Submit</button>
             </div>
         </div>
     </div>
@@ -505,7 +539,7 @@
         $('#view-major').text(data.major);
         $('#view-time-experience').text(formatWorkExperience(data.time_work_experience));
         $('#view-years-work').text(data.length_of_working);
-        $('#view-reason').text(data.declined_reason || '-');
+        $('#view-reason').text(data.response_reason || '-');
 
         // Function to format dates
         function formatDate(date) {
@@ -588,6 +622,7 @@
         //tooltip
         $('[data-bs-toggle="tooltip"]').tooltip();
         // Handle decline button click
+        // Handle decline button click
         $('.decline-btn').click(function(e) {
             e.preventDefault();
             const id = $(this).data('id');
@@ -598,7 +633,8 @@
         // Handle decline confirmation
         $('#confirmDecline').click(function() {
             const id = $('#declineForm').data('id');
-            const reason = $('#declined_reason').val();
+            const reason = $('#response_reason').val();
+            const $button = $(this);
 
             if (!reason) {
                 Swal.fire({
@@ -609,12 +645,16 @@
                 return;
             }
 
+            // Show processing state
+            $button.html('<i class="fas fa-spinner fa-spin"></i> Processing...');
+            $button.prop('disabled', true);
+
             $.ajax({
                 url: `/recruitment/labor_demand/decline/${id}`,
                 type: 'POST',
                 data: {
                     _token: $('meta[name="csrf-token"]').attr('content'),
-                    declined_reason: reason
+                    response_reason: reason
                 },
                 success: function(response) {
                     $('#declineModal').modal('hide');
@@ -629,6 +669,10 @@
                     });
                 },
                 error: function(xhr) {
+                    // Reset button state
+                    $button.html('Submit');
+                    $button.prop('disabled', false);
+
                     Swal.fire({
                         icon: 'error',
                         title: 'Error',
@@ -642,6 +686,7 @@
         $('.approve-btn').click(function(e) {
             e.preventDefault();
             const id = $(this).data('id');
+            const $button = $(this);
 
             Swal.fire({
                 title: 'Confirm Approval',
@@ -653,7 +698,77 @@
                 confirmButtonText: 'Yes, approve it!'
             }).then((result) => {
                 if (result.isConfirmed) {
-                    window.location.href = `/recruitment/labor_demand/approve/${id}`;
+                    // Show processing state on the original button
+                    $button.html('<i class="fas fa-spinner fa-spin"></i> Processing...');
+                    $button.prop('disabled', true);
+
+                    // Add the surrounding elements to a loading state
+                    $button.closest('td').find('a, button').not($button).prop('disabled', true);
+
+                    // Redirect with a slight delay to show the processing state
+                    setTimeout(function() {
+                        window.location.href = `/recruitment/labor_demand/approve/${id}`;
+                    }, 500);
+                }
+            });
+        });
+
+        // Handle revise button click
+        $('.revise-btn').click(function(e) {
+            e.preventDefault();
+            const id = $(this).data('id');
+            $('#reviseForm').attr('data-id', id);
+            $('#reviseModal').modal('show');
+        });
+
+        // Handle revise confirmation
+        $('#confirmRevise').click(function() {
+            const id = $('#reviseForm').data('id');
+            const reason = $('#revision_reason').val();
+            const $button = $(this);
+
+            if (!reason) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: 'Please provide a reason for the revision request',
+                });
+                return;
+            }
+
+            // Show processing state
+            $button.html('<i class="fas fa-spinner fa-spin"></i> Processing...');
+            $button.prop('disabled', true);
+
+            $.ajax({
+                url: `/recruitment/labor_demand/revise/${id}`,
+                type: 'POST',
+                data: {
+                    _token: $('meta[name="csrf-token"]').attr('content'),
+                    revision_reason: reason
+                },
+                success: function(response) {
+                    $('#reviseModal').modal('hide');
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Success',
+                        text: 'You have requested revision for the labor demand',
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            window.location.reload();
+                        }
+                    });
+                },
+                error: function(xhr) {
+                    // Reset button state
+                    $button.html('Submit');
+                    $button.prop('disabled', false);
+
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: 'An error occurred while processing your request',
+                    });
                 }
             });
         });

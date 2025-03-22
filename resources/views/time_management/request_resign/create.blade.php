@@ -11,7 +11,7 @@
                     </h5>
                 </div>
                 <div class="card-body">
-                    <form action="{{ route('request.resign.store') }}" method="POST" id="resignForm">
+                    <form action="{{ route('request.resign.store') }}" method="POST" id="resignForm" enctype="multipart/form-data">
                         @csrf
                         <input type="hidden" name="user_id" value="{{ $id }}">
                         <div class="mb-4">
@@ -44,17 +44,24 @@
                             <small class="text-muted">Please provide details about your decision to resign</small>
                         </div>
 
+                        <div class="mb-4">
+                            <label for="file_path" class="form-label">Documentary Evidence <span class="text-danger">*</span></label>
+                            <input type="file" class="form-control" id="file_path" name="file_path" accept="image/*">
+                            <small class="text-muted">Please upload supporting documents (JPEG, PNG, or JPG format)</small>
+                        </div>
+
                         <div class="alert alert-info">
                             <i class="fas fa-info-circle me-2"></i> Please note:
                             <ul class="mb-0 mt-2">
                                 <li>Your resignation request will be reviewed by management</li>
-                                <li>The standard notice period is typically 2-4 weeks</li>
+                                <li>The standard notice period is a minimum of 1 month.</li>
+
                                 <li>All company property must be returned before your last day</li>
                             </ul>
                         </div>
 
                         <div class="d-flex justify-content-between mt-4">
-                            <a href="{{ route('request.resign.index') }}" class="btn btn-danger">
+                            <a href="{{ route('request.resign.index2', ['id' => $id]) }}" class="btn btn-danger">
                                 <i class="fas fa-arrow-left me-2"></i>Cancel
                             </a>
                             <button type="submit" class="btn btn-success">
@@ -76,32 +83,29 @@
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
     $(document).ready(function() {
-        // Set minimum and maximum date
+        // Set minimum date to 1 month from today
         let today = new Date();
-        let twoWeeksFromNow = new Date();
-        let sixMonthsFromNow = new Date();
+        let oneMonthFromNow = new Date();
 
-        twoWeeksFromNow.setDate(today.getDate() + 14); // 2 minggu dari hari ini
-        sixMonthsFromNow.setMonth(today.getMonth() + 6); // 6 bulan dari hari ini
+        oneMonthFromNow.setMonth(today.getMonth() + 1); // 1 month from today
 
-        let minDate = twoWeeksFromNow.toISOString().split('T')[0];
-        let maxDate = sixMonthsFromNow.toISOString().split('T')[0];
+        let minDate = oneMonthFromNow.toISOString().split('T')[0];
 
         $('#resign_date').attr('min', minDate);
-        $('#resign_date').attr('max', maxDate);
+        // Remove max date attribute to make it unlimited
 
-        // Check if selected date is at least 2 weeks from today
+        // Check if selected date is at least 1 month from today
         $('#resign_date').on('change', function() {
             let selectedDate = new Date($(this).val());
             let selectedDateStr = selectedDate.toISOString().split('T')[0];
-            let twoWeeksStr = minDate;
-            if (selectedDateStr < twoWeeksStr) {
+            let oneMonthStr = minDate;
+            if (selectedDateStr < oneMonthStr) {
                 $('#dateWarning').removeClass('d-none');
+                $('#dateWarning').text('The selected date is less than the required 1-month notice period.');
             } else {
                 $('#dateWarning').addClass('d-none');
             }
         });
-
 
         // Show/hide 'Other' reason input
         $('#resign_type').on('change', function() {

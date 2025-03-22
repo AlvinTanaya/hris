@@ -803,10 +803,6 @@
                             <i class="fas fa-door-open"></i>
                             <span>Resign</span>
                         </a> -->
-                        <a href="{{ url('/time/warning-verbal') }}" class="nav-link">
-                            <i class="fas fa-exclamation-circle"></i>
-                            <span>Teguran</span>
-                        </a>
                         <a href="{{ url('/time_management/warning_letter/index') }}" class="nav-link">
                             <i class="fas fa-exclamation-triangle"></i>
                             <span>Warning Letter</span>

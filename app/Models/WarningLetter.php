@@ -17,6 +17,7 @@ class WarningLetter extends Model
         'id',
         'user_id',
         'maker_id',
+        'type',
         'reason_warning',
         'created_at',
         'updated_at',

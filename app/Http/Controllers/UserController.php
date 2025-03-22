@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Str;
 
 use App\Models\User;
 use App\Models\history_transfer_employee;
@@ -87,13 +88,14 @@ class UserController extends Controller
             'id_card' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
             'cv' => 'nullable|mimes:pdf|max:2048',
             'achievement' => 'nullable|mimes:pdf|max:2048',
-            'employee_id' => 'required',
             'name' => 'required',
             'position' => 'required',
             'department' => 'required',
             'join_date' => 'required',
             'email' => 'required',
             'phone_number' => 'required',
+            'emergency_contact' => 'required',
+            'status' => 'required',
             'employee_status' => 'required',
             'user_status' => 'required',
             'ID_number' => 'required',
@@ -101,6 +103,7 @@ class UserController extends Controller
             'birth_place' => 'required',
             'ID_address' => 'required',
             'domicile_address' => 'required',
+            'distance' => 'required',
             'religion' => 'required',
             'gender' => 'required',
             'contract_start_date' => 'required_if:employee_status,Contract,Part Time|nullable|date',
@@ -190,7 +193,19 @@ class UserController extends Controller
         }
         $employeeId = $yearMonth . str_pad($newEmployeeNumber, 3, '0', STR_PAD_LEFT);
 
+        //Bank
+        $bankNames = [];
+        $bankNumbers = [];
 
+        if ($request->has('bank_name') && $request->has('bank_number')) {
+            foreach ($request->bank_name as $index => $bankName) {
+                if (!empty($bankName) && !empty($request->bank_number[$index])) {
+                    $bankNames[] = $bankName;
+                    $bankNumbers[] = $request->bank_number[$index];
+                }
+            }
+        }
+        // dd($bankNames,    $bankNumbers);
 
         // Create a new Pegawai record
         User::create([
@@ -211,6 +226,12 @@ class UserController extends Controller
             'phone_number' => $request->phone_number,
             'employee_status' => $request->employee_status,
             'user_status' => $request->user_status,
+            'status' => $request->status,
+            'NPWP' => $request->npwp,
+            'emergency_contact' => $request->emergency_contact,
+            'distance' => $request->distance,
+            'bank_name' => !empty($bankNames) ? json_encode($bankNames) : null,
+            'bank_number' => !empty($bankNumbers) ? json_encode($bankNumbers) : null,
             'bpjs_employment' => $request->bpjs_employment ?? null,
             'bpjs_kesehatan' => $request->bpjs_kesehatan ?? null,
             'ID_number' => $request->ID_number,
@@ -226,6 +247,7 @@ class UserController extends Controller
             'created_at' => now(),
             'updated_at' => now(),
             'password' => $password,
+
         ]);
 
 
@@ -238,15 +260,15 @@ class UserController extends Controller
                 if ($request->name_family[$index] !== null) {
                     users_family::create([
                         'users_id' => $user->id, // Ambil ID pegawai yang baru disimpan
-                        'name' => $request->name_family[$index],
-                        'relation' => $request->relation[$index],
-                        'birth_date' => $request->birth_date_family[$index],
-                        'birth_place' => $request->birth_place_family[$index],
-                        'ID_number' => $request->ID_number_family[$index],
-                        'phone_number' => $request->phone_number_family[$index],
-                        'address' => $request->address_family[$index],
-                        'gender' => $request->gender_family[$index],
-                        'job' => $request->job[$index],
+                        'name' => $request->name_family[$index] ?? null,
+                        'relation' => $request->relation[$index] ?? null,
+                        'birth_date' => $request->birth_date_family[$index] ?? null,
+                        'birth_place' => $request->birth_place_family[$index] ?? null,
+                        'ID_number' => $request->ID_number_family[$index] ?? null,
+                        'phone_number' => $request->phone_number_family[$index] ?? null,
+                        'address' => $request->address_family[$index] ?? null,
+                        'gender' => $request->gender_family[$index] ?? null,
+                        'job' => $request->job[$index] ?? null,
                         'created_at' => now(),
                         'updated_at' => now(),
                     ]);
@@ -257,18 +279,34 @@ class UserController extends Controller
         if ($request->has('education_level')) {
             foreach ($request->education_level as $index => $name) {
                 if ($request->degree[$index] !== null) {
-                    users_education::create([
+                    $newEducation = users_education::create([
                         'users_id' => $user->id,
-                        'degree' => $request->education_level[$index],
-                        'educational_place' => $request->education_place[$index],
-                        'educational_city' => $request->education_city[$index],
-                        'start_education'  => $request->start_education[$index],
-                        'end_education'  => $request->end_education[$index],
-                        'major'  => $request->major[$index],
-                        'grade'  => $request->grade[$index],
+                        'degree' => $request->education_level[$index] ?? null,
+                        'educational_place' => $request->education_place[$index] ?? null,
+                        'educational_city' => $request->education_city[$index] ?? null,
+                        'educational_province' => $request->education_province[$index] ?? null,
+                        'start_education'  => $request->start_education[$index] ?? null,
+                        'end_education'  => $request->end_education[$index] ?? null,
+                        'major'  => $request->major[$index] ?? null,
+                        'grade'  => $request->grade[$index] ?? null,
                         'created_at' => now(),
                         'updated_at' => now(),
                     ]);
+                }
+
+
+                if ($request->hasFile("education_transcript.$index")) {
+                    $file = $request->file("education_transcript.$index");
+                    $extension = $file->getClientOriginalExtension();
+
+                    // Buat nama file yang sesuai
+                    $fileName = "transcript_" . "{$user->id}_{$request->education_level[$index]}_{$newEducation->id}.{$extension}";
+
+                    // Simpan file ke public/user/transcript_user
+                    $filePath = $file->storeAs('user/transcript_user', $fileName, 'public');
+
+                    // Update path file di database
+                    $newEducation->update(['transcript_file_path' => "user/transcript_user/{$fileName}"]);
                 }
             }
         }
@@ -309,6 +347,7 @@ class UserController extends Controller
                         'users_id' => $user->id,
                         'training_name' => $training_name,
                         'training_city' => $request->training_city[$index] ?? null,
+                        'training_province' => $request->training_province[$index] ?? null,
                         'start_date' => $request->training_start_date[$index] ?? null,
                         'end_date' => $request->training_end_date[$index] ?? null,
                         'created_at' => now(),
@@ -326,6 +365,7 @@ class UserController extends Controller
                         'organization_name' => $organization_name,
                         'position' => $request->organization_position[$index] ?? null,
                         'city' => $request->organization_city[$index] ?? null,
+                        'province' => $request->organization_province[$index] ?? null,
                         'activity_type' => str_replace(["\r", "\n", "-", "  "], ["", ";", "", " "], trim($request->activity_type[$index] ?? null)),
                         'start_date' => $request->organization_start_date[$index] ?? null,
                         'end_date' => $request->organization_end_date[$index] ?? null,
@@ -339,6 +379,16 @@ class UserController extends Controller
         if ($request->has('language')) {
             foreach ($request->language as $index => $language) {
                 if (!empty($language)) {
+                    if ($language === 'Other') {
+                        $otherLanguage = $request->other_language[$index] ?? null;
+                        if (empty($otherLanguage)) {
+                            continue;
+                        }
+                        $language = $otherLanguage;
+                    }
+
+
+
                     users_language::create([
                         'users_id' => $user->id,
                         'language' => $language,
@@ -350,6 +400,8 @@ class UserController extends Controller
                 }
             }
         }
+
+
 
 
 
@@ -391,7 +443,20 @@ class UserController extends Controller
         // Find the Pegawai by ID
         $user = User::findOrFail($id);
 
-        //dd($user->cv_path);
+        // Decode bank information from JSON
+        $bankNames = json_decode($user->bank_name, true) ?: [];
+        $bankNumbers = json_decode($user->bank_number, true) ?: [];
+
+        // Combine bank data for easier handling in the view
+        $bankData = [];
+        foreach ($bankNames as $index => $name) {
+            if (isset($bankNumbers[$index])) {
+                $bankData[] = [
+                    'name' => $name,
+                    'number' => $bankNumbers[$index]
+                ];
+            }
+        }
 
         // Retrieve associated records with the user's ID
         $userEducation = users_education::where('users_id', $id)->get();
@@ -401,36 +466,15 @@ class UserController extends Controller
         $userLanguage = users_language::where('users_id', $id)->get();
         $userOrganization = users_organization::where('users_id', $id)->get();
 
-        // If no related data, you could check for empty sets or return defaults
-        if ($userEducation->isEmpty()) {
-            $userEducation = null;  // Or set defaults if necessary
-        }
-        if ($userWork->isEmpty()) {
-            $userWork = null;
-        }
-        if ($userFamily->isEmpty()) {
-            $userFamily = null;
-        }
-
-        if ($userOrganization->isEmpty()) {
-            $userOrganization = null;
-        }
-
-        if ($userLanguage->isEmpty()) {
-            $userLanguage = null;
-        }
-
-        if ($userTraining->isEmpty()) {
-            $userTraining = null;
-        }
-
+        // Check for empty sets
+        // (your existing code for checking empty sets)
 
         $duty = DB::table('elearning_invitation')
             ->join('elearning_lesson', 'elearning_invitation.lesson_id', '=', 'elearning_lesson.id')
             ->join('elearning_schedule', 'elearning_invitation.schedule_id', '=', 'elearning_schedule.id')
             ->where('elearning_invitation.users_id', $id)
             ->select(
-                'elearning_invitation.id as invitation_id', // Alias untuk menghindari konflik ID
+                'elearning_invitation.id as invitation_id',
                 'elearning_invitation.lesson_id',
                 'elearning_invitation.schedule_id',
                 'elearning_invitation.users_id',
@@ -444,9 +488,8 @@ class UserController extends Controller
             ->get();
 
         // Pass the data to the update view
-        return view('user.update', compact('user', 'userEducation', 'userWork', 'userFamily', 'userOrganization', 'userLanguage', 'userTraining', 'duty'));
+        return view('user.update', compact('user', 'userEducation', 'userWork', 'userFamily', 'userOrganization', 'userLanguage', 'userTraining', 'duty', 'bankData'));
     }
-
     public function update(Request $request, $id)
     {
         //dd($request->department);
@@ -470,13 +513,15 @@ class UserController extends Controller
             'religion' => 'required',
             'gender' => 'required',
             'phone_number' => 'required',
+            'status' => 'required',
+            'emergency_contact' => 'required',
             'employee_status' => 'required',
             'email' => 'required|email',
             'join_date' => 'required',
             'position' => 'required',
             'contract_start_date' => 'required_if:employee_status,Contract,Part Time|nullable|date',
             'contract_end_date' => 'required_if:employee_status,Contract,Part Time|nullable|date',
-
+            'distance' => 'required',
             'department' => 'required',
 
         ]);
@@ -590,6 +635,19 @@ class UserController extends Controller
         }
 
 
+        //bank
+        $bankNames = [];
+        $bankNumbers = [];
+
+        if ($request->has('bank_name') && $request->has('bank_number')) {
+            foreach ($request->bank_name as $index => $bankName) {
+                if (!empty($bankName) && !empty($request->bank_number[$index])) {
+                    $bankNames[] = $bankName;
+                    $bankNumbers[] = $request->bank_number[$index];
+                }
+            }
+        }
+        // dd($bankNames,   $bankNumbers);
 
 
         // Update data pegawai
@@ -615,6 +673,13 @@ class UserController extends Controller
             'gender' => $request->gender,
             'height' => $request->height,
             'weight' => $request->weight,
+            'distance' => $request->distance,
+            'status' => $request->status,
+            'NPWP' => $request->npwp,
+            'exit_date' => $request->exit_date ?? null,
+            'emergency_contact' => $request->emergency_contact,
+            'bank_name' => !empty($bankNames) ? json_encode($bankNames) : null,
+            'bank_number' => !empty($bankNumbers) ? json_encode($bankNumbers) : null,
             'updated_at' => now(),
         ]);
 
@@ -699,7 +764,6 @@ class UserController extends Controller
                 // Cek apakah degree pendidikan tidak kosong
                 if (!is_null($education_level)) {
                     if (isset($request->id_education) && array_key_exists($index, $request->id_education) && !is_null($request->id_education[$index])) {
-
                         // Update data jika ID education ada
                         $id_used_education[] = $request->id_education[$index];
 
@@ -709,7 +773,7 @@ class UserController extends Controller
                         if (
                             $userEducation->degree !== $education_level ||
                             $userEducation->educational_place !== $request->education_place[$index] ||
-                            $userEducation->educational_city !== $request->educational_city[$index] ||
+                            $userEducation->educational_city !== $request->education_city[$index] ||
                             $userEducation->start_education !== $request->start_education[$index] ||
                             $userEducation->end_education !== $request->end_education[$index] ||
                             $userEducation->major !== $request->major[$index] ||
@@ -719,12 +783,33 @@ class UserController extends Controller
                                 'degree' => $education_level,
                                 'educational_place' => $request->education_place[$index],
                                 'educational_city' => $request->education_city[$index],
+                                'educational_province' => $request->education_province[$index],
                                 'start_education' => $request->start_education[$index],
                                 'end_education' => $request->end_education[$index],
                                 'major' => $request->major[$index],
                                 'grade' => $request->grade[$index],
                                 'updated_at' => now(),
                             ]);
+                        }
+
+                        // Handle file upload untuk sertifikat/transkrip
+                        if ($request->hasFile("education_transcript.$index")) {
+                            // Jika ada file lama, hapus terlebih dahulu
+                            if ($userEducation->transcript_file_path && Storage::disk('public')->exists($userEducation->transcript_file_path)) {
+                                Storage::disk('public')->delete($userEducation->transcript_file_path);
+                            }
+
+                            $file = $request->file("education_transcript.$index");
+                            $extension = $file->getClientOriginalExtension();
+
+                            // Buat nama file yang sesuai
+                            $fileName = "transcript_" . Str::slug($user->name) . "_{$user->id}_{$education_level}_{$userEducation->id}.{$extension}";
+
+                            // Simpan file ke public/user/achievement_user
+                            $filePath = $file->storeAs('user/achievement_user', $fileName, 'public');
+
+                            // Update path file di database
+                            $userEducation->update(['transcript_file_path' => "user/achievement_user/{$fileName}"]);
                         }
                     } else {
                         // Create data baru jika ID education tidak ada
@@ -733,6 +818,7 @@ class UserController extends Controller
                             'degree' => $education_level,
                             'educational_place' => $request->education_place[$index],
                             'educational_city' => $request->education_city[$index],
+                            'educational_province' => $request->education_province[$index],
                             'start_education' => $request->start_education[$index],
                             'end_education' => $request->end_education[$index],
                             'major' => $request->major[$index],
@@ -742,11 +828,38 @@ class UserController extends Controller
                         ]);
 
                         $id_used_education[] = $newEducation->id;
+
+                        // Handle file upload untuk sertifikat/transkrip
+                        if ($request->hasFile("education_transcript.$index")) {
+                            $file = $request->file("education_transcript.$index");
+                            $extension = $file->getClientOriginalExtension();
+
+                            // Buat nama file yang sesuai
+                            $fileName = "transcript_" . Str::slug($user->name) . "_{$user->id}_{$education_level}_{$newEducation->id}.{$extension}";
+
+                            // Simpan file ke public/user/achievement_user
+                            $filePath = $file->storeAs('user/achievement_user', $fileName, 'public');
+
+                            // Update path file di database
+                            $newEducation->update(['transcript_file_path' => "user/achievement_user/{$fileName}"]);
+                        }
                     }
                 }
             }
 
-            // Hapus data yang tidak ada di $id_used_education
+            // Ambil data pendidikan yang akan dihapus
+            $educationsToDelete = users_education::where('users_id', $user->id)
+                ->whereNotIn('id', $id_used_education)
+                ->get();
+
+            // Hapus file transkrip terlebih dahulu
+            foreach ($educationsToDelete as $education) {
+                if ($education->transcript_file_path && Storage::disk('public')->exists($education->transcript_file_path)) {
+                    Storage::disk('public')->delete($education->transcript_file_path);
+                }
+            }
+
+            // Kemudian hapus data dari database
             users_education::where('users_id', $user->id)
                 ->whereNotIn('id', $id_used_education)
                 ->delete();
@@ -850,6 +963,7 @@ class UserController extends Controller
                             $userTraining->update([
                                 'training_name' => $training_name,
                                 'training_city' => $request->training_city[$index] ?? null,
+                                'training_province' => $request->training_province[$index] ?? null,
                                 'start_date' => $request->training_start_date[$index] ?? null,
                                 'end_date' => $request->training_end_date[$index] ?? null,
                                 'updated_at' => now(),
@@ -860,6 +974,7 @@ class UserController extends Controller
                             'users_id' => $user->id,
                             'training_name' => $training_name,
                             'training_city' => $request->training_city[$index] ?? null,
+                            'training_province' => $request->training_province[$index] ?? null,
                             'start_date' => $request->training_start_date[$index] ?? null,
                             'end_date' => $request->training_end_date[$index] ?? null,
                             'created_at' => now(),
@@ -896,6 +1011,7 @@ class UserController extends Controller
                                 'organization_name' => $organization_name,
                                 'position' => $request->organization_position[$index] ?? null,
                                 'city' => $request->organization_city[$index] ?? null,
+                                'province' => $request->organization_province[$index] ?? null,
                                 'activity_type' => str_replace(["\r", "\n", "-", "  "], ["", ";", "", " "], trim($request->activity_type[$index] ?? null)),
 
                                 'start_date' => $request->organization_start_date[$index] ?? null,
@@ -909,6 +1025,7 @@ class UserController extends Controller
                             'organization_name' => $organization_name,
                             'position' => $request->organization_position[$index] ?? null,
                             'city' => $request->organization_city[$index] ?? null,
+                            'province' => $request->organization_province[$index] ?? null,
                             'activity_type' => str_replace(["\r", "\n", "-", "  "], ["", ";", "", " "], trim($request->activity_type[$index] ?? null)),
                             'start_date' => $request->organization_start_date[$index] ?? null,
                             'end_date' => $request->organization_end_date[$index] ?? null,
@@ -936,11 +1053,24 @@ class UserController extends Controller
                         $id_used_language[] = $request->id_language[$index];
                         $userLanguage = users_language::findOrFail($request->id_language[$index]);
 
+
+
+
                         if (
                             $userLanguage->language !== $language ||
                             $userLanguage->verbal !== $request->verbal[$index] ||
                             $userLanguage->written !== $request->written[$index]
                         ) {
+                            if ($language === 'Other') {
+                                $otherLanguage = $request->other_language[$index] ?? null;
+                                if (empty($otherLanguage)) {
+                                    continue;
+                                }
+                                $language = $otherLanguage;
+                            }
+
+
+
                             $userLanguage->update([
                                 'language' => $language,
                                 'verbal' => $request->verbal[$index] ?? null,
@@ -949,6 +1079,14 @@ class UserController extends Controller
                             ]);
                         }
                     } else {
+                        if ($language === 'Other') {
+                            $otherLanguage = $request->other_language[$index] ?? null;
+                            if (empty($otherLanguage)) {
+                                continue;
+                            }
+                            $language = $otherLanguage;
+                        }
+
                         $newLanguage = users_language::create([
                             'users_id' => $user->id,
                             'language' => $language,

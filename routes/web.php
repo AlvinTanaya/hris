@@ -59,7 +59,7 @@ Route::middleware('auth')->group(function () {
     // Employee routes  
     Route::get('/user/index', [UserController::class, 'index'])->name('user.index');
     Route::get('/user/create', [UserController::class, 'create'])->name('user.create');
-    Route::post('/user/store', [UserController::class, 'store'])->name('user.store');
+    Route::put('/user/store', [UserController::class, 'store'])->name('user.store');
     Route::get('/user/edit/{id}', [UserController::class, 'edit'])->name('user.edit');
     Route::put('/user/update/{id}', [UserController::class, 'update'])->name('user.update');
     Route::get('/user/transfer/{id}', [UserController::class, 'transfer'])->name('user.transfer');
@@ -96,9 +96,14 @@ Route::middleware('auth')->group(function () {
     Route::get('/recruitment/labor_demand/edit/{id}', [RecruitmentController::class, 'edit_labor_demand'])->name('recruitment.labor.demand.edit');
     Route::post('/recruitment/labor_demand/decline/{id}', [RecruitmentController::class, 'decline_labor_demand'])->name('recruitment.labor.demand.decline');
     Route::get('/recruitment/labor_demand/approve/{id}', [RecruitmentController::class, 'approve_labor_demand'])->name('recruitment.labor.demand.approve');
+    Route::post('/recruitment/labor_demand/revise/{id}', [RecruitmentController::class, 'revise_labor_demand'])->name('recruitment.labor.demand.revise');
     Route::put('/recruitment/labor_demand/update/{id}', [RecruitmentController::class, 'update_labor_demand'])->name('recruitment.labor.demand.update');
     Route::post('/recruitment/labor_demand/store', [RecruitmentController::class, 'store_labor_demand'])->name('recruitment.labor.demand.store');
-    Route::get('/recruitment/labor_demand/{id}', [RecruitmentController::class, 'show_labor_demand'])->name('recruitment.labor.demand.show');;
+    Route::get('/recruitment/labor_demand/{id}', [RecruitmentController::class, 'show_labor_demand'])->name('recruitment.labor.demand.show');
+
+
+
+
     //AHP Recruitment 
     Route::get('/recruitment/ahp_recruitment/index', [RecruitmentController::class, 'index_ahp'])->name('recruitment.ahp');
     Route::post('/ahp/calculate', [RecruitmentController::class, 'calculate'])->name('ahp.calculate');
@@ -151,6 +156,8 @@ Route::middleware('auth')->group(function () {
     Route::post('time_management/warning_letter/store', [TimeManagementController::class, 'warning_letter_store'])->name('warning.letter.store');
     Route::get('time_management/warning_letter/edit/{id}', [TimeManagementController::class, 'warning_letter_edit'])->name('warning.letter.edit');
     Route::put('time_management/warning_letter/update/{id}', [TimeManagementController::class, 'warning_letter_update'])->name('warning.letter.update');
+    Route::get('/warning-letter/get-available-types', [TimeManagementController::class, 'getAvailableWarningTypes'])->name('warning.letter.get-available-types');
+    Route::get('/warning-letter/get-available-types-for-edit', [TimeManagementController::class, 'getAvailableWarningTypesForEdit'])->name('warning.letter.get-available-types-for-edit');
     // Resign
     Route::get('time_management/request_resign/index', [TimeManagementController::class, 'request_resign_index'])->name('request.resign.index');
     Route::get('time_management/request_resign/index2/{id}', [TimeManagementController::class, 'request_resign_index2'])->name('request.resign.index2');
@@ -208,12 +215,10 @@ Route::middleware('auth')->group(function () {
     Route::get('time_management/time_off/request_time_off/index2/{id}', [TimeManagementController::class, 'request_time_off_index2'])->name('request.time.off.index2');
     Route::get('time_management/time_off/request_time_off/create/{id}', [TimeManagementController::class, 'request_time_off_create'])->name('request.time.off.create');
     Route::post('time_management/time_off/request_time_off/store', [TimeManagementController::class, 'request_time_off_store'])->name('request.time.off.store');
-    Route::get('time_management/time_off/request_time_off/check-time-off-balance', [TimeManagementController::class,'checkBalance']);
+    Route::get('time_management/time_off/request_time_off/check-time-off-balance', [TimeManagementController::class, 'checkBalance']);
 
 
     Route::post('time_management/time_off/request_time_off/approve/{id}', [TimeManagementController::class, 'request_time_off_approve'])->name('request.time.off.approve');
     Route::post('time_management/time_off/request_time_off/decline/{id}', [TimeManagementController::class, 'request_time_off_decline'])->name('request.time.off.decline');
     Route::delete('time_management/time_off/request_time_off/destroy/{id}', [TimeManagementController::class, 'request_time_off_destroy'])->name('request.time.off.destroy');
-
-
 });

@@ -58,6 +58,13 @@ class User extends Authenticatable
         'otp',
         'otp_expired_at',
         'remember_token',
+        'NPWP',
+        'bank_number',
+        'bank_name',
+        'emergency_contact',
+        'status',
+        'distance',
+        'exit_date',
         'created_at',
         'updated_at'
     ];

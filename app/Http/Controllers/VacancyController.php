@@ -26,7 +26,6 @@ class VacancyController extends Controller
 {
     public function index(Request $request)
     {
-        //dd($request->all());
         $today = Carbon::now();
         $query = recruitment_demand::where('status_demand', 'Approved')
             ->where('qty_needed', '>', 0)
@@ -50,13 +49,14 @@ class VacancyController extends Controller
                 ->where('closing_date', '>=', $date);
         }
 
-        $demand = $query->get();
+        // Change from get() to paginate(5) to show 5 items per page
+        $demand = $query->paginate(5);
 
-        //dd($demand);
+        // Append any query parameters to pagination links
+        $demand->appends($request->all());
 
         return view('job_vacancy.index', compact('demand'));
     }
-
 
 
 
@@ -92,10 +92,12 @@ class VacancyController extends Controller
                 'religion' => $request->religion,
                 'gender' => $request->gender,
                 'ID_address' => $request->ID_address,
+                'emergency_contact' => $request->emergency_contact,
                 'domicile_address' => $request->domicile_address,
                 'weight' => $request->weight,
                 'height' => $request->height,
                 'blood_type' => $request->blood_type,
+                'distance' => $request->distance,
                 'bpjs_health' => $request->bpjs_health,
                 'bpjs_employment' => $request->bpjs_employment,
                 'status_applicant' => 'Pending',
@@ -153,49 +155,69 @@ class VacancyController extends Controller
             $applicant->save();
 
 
-            // Simpan data family
 
-            // Simpan setiap anggota keluarga ke dalam database
+            // Simpan data pendidikan
+            foreach ($request->degree ?? [] as $key => $level) {
+                $education = recruitment_applicant_education::create([
+                    'applicant_id' => $applicant->id,
+                    'degree' => $level,
+                    'educational_place' => $request->educational_place[$key] ?? null,
+                    'educational_city' => $request->education_city[$key] ?? null,
+                    'educational_province' => $request->education_province[$key] ?? null,
+                    'start_education' => $request->start_education[$key] ?? null,
+                    'end_education' => $request->end_education[$key] ?? null,
+                    'grade' => $request->grade[$key] ?? null,
+                    'major' => $request->major[$key] ?? null,
+                    'transcript_file_path' => null,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+
+                // Handle file upload untuk sertifikat/transkrip
+                if ($request->hasFile("education_certificate.$key")) {
+                    $file = $request->file("education_certificate.$key");
+                    $extension = $file->getClientOriginalExtension();
+
+                    // Buat nama file yang sesuai
+                    $fileName = "transcript_" . "{$applicant->id}_{$level}_{$education->id}.{$extension}";
+
+                    // Simpan file ke public/job_vacancy/transcript_applicant
+                    $filePath = $file->storeAs('job_vacancy/transcript_applicant', $fileName, 'public');
+
+                    // Update path file di database
+                    $education->update(['transcript_file_path' => "job_vacancy/transcript_applicant/{$fileName}"]);
+                }
+            }
+
+
+
+            // Simpan data family
             foreach ($request->family_name as $index => $name) {
                 recruitment_applicant_family::create([
                     'applicant_id' => $applicant->id,
                     'name' => $name,
-                    'relation' => $request->relation[$index],
-                    'birth_date' => $request->birth_date_family[$index],
-                    'birth_place' => $request->birth_place_family[$index],
-                    'ID_number' => $request->ID_number_family[$index],
-                    'phone_number' => $request->family_phone[$index],
-                    'address' => $request->address[$index],
-                    'gender' => $request->gender_family[$index],
-                    'job' => $request->job[$index],
+                    'relation' => $request->relation[$index] ?? null,
+                    'birth_date' => $request->birth_date_family[$index] ?? null,
+                    'birth_place' => $request->birth_place_family[$index] ?? null,
+                    'ID_number' => $request->ID_number_family[$index] ?? null,
+                    'phone_number' => $request->family_phone[$index] ?? null,
+                    'address' => $request->address[$index] ?? null,
+                    'gender' => $request->gender_family[$index] ?? null,
+                    'job' => $request->job[$index] ?? null,
                 ]);
             }
 
 
-            // Simpan data pendidikan
-            foreach ($request->degree ?? [] as $key => $level) {
-                recruitment_applicant_education::create([
-                    'applicant_id' => $applicant->id,
-                    'degree' => $level,
-                    'educational_place' => $request->educational_place[$key] ?? '',
-                    'educational_city' => $request->education_city[$key] ?? '',
-                    'start_education' => $request->start_education[$key] ?? '',
-                    'end_education' => $request->end_education[$key] ?? '',
-                    'grade' => $request->grade[$key] ?? '',
-                    'major' => $request->major[$key] ?? '',
-                    'created_at' => now(),
-                    'updated_at' => now(),
-                ]);
-            }
 
             // Simpan data training
             foreach ($request->training_name ?? [] as $key => $level) {
                 recruitment_applicant_education::create([
                     'applicant_id' => $applicant->id,
-                    'training_name' => $request->training_name[$key] ?? '',
-                    'training_city' => $request->training_city[$key] ?? '',
-                    'start_date' => $request->start_training[$key] ?? '',
-                    'end_date' => $request->end_training[$key] ?? '',
+                    'training_name' => $request->training_name[$key] ?? null,
+                    'training_city' => $request->training_city[$key] ?? null,
+                    'training_province' => $request->training_province[$key] ?? null,
+                    'start_date' => $request->start_training[$key] ?? null,
+                    'end_date' => $request->end_training[$key] ?? null,
                     'created_at' => now(),
                     'updated_at' => now(),
                 ]);
@@ -207,14 +229,14 @@ class VacancyController extends Controller
                 recruitment_applicant_work_experience::create([
                     'applicant_id' => $applicant->id,
                     'company_name' => $company,
-                    'position' => $request->position[$key] ?? '',
-                    'working_start' => $request->working_start[$key] ?? '',
-                    'working_end' => $request->working_end[$key] ?? '',
-                    'company_address' => $request->company_address[$key] ?? '',
-                    'company_phone' => $request->company_phone[$key] ?? '',
-                    'salary' => $request->previous_salary[$key] ?? '',
-                    'supervisor_name' => $request->supervisor_name[$key] ?? '',
-                    'supervisor_phone' => $request->supervisor_phone[$key] ?? '',
+                    'position' => $request->position[$key] ?? null,
+                    'working_start' => $request->working_start[$key] ?? null,
+                    'working_end' => $request->working_end[$key] ?? null,
+                    'company_address' => $request->company_address[$key] ?? null,
+                    'company_phone' => $request->company_phone[$key] ?? null,
+                    'salary' => $request->previous_salary[$key] ?? null,
+                    'supervisor_name' => $request->supervisor_name[$key] ?? null,
+                    'supervisor_phone' => $request->supervisor_phone[$key] ?? null,
                     'job_desc' => str_replace(["\r", "\n", "-", "  "], ["", ";", "", " "], trim($request->job_description[$key] ?? '')),
                     'reason' => str_replace(["\r", "\n", "-", "  "], ["", ";", "", " "], trim($request->leaving_reason[$key] ?? '')),
                     'benefit' => str_replace(["\r", "\n", "-", "  "], ["", ";", "", " "], trim($request->previous_benefits[$key] ?? '')),
@@ -226,11 +248,20 @@ class VacancyController extends Controller
 
             // Simpan data bahasa
             foreach ($request->language ?? [] as $key => $language) {
+                // Jika bahasa "Other" tetapi tidak ada isian, lewati iterasi
+                if ($language === 'Other') {
+                    $otherLanguage = $request->other_language[$key] ?? null;
+                    if (empty($otherLanguage)) {
+                        continue;
+                    }
+                    $language = $otherLanguage; // Gunakan input dari other_language
+                }
+
                 recruitment_applicant_language::create([
                     'applicant_id' => $applicant->id,
                     'language' => $language,
-                    'verbal' => $request->verbal_proficiency[$key] ?? '',
-                    'written' => $request->written_proficiency[$key] ?? '',
+                    'verbal' => $request->verbal_proficiency[$key] ?? null,
+                    'written' => $request->written_proficiency[$key] ?? null,
                     'created_at' => now(),
                     'updated_at' => now(),
                 ]);
@@ -242,10 +273,11 @@ class VacancyController extends Controller
                     'applicant_id' => $applicant->id,
                     'organization_name' => $org,
                     'activity_type' => str_replace(["\r", "\n", "-", "  "], ["", ";", "", " "], trim($request->activity_type[$key] ?? '')),
-                    'position' => $request->org_position[$key] ?? '',
-                    'city' => $request->org_city[$key] ?? '',
-                    'start_date' => $request->org_start_date[$key] ?? '',
-                    'end_date' => $request->org_end_date[$key] ?? '',
+                    'position' => $request->org_position[$key] ?? null,
+                    'city' => $request->org_city[$key] ?? null,
+                    'province' => $request->org_province[$key] ?? null,
+                    'start_date' => $request->org_start_date[$key] ?? null,
+                    'end_date' => $request->org_end_date[$key] ?? null,
                     'created_at' => now(),
                     'updated_at' => now(),
                 ]);

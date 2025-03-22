@@ -121,7 +121,7 @@
         </div>
 
         <div class="email-content">
-            <p class="greeting">Dear HR Team,</p>
+            <p class="greeting">Greetings,</p>
 
             <p class="message">
                 The labor demand request with ID: <strong>{{ $demand->recruitment_demand_id }}</strong> has been approved by the General Manager.
