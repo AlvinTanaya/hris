@@ -412,16 +412,11 @@
 
                         <div class="row">
                             <div class="col-md-6 mb-3">
-
                                 <label class="form-label"><i class="fa-solid fa-location-dot"></i> Distance Between Domicile Address to Company Location</label>
-                                <select class="form-select" name="distance" required>
-                                    <option value="" selected disabled>Select Distance</option>
-                                    <option value="0-3">0-3 KM</option>
-                                    <option value="3-5">3-5 KM</option>
-                                    <option value="5-10">5-10 KM</option>
-                                    <option value="10-15">10-15 KM</option>
-                                    <option value="15+">15+ KM</option>
-                                </select>
+                                <div class="input-group">
+                                    <input type="number" class="form-control" name="distance" id="distance" min="0" max="30" step="0.01" required>
+                                    <span class="input-group-text">KM</span>
+                                </div>
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label for="email" class="form-label">
@@ -1677,7 +1672,16 @@
         });
 
 
+        $('#distance').on('input', function() {
+            let value = $(this).val();
 
+            // Cegah input negatif atau lebih dari 30
+            if (value < 0) {
+                $(this).val(0);
+            } else if (value > 30) {
+                $(this).val(30);
+            }
+        });
 
     });
 </script>

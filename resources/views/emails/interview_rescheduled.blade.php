@@ -106,20 +106,22 @@
         <div class="email-content">
             <p class="message">Hello {{ $name }},</p>
             <p class="message">We would like to inform you that your interview schedule has been updated.</p>
-            
+
             <div class="details-box">
                 <p><strong>Schedule Details:</strong></p>
                 <p><strong>Previous Date:</strong> {{ $old_interview_date }}</p>
+                <p><strong>Previous Time:</strong> {{ $old_interview_time }}</p>
                 <p><strong>New Date:</strong> {{ $new_interview_date }}</p>
+                <p><strong>New Time:</strong> {{ $new_interview_time }}</p>
                 <p><strong>Note:</strong></p>
                 <p>{!! nl2br(e($interview_note)) !!}</p>
             </div>
 
             <p class="message">We apologize for any inconvenience caused and appreciate your understanding. Kindly confirm your availability for the new schedule.</p>
-            
+
             <!-- <div class="button-container">
-                <a href="{{ route('welcome') }}" class="button">Confirm Availability</a>
-            </div> -->
+            <a href="{{ route('welcome') }}" class="button">Confirm Availability</a>
+        </div> -->
 
             <div class="signature">
                 <p>Best regards,</p>

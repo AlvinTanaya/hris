@@ -113,23 +113,23 @@ class RecruitmentController extends Controller
     public function approve_labor_demand($id)
     {
         $demand = recruitment_demand::findOrFail($id);
-    
+
         // Update status
         $demand->status_demand = 'Approved';
         $demand->save();
-    
+
         // Check if maker exists
         $sendTo = null;
         if (!empty($demand->maker_id)) {
             $sendTo = User::where('id', $demand->maker_id)->first();
         }
-    
+
         // If maker doesn't exist, send to HR
         if ($sendTo === null) {
             $hrUsers = User::where('department', 'Human Resources')->get();
             foreach ($hrUsers as $user) {
                 Mail::to($user->email)->send(new LaborDemandApproved($demand));
-    
+
                 // Create notification for HR users
                 Notification::create([
                     'users_id' => $user->id,
@@ -142,7 +142,7 @@ class RecruitmentController extends Controller
         } else {
             // Send to maker only
             Mail::to($sendTo->email)->send(new LaborDemandApproved($demand));
-    
+
             // Create notification for maker
             Notification::create([
                 'users_id' => $sendTo->id,
@@ -152,32 +152,32 @@ class RecruitmentController extends Controller
                 'status' => 'Unread'
             ]);
         }
-    
+
         return redirect()->route('recruitment.index')
             ->with('success', 'Job request has been approved successfully');
     }
-    
+
     public function decline_labor_demand(Request $request, $id)
     {
         $demand = recruitment_demand::findOrFail($id);
-    
+
         // Update status and reason
         $demand->status_demand = 'Declined';
         $demand->response = $request->response;
         $demand->save();
-    
+
         // Check if maker exists
         $sendTo = null;
         if (!empty($demand->maker_id)) {
             $sendTo = User::where('id', $demand->maker_id)->first();
         }
-    
+
         // If maker doesn't exist, send to HR
         if ($sendTo === null) {
             $hrUsers = User::where('department', 'Human Resources')->get();
             foreach ($hrUsers as $user) {
                 Mail::to($user->email)->send(new LaborDemandDeclined($demand));
-    
+
                 // Create notification for HR users
                 Notification::create([
                     'users_id' => $user->id,
@@ -190,7 +190,7 @@ class RecruitmentController extends Controller
         } else {
             // Send to maker only
             Mail::to($sendTo->email)->send(new LaborDemandDeclined($demand));
-    
+
             // Create notification for maker
             Notification::create([
                 'users_id' => $sendTo->id,
@@ -200,39 +200,39 @@ class RecruitmentController extends Controller
                 'status' => 'Unread'
             ]);
         }
-    
+
         if ($request->ajax()) {
             return response()->json(['success' => true]);
         }
-    
+
         return redirect()->route('recruitment.index')
             ->with('success', 'Job request has been declined successfully');
     }
-    
+
     public function revise_labor_demand(Request $request, $id)
     {
         $demand = recruitment_demand::findOrFail($id);
-    
+
         // Remove the dd() debugging line
         // dd($demand->maker_id);
-    
+
         // Update status and revision reason
         $demand->status_demand = 'Revised';
         $demand->response_reason = $request->revision_reason;
         $demand->save();
-    
+
         // Check if maker exists
         $sendTo = null;
         if (!empty($demand->maker_id)) {
             $sendTo = User::where('id', $demand->maker_id)->first();
         }
-    
+
         // If maker doesn't exist, send to HR
         if ($sendTo === null) {
             $hrUsers = User::where('department', 'Human Resources')->get();
             foreach ($hrUsers as $user) {
                 Mail::to($user->email)->send(new LaborDemandRevised($demand));
-    
+
                 // Create notification for HR users
                 Notification::create([
                     'users_id' => $user->id,
@@ -245,7 +245,7 @@ class RecruitmentController extends Controller
         } else {
             // Send to maker only
             Mail::to($sendTo->email)->send(new LaborDemandRevised($demand));
-    
+
             // Create notification for maker
             Notification::create([
                 'users_id' => $sendTo->id,
@@ -255,11 +255,11 @@ class RecruitmentController extends Controller
                 'status' => 'Unread'
             ]);
         }
-    
+
         if ($request->ajax()) {
             return response()->json(['success' => true]);
         }
-    
+
         return redirect()->route('recruitment.index')
             ->with('success', 'Job request has been sent for revision');
     }
@@ -456,11 +456,13 @@ class RecruitmentController extends Controller
 
     private $criteria = [
         'age' => 'Age',
+        'expected_salary' => 'Expected Salary',
+        'distance' => 'Distance',
+        'education' => 'Education',
         'experience_duration' => 'Experience',
-        'education' => 'Education', // Combined education_grade + education_level
-        'training' => 'Training',
         'language' => 'Language',
-        'organization' => 'Organization'
+        'organization' => 'Organization',
+        'training' => 'Training',
     ];
 
     public function index_ahp()
@@ -481,24 +483,67 @@ class RecruitmentController extends Controller
         ]);
     }
 
+    public function ahp_schedule_interview(Request $request, $id)
+    {
+        $request->validate([
+            'interview_date' => 'required|date',
+            'interview_note' => 'required|string',
+        ]);
+
+        $applicant = recruitment_applicant::findOrFail($id);
+
+        // Store old interview date to check if this is the first interview
+        $oldInterviewDate = $applicant->interview_date;
+
+        $applicant->update([
+            'interview_date' => $request->interview_date,
+            'interview_note' => str_replace("\r\n", "\n", $request->interview_note),
+            'updated_at' => now(),
+        ]);
+
+        // Jika sebelumnya NULL, berarti panggilan pertama
+        if (is_null($oldInterviewDate)) {
+            Mail::to($applicant->email)->send(new InterviewScheduledMail($applicant));
+        }
+
+        return response()->json(['message' => 'Interview scheduled successfully']);
+    }
+
+
     public function calculate(Request $request)
     {
+        // Remove debugging statement
+        // dd($request->all());
+
         try {
-            // Validate the request
-            $request->validate([
+            // Validate the request - basic validation first
+            $validationRules = [
                 'demandId' => 'required',
-                'age' => 'required|numeric|min:0|max:100',
-                'experience_duration' => 'required|numeric|min:0|max:100',
-                'education' => 'required|numeric|min:0|max:100',
-                'training' => 'required|numeric|min:0|max:100',
-                'language' => 'required|numeric|min:0|max:100',
-                'organization' => 'required|numeric|min:0|max:100',
-            ]);
+            ];
+
+            // Only validate criteria that are included in the request
+            $totalPercentage = 0;
+            $criteriaKeys = [
+                'age',
+                'expected_salary',
+                'distance',
+                'education',
+                'experience_duration',
+                'organization',
+                'language',
+                'training'
+            ];
+
+            foreach ($criteriaKeys as $key) {
+                if ($request->has($key)) {
+                    $validationRules[$key] = 'required|numeric|min:0|max:100';
+                    $totalPercentage += (float)$request->$key;
+                }
+            }
+
+            $request->validate($validationRules);
 
             // Validate that percentages sum to 100%
-            $totalPercentage = $request->age + $request->experience_duration + $request->education +
-                $request->training + $request->language + $request->organization;
-
             if (abs($totalPercentage - 100) > 0.01) { // Allow small floating point error
                 return response()->json([
                     'success' => false,
@@ -506,19 +551,22 @@ class RecruitmentController extends Controller
                 ], 422);
             }
 
+            // Get configurations from request
+            $criteriaConfigs = $request->criteria_configs ?? [];
+
             // Convert percentages to weights (0-1 scale)
-            $weights = [
-                'age' => $request->age / 100,
-                'experience_duration' => $request->experience_duration / 100,
-                'education' => $request->education / 100,
-                'training' => $request->training / 100,
-                'language' => $request->language / 100,
-                'organization' => $request->organization / 100
-            ];
+            $weights = [];
+            foreach ($criteriaKeys as $key) {
+                if ($request->has($key)) {
+                    $weights[$key] = $request->$key / 100;
+                }
+            }
 
             // Get applicants data
             $demand = recruitment_demand::findOrFail($request->demandId);
-            $applicants = recruitment_applicant::where('recruitment_demand_id', $demand->id)->where('status_applicant', 'Pending')->get();
+            $applicants = recruitment_applicant::where('recruitment_demand_id', $demand->id)
+                ->where('status_applicant', 'Pending')
+                ->whereNull('interview_date')->get();
 
             if ($applicants->isEmpty()) {
                 return response()->json([
@@ -527,7 +575,7 @@ class RecruitmentController extends Controller
                 ], 200);
             }
 
-            $rankings = $this->calculateApplicantScores($applicants, $weights);
+            $rankings = $this->calculateApplicantScores($applicants, $weights, $criteriaConfigs);
 
             return response()->json([
                 'success' => true,
@@ -539,38 +587,84 @@ class RecruitmentController extends Controller
                 'message' => 'Data yang dikirim tidak valid',
                 'errors' => $e->errors()
             ], 422);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error: ' . $e->getMessage()
+            ], 500);
         }
     }
 
-    private function calculateApplicantScores($applicants, $weights)
+    private function calculateApplicantScores($applicants, $weights, $criteriaConfigs)
     {
         $scores = [];
 
         foreach ($applicants as $applicant) {
-            $criteriaScores = [
-                'age' => $this->calculateAgeScore($applicant->birth_date),
-                'experience_duration' => $this->calculateExperienceDurationScore(
-                    recruitment_applicant_work_experience::where('applicant_id', $applicant->id)->get()
-                ),
-            ];
+            $criteriaScores = [];
 
-            // Get education data
-            $education = recruitment_applicant_education::where('applicant_id', $applicant->id)
-                ->orderBy('end_education', 'desc')
-                ->first();
-
-            // Combined education score
-            $criteriaScores['education'] = $this->calculateEducationScore($education);
-
-            // New criteria scores
-            $criteriaScores['training'] = $this->calculateTrainingScore($applicant->id);
-            $criteriaScores['language'] = $this->calculateLanguageScore($applicant->id);
-            $criteriaScores['organization'] = $this->calculateOrganizationScore($applicant->id);
+            // Only calculate scores for criteria that have weights
+            foreach ($weights as $criterion => $weight) {
+                switch ($criterion) {
+                    case 'age':
+                        $criteriaScores['age'] = $this->calculateAgeScore(
+                            $applicant->birth_date,
+                            $criteriaConfigs['age'] ?? null
+                        );
+                        break;
+                    case 'expected_salary':
+                        $criteriaScores['expected_salary'] = $this->calculateExpectedSalaryScore(
+                            $applicant->expected_salary ?? 0,
+                            $criteriaConfigs['expected_salary'] ?? null
+                        );
+                        break;
+                    case 'distance':
+                        $criteriaScores['distance'] = $this->calculateDistanceScore(
+                            $applicant->distance ?? 0,
+                            $criteriaConfigs['distance'] ?? null
+                        );
+                        break;
+                    case 'education':
+                        $education = recruitment_applicant_education::where('applicant_id', $applicant->id)
+                            ->orderBy('end_education', 'desc')
+                            ->first();
+                        $criteriaScores['education'] = $this->calculateEducationScore(
+                            $education,
+                            $criteriaConfigs['education'] ?? null
+                        );
+                        break;
+                    case 'experience_duration':
+                        $criteriaScores['experience_duration'] = $this->calculateExperienceDurationScore(
+                            $applicant->id,
+                            $criteriaConfigs['experience_duration'] ?? null
+                        );
+                        break;
+                    case 'training':
+                        $criteriaScores['training'] = $this->calculateTrainingScore(
+                            $applicant->id,
+                            $criteriaConfigs['training'] ?? null
+                        );
+                        break;
+                    case 'language':
+                        $criteriaScores['language'] = $this->calculateLanguageScore(
+                            $applicant->id,
+                            $criteriaConfigs['language'] ?? null
+                        );
+                        break;
+                    case 'organization':
+                        $criteriaScores['organization'] = $this->calculateOrganizationScore(
+                            $applicant->id,
+                            $criteriaConfigs['organization'] ?? null
+                        );
+                        break;
+                }
+            }
 
             // Calculate weighted sum
             $totalScore = 0;
             foreach ($weights as $criterion => $weight) {
-                $totalScore += $criteriaScores[$criterion] * $weight;
+                if (isset($criteriaScores[$criterion])) {
+                    $totalScore += $criteriaScores[$criterion] * $weight;
+                }
             }
 
             $scores[] = [
@@ -583,473 +677,363 @@ class RecruitmentController extends Controller
         return collect($scores)->sortByDesc('score')->values();
     }
 
-    private function calculateAgeScore($birthDate)
+    // New helper function to handle range calculations consistently
+    private function getScoreFromRanges($value, $ranges)
     {
+        if (empty($ranges)) {
+            return 0;
+        }
+
+        // Sort ranges by rank
+        $ranges = collect($ranges)->sortBy('rank')->values()->all();
+        $totalRanges = count($ranges);
+
+        foreach ($ranges as $range) {
+            // Untuk semua range, gunakan upper bound inklusif
+            if ($value >= $range['min'] && $value <= $range['max']) {
+                return 1 - (($range['rank'] - 1) / $totalRanges);
+            }
+        }
+
+        // Value is outside all defined ranges
+        return 1 / ($totalRanges + 1);
+    }
+
+    private function calculateAgeScore($birthDate, $config = null)
+    {
+        // Return 0 if birthDate is empty, null, or invalid
+        if (empty($birthDate) || !Carbon::hasFormat($birthDate, 'Y-m-d')) {
+            return 0;
+        }
+
         $age = Carbon::parse($birthDate)->age;
 
-        if ($age <= 17) return 1.0;   // Sangat muda, skor tertinggi
-        if ($age <= 25) return 0.9;
-        if ($age <= 30) return 0.8;
-        if ($age <= 35) return 0.7;
-        if ($age <= 40) return 0.6;
-        if ($age <= 50) return 0.5;
-        if ($age <= 60) return 0.4;
-        if ($age <= 70) return 0.3;
-        if ($age <= 80) return 0.2;
-        if ($age <= 90) return 0.1;
-        return 0.05;  // Di atas 90 tahun, skor sangat rendah
+        // Return 0 if age calculation results in 0 or negative
+        if ($age <= 0) {
+            return 0;
+        }
+
+        // If no config is provided or ranges are empty, use default calculation
+        if (empty($config) || empty($config['ranges'])) {
+            return match (true) {
+                $age <= 17 => 1.0,  // Very young, highest score
+                $age <= 25 => 0.9,
+                $age <= 30 => 0.8,
+                $age <= 35 => 0.7,
+                $age <= 40 => 0.6,
+                $age <= 50 => 0.5,
+                $age <= 60 => 0.4,
+                $age <= 70 => 0.3,
+                $age <= 80 => 0.2,
+                $age <= 90 => 0.1,
+                default => 0
+            };
+        }
+
+        return $this->getScoreFromRanges($age, $config['ranges']);
+    }
+
+    private function calculateExpectedSalaryScore($salary, $config = null)
+    {
+        // Return 0 if salary is empty or invalid
+        if (empty($salary) || !is_numeric($salary)) {
+            return 0;
+        }
+    
+        // If no config is provided or ranges are empty, use default calculation
+        if (empty($config) || empty($config['ranges'])) {
+            return match (true) {
+                $salary >= 5000001 && $salary <= 8000000 => 1.0,  // Best range
+                $salary >= 2000001 && $salary <= 5000000 => 0.8,
+                $salary >= 8000001 && $salary <= 10000000 => 0.6,
+                $salary >= 0 && $salary <= 2000000 => 0.4,
+                $salary >= 10000001 && $salary <= 15000000 => 0.2,
+                default => 0
+            };
+        }
+    
+        return $this->getScoreFromRanges($salary, $config['ranges']);
+    }
+    
+    private function calculateDistanceScore($distance, $config = null)
+    {
+        // Return 0 if distance is empty or invalid
+        if (empty($distance) || !is_numeric($distance)) {
+            return 0;
+        }
+    
+        // If no config is provided or ranges are empty, use default calculation
+        if (empty($config) || empty($config['ranges'])) {
+            return match (true) {
+                $distance >= 0 && $distance <= 3 => 1.0,  // Best range (closest)
+                $distance >= 3.1 && $distance <= 5 => 0.75,
+                $distance >= 5.1 && $distance <= 8 => 0.5,
+                $distance >= 10.1 && $distance <= 15 => 0.25,
+                default => 0
+            };
+        }
+    
+        return $this->getScoreFromRanges($distance, $config['ranges']);
     }
 
 
-    private function calculateEducationScore($education)
+    private function calculateEducationScore($education, $config = null)
     {
         if (!$education) {
             return 0; // No education data
         }
-
-        $levelScore = $this->calculateEducationLevelScore($education->degree);
-        $gradeScore = $this->calculateEducationGradeScore($education->degree, $education->grade);
-
-        // Combined score (average of level and grade)
-        return ($levelScore + $gradeScore) / 2;
-    }
-
-    private function calculateEducationLevelScore($degree)
-    {
-        $scores = [
-            'SD' => 0.2,
-            'SMP' => 0.3,
-            'SMA' => 0.4,
-            'SMK' => 0.4,
-            'D3' => 0.6,
-            'S1' => 0.8,
-            'S2' => 1.0,
-            'S3' => 1.0
+    
+        // Equal intervals for 5 levels (0.2 increment each)
+        $defaultLevelScores = [
+            'SMA' => 0.2,  // 20%
+            'SMK' => 0.4,  // 40%
+            'D3' => 0.6,   // 60%
+            'S1' => 0.8,   // 80%
+            'S2' => 1.0    // 100%
         ];
-
-        return $scores[$degree] ?? 0.4;
-    }
-
-    private function calculateEducationGradeScore($degree, $grade)
-    {
-        if ($grade === null) {
-            return 0; // Handle jika nilai kosong
-        }
-
-        if (in_array($degree, ['SD', 'SMP', 'SMA', 'SMK'])) {
-            return min(1, max(0, $grade / 100));
+    
+        $levelScore = 0;
+        $gradeScore = 0;
+        $levelWeight = 0.7; // 70% weight for level
+        $gradeWeight = 0.3; // 30% weight for grade
+    
+        // Use configuration if available
+        if ($config && isset($config['levels']['list']) && !empty($config['levels']['list'])) {
+            $levels = collect($config['levels']['list'])
+                ->whereIn('name', array_keys($defaultLevelScores))
+                ->sortBy('rank')
+                ->values()
+                ->all();
+    
+            $totalLevels = count($levels);
+    
+            // Find the education level in configured levels
+            foreach ($levels as $level) {
+                if ($level['name'] === $education->degree) {
+                    $levelScore = 1 - (($level['rank'] - 1) / $totalLevels);
+                    break;
+                }
+            }
+    
+            // If not found in configured levels, use default or zero
+            if ($levelScore === 0) {
+                $levelScore = $defaultLevelScores[$education->degree] ?? 0;
+            }
+    
+            // Override weights if configured
+            if (isset($config['weights'])) {
+                $levelWeight = $config['weights']['level'] / 100;
+                $gradeWeight = $config['weights']['grade'] / 100;
+            }
         } else {
-            return min(1, max(0, $grade / 4));
+            // Use default level scores
+            $levelScore = $defaultLevelScores[$education->degree] ?? 0;
         }
+    
+        // Calculate grade score (same as before)
+        if ($education->grade !== null) {
+            if (in_array($education->degree, ['SMK', 'SMA'])) {
+                $gradeScore = min(1, max(0, $education->grade / 100));
+            } else {
+                $gradeScore = min(1, max(0, $education->grade / 4));
+            }
+        }
+    
+        // Combined weighted score
+        return ($levelScore * $levelWeight) + ($gradeScore * $gradeWeight);
     }
 
-    private function calculateExperienceDurationScore($applicantId)
+    private function calculateExperienceDurationScore($applicantId, $config = null)
     {
         $experiences = recruitment_applicant_work_experience::where('applicant_id', $applicantId)->get();
-
+    
+        if ($experiences->isEmpty()) {
+            return 0; // Default low score for no experience
+        }
+    
         $totalDuration = 0;
         $count = $experiences->count();
-        $salaryScore = 0;
-
+    
         foreach ($experiences as $exp) {
-            // Hitung durasi kerja dalam tahun
             $startDate = Carbon::parse($exp->working_start);
             $endDate = $exp->working_end ? Carbon::parse($exp->working_end) : Carbon::now();
             $totalDuration += $startDate->diffInYears($endDate);
-
-            // Hitung skor salary berdasarkan kategori
-            if ($exp->salary >= 10000000) {
-                $salaryScore += 1.0;
-            } elseif ($exp->salary >= 5000000) {
-                $salaryScore += 0.6;
-            } elseif ($exp->salary >= 2500000) {
-                $salaryScore += 0.4;
-            } else {
-                $salaryScore += 0.2;
+        }
+    
+        // Default configuration if none provided
+        if (empty($config)) {
+            $periodRanges = [
+                ['min' => 5, 'max' => 8, 'rank' => 1],
+                ['min' => 3, 'max' => 5, 'rank' => 2],
+                ['min' => 1, 'max' => 3, 'rank' => 3],
+                ['min' => 0, 'max' => 1, 'rank' => 4]
+            ];
+            
+            $amountRanges = [
+                ['min' => 6, 'max' => 7, 'rank' => 1],
+                ['min' => 4, 'max' => 5, 'rank' => 2],
+                ['min' => 2, 'max' => 3, 'rank' => 3],
+                ['min' => 0, 'max' => 1, 'rank' => 4]
+            ];
+            
+            $periodScore = $this->getScoreFromRanges($totalDuration, $periodRanges);
+            $amountScore = $this->getScoreFromRanges($count, $amountRanges);
+            
+            return ($periodScore * 0.7) + ($amountScore * 0.3);
+        }
+    
+        // Use provided configuration
+        $periodScore = isset($config['period']) ? $this->getScoreFromRanges($totalDuration, $config['period']) : 0;
+        $amountScore = isset($config['amount']) ? $this->getScoreFromRanges($count, $config['amount']) : 0;
+        
+        $periodWeight = isset($config['weights']['period']) ? ($config['weights']['period'] / 100) : 0.7;
+        $amountWeight = isset($config['weights']['amount']) ? ($config['weights']['amount'] / 100) : 0.3;
+    
+        return ($periodScore * $periodWeight) + ($amountScore * $amountWeight);
+    }
+    
+    private function calculateTrainingScore($applicantId, $config = null)
+    {
+        $trainings = recruitment_applicant_training::where('applicant_id', $applicantId)->get();
+    
+        if ($trainings->isEmpty()) {
+            return 0;
+        }
+    
+        $count = $trainings->count();
+        $totalDuration = 0;
+    
+        foreach ($trainings as $training) {
+            if ($training->start_date && $training->end_date) {
+                $startDate = Carbon::parse($training->start_date);
+                $endDate = Carbon::parse($training->end_date);
+                $totalDuration += $startDate->diffInMonths($endDate);
             }
         }
-
-        // Normalisasi durasi kerja (maks 10 tahun = 1.0)
-        $durationScore = min(1.0, $totalDuration / 10);
-
-        // Normalisasi jumlah pekerjaan (maks 5 pekerjaan = 1.0)
-        $countScore = min(1.0, $count / 5);
-
-        // Normalisasi gaji (rata-rata dari semua salary score)
-        $salaryScore = $count > 0 ? $salaryScore / $count : 0.2; // Default jika tidak ada pengalaman
-
-        // Gabungkan dengan bobot yang diberikan
-        return (0.65 * $durationScore) + (0.15 * $countScore) + (0.2 * $salaryScore);
+    
+        // Convert duration to years for scoring
+        $durationInYears = $totalDuration / 12;
+    
+        // Default configuration if none provided
+        if (empty($config)) {
+            $periodRanges = [
+                ['min' => 5.1, 'max' => 8, 'rank' => 1],
+                ['min' => 3.1, 'max' => 5, 'rank' => 2],
+                ['min' => 1.1, 'max' => 3, 'rank' => 3],
+                ['min' => 0, 'max' => 1, 'rank' => 4]
+            ];
+            
+            $amountRanges = [
+                ['min' => 6, 'max' => 7, 'rank' => 1],
+                ['min' => 4, 'max' => 5, 'rank' => 2],
+                ['min' => 2, 'max' => 3, 'rank' => 3],
+                ['min' => 0, 'max' => 1, 'rank' => 4]
+            ];
+            
+            $periodScore = $this->getScoreFromRanges($durationInYears, $periodRanges);
+            $amountScore = $this->getScoreFromRanges($count, $amountRanges);
+            
+            return ($periodScore * 0.7) + ($amountScore * 0.3);
+        }
+    
+        // Use provided configuration
+        $periodScore = isset($config['period']) ? $this->getScoreFromRanges($durationInYears, $config['period']) : 0;
+        $amountScore = isset($config['amount']) ? $this->getScoreFromRanges($count, $config['amount']) : 0;
+        
+        $periodWeight = isset($config['weights']['period']) ? ($config['weights']['period'] / 100) : 0.7;
+        $amountWeight = isset($config['weights']['amount']) ? ($config['weights']['amount'] / 100) : 0.3;
+    
+        return ($periodScore * $periodWeight) + ($amountScore * $amountWeight);
     }
-
-
-    // New calculation methods for the added criteria
-    private function calculateTrainingScore($applicantId)
+    
+    private function calculateOrganizationScore($applicantId, $config = null)
     {
-        // Assume we have a model for training
-        $trainings = recruitment_applicant_training::where('applicant_id', $applicantId)->get();
-
-        $count = $trainings->count();
-
-        if ($count >= 5) return 1.0;
-        if ($count >= 3) return 0.8;
-        if ($count >= 1) return 0.6;
-        return 0.3;
+        $organizations = recruitment_applicant_organization::where('applicant_id', $applicantId)->get();
+    
+        if ($organizations->isEmpty()) {
+            return 0;
+        }
+    
+        $count = $organizations->count();
+        $totalDuration = 0;
+    
+        foreach ($organizations as $org) {
+            if ($org->start_date) {
+                $startDate = Carbon::parse($org->start_date);
+                $endDate = $org->end_date ? Carbon::parse($org->end_date) : Carbon::now();
+                $totalDuration += $startDate->diffInMonths($endDate);
+            }
+        }
+    
+        // Convert duration to years for scoring
+        $durationInYears = $totalDuration / 12;
+    
+        // Default configuration if none provided
+        if (empty($config)) {
+            $periodRanges = [
+                ['min' => 5.1, 'max' => 8, 'rank' => 1],
+                ['min' => 3.1, 'max' => 5, 'rank' => 2],
+                ['min' => 1.1, 'max' => 3, 'rank' => 3],
+                ['min' => 0, 'max' => 1, 'rank' => 4]
+            ];
+            
+            $amountRanges = [
+                ['min' => 6, 'max' => 7, 'rank' => 1],
+                ['min' => 4, 'max' => 5, 'rank' => 2],
+                ['min' => 2, 'max' => 3, 'rank' => 3],
+                ['min' => 0, 'max' => 1, 'rank' => 4]
+            ];
+            
+            $periodScore = $this->getScoreFromRanges($durationInYears, $periodRanges);
+            $amountScore = $this->getScoreFromRanges($count, $amountRanges);
+            
+            return ($periodScore * 0.4) + ($amountScore * 0.6);
+        }
+    
+        // Use provided configuration
+        $periodScore = isset($config['period']) ? $this->getScoreFromRanges($durationInYears, $config['period']) : 0;
+        $amountScore = isset($config['amount']) ? $this->getScoreFromRanges($count, $config['amount']) : 0;
+        
+        $periodWeight = isset($config['weights']['period']) ? ($config['weights']['period'] / 100) : 0.4;
+        $amountWeight = isset($config['weights']['amount']) ? ($config['weights']['amount'] / 100) : 0.6;
+    
+        return ($periodScore * $periodWeight) + ($amountScore * $amountWeight);
     }
 
-    private function calculateLanguageScore($applicantId)
+
+    private function calculateLanguageScore($applicantId, $config = null)
     {
         $languages = recruitment_applicant_language::where('applicant_id', $applicantId)->get();
+
+        if ($languages->isEmpty()) {
+            return 0; // Default score for no languages
+        }
+
+        $verbalWeight = 0.7; // Default 70% weight for verbal skills
+        $writtenWeight = 0.3; // Default 30% weight for written skills
+
+        // Override weights if configured
+        if ($config && isset($config['weights'])) {
+            $verbalWeight = $config['weights']['verbal'] / 100;
+            $writtenWeight = $config['weights']['written'] / 100;
+        }
 
         $score = 0;
         $count = 0;
 
         foreach ($languages as $language) {
-            $verbalScore = ($language->verbal === 'Active') ? 1 : 0;
-            $writtenScore = ($language->written === 'Active') ? 1 : 0;
+            $verbalScore = ($language->verbal === 'Active') ? 1 : 0.5;
+            $writtenScore = ($language->written === 'Active') ? 1 : 0.5;
 
-            $score += ($verbalScore + $writtenScore) / 2; // Rata-rata verbal & written
+            // Weighted score for this language
+            $languageScore = ($verbalScore * $verbalWeight) + ($writtenScore * $writtenWeight);
+            $score += $languageScore;
             $count++;
         }
 
-        // Jika ada data, hitung rata-rata, kalau tidak ada, kasih nilai default 0.2
+        // Return average language score
         return $count > 0 ? min(1.0, $score / $count) : 0.2;
     }
-
-    private function calculateOrganizationScore($applicantId)
-    {
-        // Ambil data organisasi berdasarkan applicant_id
-        $organizations = recruitment_applicant_organization::where('applicant_id', $applicantId)->get();
-
-        $count = $organizations->count();
-        $totalMonths = 0;
-
-        foreach ($organizations as $org) {
-            $startDate = Carbon::parse($org->start_date);
-            $endDate = $org->end_date ? Carbon::parse($org->end_date) : now();
-            $totalMonths += $startDate->diffInMonths($endDate);
-        }
-
-        // Normalisasi count ke skala 0-1 (maksimal 5 organisasi dianggap 1.0)
-        $countScore = min(1.0, $count / 5);
-
-        // Normalisasi durasi ke skala 0-1 (maksimal 60 bulan/5 tahun dianggap 1.0)
-        $durationScore = min(1.0, $totalMonths / 60);
-
-        // Bobot: 60% count, 40% duration
-        return (0.6 * $countScore) + (0.4 * $durationScore);
-    }
-
-
-
-    // ahp lama
-
-    // private $criteria = [
-    //     'age' => 'Usia',
-    //     'experience_duration' => 'Lama Pengalaman',
-    //     'company_count' => 'Jumlah Perusahaan',
-    //     'education_grade' => 'Nilai Pendidikan',
-    //     'education_level' => 'Tingkat Pendidikan'
-    // ];
-
-    // public function index_ahp()
-    // {
-    //     // Retrieve all recruitment applicants and pluck their unique recruitment_demand_ids  
-    //     $recruitmentDemandIds = recruitment_applicant::pluck('recruitment_demand_id')->unique();
-
-    //     // Filter recruitment_demand based on the unique recruitment_demand_ids  
-    //     $demands = recruitment_demand::whereIn('id', $recruitmentDemandIds)
-    //         ->where('status_demand', 'Approved')
-    //         ->where('qty_needed', '>', 0)
-    //         ->get();
-
-    //     // Return the filtered recruitment_demand data to the view  
-    //     return view('recruitment/ahp_recruitment/index', [
-    //         'demands' => $demands,
-    //         'criteria' => $this->criteria
-    //     ]);
-    // }
-
-    // // AHPController.php
-
-    // public function calculateWeights(Request $request)
-    // {
-    //     try {
-    //         // Validate the request
-    //         $request->validate([
-    //             'demandId' => 'required',
-    //             'age_education' => 'required|numeric|min:0.11|max:9',
-    //             'age_grade' => 'required|numeric|min:0.11|max:9',
-    //             'age_experience' => 'required|numeric|min:0.11|max:9',
-    //             'education_experience' => 'required|numeric|min:0.11|max:9',
-    //             'experience_company' => 'required|numeric|min:0.11|max:9',
-    //         ]);
-
-    //         // Create comparison matrix from input
-    //         $matrix = $this->createComparisonMatrix($request);
-
-    //         // Calculate weights using AHP
-    //         $weights = $this->calculateAHPWeights($matrix);
-
-    //         return response()->json([
-    //             'success' => true,
-    //             'weights' => $weights
-    //         ], 200);
-    //     } catch (\Exception $e) {
-    //         return response()->json([
-    //             'success' => false,
-    //             'message' => 'Error calculating weights: ' . $e->getMessage()
-    //         ], 422);
-    //     }
-    // }
-
-    // public function calculateRankings(Request $request)
-    // {
-    //     try {
-    //         // Validate the request
-    //         $request->validate([
-    //             'demandId' => 'required',
-    //             'weights' => 'required|array'
-    //         ]);
-
-    //         $demand = recruitment_demand::findOrFail($request->demandId);
-    //         $applicants = recruitment_applicant::where('recruitment_demand_id', $demand->id)->get();
-
-    //         if ($applicants->isEmpty()) {
-    //             return response()->json([
-    //                 'success' => false,
-    //                 'message' => 'Tidak ada pelamar untuk demand ini'
-    //             ], 200);
-    //         }
-
-    //         $rankings = $this->calculateApplicantScores($applicants, $request->weights);
-
-    //         return response()->json([
-    //             'success' => true,
-    //             'rankings' => $rankings
-    //         ], 200);
-    //     } catch (\Exception $e) {
-    //         return response()->json([
-    //             'success' => false,
-    //             'message' => 'Error calculating rankings: ' . $e->getMessage()
-    //         ], 422);
-    //     }
-    // }
-
-
-    // public function calculate(Request $request)
-    // {
-
-    //     try {
-    //         // Validate the request
-    //         $request->validate([
-    //             'demandId' => 'required',
-    //             'age_education' => 'required|numeric|min:0.11|max:9',
-    //             'age_grade' => 'required|numeric|min:0.11|max:9',
-    //             'age_experience' => 'required|numeric|min:0.11|max:9',
-    //             'education_experience' => 'required|numeric|min:0.11|max:9',
-    //             'experience_company' => 'required|numeric|min:0.11|max:9',
-    //         ]);
-
-    //         // Create comparison matrix from input
-    //         $matrix = $this->createComparisonMatrix($request);
-
-    //         // Calculate weights using AHP
-    //         $weights = $this->calculateAHPWeights($matrix);
-
-    //         // Get applicants data
-
-    //         $demand = recruitment_demand::findOrFail($request->demandId);
-    //         $applicants = recruitment_applicant::where('recruitment_demand_id', $demand->id)->get();
-
-    //         if ($applicants->isEmpty()) {
-    //             return response()->json([
-    //                 'success' => false,
-    //                 'message' => 'Tidak ada pelamar untuk demand ini'
-    //             ], 200);
-    //         }
-
-    //         $rankings = $this->calculateApplicantScores($applicants, $weights);
-
-    //         return response()->json([
-    //             'success' => true,
-    //             'rankings' => $rankings
-    //         ], 200);
-    //     } catch (\Illuminate\Validation\ValidationException $e) {
-    //         return response()->json([
-    //             'success' => false,
-    //             'message' => 'Data yang dikirim tidak valid',
-    //             'errors' => $e->errors()
-    //         ], 422);
-    //     }
-    // }
-    // private function createComparisonMatrix($request)
-    // {
-    //     $criteriaCount = count($this->criteria);
-    //     $matrix = array_fill(0, $criteriaCount, array_fill(0, $criteriaCount, 1));
-
-    //     // Fill matrix with comparison values
-    //     $comparisons = [
-    //         ['age', 'education_level', 'age_education'],
-    //         ['age', 'education_grade', 'age_grade'],
-    //         ['age', 'experience_duration', 'age_experience'],
-    //         ['education_level', 'experience_duration', 'education_experience'],
-    //         ['experience_duration', 'company_count', 'experience_company']
-    //     ];
-
-    //     foreach ($comparisons as $comp) {
-    //         $value = $request->input($comp[2]);
-    //         $i = array_search($comp[0], array_keys($this->criteria));
-    //         $j = array_search($comp[1], array_keys($this->criteria));
-
-    //         $matrix[$i][$j] = $value;
-    //         $matrix[$j][$i] = 1 / $value;
-    //     }
-
-    //     return $matrix;
-    // }
-
-    // private function calculateAHPWeights($matrix)
-    // {
-    //     $n = count($matrix);
-    //     $weights = array_fill(0, $n, 0);
-
-    //     // Calculate eigenvalues
-    //     for ($i = 0; $i < $n; $i++) {
-    //         $product = 1;
-    //         for ($j = 0; $j < $n; $j++) {
-    //             $product *= $matrix[$i][$j];
-    //         }
-    //         $weights[$i] = pow($product, 1 / $n);
-    //     }
-
-    //     // Normalize weights
-    //     $sum = array_sum($weights);
-    //     $weights = array_map(function ($w) use ($sum) {
-    //         return $w / $sum;
-    //     }, $weights);
-
-    //     return array_combine(array_keys($this->criteria), $weights);
-    // }
-
-    // private function calculateApplicantScores($applicants, $weights)
-    // {
-    //     $scores = [];
-
-    //     foreach ($applicants as $applicant) {
-    //         $criteriaScores = [
-    //             'age' => $this->calculateAgeScore($applicant->birth_date),
-    //             'experience_duration' => $this->calculateExperienceDurationScore(
-    //                 recruitment_applicant_work_experience::where('applicant_id', $applicant->id)->get()
-    //             ),
-    //             'company_count' => $this->calculateCompanyCountScore(
-    //                 recruitment_applicant_work_experience::where('applicant_id', $applicant->id)->get()
-    //             )
-    //         ];
-
-
-    //         $education = recruitment_applicant_education::where('applicant_id', $applicant->id)
-    //             ->orderBy('end_education', 'desc')
-    //             ->first();
-
-    //         $criteriaScores['education_level'] = $education ?
-    //             $this->calculateEducationLevelScore($education->degree) : 0;
-    //         $criteriaScores['education_grade'] = $education ?
-    //             $this->calculateEducationGradeScore($education->degree, $education->grade) : 0;
-
-    //         // Calculate weighted sum
-    //         $totalScore = 0;
-    //         foreach ($weights as $criterion => $weight) {
-    //             $totalScore += $criteriaScores[$criterion] * $weight;
-    //         }
-
-    //         $scores[] = [
-    //             'applicant' => $applicant,
-    //             'score' => $totalScore,
-    //             'breakdown' => $criteriaScores
-    //         ];
-    //     }
-
-    //     return collect($scores)->sortByDesc('score')->values();
-    // }
-
-
-    // private function calculateAgeScore($birthDate)
-    // {
-    //     $age = Carbon::parse($birthDate)->age;
-
-    //     if ($age <= 25) return 1.0;
-    //     if ($age <= 30) return 0.8;
-    //     if ($age <= 35) return 0.6;
-    //     return 0.4;
-    // }
-
-    // private function calculateEducationLevelScore($degree)
-    // {
-    //     $scores = [
-    //         'SD' => 0.2,
-    //         'SMP' => 0.3,
-    //         'SMA' => 0.4,
-    //         'SMK' => 0.4,
-    //         'D3' => 0.6,
-    //         'S1' => 0.8,
-    //         'S2' => 1.0,
-    //         'S3' => 1.0
-    //     ];
-
-    //     return $scores[$degree] ?? 0.4;
-    // }
-
-    // private function calculateEducationGradeScore($degree, $grade)
-    // {
-    //     if ($grade === null) {
-    //         return 0; // Handle jika nilai kosong
-    //     }
-
-    //     if (in_array($degree, ['SD', 'SMP', 'SMA', 'SMK'])) {
-    //         return min(1, max(0, $grade / 100));
-    //     } else {
-    //         return min(1, max(0, $grade / 4));
-    //     }
-    // }
-
-    // private function calculateExperienceDurationScore($experiences)
-    // {
-    //     $totalDuration = 0;
-
-    //     foreach ($experiences as $exp) {
-    //         $startDate = Carbon::parse($exp->working_start);
-    //         $endDate = $exp->working_end ? Carbon::parse($exp->working_end) : Carbon::now();
-    //         $totalDuration += $startDate->diffInYears($endDate);
-    //     }
-
-    //     if ($totalDuration >= 5) return 1.0;
-    //     if ($totalDuration >= 3) return 0.8;
-    //     if ($totalDuration >= 1) return 0.6;
-    //     return 0.4;
-    // }
-
-    // private function calculateCompanyCountScore($experiences)
-    // {
-    //     $companyCount = $experiences->count();
-
-    //     if ($companyCount >= 3) return 1.0;
-    //     if ($companyCount == 2) return 0.7;
-    //     if ($companyCount == 1) return 0.5;
-    //     return 0.2;
-    // }
-
-
-
-
-
-
-
-
-    /**
-     * Display interview page
-     */
-
 
     public function index_interview(Request $request)
     {
@@ -1313,6 +1297,8 @@ class RecruitmentController extends Controller
                 'bpjs_employment' => $applicant->bpjs_employment,
                 'bpjs_health' => $applicant->bpjs_health,
                 'sim' => $applicant->sim,
+                'distance' => $applicant->distance,
+                'emergency_contact' => $applicant->emergency_contact,
                 'sim_number' => $applicant->sim_number,
                 'photo_profile_path' => $photoProfilePath,
                 'cv_path' => $cvPath,
@@ -1387,6 +1373,7 @@ class RecruitmentController extends Controller
                 'degree' => $education->degree,
                 'educational_place' => $education->educational_place,
                 'educational_city' => $education->educational_city,
+                'educational_province' => $education->educational_province,
                 'start_education' => $education->start_education,
                 'end_education' => $education->end_education,
                 'grade' => $education->grade,
@@ -1478,6 +1465,7 @@ class RecruitmentController extends Controller
                 'users_id' => $userId,
                 'training_name' => $training->training_name,
                 'training_city' => $training->training_city,
+                'training_province' => $training->training_province,
                 'start_date' => $training->start_date,
                 'end_date' => $training->end_date,
                 'created_at' => now(),
@@ -1498,6 +1486,7 @@ class RecruitmentController extends Controller
                 'organization_name' => $organization->organization_name,
                 'position' => $organization->position,
                 'city' => $organization->city,
+                'province' => $organization->province,
                 'activity_type' => $organization->activity_type,
                 'start_date' => $organization->start_date,
                 'end_date' => $organization->end_date,

@@ -316,7 +316,7 @@
                         </div>
 
                         <!-- Bank Information Card -->
-                                           
+
                         <div class="card mb-4">
                             <div class="card-header bg-primary text-white">
                                 <h5 class="mb-0"><i class="fa-solid fa-university"></i> Bank Information</h5>
@@ -325,61 +325,61 @@
                                 <!-- Container for all bank rows -->
                                 <div id="bank-container">
                                     @if(!empty($bankData))
-                                        @foreach($bankData as $index => $bank)
-                                        <div class="row bank-row mb-3">
-                                            <div class="col-md-6">
-                                                <label for="bank_name_{{ $index }}" class="form-label"><i class="fa-solid fa-piggy-bank"></i> Bank Name</label>
-                                                <select class="form-control bank-name-select" id="bank_name_{{ $index }}" name="bank_name[]" required>
-                                                    <option value="" disabled>Select Bank</option>
-                                                    @foreach(['Bank Central Asia (BCA)', 'Bank Mandiri', 'Bank Rakyat Indonesia (BRI)', 'Bank Negara Indonesia (BNI)', 'Bank CIMB Niaga', 'Bank Tabungan Negara (BTN)', 'Bank Danamon', 'Bank Permata', 'Bank Panin', 'Bank OCBC NISP', 'Bank Maybank Indonesia', 'Bank Mega', 'Bank Bukopin', 'Bank Sinarmas'] as $bankOption)
-                                                    <option value="{{ $bankOption }}" {{ $bank['name'] == $bankOption ? 'selected' : '' }}>{{ $bankOption }}</option>
-                                                    @endforeach
-                                                </select>
-                                            </div>
-                                            <div class="col-md-5">
-                                                <label for="bank_number_{{ $index }}" class="form-label">
-                                                    <i class="fa-solid fa-credit-card"></i> Bank Number</label>
-                                                <input type="number" class="form-control bank-number-input" id="bank_number_{{ $index }}" name="bank_number[]" value="{{ $bank['number'] }}" required>
-                                            </div>
-                                            <div class="col-md-1">
-                                                <label class="form-label">&nbsp;</label>
-                                                <button type="button" class="btn btn-danger btn-block delete-bank-row"><i class="fa-solid fa-trash"></i></button>
-                                            </div>
+                                    @foreach($bankData as $index => $bank)
+                                    <div class="row bank-row mb-3">
+                                        <div class="col-md-6">
+                                            <label for="bank_name_{{ $index }}" class="form-label"><i class="fa-solid fa-piggy-bank"></i> Bank Name</label>
+                                            <select class="form-control bank-name-select" id="bank_name_{{ $index }}" name="bank_name[]" required>
+                                                <option value="" disabled>Select Bank</option>
+                                                @foreach(['Bank Central Asia (BCA)', 'Bank Mandiri', 'Bank Rakyat Indonesia (BRI)', 'Bank Negara Indonesia (BNI)', 'Bank CIMB Niaga', 'Bank Tabungan Negara (BTN)', 'Bank Danamon', 'Bank Permata', 'Bank Panin', 'Bank OCBC NISP', 'Bank Maybank Indonesia', 'Bank Mega', 'Bank Bukopin', 'Bank Sinarmas'] as $bankOption)
+                                                <option value="{{ $bankOption }}" {{ $bank['name'] == $bankOption ? 'selected' : '' }}>{{ $bankOption }}</option>
+                                                @endforeach
+                                            </select>
                                         </div>
-                                        @endforeach
+                                        <div class="col-md-5">
+                                            <label for="bank_number_{{ $index }}" class="form-label">
+                                                <i class="fa-solid fa-credit-card"></i> Bank Number</label>
+                                            <input type="number" class="form-control bank-number-input" id="bank_number_{{ $index }}" name="bank_number[]" value="{{ $bank['number'] }}" required>
+                                        </div>
+                                        <div class="col-md-1">
+                                            <label class="form-label">&nbsp;</label>
+                                            <button type="button" class="btn btn-danger btn-block delete-bank-row"><i class="fa-solid fa-trash"></i></button>
+                                        </div>
+                                    </div>
+                                    @endforeach
                                     @else
-                                        <!-- Default empty bank row if no data exists -->
-                                        <div class="row bank-row mb-3">
-                                            <div class="col-md-6">
-                                                <label for="bank_name_0" class="form-label"><i class="fa-solid fa-piggy-bank"></i> Bank Name</label>
-                                                <select class="form-control bank-name-select" id="bank_name_0" name="bank_name[]" required>
-                                                    <option value="" selected disabled>Select Bank</option>
-                                                    <option value="Bank Central Asia (BCA)">Bank Central Asia (BCA)</option>
-                                                    <option value="Bank Mandiri">Bank Mandiri</option>
-                                                    <option value="Bank Rakyat Indonesia (BRI)">Bank Rakyat Indonesia (BRI)</option>
-                                                    <option value="Bank Negara Indonesia (BNI)">Bank Negara Indonesia (BNI)</option>
-                                                    <option value="Bank CIMB Niaga">Bank CIMB Niaga</option>
-                                                    <option value="Bank Tabungan Negara (BTN)">Bank Tabungan Negara (BTN)</option>
-                                                    <option value="Bank Danamon">Bank Danamon</option>
-                                                    <option value="Bank Permata">Bank Permata</option>
-                                                    <option value="Bank Panin">Bank Panin</option>
-                                                    <option value="Bank OCBC NISP">Bank OCBC NISP</option>
-                                                    <option value="Bank Maybank Indonesia">Bank Maybank Indonesia</option>
-                                                    <option value="Bank Mega">Bank Mega</option>
-                                                    <option value="Bank Bukopin">Bank Bukopin</option>
-                                                    <option value="Bank Sinarmas">Bank Sinarmas</option>
-                                                </select>
-                                            </div>
-                                            <div class="col-md-5">
-                                                <label for="bank_number_0" class="form-label">
-                                                    <i class="fa-solid fa-credit-card"></i> Bank Number</label>
-                                                <input type="number" class="form-control bank-number-input" id="bank_number_0" name="bank_number[]" required>
-                                            </div>
-                                            <div class="col-md-1">
-                                                <label class="form-label">&nbsp;</label>
-                                                <button type="button" class="btn btn-danger btn-block delete-bank-row"><i class="fa-solid fa-trash"></i></button>
-                                            </div>
+                                    <!-- Default empty bank row if no data exists -->
+                                    <div class="row bank-row mb-3">
+                                        <div class="col-md-6">
+                                            <label for="bank_name_0" class="form-label"><i class="fa-solid fa-piggy-bank"></i> Bank Name</label>
+                                            <select class="form-control bank-name-select" id="bank_name_0" name="bank_name[]" required>
+                                                <option value="" selected disabled>Select Bank</option>
+                                                <option value="Bank Central Asia (BCA)">Bank Central Asia (BCA)</option>
+                                                <option value="Bank Mandiri">Bank Mandiri</option>
+                                                <option value="Bank Rakyat Indonesia (BRI)">Bank Rakyat Indonesia (BRI)</option>
+                                                <option value="Bank Negara Indonesia (BNI)">Bank Negara Indonesia (BNI)</option>
+                                                <option value="Bank CIMB Niaga">Bank CIMB Niaga</option>
+                                                <option value="Bank Tabungan Negara (BTN)">Bank Tabungan Negara (BTN)</option>
+                                                <option value="Bank Danamon">Bank Danamon</option>
+                                                <option value="Bank Permata">Bank Permata</option>
+                                                <option value="Bank Panin">Bank Panin</option>
+                                                <option value="Bank OCBC NISP">Bank OCBC NISP</option>
+                                                <option value="Bank Maybank Indonesia">Bank Maybank Indonesia</option>
+                                                <option value="Bank Mega">Bank Mega</option>
+                                                <option value="Bank Bukopin">Bank Bukopin</option>
+                                                <option value="Bank Sinarmas">Bank Sinarmas</option>
+                                            </select>
                                         </div>
+                                        <div class="col-md-5">
+                                            <label for="bank_number_0" class="form-label">
+                                                <i class="fa-solid fa-credit-card"></i> Bank Number</label>
+                                            <input type="number" class="form-control bank-number-input" id="bank_number_0" name="bank_number[]" required>
+                                        </div>
+                                        <div class="col-md-1">
+                                            <label class="form-label">&nbsp;</label>
+                                            <button type="button" class="btn btn-danger btn-block delete-bank-row"><i class="fa-solid fa-trash"></i></button>
+                                        </div>
+                                    </div>
                                     @endif
                                 </div>
 
@@ -476,16 +476,12 @@
 
                         <div class="row">
                             <div class="col-md-6 mb-3">
-
                                 <label class="form-label"><i class="fa-solid fa-location-dot"></i> Distance Between Domicile Address to Company Location</label>
-                                <select class="form-select" name="distance" required>
-                                    <option value="" selected disabled>Select Distance</option>
-                                    <option value="0-3" {{ old('distance', $user->distance) == '0-3' ? 'selected' : '' }}>0-3 KM</option>
-                                    <option value="3-5" {{ old('distance', $user->distance) == '3-5' ? 'selected' : '' }}>3-5 KM</option>
-                                    <option value="5-10" {{ old('distance', $user->distance) == '5-10' ? 'selected' : '' }}>5-10 KM</option>
-                                    <option value="10-15" {{ old('distance', $user->distance) == '10-15' ? 'selected' : '' }}>10-15 KM</option>
-                                    <option value="15+" {{ old('distance', $user->distance) == '15+' ? 'selected' : '' }}>15+ KM</option>
-                                </select>
+                                <div class="input-group">
+                                    <input type="number" class="form-control" name="distance" id="distance"
+                                        value="{{ old('distance', $user->distance) }}" min="0" max="30" step="0.01" required>
+                                    <span class="input-group-text">KM</span>
+                                </div>
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label for="email" class="form-label">
@@ -1371,35 +1367,35 @@
     function setSelectedProvinces() {
         // For education section
         @if(!empty($userEducation))
-        @foreach($userEducation as $index => $education)
-        // Langsung menggunakan text provinsi tanpa mapping
-        var provinceDropdown = $('.education-card:eq({{ $index }}) .province-dropdown');
-        provinceDropdown.val('{{ $education->educational_province }}');
-        // Memanggil loadCities dengan text provinsi
-        loadCities('{{ $education->educational_province }}', 'educationCity{{ $index + 1 }}', '{{ $education->educational_city }}');
-        @endforeach
+            @foreach($userEducation as $index => $education)
+                // Langsung menggunakan text provinsi tanpa mapping
+                var provinceDropdown = $('.education-card:eq({{ $index }}) .province-dropdown');
+                provinceDropdown.val('{{ $education->educational_province }}');
+                // Memanggil loadCities dengan text provinsi
+                loadCities('{{ $education->educational_province }}', 'educationCity{{ $index + 1 }}', '{{ $education->educational_city }}');
+            @endforeach
         @endif
 
         // For training section
         @if(!empty($userTraining))
-        @foreach($userTraining as $index => $training)
-        // Langsung menggunakan text provinsi tanpa mapping
-        var provinceDropdown = $('.training-card:eq({{ $index }}) .province-dropdown');
-        provinceDropdown.val('{{ $training->training_province }}');
-        // Memanggil loadCities dengan text provinsi
-        loadCities('{{ $training->training_province }}', 'trainingCity{{ $index + 1 }}', '{{ $training->training_city }}');
-        @endforeach
+            @foreach($userTraining as $index => $training)
+                // Langsung menggunakan text provinsi tanpa mapping
+                var provinceDropdown = $('.training-card:eq({{ $index }}) .province-dropdown');
+                provinceDropdown.val('{{ $training->training_province }}');
+                // Memanggil loadCities dengan text provinsi
+                loadCities('{{ $training->training_province }}', 'trainingCity{{ $index + 1 }}', '{{ $training->training_city }}');
+            @endforeach
         @endif
 
         // For organization section
         @if(!empty($userOrganization))
-        @foreach($userOrganization as $index => $organization)
-        // Langsung menggunakan text provinsi tanpa mapping
-        var provinceDropdown = $('.organization-card:eq({{ $index }}) .province-dropdown');
-        provinceDropdown.val('{{ $organization->province }}');
-        // Memanggil loadCities dengan text provinsi
-        loadCities('{{ $organization->province }}', 'organizationCity{{ $index + 1 }}', '{{ $organization->city }}');
-        @endforeach
+            @foreach($userOrganization as $index => $organization)
+                // Langsung menggunakan text provinsi tanpa mapping
+                var provinceDropdown = $('.organization-card:eq({{ $index }}) .province-dropdown');
+                provinceDropdown.val('{{ $organization->province }}');
+                // Memanggil loadCities dengan text provinsi
+                loadCities('{{ $organization->province }}', 'organizationCity{{ $index + 1 }}', '{{ $organization->city }}');
+            @endforeach
         @endif
     }
 
@@ -1543,17 +1539,17 @@
             $('.bank-row').each(function() {
                 const bankName = $(this).find('.bank-name-select').val();
                 const bankNumber = $(this).find('.bank-number-input').val();
-                
+
                 // If one field is filled but the other is empty
                 if ((bankName && !bankNumber) || (!bankName && bankNumber)) {
                     hasError = true;
-                    
+
                     // Mark empty fields
                     if (!bankName) $(this).find('.bank-name-select').addClass('is-invalid');
                     if (!bankNumber) $(this).find('.bank-number-input').addClass('is-invalid');
                 }
             });
-            
+
             // Prevent form submission if errors exist
             if (hasError) {
                 e.preventDefault();
@@ -1564,12 +1560,12 @@
                 }, 300);
             }
         });
-        
+
         // Add new bank row
         $('#add-bank-btn').on('click', function() {
             // Get the count for generating a new ID
             const newIndex = $('.bank-row').length;
-            
+
             // Create a new row with proper IDs
             const bankOptions = `
                 <option value="" selected disabled>Select Bank</option>
@@ -1588,7 +1584,7 @@
                 <option value="Bank Bukopin">Bank Bukopin</option>
                 <option value="Bank Sinarmas">Bank Sinarmas</option>
             `;
-            
+
             const newRow = `
                 <div class="row bank-row mb-3">
                     <div class="col-md-6">
@@ -1608,11 +1604,11 @@
                     </div>
                 </div>
             `;
-            
+
             // Add the new row to the container
             $('#bank-container').append(newRow);
         });
-        
+
         // Delete bank row
         $(document).on('click', '.delete-bank-row', function() {
             if ($('.bank-row').length > 1) {
@@ -1622,7 +1618,7 @@
                 $(this).closest('.bank-row').find('select, input').val('').removeClass('is-invalid');
             }
         });
-        
+
         // Clear validation errors when input changes
         $(document).on('change input', '.bank-name-select, .bank-number-input', function() {
             $(this).removeClass('is-invalid');
@@ -2388,8 +2384,16 @@
 
 
 
+        $('#distance').on('input', function() {
+            let value = $(this).val();
 
-
+            // Cegah input negatif atau lebih dari 30
+            if (value < 0) {
+                $(this).val(0);
+            } else if (value > 30) {
+                $(this).val(30);
+            }
+        });
 
 
 

@@ -100,7 +100,7 @@ Route::middleware('auth')->group(function () {
     Route::put('/recruitment/labor_demand/update/{id}', [RecruitmentController::class, 'update_labor_demand'])->name('recruitment.labor.demand.update');
     Route::post('/recruitment/labor_demand/store', [RecruitmentController::class, 'store_labor_demand'])->name('recruitment.labor.demand.store');
     Route::get('/recruitment/labor_demand/{id}', [RecruitmentController::class, 'show_labor_demand'])->name('recruitment.labor.demand.show');
-
+    Route::post('/recruitment/ahp-schedule-interview/{id}', [RecruitmentController::class, 'ahp_schedule_interview'])->name('recruitment.ahp_schedule_interview');
 
 
 

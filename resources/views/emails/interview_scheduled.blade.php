@@ -106,16 +106,17 @@
         <div class="email-content">
             <p class="message">Hello {{ $name }},</p>
             <p class="message">We are pleased to inform you that your interview has been scheduled.</p>
-            
+
             <div class="details-box">
                 <p><strong>Interview Details:</strong></p>
                 <p><strong>Date:</strong> {{ $interview_date }}</p>
+                <p><strong>Time:</strong> {{ $interview_time }}</p>
                 <p><strong>Additional Information:</strong></p>
                 <p>{!! nl2br(e($interview_note)) !!}</p>
             </div>
 
             <p class="message">Should you have any questions or need to reschedule, please feel free to contact us.</p>
-            
+
             <!-- <div class="button-container">
                 <a href="{{ route('welcome') }}" class="button">Confirm Attendance</a>
             </div> -->
