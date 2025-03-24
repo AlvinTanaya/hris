@@ -375,6 +375,17 @@
         border-left: 4px solid #3498db;
     }
 
+    #suggestionContainer .alert-info {
+        background-color: #f8f9fa;
+        border-left: 4px solid #17a2b8;
+        border-radius: 0;
+    }
+
+    #suggestionContainer {
+        margin-top: 15px;
+        transition: all 0.3s ease;
+    }
+
     /* Animations */
     @keyframes spin {
         to {
@@ -484,6 +495,8 @@
                     </select>
                 </div>
 
+                <div id="suggestionContainer" style="display: none;"></div>
+
                 <!-- Criteria selector (initially hidden) -->
                 <div id="criteriaSelector" class="criteria-selector" style="display: none;">
                     <h5 class="mb-3">Select Criteria to Include</h5>
@@ -503,9 +516,6 @@
                         </div>
                     </div>
                 </div>
-
-
-
 
                 <!-- Criteria container (initially hidden) -->
                 <div class="criteria-container" id="criteriaContainer" style="display: none;"></div>
@@ -1130,6 +1140,7 @@
         const $totalValueSpan = $('#totalValue');
         const $percentageTotalDiv = $('#percentageTotal');
         const $criteriaContainer = $('#criteriaContainer');
+        const $suggestionContainer = $('#suggestionContainer');
         const $criteriaSelector = $('#criteriaSelector');
         const $demandSelect = $('#demandId');
         const $availableCriteria = $('#availableCriteria');
@@ -1437,12 +1448,23 @@
         $demandSelect.on('change', function() {
             if ($(this).val()) {
                 $criteriaSelector.slideDown();
+                $suggestionContainer.html(`
+                        <div class="alert alert-info mt-3">
+                            <h5><i class="fas fa-lightbulb"></i> Suggestions for Better AHP Calculation:</h5>
+                            <ol class="mb-0">
+                                <li><strong>Add More Criteria:</strong> We recommend at least 5 criteria for more accurate results.</li>
+                                <li><strong>Vary the Weights:</strong> Avoid equal percentages (e.g. 20% each for 5 criteria).</li>
+                                <li><strong>Customize Criteria:</strong> Configure each criterion to match your specific needs.</li>
+                            </ol>
+                        </div>
+                    `).slideDown();
                 resetCriteria();
             } else {
                 $criteriaSelector.slideUp();
                 $criteriaContainer.slideUp();
                 $percentageTotalDiv.hide();
                 $calculateBtn.hide();
+                $suggestionContainer.slideUp();
             }
         });
 
@@ -1484,6 +1506,14 @@
                 $criteriaContainer.slideDown();
                 $percentageTotalDiv.show();
                 $calculateBtn.show();
+
+            }
+
+
+
+            // Hide suggestions when they reach 5 criteria
+            if (activeCriteria.length >= 5) {
+                $suggestionContainer.slideUp();
             }
 
             // Remove the added criterion from the dropdown
