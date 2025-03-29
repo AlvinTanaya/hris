@@ -20,7 +20,7 @@
         max-width: 33.3333%;
     }
 </style>
-<a href="{{ route('user.index') }}" class="btn btn-danger px-5">
+<a href="{{ route('user.employees.index') }}" class="btn btn-danger px-5">
     <i class="fas fa-arrow-left me-2"></i>Back
 </a>
 
@@ -88,11 +88,11 @@
                                 @foreach ($historyTransfers as $index => $history)
                                 <tr>
                                     <td>{{ $index + 1 }}</td>
-                                    <td>{{ $history->old_position }}</td>
-                                    <td>{{ $history->new_position }}</td>
-                                    <td>{{ $history->old_department }}</td>
-                                    <td>{{ $history->new_department }}</td>
-                                    <td>{{ $history->created_at }}</td>
+                                    <td>{{ $history->oldPosition->position ?? 'N/A' }}</td>
+                                    <td>{{ $history->newPosition->position ?? 'N/A' }}</td>
+                                    <td>{{ $history->oldDepartment->department ?? 'N/A' }}</td>
+                                    <td>{{ $history->newDepartment->department ?? 'N/A' }}</td>
+                                    <td>{{ $history->created_at->format('Y-m-d') }}</td>
                                 </tr>
                                 @endforeach
                             </tbody>
@@ -113,7 +113,7 @@
                                 <tr>
                                     <th>No</th>
                                     <th>Position</th>
-                                    <th>Department/th>
+                                    <th>Department</th>
                                     <th>Old Contract End</th>
                                     <th>New Contract End</th>
                                 </tr>
@@ -122,8 +122,8 @@
                                 @foreach ($historyExtend as $index => $history)
                                 <tr>
                                     <td>{{ $index + 1 }}</td>
-                                    <td>{{ $history->position }}</td>
-                                    <td>{{ $history->department }}</td>
+                                    <td>{{ $history->position->position ?? 'N/A' }}</td>
+                                    <td>{{ $history->department->department ?? 'N/A' }}</td>
                                     <td>{{ $history->start_date }}</td>
                                     <td>{{ $history->end_date }}</td>
                                 </tr>

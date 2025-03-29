@@ -30,10 +30,11 @@ class EmployeeShiftAssigned extends Mailable
     {
         $start_date = $this->shift->start_date;
         $end_date = $this->shift->end_date ? $this->shift->end_date : 'indefinitely';
-        $type = $this->shift->rule->type;
-        $schedule = json_decode($this->shift->rule->days, true);
-        $start_times = json_decode($this->shift->rule->hour_start, true);
-        $end_times = json_decode($this->shift->rule->hour_end, true);
+        $type = $this->shift->ruleShift->type;
+
+        $schedule = json_decode($this->shift->ruleShift->days, true);
+        $start_times = json_decode($this->shift->ruleShift->hour_start, true);
+        $end_times = json_decode($this->shift->ruleShift->hour_end, true);
 
         $scheduleDetails = '';
         foreach ($schedule as $index => $day) {

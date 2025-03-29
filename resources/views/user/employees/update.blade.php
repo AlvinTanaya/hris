@@ -49,7 +49,7 @@
         width: 100%;
     }
 </style>
-<a href="{{ route('user.index') }}" class="btn btn-danger px-5 mb-3">
+<a href="{{ route('user.employees.index') }}" class="btn btn-danger px-5 mb-3">
     <i class="fas fa-arrow-left me-2"></i>Back
 </a>
 @if ($user->id == Auth::user()->id)
@@ -89,7 +89,7 @@
             <a class="nav-link" id="elearningTab" data-bs-toggle="tab" href="#elearning" role="tab" aria-controls="elearning" aria-selected="false">E-learning</a>
         </li>
     </ul>
-    <form action="{{ route('user.update', $user->id) }}" method="POST" enctype="multipart/form-data">
+    <form action="{{ route('user.employees.update', $user->id) }}" method="POST" enctype="multipart/form-data">
         @csrf
         @method('PUT')
 
@@ -189,40 +189,32 @@
 
                         <div class="row">
                             <div class="col-md-6 mb-3">
-                                <label for="position" class="form-label">
+                                <label for="position_id" class="form-label">
                                     <i class="fas fa-briefcase"></i> Position
                                 </label>
-                                <select class="form-control" id="position" name="position" required>
-                                    <option selected disabled>Choose position</option>
-                                    <option value="Director" {{ old('position',$user->position) == 'Director' ? 'selected' : '' }}>Director</option>
-                                    <option value="General Manager" {{ old('position',$user->position) == 'General Manager' ? 'selected' : '' }}>General Manager</option>
-                                    <option value="Manager" {{ old('position',$user->position) == 'Manager' ? 'selected' : '' }}>Manager</option>
-                                    <option value="Supervisor" {{ old('position',$user->position) == 'Supervisor' ? 'selected' : '' }}>Supervisor</option>
-
-                                    <option value="Staff" {{ old('position',$user->position) == 'Staff' ? 'selected' : '' }}>Staff</option>
+                                <select class="form-control" id="position_id" name="position_id" required>
+                                    <option value="" selected disabled>Choose position</option>
+                                    @foreach($positions as $position)
+                                    <option value="{{ $position->id }}"
+                                        {{ (old('position_id', $user->position_id) == $position->id) ? 'selected' : '' }}>
+                                        {{ $position->position }}
+                                    </option>
+                                    @endforeach
                                 </select>
                             </div>
                             <div class="col-md-6 mb-3">
-                                <label for="department" class="form-label">
+                                <label for="department_id" class="form-label">
                                     <i class="fas fa-building"></i> Department
                                 </label>
-                                <select class="form-control" id="department" name="department" required>
-                                    <option selected disabled>Choose Department</option>
-                                    <option value="Director" {{ old('department', $user->department) == 'Director' ? 'selected' : '' }}>Director</option>
-                                    <option value="General Manager" {{ old('department', $user->department) == 'General Manager' ? 'selected' : '' }}>General Manager</option>
-                                    <option value="Human Resources" {{ old('department', $user->department) == 'Human Resources' ? 'selected' : '' }}>Human Resources</option>
-                                    <option value="Finance and Accounting" {{ old('department', $user->department) == 'Finance and Accounting' ? 'selected' : '' }}>Finance and Accounting</option>
-                                    <option value="Administration" {{ old('department', $user->department) == 'Administration' ? 'selected' : '' }}>Administration</option>
-                                    <option value="Checker" {{ old('department', $user->department) == 'Checker' ? 'selected' : '' }}>Checker</option>
-                                    <option value="Marketing" {{ old('department', $user->department) == 'Marketing' ? 'selected' : '' }}>Marketing</option>
-                                    <option value="Driver" {{ old('department', $user->department) == 'Driver' ? 'selected' : '' }}>Driver</option>
-                                    <option value="Internal Audit" {{ old('department', $user->department) == 'Internal Audit' ? 'selected' : '' }}>Internal Audit</option>
-                                    <option value="Audit" {{ old('department', $user->department) == 'Audit' ? 'selected' : '' }}>Audit</option>
-                                    <option value="Information Technology" {{ old('department', $user->department) == 'Information Technology' ? 'selected' : '' }}>Information Technology</option>
-                                    <option value="Cleaning" {{ old('department', $user->department) == 'Cleaning' ? 'selected' : '' }}>Cleaning</option>
-                                    <option value="Security" {{ old('department', $user->department) == 'Security' ? 'selected' : '' }}>Security</option>
+                                <select class="form-control" id="department_id" name="department_id" required>
+                                    <option value="" selected disabled>Choose Department</option>
+                                    @foreach($departments as $department)
+                                    <option value="{{ $department->id }}"
+                                        {{ (old('department_id', $user->department_id) == $department->id) ? 'selected' : '' }}>
+                                        {{ $department->department }}
+                                    </option>
+                                    @endforeach
                                 </select>
-
                             </div>
                         </div>
 
@@ -1367,35 +1359,35 @@
     function setSelectedProvinces() {
         // For education section
         @if(!empty($userEducation))
-            @foreach($userEducation as $index => $education)
-                // Langsung menggunakan text provinsi tanpa mapping
-                var provinceDropdown = $('.education-card:eq({{ $index }}) .province-dropdown');
-                provinceDropdown.val('{{ $education->educational_province }}');
-                // Memanggil loadCities dengan text provinsi
-                loadCities('{{ $education->educational_province }}', 'educationCity{{ $index + 1 }}', '{{ $education->educational_city }}');
-            @endforeach
+        @foreach($userEducation as $index => $education)
+        // Langsung menggunakan text provinsi tanpa mapping
+        var provinceDropdown = $('.education-card:eq({{ $index }}) .province-dropdown');
+        provinceDropdown.val('{{ $education->educational_province }}');
+        // Memanggil loadCities dengan text provinsi
+        loadCities('{{ $education->educational_province }}', 'educationCity{{ $index + 1 }}', '{{ $education->educational_city }}');
+        @endforeach
         @endif
 
         // For training section
         @if(!empty($userTraining))
-            @foreach($userTraining as $index => $training)
-                // Langsung menggunakan text provinsi tanpa mapping
-                var provinceDropdown = $('.training-card:eq({{ $index }}) .province-dropdown');
-                provinceDropdown.val('{{ $training->training_province }}');
-                // Memanggil loadCities dengan text provinsi
-                loadCities('{{ $training->training_province }}', 'trainingCity{{ $index + 1 }}', '{{ $training->training_city }}');
-            @endforeach
+        @foreach($userTraining as $index => $training)
+        // Langsung menggunakan text provinsi tanpa mapping
+        var provinceDropdown = $('.training-card:eq({{ $index }}) .province-dropdown');
+        provinceDropdown.val('{{ $training->training_province }}');
+        // Memanggil loadCities dengan text provinsi
+        loadCities('{{ $training->training_province }}', 'trainingCity{{ $index + 1 }}', '{{ $training->training_city }}');
+        @endforeach
         @endif
 
         // For organization section
         @if(!empty($userOrganization))
-            @foreach($userOrganization as $index => $organization)
-                // Langsung menggunakan text provinsi tanpa mapping
-                var provinceDropdown = $('.organization-card:eq({{ $index }}) .province-dropdown');
-                provinceDropdown.val('{{ $organization->province }}');
-                // Memanggil loadCities dengan text provinsi
-                loadCities('{{ $organization->province }}', 'organizationCity{{ $index + 1 }}', '{{ $organization->city }}');
-            @endforeach
+        @foreach($userOrganization as $index => $organization)
+        // Langsung menggunakan text provinsi tanpa mapping
+        var provinceDropdown = $('.organization-card:eq({{ $index }}) .province-dropdown');
+        provinceDropdown.val('{{ $organization->province }}');
+        // Memanggil loadCities dengan text provinsi
+        loadCities('{{ $organization->province }}', 'organizationCity{{ $index + 1 }}', '{{ $organization->city }}');
+        @endforeach
         @endif
     }
 
@@ -1688,41 +1680,62 @@
         });
 
 
-        $('#position').change(function() {
-            var position = $(this).val();
-            var department = $('#department');
-            var departmentWrapper = department.closest('.form-group');
+        // Inisialisasi berdasarkan nilai awal
+        var initialPositionId = $('#position_id').val();
+        updateDepartmentOptions(initialPositionId);
 
-            // Hapus pesan sebelumnya  
+        // Event listener untuk perubahan position
+        $('#position_id').change(function() {
+            var positionId = $(this).val();
+            updateDepartmentOptions(positionId);
+        });
+
+        function updateDepartmentOptions(positionId) {
+            var positionText = $('#position_id option:selected').text().trim();
+            var departmentSelect = $('#department_id');
+            var departmentWrapper = departmentSelect.closest('.form-group');
+
+            // Reset
             departmentWrapper.find('.text-danger').remove();
+            departmentSelect.prop('disabled', false).find('option').show();
 
-            // Reset semua opsi dan status  
-            department.prop('readonly', false).val('').find('option').show();
+            if (positionText === 'Director') {
+                // Cari department Director
+                var directorDept = departmentSelect.find('option').filter(function() {
+                    return $(this).text().trim() === 'Director';
+                }).first();
 
-            if (position === 'Director') {
-                // Tambahkan atribut readonly dan hidden input untuk mengirim value  
-                department.prop('readonly', true)
-                    .val('Director')
-                    .after('<input type="hidden" name="department" value="Director">');
-                department.find('option:not([value="Director"])').hide();
-                departmentWrapper.append('<small class="text-danger">Departments are limited by position</small>');
-            } else if (position === 'General Manager') {
-                department.prop('readonly', true)
-                    .val('General Manager')
-                    .after('<input type="hidden" name="department" value="General Manager">');
-                department.find('option:not([value="General Manager"])').hide();
-                departmentWrapper.append('<small class="text-danger">Departments are limited by position</small>');
+                if (directorDept.length) {
+                    departmentSelect.val(directorDept.val()).prop('disabled', true);
+                    departmentWrapper.append('<small class="text-danger">Department automatically set for Director</small>');
+                }
+            } else if (positionText === 'General Manager') {
+                // Cari department General Manager
+                var gmDept = departmentSelect.find('option').filter(function() {
+                    return $(this).text().trim() === 'General Manager';
+                }).first();
+
+                if (gmDept.length) {
+                    departmentSelect.val(gmDept.val()).prop('disabled', true);
+                    departmentWrapper.append('<small class="text-danger">Department automatically set for General Manager</small>');
+                }
             } else {
-                // Hapus hidden input jika ada  
-                departmentWrapper.find('input[type="hidden"][name="department"]').remove();
-                department.find('option[value="Director"], option[value="General Manager"]').hide();
-            }
-        });
+                // Untuk position lain, sembunyikan Director dan General Manager
+                departmentSelect.find('option').each(function() {
+                    var deptText = $(this).text().trim();
+                    if (deptText === 'Director' || deptText === 'General Manager') {
+                        $(this).hide();
+                    }
+                });
 
-        // Optional: Tambahkan event listener untuk menghapus hidden input saat form disubmit  
-        $('form').on('submit', function() {
-            $(this).find('input[type="hidden"][name="department"]').prop('disabled', false);
-        });
+                // Jika department saat ini adalah Director/GM, reset ke kosong
+                var currentDeptText = departmentSelect.find('option:selected').text().trim();
+                if (currentDeptText === 'Director' || currentDeptText === 'General Manager') {
+                    departmentSelect.val('');
+                }
+            }
+        }
+
 
 
 

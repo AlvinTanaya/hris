@@ -45,16 +45,18 @@
                             <div class="col-md-6">
                                 <label for="positionFilter" class="form-label">Filter by Position</label>
                                 <select id="positionFilter" class="form-control select2" multiple>
+                                    <option value="">All Positions</option>
                                     @foreach($positions as $position)
-                                    <option value="{{ $position }}">{{ $position }}</option>
+                                    <option value="{{ $position->id }}">{{ $position->position }}</option>
                                     @endforeach
                                 </select>
                             </div>
                             <div class="col-md-6">
                                 <label for="departmentFilter" class="form-label">Filter by Department</label>
                                 <select id="departmentFilter" class="form-control select2" multiple>
+                                    <option value="">All Departments</option>
                                     @foreach($departments as $department)
-                                    <option value="{{ $department }}">{{ $department }}</option>
+                                    <option value="{{ $department->id }}">{{ $department->department }}</option>
                                     @endforeach
                                 </select>
                             </div>
@@ -123,8 +125,8 @@
                                 <tr data-id="{{ $employee->id }}">
                                     <td>{{ $employee->employee_id }}</td>
                                     <td>{{ $employee->name }}</td>
-                                    <td>{{ $employee->position}}</td>
-                                    <td>{{ $employee->department }}</td>
+                                    <td>{{ $employee->position->position}}</td>
+                                    <td>{{ $employee->department->department }}</td>
                                     <td><button type="button" class="btn btn-danger btn-sm removeEmployee" data-id="{{ $employee->id }}">Remove</button></td>
                                 </tr>
                                 @endforeach
@@ -290,8 +292,8 @@
                             `<tr data-id="${id}">
                             <td>${emp.employee_id}</td>
                             <td>${emp.name}</td>
-                            <td>${emp.position}</td>
-                            <td>${emp.department}</td>
+                            <td>${emp.position.position}</td>
+                            <td>${emp.department.department}</td>
                             <td><button type="button" class="btn btn-danger btn-sm removeEmployee" data-id="${id}">Remove</button></td>
                         </tr>`
                         );

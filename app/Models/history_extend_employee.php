@@ -1,5 +1,4 @@
 <?php
-
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -9,19 +8,28 @@ class history_extend_employee extends Model
 {
     use HasFactory;
 
-    // Define the table name if it's not the plural of the model name
     protected $table = 'users_extend_history';
-
-    // Define which fields can be mass-assigned
+    
     protected $fillable = [
         'id',
         'users_id',
-        'position',
-        'department',
+        'position_id',
+        'department_id',
         'reason',
         'start_date',
         'end_date',
         'created_at',
         'updated_at',
     ];
+    
+    // Relationships
+    public function position()
+    {
+        return $this->belongsTo(EmployeePosition::class, 'position_id');
+    }
+    
+    public function department()
+    {
+        return $this->belongsTo(EmployeeDepartment::class, 'department_id');
+    }
 }

@@ -53,7 +53,16 @@
                         </div>
                     </div>
 
-                    <div class="col-12 d-flex justify-content-end">
+
+                    <div class="col-md-12 d-flex justify-content-between align-items-center">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox"
+                                id="requires_time_input" name="requires_time_input"
+                                {{ old('requires_time_input', $policy->requires_time_input) ? 'checked' : '' }}>
+                            <label class="form-check-label" for="requires_time_input">
+                                <i class="fas fa-clock me-1"></i> Requires Time Input
+                            </label>
+                        </div>
                         <button type="submit" class="btn btn-success"><i class="fas fa-save me-2"></i>Update</button>
                     </div>
                 </div>

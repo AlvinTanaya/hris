@@ -14,6 +14,7 @@
         <div class="card-body">
             <form action="{{ route('announcement.index') }}" method="GET" class="row g-3">
                 <!-- Maker Filter -->
+                <!-- Maker Filter -->
                 <div class="col-md-4">
                     <label for="maker_id" class="form-label">Maker</label>
                     <select name="maker_id" id="maker_id" class="form-select">
@@ -21,8 +22,12 @@
                         @foreach($makers as $maker)
                         <option value="{{ $maker->id }}" {{ request('maker_id') == $maker->id ? 'selected' : '' }}>
                             {{ $maker->employee_id }}_{{ $maker->name }}
+                            ({{ $maker->position->position}})
                         </option>
+
+
                         @endforeach
+
                     </select>
                 </div>
 
@@ -82,7 +87,11 @@
                         @foreach ($announcements as $index => $item)
                         <tr>
                             <td>{{ $index + 1 }}</td>
-                            <td>{{ $item->maker->employee_id?? '-' }}_{{ $item->maker->name ?? '-' }}</td> <!-- Ambil nama maker -->
+                            <td>
+                                {{ $item->maker->employee_id ?? '-' }}_
+                                {{ $item->maker->name ?? '-' }}
+                                ({{ $item->maker->position->position ?? '-' }})
+                            </td>
                             <td>{{ $item->message }}</td>
                             <td>
                                 <button class="btn btn-info btn-sm view-users" data-message="{{ $item->message }}" data-created-at="{{ $item->created_at }}">

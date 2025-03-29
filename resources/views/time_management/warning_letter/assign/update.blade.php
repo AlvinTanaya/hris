@@ -25,15 +25,24 @@
                         </div>
                         
                         <div class="mb-3">
-                            <label for="type" class="form-label">Warning Type</label>
-                            <select class="form-select" name="type" id="type" required>
+                            <label for="type_id" class="form-label">Warning Type</label>
+                            <select class="form-select" name="type_id" id="type_id" required>
                                 <option value="">Select Warning Type</option>
-                                <!-- Warning types will be populated via AJAX -->
+                                @foreach($warningTypes as $type)
+                                    <option value="{{ $type->id }}" {{ $warning_letter->type_id == $type->id ? 'selected' : '' }}>
+                                        {{ $type->name }} - {{ $type->description }}
+                                    </option>
+                                @endforeach
                             </select>
                             <small class="text-muted type-info"></small>
-                            @error('type')
+                            @error('type_id')
                                 <div class="text-danger">{{ $message }}</div>
                             @enderror
+                        </div>
+                        
+                        <div class="mb-3" id="description-container">
+                            <label for="description" class="form-label">Description</label>
+                            <textarea class="form-control" id="description" rows="3" readonly>{{ $warning_letter->rule->description ?? '' }}</textarea>
                         </div>
                         
                         <div class="mb-3">
@@ -59,57 +68,16 @@
     </div>
 </div>
 @endsection
+
 @push('scripts')
 <script>
     $(document).ready(function() {
-        // Load available warning types when page loads
-        loadAvailableWarningTypes();
-        
-        function loadAvailableWarningTypes() {
-            let userId = "{{ $employee->id }}";
-            let warningId = "{{ $warning_letter->id }}";
-            let currentType = "{{ $warning_letter->type }}";
-            
-            if(userId) {
-                $.ajax({
-                    url: "{{ route('warning.letter.get-available-types-for-edit') }}",
-                    type: "GET",
-                    data: {
-                        user_id: userId, 
-                        warning_id: warningId
-                    },
-                    success: function(data) {
-                        $('#type').empty();
-                        $('#type').append('<option value="">Select Warning Type</option>');
-                        
-                        $.each(data.available_types, function(key, value) {
-                            let selected = (key === currentType) ? 'selected' : '';
-                            $('#type').append('<option value="' + key + '" ' + selected + '>' + value + '</option>');
-                        });
-                        
-                        // If current type is not in available types, add it anyway
-                        if(!data.available_types[currentType]) {
-                            $('#type').append('<option value="' + currentType + '" selected>' + getWarningTypeLabel(currentType) + '</option>');
-                        }
-                        
-                        $('.type-info').html(data.message || '');
-                    }
-                });
-            }
-        }
-        
-        function getWarningTypeLabel(type) {
-            const typeLabels = {
-                'Verbal': 'Verbal Warning',
-                'ST1': 'ST1 (Surat Teguran 1)',
-                'ST2': 'ST2 (Surat Teguran 2)',
-                'SP1': 'SP1 (Surat Peringatan 1)',
-                'SP2': 'SP2 (Surat Peringatan 2)',
-                'SP3': 'SP3 (Surat Peringatan 3)'
-            };
-            
-            return typeLabels[type] || type;
-        }
+        // Update description when type changes
+        $('#type_id').change(function() {
+            var selectedOption = $(this).find('option:selected');
+            var description = selectedOption.text().split(' - ')[1] || '';
+            $('#description').val(description);
+        });
     });
 </script>
 @endpush

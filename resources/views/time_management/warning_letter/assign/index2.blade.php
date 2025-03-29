@@ -28,7 +28,9 @@
                             <td>{{ $index + 1 }}</td>
                             <td>{{$item->type}}</td>
                             <td>{{$item->reason_warning}}</td>
-                            <td>{{ $item->name }} ({{ $item->employee_id }}) - {{ $item->position }}</td>
+                            <td>
+                                {{ $item->employee_name }} ({{ $item->employee_id }}) - {{ $item->employee_position }}
+                            </td>
                         </tr>
                         @endforeach
 

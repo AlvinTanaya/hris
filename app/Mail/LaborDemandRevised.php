@@ -12,7 +12,11 @@ class LaborDemandRevised extends Mailable
 {
     use Queueable, SerializesModels;
 
+
     public $demand;
+
+    public $positionName;
+    public $departmentName;
 
     /**
      * Create a new message instance.
@@ -22,8 +26,9 @@ class LaborDemandRevised extends Mailable
     public function __construct(recruitment_demand $demand)
     {
         $this->demand = $demand;
+        $this->positionName = $demand->positionRelation->position ?? 'Unknown Position';
+        $this->departmentName = $demand->departmentRelation->department ?? 'Unknown Department';
     }
-
     /**
      * Build the message.
      *
@@ -36,6 +41,8 @@ class LaborDemandRevised extends Mailable
             ->markdown('emails.labor-demand-revised')
             ->with([
                 'demand' => $this->demand,
+                'positionName' => $this->positionName,
+                'departmentName' => $this->departmentName,
                 'url' => route('welcome')
             ]);
     }

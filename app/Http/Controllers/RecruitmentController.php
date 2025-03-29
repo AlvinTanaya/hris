@@ -27,6 +27,8 @@ use App\Models\users_language;
 use App\Models\users_training;
 use App\Models\users_organization;
 use App\Models\Notification;
+use App\Models\EmployeeDepartment;
+use App\Models\EmployeePosition;
 
 use App\Mail\InterviewScheduledMail;
 use App\Mail\InterviewRescheduledMail;
@@ -48,24 +50,26 @@ class RecruitmentController extends Controller
     {
         $query = DB::table('recruitment_demand')
             ->join('users', 'recruitment_demand.maker_id', '=', 'users.id')
+            ->join('employee_departments', 'recruitment_demand.department_id', '=', 'employee_departments.id')
+            ->join('employee_positions', 'recruitment_demand.position_id', '=', 'employee_positions.id')
             ->select(
                 'users.name as maker_name',
-                'recruitment_demand.*'
+                'recruitment_demand.*',
+                'employee_departments.department as department_name',
+                'employee_positions.position as position_name'
             );
-
-        //dd($query);
 
         // Apply filters
         if ($request->filled('status_demand')) {
             $query->where('recruitment_demand.status_demand', $request->status_demand);
         }
 
-        if ($request->filled('department')) {
-            $query->where('recruitment_demand.department', $request->department);
+        if ($request->filled('department_id')) {
+            $query->where('recruitment_demand.department_id', $request->department_id);
         }
 
-        if ($request->filled('position')) {
-            $query->where('recruitment_demand.position', $request->position);
+        if ($request->filled('position_id')) {
+            $query->where('recruitment_demand.position_id', $request->position_id);
         }
 
         if ($request->filled('status_job')) {
@@ -80,9 +84,9 @@ class RecruitmentController extends Controller
             $query->whereDate('recruitment_demand.closing_date', $request->closing_date);
         }
 
-        // Get distinct values for dropdowns
-        $departments = DB::table('recruitment_demand')->distinct()->pluck('department');
-        $positions = DB::table('recruitment_demand')->distinct()->pluck('position');
+        // Get distinct values for dropdowns from the actual tables
+        $departments = DB::table('employee_departments')->select('id', 'department')->get();
+        $positions = DB::table('employee_positions')->select('id', 'position')->get();
         $jobStatuses = DB::table('recruitment_demand')->distinct()->pluck('status_job');
 
         $demand = $query->get();
@@ -98,59 +102,69 @@ class RecruitmentController extends Controller
 
     public function create_labor_demand()
     {
-        return view('recruitment/labor_demand/create');
+        $departments = EmployeeDepartment::all();
+        $positions = EmployeePosition::all();
+
+        return view('recruitment/labor_demand/create', compact('departments', 'positions'));
     }
 
     public function edit_labor_demand($id)
     {
+        $demand = recruitment_demand::with(['departmentRelation', 'positionRelation'])->findOrFail($id);
+        $departments = EmployeeDepartment::all();
+        $positions = EmployeePosition::all();
 
-        $demand = recruitment_demand::where('id', $id)->first();
-
-
-        return view('recruitment/labor_demand/update', compact('demand'));
+        return view('recruitment/labor_demand/update', compact('demand', 'departments', 'positions'));
     }
-
     public function approve_labor_demand($id)
     {
-        $demand = recruitment_demand::findOrFail($id);
+        $demand = recruitment_demand::with([
+            'departmentRelation',
+            'positionRelation',
+            'maker'
+        ])->findOrFail($id);
 
         // Update status
         $demand->status_demand = 'Approved';
         $demand->save();
 
-        // Check if maker exists
-        $sendTo = null;
-        if (!empty($demand->maker_id)) {
-            $sendTo = User::where('id', $demand->maker_id)->first();
-        }
+        // Get names from relationships
+        $positionName = $demand->positionRelation->position ?? 'Unknown Position';
+        $departmentName = $demand->departmentRelation->department ?? 'Unknown Department';
 
-        // If maker doesn't exist, send to HR
-        if ($sendTo === null) {
-            $hrUsers = User::where('department', 'Human Resources')->get();
-            foreach ($hrUsers as $user) {
-                Mail::to($user->email)->send(new LaborDemandApproved($demand));
+        // Notification message
+        $message = "Labor demand request {$demand->recruitment_demand_id} for position: {$positionName} in {$departmentName} department has been approved";
 
-                // Create notification for HR users
-                Notification::create([
-                    'users_id' => $user->id,
-                    'message' => "Labor demand request {$demand->recruitment_demand_id} for position: {$demand->position} in {$demand->department} department has been approved",
-                    'type' => 'labor_demand_approved',
-                    'maker_id' => Auth::user()->id,
-                    'status' => 'Unread'
-                ]);
-            }
-        } else {
-            // Send to maker only
-            Mail::to($sendTo->email)->send(new LaborDemandApproved($demand));
+        if ($demand->maker) {
+            // Send to maker
+            Mail::to($demand->maker->email)->send(new LaborDemandApproved($demand));
 
-            // Create notification for maker
             Notification::create([
-                'users_id' => $sendTo->id,
-                'message' => "Labor demand request {$demand->recruitment_demand_id} for position: {$demand->position} in {$demand->department} department has been approved",
+                'users_id' => $demand->maker->id,
+                'message' => $message,
                 'type' => 'labor_demand_approved',
-                'maker_id' => Auth::user()->id,
+                'maker_id' => Auth::id(),
                 'status' => 'Unread'
             ]);
+        } else {
+            // Send to HR department
+            $hrDepartment = EmployeeDepartment::where('department', 'Human Resources')->first();
+
+            if ($hrDepartment) {
+                $hrUsers = User::where('department_id', $hrDepartment->id)->get();
+
+                foreach ($hrUsers as $user) {
+                    Mail::to($user->email)->send(new LaborDemandApproved($demand));
+
+                    Notification::create([
+                        'users_id' => $user->id,
+                        'message' => $message,
+                        'type' => 'labor_demand_approved',
+                        'maker_id' => Auth::id(),
+                        'status' => 'Unread'
+                    ]);
+                }
+            }
         }
 
         return redirect()->route('recruitment.index')
@@ -159,46 +173,53 @@ class RecruitmentController extends Controller
 
     public function decline_labor_demand(Request $request, $id)
     {
-        $demand = recruitment_demand::findOrFail($id);
+        $demand = recruitment_demand::with([
+            'departmentRelation',
+            'positionRelation',
+            'maker'
+        ])->findOrFail($id);
 
         // Update status and reason
         $demand->status_demand = 'Declined';
         $demand->response = $request->response;
         $demand->save();
 
-        // Check if maker exists
-        $sendTo = null;
-        if (!empty($demand->maker_id)) {
-            $sendTo = User::where('id', $demand->maker_id)->first();
-        }
+        // Get names from relationships
+        $positionName = $demand->positionRelation->position ?? 'Unknown Position';
 
-        // If maker doesn't exist, send to HR
-        if ($sendTo === null) {
-            $hrUsers = User::where('department', 'Human Resources')->get();
-            foreach ($hrUsers as $user) {
-                Mail::to($user->email)->send(new LaborDemandDeclined($demand));
+        // Notification message
+        $message = "Labor demand request {$demand->recruitment_demand_id} for position: {$positionName} has been declined with reason: {$request->response}";
 
-                // Create notification for HR users
-                Notification::create([
-                    'users_id' => $user->id,
-                    'message' => "Labor demand request {$demand->recruitment_demand_id} for position: {$demand->position} has been declined with reason: {$request->response}",
-                    'type' => 'labor_demand_declined',
-                    'maker_id' => Auth::user()->id,
-                    'status' => 'Unread'
-                ]);
-            }
-        } else {
-            // Send to maker only
-            Mail::to($sendTo->email)->send(new LaborDemandDeclined($demand));
+        if ($demand->maker) {
+            // Send to maker
+            Mail::to($demand->maker->email)->send(new LaborDemandDeclined($demand));
 
-            // Create notification for maker
             Notification::create([
-                'users_id' => $sendTo->id,
-                'message' => "Labor demand request {$demand->recruitment_demand_id} for position: {$demand->position} has been declined with reason: {$request->response}",
+                'users_id' => $demand->maker->id,
+                'message' => $message,
                 'type' => 'labor_demand_declined',
-                'maker_id' => Auth::user()->id,
+                'maker_id' => Auth::id(),
                 'status' => 'Unread'
             ]);
+        } else {
+            // Send to HR department
+            $hrDepartment = EmployeeDepartment::where('department', 'Human Resources')->first();
+
+            if ($hrDepartment) {
+                $hrUsers = User::where('department_id', $hrDepartment->id)->get();
+
+                foreach ($hrUsers as $user) {
+                    Mail::to($user->email)->send(new LaborDemandDeclined($demand));
+
+                    Notification::create([
+                        'users_id' => $user->id,
+                        'message' => $message,
+                        'type' => 'labor_demand_declined',
+                        'maker_id' => Auth::id(),
+                        'status' => 'Unread'
+                    ]);
+                }
+            }
         }
 
         if ($request->ajax()) {
@@ -211,49 +232,53 @@ class RecruitmentController extends Controller
 
     public function revise_labor_demand(Request $request, $id)
     {
-        $demand = recruitment_demand::findOrFail($id);
-
-        // Remove the dd() debugging line
-        // dd($demand->maker_id);
+        $demand = recruitment_demand::with([
+            'departmentRelation',
+            'positionRelation',
+            'maker'
+        ])->findOrFail($id);
 
         // Update status and revision reason
         $demand->status_demand = 'Revised';
         $demand->response_reason = $request->revision_reason;
         $demand->save();
 
-        // Check if maker exists
-        $sendTo = null;
-        if (!empty($demand->maker_id)) {
-            $sendTo = User::where('id', $demand->maker_id)->first();
-        }
+        // Get names from relationships
+        $positionName = $demand->positionRelation->position ?? 'Unknown Position';
 
-        // If maker doesn't exist, send to HR
-        if ($sendTo === null) {
-            $hrUsers = User::where('department', 'Human Resources')->get();
-            foreach ($hrUsers as $user) {
-                Mail::to($user->email)->send(new LaborDemandRevised($demand));
+        // Notification message
+        $message = "Labor demand request {$demand->recruitment_demand_id} for position: {$positionName} requires revision: {$request->revision_reason}";
 
-                // Create notification for HR users
-                Notification::create([
-                    'users_id' => $user->id,
-                    'message' => "Labor demand request {$demand->recruitment_demand_id} for position: {$demand->position} requires revision: {$request->revision_reason}",
-                    'type' => 'labor_demand_revised',
-                    'maker_id' => Auth::user()->id,
-                    'status' => 'Unread'
-                ]);
-            }
-        } else {
-            // Send to maker only
-            Mail::to($sendTo->email)->send(new LaborDemandRevised($demand));
+        if ($demand->maker) {
+            // Send to maker
+            Mail::to($demand->maker->email)->send(new LaborDemandRevised($demand));
 
-            // Create notification for maker
             Notification::create([
-                'users_id' => $sendTo->id,
-                'message' => "Labor demand request {$demand->recruitment_demand_id} for position: {$demand->position} requires revision: {$request->revision_reason}",
+                'users_id' => $demand->maker->id,
+                'message' => $message,
                 'type' => 'labor_demand_revised',
-                'maker_id' => Auth::user()->id,
+                'maker_id' => Auth::id(),
                 'status' => 'Unread'
             ]);
+        } else {
+            // Send to HR department
+            $hrDepartment = EmployeeDepartment::where('department', 'Human Resources')->first();
+
+            if ($hrDepartment) {
+                $hrUsers = User::where('department_id', $hrDepartment->id)->get();
+
+                foreach ($hrUsers as $user) {
+                    Mail::to($user->email)->send(new LaborDemandRevised($demand));
+
+                    Notification::create([
+                        'users_id' => $user->id,
+                        'message' => $message,
+                        'type' => 'labor_demand_revised',
+                        'maker_id' => Auth::id(),
+                        'status' => 'Unread'
+                    ]);
+                }
+            }
         }
 
         if ($request->ajax()) {
@@ -268,11 +293,10 @@ class RecruitmentController extends Controller
     {
         // Validasi input  
         $validated = $request->validate([
-            'department' => 'required|string|max:255',
-            'position' => 'required|string|max:255',
+            'department_id' => 'required|exists:employee_departments,id',
+            'position_id' => 'required|exists:employee_positions,id',
             'opening_date' => 'required|date',
             'closing_date' => 'required|date',
-
             'reason' => 'required|string|max:255',
             'qty_needed' => 'required|integer',
             'gender' => 'required|string|max:255',
@@ -282,15 +306,13 @@ class RecruitmentController extends Controller
             'experience' => 'required|string|max:255',
             'status_job' => 'required|string|in:Full Time,Part Time,Contract',
             'length_of_working' => [
-                'nullable',  // Default nullable
-                'required_if:status_job,Part Time,Contract', // Required only if status_job is Part Time or Contract
-                'integer',  // Example: Ensuring it's a valid number
+                'nullable',
+                'required_if:status_job,Part Time,Contract',
+                'integer',
             ],
-
             'skills' => 'required|string|max:255',
             'time_work_experience' => 'nullable|string|max:255',
         ]);
-
 
         // Tambahkan status dan informasi tambahan  
         $validated['status_demand'] = 'Pending';
@@ -299,40 +321,43 @@ class RecruitmentController extends Controller
         $validated['updated_at'] = now();
         $validated['maker_id'] = $request->maker_id;
 
-        // Menggunakan ID yang unik  
-        $count = recruitment_demand::count(); // Get total number of records
-        $newId = $count + 1; // Increment count to generate the new ID
-        $validated['recruitment_demand_id'] = 'ptk_' . $newId;
+        // Generate unique ID
+        $count = recruitment_demand::count();
+        $validated['recruitment_demand_id'] = 'ptk_' . ($count + 1);
 
-
-        // Proses input untuk menyimpan ke database  
+        // Format multi-line inputs
         $validated['reason'] = implode("\n", array_map('trim', explode("\n", $request->reason)));
         $validated['job_goal'] = implode("\n", array_map('trim', explode("\n", $request->job_goal)));
         $validated['experience'] = implode("\n", array_map('trim', explode("\n", $request->experience)));
         $validated['skills'] = implode("\n", array_map('trim', explode("\n", $request->skills)));
 
-
-        //dd($validated);
-
         // Simpan data ke database  
         $demand = recruitment_demand::create($validated);
 
-        // Send email to General Managers
-        $gmUsers = User::where('position', 'General Manager')
-            ->where('department', 'General Manager')
-            ->get();
-        // dd('coba');
-        foreach ($gmUsers as $user) {
-            Mail::to($user->email)->send(new LaborDemandCreate($demand));
+        // Get department and position names for notification
+        $departmentName = $demand->departmentRelation->department ?? 'Unknown Department';
+        $positionName = $demand->positionRelation->position ?? 'Unknown Position';
 
-            // Create notification for GM
-            Notification::create([
-                'users_id' => $user->id,
-                'message' => "New labor demand request {$demand->recruitment_demand_id} for position: {$demand->position} in {$demand->department} department. Please review and respond.",
-                'type' => 'labor_demand_created',
-                'maker_id' => $request->maker_id,
-                'status' => 'Unread'
-            ]);
+        // Send email to General Managers
+        $gmDepartment = EmployeeDepartment::where('department', 'General Manager')->first();
+        $gmPosition = EmployeePosition::where('position', 'General Manager')->first();
+
+        if ($gmDepartment && $gmPosition) {
+            $gmUsers = User::where('department_id', $gmDepartment->id)
+                ->where('position_id', $gmPosition->id)
+                ->get();
+
+            foreach ($gmUsers as $user) {
+                Mail::to($user->email)->send(new LaborDemandCreate($demand));
+
+                Notification::create([
+                    'users_id' => $user->id,
+                    'message' => "New labor demand request {$demand->recruitment_demand_id} for position: {$positionName} in {$departmentName} department. Please review and respond.",
+                    'type' => 'labor_demand_created',
+                    'maker_id' => $request->maker_id,
+                    'status' => 'Unread'
+                ]);
+            }
         }
 
         return redirect()->route('recruitment.index')
@@ -340,16 +365,14 @@ class RecruitmentController extends Controller
     }
 
 
-
     public function update_labor_demand(Request $request, $id)
     {
         // Validasi input  
         $validated = $request->validate([
-            'department' => 'required|string|max:255',
-            'position' => 'required|string|max:255',
+            'department_id' => 'required|exists:employee_departments,id',
+            'position_id' => 'required|exists:employee_positions,id',
             'opening_date' => 'required|date',
             'closing_date' => 'required|date',
-
             'reason' => 'required|string|max:255',
             'qty_needed' => 'required|integer',
             'gender' => 'required|string|max:255',
@@ -359,53 +382,54 @@ class RecruitmentController extends Controller
             'experience' => 'required|string|max:255',
             'status_job' => 'required|string|in:Full Time,Part Time,Contract',
             'length_of_working' => [
-                'nullable',  // Default nullable
-                'required_if:status_job,Part Time,Contract', // Required only if status_job is Part Time or Contract
-                'integer',  // Example: Ensuring it's a valid number
+                'nullable',
+                'required_if:status_job,Part Time,Contract',
+                'integer',
             ],
             'skills' => 'required|string|max:255',
         ]);
 
         try {
-            $demand = recruitment_demand::findOrFail($id);
+            $demand = recruitment_demand::with(['departmentRelation', 'positionRelation'])->findOrFail($id);
+
             $validated['updated_at'] = now();
             $validated['maker_id'] = $request->maker_id;
-
-            if ($request->time_work_experience == null) {
-                $validated['time_work_experience'] = null;
-            } else {
-                $validated['time_work_experience'] = $request->time_work_experience;
-            }
-
+            $validated['time_work_experience'] = $request->time_work_experience ?: null;
             $validated['status_demand'] = $demand->status_demand;
             $validated['qty_fullfil'] = $demand->qty_fullfil;
             $validated['recruitment_demand_id'] = $demand->recruitment_demand_id;
 
             $demand->update($validated);
 
+            // Get department and position names for notification
+            $departmentName = $demand->departmentRelation->department ?? 'Unknown Department';
+            $positionName = $demand->positionRelation->position ?? 'Unknown Position';
+
             // Send email to General Managers
-            $gmUsers = User::where('position', 'General Manager')
-                ->where('department', 'General Manager')
-                ->get();
+            $gmDepartment = EmployeeDepartment::where('department', 'General Manager')->first();
+            $gmPosition = EmployeePosition::where('position', 'General Manager')->first();
 
-            foreach ($gmUsers as $user) {
-                Mail::to($user->email)->send(new LaborDemandUpdate($demand));
+            if ($gmDepartment && $gmPosition) {
+                $gmUsers = User::where('department_id', $gmDepartment->id)
+                    ->where('position_id', $gmPosition->id)
+                    ->get();
 
-                // Create notification for GM
-                Notification::create([
-                    'users_id' => $user->id,
-                    'message' => "Labor demand request {$demand->recruitment_demand_id} for position: {$demand->position} has been updated. Please review the changes.",
-                    'type' => 'labor_demand_updated',
-                    'maker_id' => $request->maker_id,
-                    'status' => 'Unread'
-                ]);
+                foreach ($gmUsers as $user) {
+                    Mail::to($user->email)->send(new LaborDemandUpdate($demand));
+
+                    Notification::create([
+                        'users_id' => $user->id,
+                        'message' => "Labor demand request {$demand->recruitment_demand_id} for position: {$positionName} has been updated. Please review the changes.",
+                        'type' => 'labor_demand_updated',
+                        'maker_id' => $request->maker_id,
+                        'status' => 'Unread'
+                    ]);
+                }
             }
 
-            // Redirect dengan pesan sukses  
             return redirect()->route('recruitment.index')
                 ->with('success', 'Job request has been updated successfully');
         } catch (\Exception $e) {
-            // Tangani error  
             return redirect()->back()
                 ->with('error', 'Failed to update job request: ' . $e->getMessage())
                 ->withInput();
@@ -414,7 +438,7 @@ class RecruitmentController extends Controller
 
     public function show_labor_demand($id)
     {
-        $demand = recruitment_demand::find($id);
+        $demand = recruitment_demand::with(['departmentRelation', 'positionRelation'])->find($id);
 
         if (!$demand) {
             return response()->json(['message' => 'Labor Demand not found'], 404);
@@ -424,8 +448,10 @@ class RecruitmentController extends Controller
             'id' => $demand->id,
             'recruitment_demand_id' => $demand->recruitment_demand_id,
             'status_demand' => $demand->status_demand,
-            'department' => $demand->department,
-            'position' => $demand->position,
+            'department_id' => $demand->department_id,
+            'department_name' => $demand->departmentRelation->department ?? 'Unknown Department',
+            'position_id' => $demand->position_id,
+            'position_name' => $demand->positionRelation->position ?? 'Unknown Position',
             'opening_date' => $demand->opening_date,
             'closing_date' => $demand->closing_date,
             'status_job' => $demand->status_job,
@@ -678,8 +704,11 @@ class RecruitmentController extends Controller
     }
 
     // New helper function to handle range calculations consistently
-    private function getScoreFromRanges($value, $ranges)
+    public function getScoreFromRanges($value, $ranges)
     {
+        // Tambahkan debugging untuk tipe data
+        //dd(gettype($value), $value, $ranges);
+
         if (empty($ranges)) {
             return 0;
         }
@@ -689,8 +718,14 @@ class RecruitmentController extends Controller
         $totalRanges = count($ranges);
 
         foreach ($ranges as $range) {
+            // Konversi eksplisit ke float jika perlu
+            $min = floatval($range['min']);
+            $max = floatval($range['max']);
+            $value = floatval($value);
+
             // Untuk semua range, gunakan upper bound inklusif
-            if ($value >= $range['min'] && $value <= $range['max']) {
+            if ($value >= $min && $value <= $max) {
+                // dd($min, $value, $max, $range['rank'], $totalRanges);
                 return 1 - (($range['rank'] - 1) / $totalRanges);
             }
         }
@@ -739,7 +774,7 @@ class RecruitmentController extends Controller
         if (empty($salary) || !is_numeric($salary)) {
             return 0;
         }
-    
+
         // If no config is provided or ranges are empty, use default calculation
         if (empty($config) || empty($config['ranges'])) {
             return match (true) {
@@ -751,17 +786,17 @@ class RecruitmentController extends Controller
                 default => 0
             };
         }
-    
+
         return $this->getScoreFromRanges($salary, $config['ranges']);
     }
-    
+
     private function calculateDistanceScore($distance, $config = null)
     {
         // Return 0 if distance is empty or invalid
         if (empty($distance) || !is_numeric($distance)) {
             return 0;
         }
-    
+
         // If no config is provided or ranges are empty, use default calculation
         if (empty($config) || empty($config['ranges'])) {
             return match (true) {
@@ -772,7 +807,7 @@ class RecruitmentController extends Controller
                 default => 0
             };
         }
-    
+
         return $this->getScoreFromRanges($distance, $config['ranges']);
     }
 
@@ -782,7 +817,7 @@ class RecruitmentController extends Controller
         if (!$education) {
             return 0; // No education data
         }
-    
+
         // Equal intervals for 5 levels (0.2 increment each)
         $defaultLevelScores = [
             'SMA' => 0.2,  // 20%
@@ -791,12 +826,12 @@ class RecruitmentController extends Controller
             'S1' => 0.8,   // 80%
             'S2' => 1.0    // 100%
         ];
-    
+
         $levelScore = 0;
         $gradeScore = 0;
         $levelWeight = 0.7; // 70% weight for level
         $gradeWeight = 0.3; // 30% weight for grade
-    
+
         // Use configuration if available
         if ($config && isset($config['levels']['list']) && !empty($config['levels']['list'])) {
             $levels = collect($config['levels']['list'])
@@ -804,9 +839,9 @@ class RecruitmentController extends Controller
                 ->sortBy('rank')
                 ->values()
                 ->all();
-    
+
             $totalLevels = count($levels);
-    
+
             // Find the education level in configured levels
             foreach ($levels as $level) {
                 if ($level['name'] === $education->degree) {
@@ -814,12 +849,12 @@ class RecruitmentController extends Controller
                     break;
                 }
             }
-    
+
             // If not found in configured levels, use default or zero
             if ($levelScore === 0) {
                 $levelScore = $defaultLevelScores[$education->degree] ?? 0;
             }
-    
+
             // Override weights if configured
             if (isset($config['weights'])) {
                 $levelWeight = $config['weights']['level'] / 100;
@@ -829,7 +864,7 @@ class RecruitmentController extends Controller
             // Use default level scores
             $levelScore = $defaultLevelScores[$education->degree] ?? 0;
         }
-    
+
         // Calculate grade score (same as before)
         if ($education->grade !== null) {
             if (in_array($education->degree, ['SMK', 'SMA'])) {
@@ -838,7 +873,7 @@ class RecruitmentController extends Controller
                 $gradeScore = min(1, max(0, $education->grade / 4));
             }
         }
-    
+
         // Combined weighted score
         return ($levelScore * $levelWeight) + ($gradeScore * $gradeWeight);
     }
@@ -846,20 +881,20 @@ class RecruitmentController extends Controller
     private function calculateExperienceDurationScore($applicantId, $config = null)
     {
         $experiences = recruitment_applicant_work_experience::where('applicant_id', $applicantId)->get();
-    
+
         if ($experiences->isEmpty()) {
             return 0; // Default low score for no experience
         }
-    
+
         $totalDuration = 0;
         $count = $experiences->count();
-    
+
         foreach ($experiences as $exp) {
             $startDate = Carbon::parse($exp->working_start);
             $endDate = $exp->working_end ? Carbon::parse($exp->working_end) : Carbon::now();
             $totalDuration += $startDate->diffInYears($endDate);
         }
-    
+
         // Default configuration if none provided
         if (empty($config)) {
             $periodRanges = [
@@ -868,41 +903,41 @@ class RecruitmentController extends Controller
                 ['min' => 1, 'max' => 3, 'rank' => 3],
                 ['min' => 0, 'max' => 1, 'rank' => 4]
             ];
-            
+
             $amountRanges = [
                 ['min' => 6, 'max' => 7, 'rank' => 1],
                 ['min' => 4, 'max' => 5, 'rank' => 2],
                 ['min' => 2, 'max' => 3, 'rank' => 3],
                 ['min' => 0, 'max' => 1, 'rank' => 4]
             ];
-            
+
             $periodScore = $this->getScoreFromRanges($totalDuration, $periodRanges);
             $amountScore = $this->getScoreFromRanges($count, $amountRanges);
-            
+
             return ($periodScore * 0.7) + ($amountScore * 0.3);
         }
-    
+
         // Use provided configuration
         $periodScore = isset($config['period']) ? $this->getScoreFromRanges($totalDuration, $config['period']) : 0;
         $amountScore = isset($config['amount']) ? $this->getScoreFromRanges($count, $config['amount']) : 0;
-        
+
         $periodWeight = isset($config['weights']['period']) ? ($config['weights']['period'] / 100) : 0.7;
         $amountWeight = isset($config['weights']['amount']) ? ($config['weights']['amount'] / 100) : 0.3;
-    
+
         return ($periodScore * $periodWeight) + ($amountScore * $amountWeight);
     }
-    
+
     private function calculateTrainingScore($applicantId, $config = null)
     {
         $trainings = recruitment_applicant_training::where('applicant_id', $applicantId)->get();
-    
+
         if ($trainings->isEmpty()) {
             return 0;
         }
-    
+
         $count = $trainings->count();
         $totalDuration = 0;
-    
+
         foreach ($trainings as $training) {
             if ($training->start_date && $training->end_date) {
                 $startDate = Carbon::parse($training->start_date);
@@ -910,10 +945,10 @@ class RecruitmentController extends Controller
                 $totalDuration += $startDate->diffInMonths($endDate);
             }
         }
-    
+
         // Convert duration to years for scoring
         $durationInYears = $totalDuration / 12;
-    
+
         // Default configuration if none provided
         if (empty($config)) {
             $periodRanges = [
@@ -922,41 +957,41 @@ class RecruitmentController extends Controller
                 ['min' => 1.1, 'max' => 3, 'rank' => 3],
                 ['min' => 0, 'max' => 1, 'rank' => 4]
             ];
-            
+
             $amountRanges = [
                 ['min' => 6, 'max' => 7, 'rank' => 1],
                 ['min' => 4, 'max' => 5, 'rank' => 2],
                 ['min' => 2, 'max' => 3, 'rank' => 3],
                 ['min' => 0, 'max' => 1, 'rank' => 4]
             ];
-            
+
             $periodScore = $this->getScoreFromRanges($durationInYears, $periodRanges);
             $amountScore = $this->getScoreFromRanges($count, $amountRanges);
-            
+
             return ($periodScore * 0.7) + ($amountScore * 0.3);
         }
-    
+
         // Use provided configuration
         $periodScore = isset($config['period']) ? $this->getScoreFromRanges($durationInYears, $config['period']) : 0;
         $amountScore = isset($config['amount']) ? $this->getScoreFromRanges($count, $config['amount']) : 0;
-        
+
         $periodWeight = isset($config['weights']['period']) ? ($config['weights']['period'] / 100) : 0.7;
         $amountWeight = isset($config['weights']['amount']) ? ($config['weights']['amount'] / 100) : 0.3;
-    
+
         return ($periodScore * $periodWeight) + ($amountScore * $amountWeight);
     }
-    
+
     private function calculateOrganizationScore($applicantId, $config = null)
     {
         $organizations = recruitment_applicant_organization::where('applicant_id', $applicantId)->get();
-    
+
         if ($organizations->isEmpty()) {
             return 0;
         }
-    
+
         $count = $organizations->count();
         $totalDuration = 0;
-    
+
         foreach ($organizations as $org) {
             if ($org->start_date) {
                 $startDate = Carbon::parse($org->start_date);
@@ -964,10 +999,10 @@ class RecruitmentController extends Controller
                 $totalDuration += $startDate->diffInMonths($endDate);
             }
         }
-    
+
         // Convert duration to years for scoring
         $durationInYears = $totalDuration / 12;
-    
+
         // Default configuration if none provided
         if (empty($config)) {
             $periodRanges = [
@@ -976,27 +1011,27 @@ class RecruitmentController extends Controller
                 ['min' => 1.1, 'max' => 3, 'rank' => 3],
                 ['min' => 0, 'max' => 1, 'rank' => 4]
             ];
-            
+
             $amountRanges = [
                 ['min' => 6, 'max' => 7, 'rank' => 1],
                 ['min' => 4, 'max' => 5, 'rank' => 2],
                 ['min' => 2, 'max' => 3, 'rank' => 3],
                 ['min' => 0, 'max' => 1, 'rank' => 4]
             ];
-            
+
             $periodScore = $this->getScoreFromRanges($durationInYears, $periodRanges);
             $amountScore = $this->getScoreFromRanges($count, $amountRanges);
-            
+
             return ($periodScore * 0.4) + ($amountScore * 0.6);
         }
-    
+
         // Use provided configuration
         $periodScore = isset($config['period']) ? $this->getScoreFromRanges($durationInYears, $config['period']) : 0;
         $amountScore = isset($config['amount']) ? $this->getScoreFromRanges($count, $config['amount']) : 0;
-        
+
         $periodWeight = isset($config['weights']['period']) ? ($config['weights']['period'] / 100) : 0.4;
         $amountWeight = isset($config['weights']['amount']) ? ($config['weights']['amount'] / 100) : 0.6;
-    
+
         return ($periodScore * $periodWeight) + ($amountScore * $amountWeight);
     }
 
@@ -1039,11 +1074,15 @@ class RecruitmentController extends Controller
     {
         $query = DB::table('recruitment_demand')
             ->join('users', 'recruitment_demand.maker_id', '=', 'users.id')
+            ->join('employee_departments', 'recruitment_demand.department_id', '=', 'employee_departments.id')
+            ->join('employee_positions', 'recruitment_demand.position_id', '=', 'employee_positions.id')
             ->where('qty_needed', '>', 0)
             ->where('status_demand', 'Approved')
             ->select(
                 'users.name as maker_name',
-                'recruitment_demand.*'
+                'recruitment_demand.*',
+                'employee_departments.department as department_name',
+                'employee_positions.position as position_name'
             );
 
         // Apply filters
@@ -1051,12 +1090,12 @@ class RecruitmentController extends Controller
             $query->where('recruitment_demand.status_demand', $request->status_demand);
         }
 
-        if ($request->filled('department')) {
-            $query->where('recruitment_demand.department', $request->department);
+        if ($request->filled('department_id')) {
+            $query->where('recruitment_demand.department_id', $request->department_id);
         }
 
-        if ($request->filled('position')) {
-            $query->where('recruitment_demand.position', $request->position);
+        if ($request->filled('position_id')) {
+            $query->where('recruitment_demand.position_id', $request->position_id);
         }
 
         if ($request->filled('status_job')) {
@@ -1071,13 +1110,26 @@ class RecruitmentController extends Controller
             $query->whereDate('recruitment_demand.closing_date', $request->closing_date);
         }
 
-        // Get distinct values for dropdowns
-        $departments = DB::table('recruitment_demand')->where('qty_needed', '>', 0)
-            ->where('status_demand', 'Approved')->distinct()->pluck('department');
-        $positions = DB::table('recruitment_demand')->where('qty_needed', '>', 0)
-            ->where('status_demand', 'Approved')->distinct()->pluck('position');
-        $jobStatuses = DB::table('recruitment_demand')->where('qty_needed', '>', 0)
-            ->where('status_demand', 'Approved')->distinct()->pluck('status_job');
+        // Get distinct values for dropdowns from actual tables
+        $departments = EmployeeDepartment::whereHas('demands', function ($q) {
+            $q->where('qty_needed', '>', 0)
+                ->where('status_demand', 'Approved');
+        })
+            ->select('id', 'department')
+            ->get();
+
+        $positions = EmployeePosition::whereHas('demands', function ($q) {
+            $q->where('qty_needed', '>', 0)
+                ->where('status_demand', 'Approved');
+        })
+            ->select('id', 'position')
+            ->get();
+
+        $jobStatuses = DB::table('recruitment_demand')
+            ->where('qty_needed', '>', 0)
+            ->where('status_demand', 'Approved')
+            ->distinct()
+            ->pluck('status_job');
 
         $demand = $query->get();
 
@@ -1201,8 +1253,9 @@ class RecruitmentController extends Controller
 
         $applicant = recruitment_applicant::findOrFail($request->applicant_id);
 
-        // Ambil data posisi baru dari tabel recruitment_demand
-        $newDemand = recruitment_demand::findOrFail($request->new_demand_id);
+        // Get new position data with relationships
+        $newDemand = recruitment_demand::with(['departmentRelation', 'positionRelation'])
+            ->findOrFail($request->new_demand_id);
 
         // Update database
         $applicant->update([
@@ -1211,12 +1264,15 @@ class RecruitmentController extends Controller
             'updated_at' => now(),
         ]);
 
-        // Kirim email ke applicant
-        Mail::to($applicant->email)->send(new PositionExchangedMail($applicant, $newDemand->position, $newDemand->department));
+        // Send email with proper department and position names
+        Mail::to($applicant->email)->send(new PositionExchangedMail(
+            $applicant,
+            $newDemand->positionRelation->position ?? 'Unknown Position',
+            $newDemand->departmentRelation->department ?? 'Unknown Department'
+        ));
 
         return response()->json(['message' => 'Position exchanged and email sent successfully']);
     }
-
 
     public function get_exchange($id)
     {
@@ -1240,23 +1296,26 @@ class RecruitmentController extends Controller
         ]);
     }
 
-
     public function add_to_employee(Request $request, $id)
     {
-        //dd($request->all(), $id);
         try {
             $applicant = recruitment_applicant::findOrFail($id);
-            $demand = recruitment_demand::findOrFail($applicant->recruitment_demand_id);
-
+            $demand = recruitment_demand::with(['departmentRelation', 'positionRelation'])
+                ->findOrFail($applicant->recruitment_demand_id);
+    
+            // Get department and position names from relationships
+            $departmentName = $demand->departmentRelation->department ?? 'Unknown Department';
+            $positionName = $demand->positionRelation->position ?? 'Unknown Position';
+    
             // Ambil join_date dari request
             $joinDate = $request->join_date ? Carbon::parse($request->join_date) : now();
             $yearMonth = $joinDate->format('Ym'); // Format YYYYMM
-
+    
             // Cari employee terakhir di bulan tersebut
             $lastEmployee = User::where('employee_id', 'like', "{$yearMonth}%")
                 ->orderBy('employee_id', 'desc')
                 ->first();
-
+    
             // Tentukan nomor urut
             $newEmployeeNumber = 1;
             if ($lastEmployee) {
@@ -1264,19 +1323,19 @@ class RecruitmentController extends Controller
                 $newEmployeeNumber = $lastNumber + 1;
             }
             $employeeId = $yearMonth . str_pad($newEmployeeNumber, 3, '0', STR_PAD_LEFT);
-
+    
             // Handle file copying
             $photoProfilePath = $this->copyFile($applicant->photo_profile_path, "user/photos_profile/{$employeeId}");
             $cvPath = $this->copyFile($applicant->cv_path, "user/cv_user/cv_{$employeeId}");
             $idCardPath = $this->copyFile($applicant->ID_card_path, "user/ID_card/ID_card_{$employeeId}");
             $achievementPath = $this->copyFile($applicant->achievement_path, "user/achievement_user/achievement_{$employeeId}");
-
+    
             // Create new employee
             $employee = User::create([
                 'employee_id' => $employeeId,
                 'name' => $applicant->name,
-                'position' => $demand->position,
-                'department' => $demand->department,
+                'position_id' => $demand->position_id,
+                'department_id' => $demand->department_id,
                 'email' => $applicant->email,
                 'phone_number' => $applicant->phone_number,
                 'employee_status' => $demand->status_job,
@@ -1308,7 +1367,7 @@ class RecruitmentController extends Controller
                 'created_at' => now(),
                 'updated_at' => now()
             ]);
-
+    
             // Copy additional data
             $this->copyEducation($applicant->id, $employee->id);
             $this->copyFamily($applicant->id, $employee->id);
@@ -1316,30 +1375,30 @@ class RecruitmentController extends Controller
             $this->copyLanguages($applicant->id, $employee->id);
             $this->copyTraining($applicant->id, $employee->id);
             $this->copyOrganization($applicant->id, $employee->id);
-
+    
             // Update demand quantities
             $demand->decrement('qty_needed');
             $demand->increment('qty_fullfil');
-
+    
             // Update applicant status
             $applicant->update(['status_applicant' => 'Done']);
-
+    
             // **KIRIM EMAIL KE PESERTA**
             Mail::to($applicant->email)->send(new AcceptedApplicantMail(
                 $applicant,
-                $demand->position,
-                $demand->department,
+                $positionName,
+                $departmentName,
                 $joinDate->toFormattedDateString()
             ));
-
+    
             // Ambil semua email user KECUALI email peserta yang baru diterima
-            $userEmails = User::where('email', '!=', $applicant->email)->pluck('email')->toArray();
-
+            $userEmails = User::where('email', '!=', $applicant->email)
+                ->pluck('email')
+                ->toArray();
+    
             // Kirim email ke semua user (kecuali peserta yang baru diterima)
             Mail::to($userEmails)->send(new NewEmployeeNotificationMail($employee));
-
-
-
+    
             return response()->json(['message' => 'Employee added successfully']);
         } catch (\Exception $e) {
             return response()->json(['message' => 'Failed to add employee: ' . $e->getMessage()], 500);

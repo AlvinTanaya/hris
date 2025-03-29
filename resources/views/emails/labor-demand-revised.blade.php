@@ -145,8 +145,8 @@
             <div class="details-box">
                 <h3>Request Details:</h3>
                 <ul>
-                    <li><strong>Position:</strong> {{ $demand->position }}</li>
-                    <li><strong>Department:</strong> {{ $demand->department }}</li>
+                    <li><strong>Position:</strong> {{ $positionName }}</li>
+                    <li><strong>Department:</strong> {{ $departmentName }}</li>
                     <li><strong>Quantity Needed:</strong> {{ $demand->qty_needed }}</li>
                 </ul>
             </div>

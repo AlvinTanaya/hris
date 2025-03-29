@@ -422,8 +422,8 @@
                             <tr data-id="${id}">
                                 <td>${emp.employee_id}</td>
                                 <td>${emp.name}</td>
-                                <td>${emp.position}</td>
-                                <td>${emp.department}</td>
+                                <td>${emp.position.position}</td>
+                                <td>${emp.department.department}</td>
                                 <td class="text-center">
                                     <button type="button" class="btn btn-danger btn-sm removeEmployee" data-id="${id}">Remove</button>
                                 </td>

@@ -14,6 +14,9 @@ class LaborDemandDeclined extends Mailable
 
     public $demand;
 
+    public $positionName;
+    public $departmentName;
+
     /**
      * Create a new message instance.
      *
@@ -22,6 +25,8 @@ class LaborDemandDeclined extends Mailable
     public function __construct(recruitment_demand $demand)
     {
         $this->demand = $demand;
+        $this->positionName = $demand->positionRelation->position ?? 'Unknown Position';
+        $this->departmentName = $demand->departmentRelation->department ?? 'Unknown Department';
     }
 
     /**
@@ -32,10 +37,12 @@ class LaborDemandDeclined extends Mailable
     public function build()
     {
         return $this->subject('Labor Demand Request Declined: ' . $this->demand->labor_demand_id)
-                   ->markdown('emails.labor-demand-declined')
-                   ->with([
-                       'demand' => $this->demand,
-                       'url' => route('welcome') 
-                   ]);
+            ->markdown('emails.labor-demand-declined')
+            ->with([
+                'demand' => $this->demand,
+                'positionName' => $this->positionName,
+                'departmentName' => $this->departmentName,
+                'url' => route('welcome')
+            ]);
     }
 }

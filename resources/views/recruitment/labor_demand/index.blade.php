@@ -120,20 +120,24 @@
                     </select>
                 </div>
                 <div class="col-md-4">
-                    <label for="department" class="form-label">Department</label>
-                    <select class="form-select" id="department" name="department">
+                    <label for="department_id" class="form-label">Department</label>
+                    <select class="form-select" id="department_id" name="department_id">
                         <option value="">All Departments</option>
                         @foreach($departments as $dept)
-                        <option value="{{ $dept }}" {{ request('department') == $dept ? 'selected' : '' }}>{{ $dept }}</option>
+                        <option value="{{ $dept->id }}" {{ request('department_id') == $dept->id ? 'selected' : '' }}>
+                            {{ $dept->department }}
+                        </option>
                         @endforeach
                     </select>
                 </div>
                 <div class="col-md-4">
-                    <label for="position" class="form-label">Position</label>
-                    <select class="form-select" id="position" name="position">
+                    <label for="position_id" class="form-label">Position</label>
+                    <select class="form-select" id="position_id" name="position_id">
                         <option value="">All Positions</option>
                         @foreach($positions as $pos)
-                        <option value="{{ $pos }}" {{ request('position') == $pos ? 'selected' : '' }}>{{ $pos }}</option>
+                        <option value="{{ $pos->id }}" {{ request('position_id') == $pos->id ? 'selected' : '' }}>
+                            {{ $pos->position }}
+                        </option>
                         @endforeach
                     </select>
                 </div>
@@ -219,9 +223,8 @@
                             </td>
 
 
-
-                            <td>{{ $item->department }}</td>
-                            <td>{{ $item->position}}</td>
+                            <td>{{ $item->department_name }}</td>
+                            <td>{{ $item->position_name }}</td>
                             <td>{{ $item->status_job}}</td>
                             <td>{{ $item->opening_date }}</td>
                             <td>{{ $item->closing_date }}</td>
@@ -255,8 +258,8 @@
                                     data-id="{{ $item->id }}"
                                     data-recruitment_demand_id="{{ $item->recruitment_demand_id }}"
                                     data-status="{{ $item->status_demand }}"
-                                    data-department="{{ $item->department }}"
-                                    data-position="{{ $item->position }}"
+                                    data-department="{{ $item->department_name }}"
+                                    data-position="{{ $item->position_name }}"
                                     data-opened="{{ $item->opening_date }}"
                                     data-closed="{{ $item->closing_date }}"
                                     data-status-job="{{ $item->status_job }}"
@@ -361,7 +364,7 @@
                                 </div>
                                 <div class="info-group">
                                     <label>Status</label>
-                                    <p id="view-status" class="badge bg-primary"></p>
+                                    <p id="view-status"></p>
                                 </div>
                                 <div class="info-group">
                                     <label>Department</label>
@@ -526,11 +529,35 @@
     function showLaborDetails(data) {
         // Basic information
         $('#view-recruitment_demand_id').text(data.recruitment_demand_id);
-        $('#view-status').text(data.status_ptk);
-        $('#view-department').text(data.department);
-        $('#view-position').text(data.position);
-        $('#view-opened').text(formatDate(data.opening_date));
-        $('#view-closed').text(formatDate(data.closing_date));
+
+        // Status with appropriate badge color
+        const statusElement = $('#view-status');
+        statusElement.text(data.status_demand);
+
+        // Remove all existing badge classes
+        statusElement.removeClass('badge-primary badge-success badge-danger badge-warning');
+
+        // Add appropriate badge class based on status
+        switch (data.status_demand) {
+            case 'Approved':
+                statusElement.addClass('badge bg-success');
+                break;
+            case 'Declined':
+                statusElement.addClass('badge bg-danger');
+                break;
+            case 'Pending':
+                statusElement.addClass('badge bg-warning text-dark');
+                break;
+            case 'Revised':
+                statusElement.addClass('badge bg-primary');
+                break;
+            default:
+                statusElement.addClass('badge bg-secondary');
+        }
+        $('#view-department').text(data.department_name);
+        $('#view-position').text(data.position_name);
+        $('#view-opened').text(data.opening_date);
+        $('#view-closed').text(data.closing_date);
         $('#view-status-job').text(data.status_job);
         $('#view-needed').text(data.qty_needed);
         $('#view-fullfill').text(data.qty_fullfil);
@@ -538,19 +565,9 @@
         $('#view-education').text(data.education);
         $('#view-major').text(data.major);
         $('#view-time-experience').text(formatWorkExperience(data.time_work_experience));
-        $('#view-years-work').text(data.length_of_working);
-        $('#view-reason').text(data.response_reason || '-');
+        $('#view-years-work').text(data.length_of_working || 'N/A');
 
-        // Function to format dates
-        function formatDate(date) {
-            return new Date(date).toLocaleDateString('en-GB', {
-                day: '2-digit',
-                month: 'short',
-                year: 'numeric'
-            });
-        }
-
-        // Function to populate lists with proper bullet points
+        // Populate lists
         populateList('view-reason-list', data.reason);
         populateList('view-purpose-list', data.job_goal);
         populateList('view-experience-list', data.experience);
@@ -558,6 +575,7 @@
 
         $('#viewModal').modal('show');
     }
+
 
     function formatWorkExperience(value) {
         return value.replace('1_12_', '1-12 ')
@@ -596,19 +614,44 @@
         // Event listener for view button
         $('.view-btn').click(function() {
             let id = $(this).data('id');
-            // Fetch data via AJAX (Replace with actual API route)
+
+            // Set the basic data from data attributes first
+            let basicData = {
+                recruitment_demand_id: $(this).data('recruitment_demand_id'),
+                status_demand: $(this).data('status'),
+                department_name: $(this).data('department'),
+                position_name: $(this).data('position'),
+                opening_date: $(this).data('opened'),
+                closing_date: $(this).data('closed'),
+                status_job: $(this).data('status-job'),
+                reason: $(this).data('reason'),
+                qty_needed: $(this).data('needed'),
+                qty_fullfil: $(this).data('fullfill'),
+                gender: $(this).data('gender'),
+                job_goal: $(this).data('job-goal'),
+                education: $(this).data('education'),
+                major: $(this).data('major'),
+                experience: $(this).data('experience'),
+                length_of_working: $(this).data('length-of-working'),
+                time_work_experience: $(this).data('time-work-experience'),
+                response: $(this).data('declined-reason'),
+                skills: $(this).data('skills')
+            };
+
+            // Show basic data immediately
+            showLaborDetails(basicData);
+
+            // Then fetch additional details via AJAX
             $.ajax({
                 url: `/recruitment/labor_demand/${id}`,
                 type: 'GET',
                 success: function(response) {
+                    // Update with the full data from the server
                     showLaborDetails(response);
                 },
                 error: function(xhr) {
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Error',
-                        text: 'Failed to load data'
-                    });
+                    console.error('Failed to load full details:', xhr);
+                    // Keep showing the basic data we already had
                 }
             });
         });

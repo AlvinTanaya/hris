@@ -2,117 +2,105 @@
 
 namespace App\Http\Controllers;
 
-
-
 use Carbon\Carbon;
-use Illuminate\Bus\UpdatedBatchJobCounts;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
-use Maatwebsite\Excel\Facades\Excel;
-use Illuminate\Support\Facades\Auth;
 
-use App\Imports\EmployeesImport;
 use App\Models\User;
-use App\Models\notification;
+use App\Models\Notification;
+use App\Models\EmployeeDepartment;
+use App\Models\EmployeePosition;
 
 use App\Mail\EmployeeInvitationMail;
 
-
-use function Laravel\Prompts\note;
-
 class AnnouncementController extends Controller
 {
-
     public function index(Request $request)
     {
         $query = Notification::query();
-
+    
         // Apply filters if available
         if ($request->filled('maker_id')) {
             $query->where('maker_id', $request->maker_id);
         }
-
+    
         if ($request->filled('user_id')) {
             $query->where('users_id', $request->user_id);
         }
-
+    
         if ($request->filled('created_at')) {
             $query->whereDate('created_at', $request->created_at);
         }
-
+    
         // Group by to merge similar messages
-        $announcements = $query->select(
-            'message',
-            'maker_id',
-            'created_at',
-            DB::raw('GROUP_CONCAT(users_id) as users_list') // Gabungkan users_id dalam satu kolom
-        )
+        $announcements = $query
+            ->with(['maker' => function($q) {
+                $q->with('position', 'department');
+            }])
+            ->select(
+                'message',
+                'maker_id',
+                'created_at',
+                DB::raw('GROUP_CONCAT(users_id) as users_list')
+            )
             ->groupBy('message', 'maker_id', 'created_at')
             ->orderBy('created_at', 'desc')
             ->get();
-
-        // Get unique values for dropdowns
-        $makers = User::whereIn('id', Notification::pluck('maker_id'))->get();
-        $users = User::whereIn('id', Notification::pluck('users_id'))->get();
-
+    
+        // Get unique values for dropdowns with eager loading
+        $makers = User::with('position', 'department')
+            ->whereIn('id', Notification::pluck('maker_id'))
+            ->get();
+    
+        $users = User::with('position', 'department')
+            ->whereIn('id', Notification::pluck('users_id'))
+            ->get();
+    
         return view('announcement.index', compact('announcements', 'makers', 'users'));
     }
-
-
-
-
 
     public function users(Request $request)
     {
         // Ambil semua users_id yang memiliki message dan created_at yang sama
-        $userIds = notification::where('message', $request->message)
+        $userIds = Notification::where('message', $request->message)
             ->where('created_at', $request->created_at)
-            ->pluck('users_id'); // Ambil ID user aja
+            ->pluck('users_id');
 
         // Cari data users berdasarkan user_id yang ditemukan di notifikasi
         $users = User::whereIn('id', $userIds)
-            ->select('employee_id', 'name', 'position', 'department')
-            ->get();
-
-        // dd($users);
+            ->with('position', 'department') // Eager load relationships
+            ->select('id', 'employee_id', 'name', 'position_id', 'department_id')
+            ->get()
+            ->map(function ($user) {
+                return [
+                    'employee_id' => $user->employee_id,
+                    'name' => $user->name,
+                    'position' => $user->position ? $user->position->position : '-',
+                    'department' => $user->department ? $user->department->department : '-'
+                ];
+            });
 
         return response()->json(['users' => $users]);
     }
 
-
-
-
     public function create()
     {
-
-        $employees = User::where('employee_status', '!=', 'Inactive')->get();
+        $employees = User::with(['department', 'position'])
+        ->where('employee_status', '!=', 'Inactive')
+        ->get();
 
         // Mengambil daftar departemen unik dari pegawai yang aktif
-        $departments = User::where('employee_status', '!=', 'Inactive')
-            ->whereNotNull('department')
-            ->distinct()
-            ->pluck('department');
+        $departments = EmployeeDepartment::all();
 
         // Mengambil daftar posisi unik dari pegawai yang aktif
-        $positions = User::where('employee_status', '!=', 'Inactive')
-            ->whereNotNull('position')
-            ->distinct()
-            ->pluck('position');
+        $positions = EmployeePosition::all();
 
         return view('announcement.create', compact('employees', 'departments', 'positions'));
     }
 
-
-
-
     public function store(Request $request)
     {
-
-        //dd($request->all());
         // Validasi request
         $request->validate([
             'message' => 'required',
@@ -120,18 +108,21 @@ class AnnouncementController extends Controller
         ]);
 
         // Ambil nama pembuat pengumuman
-        $maker = User::find($request->maker_id);
+        $maker = User::with('position', 'department')->find($request->maker_id);
 
         if ($maker) {
-            if ($maker->position == $maker->department) {
-                $makerName = "{$maker->name} - {$maker->position}";
+            $makerName = $maker->name;
+            $makerPosition = $maker->position ? $maker->position->position : '-';
+            $makerDepartment = $maker->department ? $maker->department->department : '-';
+
+            if ($makerPosition == $makerDepartment) {
+                $makerName = "{$maker->name} - {$makerPosition}";
             } else {
-                $makerName = "{$maker->name} - {$maker->position} ({$maker->department})";
+                $makerName = "{$maker->name} - {$makerPosition} ({$makerDepartment})";
             }
         } else {
             $makerName = 'PT. Timur Jaya Indosteel';
         }
-
 
         // Jika ada karyawan yang diundang
         if ($request->invited_employees) {
@@ -152,13 +143,17 @@ class AnnouncementController extends Controller
                 ]);
             }
 
-            $user = User::find($request->maker_id);
+            $user = User::with('position', 'department')->find($request->maker_id);
 
             if ($user) {
-                if ($user->position == $user->department) {
-                    $userName = "{$user->name} - {$user->position}";
+                $userName = $user->name;
+                $userPosition = $user->position ? $user->position->position : '-';
+                $userDepartment = $user->department ? $user->department->department : '-';
+
+                if ($userPosition == $userDepartment) {
+                    $userName = "{$user->name} - {$userPosition}";
                 } else {
-                    $userName = "{$user->name} - {$user->position} ({$user->department})";
+                    $userName = "{$user->name} - {$userPosition} ({$userDepartment})";
                 }
             } else {
                 $userName = 'Employee';

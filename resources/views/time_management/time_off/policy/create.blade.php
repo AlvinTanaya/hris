@@ -1,6 +1,8 @@
 @extends('layouts.app')
 
 @section('content')
+
+
 <div class="container mt-4 mx-auto">
     <!-- Page Heading -->
 
@@ -41,6 +43,8 @@
                         <div class="invalid-feedback">Description is required.</div>
                     </div>
 
+
+
                     <div class="col-md-6">
                         <label for="start_date" class="form-label">Start Date<span class="text-danger">*</span></label>
                         <input type="date" class="form-control" id="start_date" name="start_date" value="{{ old('start_date') }}" required>
@@ -60,7 +64,20 @@
                         </div>
                     </div>
 
-                    <div class="col-12 d-flex justify-content-end">
+
+
+
+                    <div class="col-md-12 d-flex justify-content-between align-items-center">
+
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox"
+                                id="requires_time_input" name="requires_time_input"
+                                {{ old('requires_time_input') ? 'checked' : '' }}>
+                            <label class="form-check-label" for="requires_time_input">
+                                <i class="fas fa-clock me-1"></i> Requires Time Input (For Input Time in Time Off Request)
+                            </label>
+                        </div>
+
                         <button type="submit" class="btn btn-success"><i class="fas fa-save me-2"></i>Save</button>
                     </div>
 

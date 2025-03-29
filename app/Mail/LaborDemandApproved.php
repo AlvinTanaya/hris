@@ -13,6 +13,8 @@ class LaborDemandApproved extends Mailable
     use Queueable, SerializesModels;
 
     public $demand;
+    public $positionName;
+    public $departmentName;
 
     /**
      * Create a new message instance.
@@ -22,6 +24,8 @@ class LaborDemandApproved extends Mailable
     public function __construct(recruitment_demand $demand)
     {
         $this->demand = $demand;
+        $this->positionName = $demand->positionRelation->position ?? 'Unknown Position';
+        $this->departmentName = $demand->departmentRelation->department ?? 'Unknown Department';
     }
 
     /**
@@ -31,10 +35,12 @@ class LaborDemandApproved extends Mailable
      */
     public function build()
     {
-        return $this->subject('Labor Demand Request Approved: ' . $this->demand->labor_demand_id)
+        return $this->subject('Labor Demand Request Approved: ' . $this->demand->recruitment_demand_id)
                    ->markdown('emails.labor-demand-approved')
                    ->with([
                        'demand' => $this->demand,
+                       'positionName' => $this->positionName,
+                       'departmentName' => $this->departmentName,
                        'url' => route('welcome') 
                    ]);
     }

@@ -27,7 +27,9 @@
                     <select name="position" id="position" class="form-select">
                         <option value="">All Positions</option>
                         @foreach($positions as $pos)
-                        <option value="{{ $pos }}" {{ request('position') == $pos ? 'selected' : '' }}>{{ $pos }}</option>
+                        <option value="{{ $pos }}" {{ request('position') == $pos ? 'selected' : '' }}>
+                            {{ $pos }}
+                        </option>
                         @endforeach
                     </select>
                 </div>
@@ -36,7 +38,9 @@
                     <select name="department" id="department" class="form-select">
                         <option value="">All Departments</option>
                         @foreach($departments as $dept)
-                        <option value="{{ $dept }}" {{ request('department') == $dept ? 'selected' : '' }}>{{ $dept }}</option>
+                        <option value="{{ $dept }}" {{ request('department') == $dept ? 'selected' : '' }}>
+                            {{ $dept }}
+                        </option>
                         @endforeach
                     </select>
                 </div>
@@ -45,7 +49,7 @@
                     <select name="resign_type" id="resign_type" class="form-select">
                         <option value="">All Types</option>
                         @foreach($finalTypes as $type)
-                        <option value="{{ $type }}" {{ request('department') == $type ? 'selected' : '' }}>{{ $type }}</option>
+                        <option value="{{ $type }}" {{ request('type') == $type ? 'selected' : '' }}>{{ $type }}</option>
                         @endforeach
                     </select>
                 </div>

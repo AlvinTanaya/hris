@@ -179,10 +179,6 @@
                         <td>{{ $user->employee_id ?? 'N/A' }}</td>
                     </tr>
                     <tr>
-                        <th>Department:</th>
-                        <td>{{ $user->department ?? 'N/A' }}</td>
-                    </tr>
-                    <tr>
                         <th>Time Off Type:</th>
                         <td>{{ $policy->time_off_name ?? 'N/A' }}</td>
                     </tr>

@@ -12,6 +12,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
@@ -25,33 +26,37 @@ use App\Models\users_work_experience;
 use App\Models\users_language;
 use App\Models\users_training;
 use App\Models\users_organization;
+use App\Models\Notification;
+use App\Models\EmployeeDepartment;
+use App\Models\EmployeePosition;
+
 
 use App\Mail\TransferNotification;
 use App\Mail\UpdateNotification;
 use App\Mail\DepartmentUpdateNotification;
 use App\Mail\NewEmployeeNotification;
 use App\Mail\WelcomeNewEmployee;
-
+use App\Mail\ContractExtensionNotification;
 
 
 class UserController extends Controller
 {
     // Display a listing of pegawai
-    public function index(Request $request)
+    public function employees_index(Request $request)
     {
-        $query = User::query();
+        $query = User::with(['position', 'department']); // Eager load relationships
 
         // Apply filters
         if ($request->filled('status')) {
             $query->where('employee_status', $request->status);
         }
 
-        if ($request->filled('position')) {
-            $query->where('position', $request->position);
+        if ($request->filled('position_id')) {
+            $query->where('position_id', $request->position_id);
         }
 
-        if ($request->filled('department')) {
-            $query->where('department', $request->department);
+        if ($request->filled('department_id')) {
+            $query->where('department_id', $request->department_id);
         }
 
         if ($request->filled('status_app')) {
@@ -59,27 +64,31 @@ class UserController extends Controller
         }
 
         // Get the filtered results
-        $user = $query->get();
+        $users = $query->get();
 
-        // Get unique values for dropdowns
-        $department = User::distinct()->pluck('department');
-        $position = User::distinct()->pluck('position');
+        // Get options for dropdowns from related tables
+        $departments = EmployeeDepartment::orderBy('department')->get();
+        $positions = EmployeePosition::orderBy('ranking')->get();
         $status = User::distinct()->pluck('employee_status');
         $status_app = User::distinct()->pluck('user_status');
 
-        return view('user.index', compact('user', 'department', 'position', 'status', 'status_app'));
+        return view('user.employees.index', compact('users', 'departments', 'positions', 'status', 'status_app'));
     }
 
+
     // Show the form for creating a new pegawai
-    public function create()
+    public function employees_create()
     {
-        return view('user/create');
+        $positions = EmployeePosition::orderBy('ranking')->get();
+        $departments = EmployeeDepartment::orderBy('department')->get();
+
+        return view('user/employees/create', compact('positions', 'departments'));
     }
 
 
 
     // Store a newly created pegawai in the database
-    public function store(Request $request)
+    public function employees_store(Request $request)
     {
         //dd($request->all());
         // Validate the form data
@@ -89,8 +98,8 @@ class UserController extends Controller
             'cv' => 'nullable|mimes:pdf|max:2048',
             'achievement' => 'nullable|mimes:pdf|max:2048',
             'name' => 'required',
-            'position' => 'required',
-            'department' => 'required',
+            'position_id' => 'required|exists:employee_positions,id',
+            'department_id' => 'required|exists:employee_departments,id',
             'join_date' => 'required',
             'email' => 'required',
             'phone_number' => 'required',
@@ -217,8 +226,9 @@ class UserController extends Controller
             'cv_path' => $cvPath ?? null,
             'achievement_path' => $achievementPath ?? null,
             'name' => $request->name,
-            'position' => $request->position,
-            'department' => $request->department,
+            'position_id' => $request->position_id,
+            'department_id' => $request->department_id,
+
             'join_date' => $joinDate,
             'contract_start_date' => $request->contract_start_date ?? null,
             'contract_end_date' => $request->contract_end_date ?? null,
@@ -404,30 +414,42 @@ class UserController extends Controller
 
 
 
+        // Send email to all existing users except the new one
+        $allUsers = User::where('id', '!=', $user->id)->get();
+        foreach ($allUsers as $recipient) {
+            Mail::to($recipient->email)->send(new NewEmployeeNotification($user));
 
-
-
-
-        // Kirim email ke semua user yang sudah ada
-        $allUsers = User::where('id', '!=', $user->id)->pluck('email');
-        foreach ($allUsers as $email) {
-            Mail::to($email)->send(new NewEmployeeNotification($user));
+            Notification::create([
+                'users_id' => $recipient->id,  // Fixed variable name
+                'message' => "A new employee {$user->name} has joined",  // Added meaningful message
+                'type' => 'new_employee',
+                'maker_id' => Auth::user()->id,
+                'status' => 'Unread'
+            ]);
         }
 
-        // Kirim email ke pegawai baru
+        // Send welcome email to the new employee
         Mail::to($user->email)->send(new WelcomeNewEmployee($user));
 
+        Notification::create([
+            'users_id' => $user->id,
+            'message' => "Welcome to our team!",
+            'type' => 'welcome',
+            'maker_id' => Auth::user()->id,
+            'status' => 'Unread'
+        ]);
 
 
 
 
 
-        return redirect()->route('user.index')->with('success', 'Employee added successfully');
+
+        return redirect()->route('user.employees.index')->with('success', 'Employee added successfully');
     }
 
 
 
-    public function import(Request $request)
+    public function employees_import(Request $request)
     {
         $request->validate([
             'file' => 'required|mimes:xlsx,csv',
@@ -438,16 +460,19 @@ class UserController extends Controller
         return redirect()->back()->with('success', 'Employees imported successfully.');
     }
 
-    public function edit($id)
+    public function employees_edit($id)
     {
-        // Find the Pegawai by ID
-        $user = User::findOrFail($id);
+        // Find the User with position and department relationships
+        $user = User::with(['position', 'department'])->findOrFail($id);
 
-        // Decode bank information from JSON
+        // Get all positions and departments for dropdowns
+        $positions = EmployeePosition::orderBy('ranking')->get();
+        $departments = EmployeeDepartment::orderBy('department')->get();
+
+        // Your existing code for other data...
         $bankNames = json_decode($user->bank_name, true) ?: [];
         $bankNumbers = json_decode($user->bank_number, true) ?: [];
 
-        // Combine bank data for easier handling in the view
         $bankData = [];
         foreach ($bankNames as $index => $name) {
             if (isset($bankNumbers[$index])) {
@@ -458,7 +483,7 @@ class UserController extends Controller
             }
         }
 
-        // Retrieve associated records with the user's ID
+        // Retrieve associated records
         $userEducation = users_education::where('users_id', $id)->get();
         $userWork = users_work_experience::where('users_id', $id)->get();
         $userFamily = users_family::where('users_id', $id)->get();
@@ -466,9 +491,7 @@ class UserController extends Controller
         $userLanguage = users_language::where('users_id', $id)->get();
         $userOrganization = users_organization::where('users_id', $id)->get();
 
-        // Check for empty sets
-        // (your existing code for checking empty sets)
-
+        // Your duty query remains the same
         $duty = DB::table('elearning_invitation')
             ->join('elearning_lesson', 'elearning_invitation.lesson_id', '=', 'elearning_lesson.id')
             ->join('elearning_schedule', 'elearning_invitation.schedule_id', '=', 'elearning_schedule.id')
@@ -487,9 +510,21 @@ class UserController extends Controller
             )
             ->get();
 
-        // Pass the data to the update view
-        return view('user.update', compact('user', 'userEducation', 'userWork', 'userFamily', 'userOrganization', 'userLanguage', 'userTraining', 'duty', 'bankData'));
+        return view('user/employees/update', compact(
+            'user',
+            'positions',
+            'departments',
+            'userEducation',
+            'userWork',
+            'userFamily',
+            'userOrganization',
+            'userLanguage',
+            'userTraining',
+            'duty',
+            'bankData'
+        ));
     }
+
     public function update(Request $request, $id)
     {
         //dd($request->department);
@@ -522,7 +557,8 @@ class UserController extends Controller
             'contract_start_date' => 'required_if:employee_status,Contract,Part Time|nullable|date',
             'contract_end_date' => 'required_if:employee_status,Contract,Part Time|nullable|date',
             'distance' => 'required',
-            'department' => 'required',
+            'position_id' => 'required|exists:employee_positions,id',
+            'department_id' => 'required|exists:employee_departments,id'
 
         ]);
 
@@ -655,8 +691,8 @@ class UserController extends Controller
             'password' => $newpassword,
             'employee_id' => $request->employee_id,
             'name' => $request->name,
-            'position' => $request->position,
-            'department' => $request->department,
+            'position_id' => $request->position_id,
+            'department_id' => $request->department_id,
             'join_date' => $request->join_date,
             'email' => $request->email,
             'phone_number' => $request->phone_number,
@@ -1106,101 +1142,207 @@ class UserController extends Controller
         }
 
 
-
+        // 1. Send update notification to the employee who was updated
         Mail::to($user->email)->send(new UpdateNotification($user->name));
 
+        // Create notification for the updated employee
+        Notification::create([
+            'users_id' => $user->id,
+            'message' => "Your profile information has been updated",
+            'type' => 'employee_update',
+            'maker_id' => Auth::user()->id,
+            'status' => 'Unread'
+        ]);
 
+        // 2. Get HR department users (first we need to find HR department ID)
+        $hrDepartment = EmployeeDepartment::where('department', 'Human Resources')->first();
+        if ($hrDepartment) {
+            // Get HR users excluding the updated user (if they're in HR)
+            $hrUsers = User::where('department_id', $hrDepartment->id)
+                ->where('id', '!=', $user->id)
+                ->get();
 
-        // Ambil email karyawan di HR
-        $hr_emails = User::where('department', 'Human Resources')->where('email', '!=', $user->email)->pluck('email');
+            // Send email to all HR staff
+            $hrEmails = $hrUsers->pluck('email');
+            Mail::to($hrEmails)->send(new DepartmentUpdateNotification(
+                $user->employee_id,
+                $user->position->position, // Access position name through relationship
+                $user->department->department // Access department name through relationship
+            ));
 
-
-        Mail::to($hr_emails)->send(new DepartmentUpdateNotification($user->employee_id, $user->position, $user->department));
-
+            // Create notifications for each HR staff
+            foreach ($hrUsers as $hrUser) {
+                Notification::create([
+                    'users_id' => $hrUser->id,
+                    'message' => "Employee data for {$user->name} (ID: {$user->employee_id}) has been updated",
+                    'type' => 'employee_update',
+                    'maker_id' => Auth::user()->id,
+                    'status' => 'Unread'
+                ]);
+            }
+        }
 
         // Redirect ke halaman index atau halaman lain dengan pesan sukses
-        return redirect()->route('user.index')->with('success', 'Data Pegawai berhasil diupdate.');
+        return redirect()->route('user.employees.index')->with('success', 'Data Pegawai berhasil diupdate.');
     }
 
 
 
-    public function history($id)
+    public function employees_transfer_user(Request $request, $id)
     {
-        $user = User::findOrFail($id);
-
-        $historyTransfers = history_transfer_employee::where('users_id', $id)->get();
-        $historyExtend = history_extend_employee::where('users_id', $id)->get();
-
-        return view('user.history', compact('user', 'historyTransfers', 'historyExtend'));
-    }
-
-
-    public function transfer($id)
-    {
-        // Find the Pegawai by ID
-        $user = User::findOrFail($id);
-        // Pass the data to the update view
-        return view('user.transfer', compact('user'));
-    }
-
-
-    public function transfer_user(Request $request, $id)
-    {
-        // Validasi input
         $request->validate([
-            'old_position' => 'required|string|max:255',
-            'old_department' => 'required|string|max:255',
-            'new_position' => 'string|max:255',
-            'new_department' => 'string|max:255',
+            'old_position_id' => 'required|exists:employee_positions,id',
+            'old_department_id' => 'required|exists:employee_departments,id',
+            'new_position_id' => 'nullable|exists:employee_positions,id',
+            'new_department_id' => 'nullable|exists:employee_departments,id',
             'reason' => 'required|string|max:255',
             'transfer_type' => 'required|string|max:255',
         ]);
 
-        // Create a new History
+        $user = User::with(['position', 'department'])->findOrFail($id);
+
+        // Get position and department names
+        $oldPosition = EmployeePosition::find($request->old_position_id);
+        $oldDepartment = EmployeeDepartment::find($request->old_department_id);
+        $newPosition = $request->new_position_id ? EmployeePosition::find($request->new_position_id) : null;
+        $newDepartment = $request->new_department_id ? EmployeeDepartment::find($request->new_department_id) : null;
+
+        // Create transfer history
         history_transfer_employee::create([
             'users_id' => $id,
-            'old_position' => $request->old_position,
-            'old_department' => $request->old_department,
-            'new_position' => $request->new_position,
-            'new_department' => $request->new_department,
+            'old_position_id' => $request->old_position_id,
+            'old_department_id' => $request->old_department_id,
+            'new_position_id' => $request->new_position_id,
+            'new_department_id' => $request->new_department_id,
             'transfer_type' => $request->transfer_type,
             'reason' => $request->reason,
         ]);
 
-        // Cari data pegawai berdasarkan ID
-        $user = User::findOrFail($id);
-
-        // Update user data
+        // Update user based on transfer type
         if ($request->transfer_type == "Penetapan") {
-            $user->update([
-                'employee_status' => "Tetap",
-            ]);
+            $user->update(['employee_status' => "Full Time"]);
         } elseif ($request->transfer_type == "Resign") {
-            $user->update([
-                'employee_status' => "Inactive",
-            ]);
+            $user->update(['employee_status' => "Inactive"]);
         } else {
             $user->update([
-                'position' => $request->new_position,
-                'department' => $request->new_department,
+                'position_id' => $request->new_position_id,
+                'department_id' => $request->new_department_id,
             ]);
         }
 
-        // Kirim email notifikasi
+        // Send email notification to employee
         Mail::to($user->email)->send(new TransferNotification(
             $user,
-            $request->old_position,
-            $request->old_department,
-            $request->new_position,
-            $request->new_department,
-            $request->transfer_type
+            $oldPosition->position,
+            $oldDepartment->department,
+            $newPosition ? $newPosition->position : null,
+            $newDepartment ? $newDepartment->department : null,
+            $request->transfer_type,
+            $request->reason,
+            false // isHR flag
         ));
-        // Redirect ke halaman index atau halaman lain dengan pesan sukses
-        return redirect()->route('user.index')->with('success', 'Employee Transfered successfully.');
+
+        // Create notification for the user
+        $message = $this->getTransferMessage($request->transfer_type, $oldPosition, $oldDepartment, $newPosition, $newDepartment);
+
+        Notification::create([
+            'users_id' => $user->id,
+            'message' => $message,
+            'type' => 'employee_transfer',
+            'maker_id' => Auth::id(),
+            'status' => 'Unread'
+        ]);
+
+        // Send email notification to HR department
+        $this->sendHRNotification($user, $request->transfer_type, $oldPosition, $oldDepartment, $newPosition, $newDepartment, $request->reason);
+
+        return redirect()->route('user.employees.index')->with('success', 'Employee transferred successfully.');
     }
 
 
-    public function extendDate(Request $request, $id)
+
+    protected function getTransferMessage($transferType, $oldPosition, $oldDepartment, $newPosition, $newDepartment)
+    {
+        switch ($transferType) {
+            case 'Penetapan':
+                return "Your employment status has been changed to Permanent (Tetap)";
+            case 'Resign':
+                return "Your employment status has been changed to Inactive (Resign)";
+            default:
+                return sprintf(
+                    "Your position has been changed from %s (%s) to %s (%s)",
+                    $oldPosition->position,
+                    $oldDepartment->department,
+                    $newPosition ? $newPosition->position : 'N/A',
+                    $newDepartment ? $newDepartment->department : 'N/A'
+                );
+        }
+    }
+
+    protected function sendHRNotification($user, $transferType, $oldPosition, $oldDepartment, $newPosition, $newDepartment, $reason)
+    {
+        $hrDepartment = EmployeeDepartment::where('department', 'Human Resources')->first();
+
+        if ($hrDepartment) {
+            $hrUsers = User::where('department_id', $hrDepartment->id)
+                ->where('id', '!=', $user->id)
+                ->get();
+
+            foreach ($hrUsers as $hrUser) {
+                // Send email to each HR staff
+                Mail::to($hrUser->email)->send(new TransferNotification(
+                    $user,
+                    $oldPosition->position,
+                    $oldDepartment->department,
+                    $newPosition ? $newPosition->position : null,
+                    $newDepartment ? $newDepartment->department : null,
+                    $transferType,
+                    $reason,
+                    true // isHR flag
+                ));
+
+                // Create notification for HR staff
+                Notification::create([
+                    'users_id' => $hrUser->id,
+                    'message' => $this->getHRNotificationMessage($user, $transferType, $oldPosition, $oldDepartment, $newPosition, $newDepartment),
+                    'type' => 'employee_transfer',
+                    'maker_id' => Auth::id(),
+                    'status' => 'Unread'
+                ]);
+            }
+        }
+    }
+
+    protected function getHRNotificationMessage($user, $transferType, $oldPosition, $oldDepartment, $newPosition, $newDepartment)
+    {
+        switch ($transferType) {
+            case 'Penetapan':
+                return sprintf(
+                    "Employee %s (ID: %s) has been made Permanent (Tetap)",
+                    $user->name,
+                    $user->employee_id
+                );
+            case 'Resign':
+                return sprintf(
+                    "Employee %s (ID: %s) has resigned",
+                    $user->name,
+                    $user->employee_id
+                );
+            default:
+                return sprintf(
+                    "Employee %s (ID: %s) has been transferred from %s (%s) to %s (%s)",
+                    $user->name,
+                    $user->employee_id,
+                    $oldPosition->position,
+                    $oldDepartment->department,
+                    $newPosition ? $newPosition->position : 'N/A',
+                    $newDepartment ? $newDepartment->department : 'N/A'
+                );
+        }
+    }
+
+
+    public function employees_extend_date(Request $request, $id)
     {
         // Validasi input
         $request->validate([
@@ -1210,7 +1352,8 @@ class UserController extends Controller
         ]);
 
         // Ambil data user
-        $user = User::findOrFail($id);
+        $user = User::with(['position', 'department'])->findOrFail($id);
+
         // Update tanggal kontrak di tabel users
         $user->update([
             'contract_start_date' => $request->contract_start_date,
@@ -1221,13 +1364,143 @@ class UserController extends Controller
         // Simpan ke history_extend_employee
         history_extend_employee::create([
             'users_id' => $id,
-            'position' => $user->position,
-            'department' => $user->department,
+            'position_id' => $user->position_id,
+            'department_id' => $user->department_id,
             'start_date' => $user->contract_start_date,
             'end_date' => $user->contract_end_date,
             'reason' => $request->reason,
         ]);
 
+        // Send email notification to employee
+        Mail::to($user->email)->send(new ContractExtensionNotification(
+            $user,
+            $request->contract_start_date,
+            $request->contract_end_date,
+            $request->reason,
+            false // isHR flag
+        ));
+
+        // Create notification for the employee
+        Notification::create([
+            'users_id' => $user->id,
+            'message' => "Your contract has been extended until " . date('F j, Y', strtotime($request->contract_end_date)),
+            'type' => 'contract_extension',
+            'maker_id' => Auth::id(),
+            'status' => 'Unread'
+        ]);
+
+        // Send email notification to HR department
+        $this->notifyHRExtension($user, $request->contract_start_date, $request->contract_end_date, $request->reason);
+
         return redirect()->back()->with('success', 'Contract extended successfully!');
+    }
+
+    protected function notifyHRExtension($user, $startDate, $endDate, $reason)
+    {
+        $hrDepartment = EmployeeDepartment::where('department', 'Human Resources')->first();
+
+        if ($hrDepartment) {
+            $hrUsers = User::where('department_id', $hrDepartment->id)
+                ->where('id', '!=', $user->id)
+                ->get();
+
+            foreach ($hrUsers as $hrUser) {
+                // Send email to each HR staff
+                Mail::to($hrUser->email)->send(new ContractExtensionNotification(
+                    $user,
+                    $startDate,
+                    $endDate,
+                    $reason,
+                    true // isHR flag
+                ));
+
+                // Create notification for HR staff
+                Notification::create([
+                    'users_id' => $hrUser->id,
+                    'message' => "Contract extended for {$user->name} (ID: {$user->employee_id}) until " . date('F j, Y', strtotime($endDate)),
+                    'type' => 'contract_extension',
+                    'maker_id' => Auth::id(),
+                    'status' => 'Unread'
+                ]);
+            }
+        }
+    }
+
+
+
+    // ... method employees yang sudah ada ...
+
+    // ==================== DEPARTMENT METHODS ====================
+    public function departments_index()
+    {
+        $departments = EmployeeDepartment::all();
+        return view('user.departments.index', compact('departments'));
+    }
+
+    public function departments_create()
+    {
+        return view('user.departments.create');
+    }
+
+    public function departments_store(Request $request)
+    {
+        $request->validate(['department' => 'required|string|max:255']);
+
+        EmployeeDepartment::create(['department' => $request->department]);
+        return redirect()->route('user.departments.index')->with('success', 'Department created');
+    }
+
+    public function departments_edit($id)
+    {
+        $department = EmployeeDepartment::findOrFail($id);
+        return view('user/departments/update', compact('department'));
+    }
+
+    public function departments_update(Request $request, $id)
+    {
+        $request->validate(['department' => 'required|string|max:255']);
+
+        EmployeeDepartment::findOrFail($id)->update(['department' => $request->department]);
+        return redirect()->route('user.departments.index')->with('success', 'Department updated');
+    }
+
+    // ==================== POSITION METHODS ====================
+    public function positions_index()
+    {
+        $positions = EmployeePosition::orderBy('ranking', 'asc')->get();
+        return view('user.positions.index', compact('positions'));
+    }
+
+    public function positions_create()
+    {
+        return view('user.positions.create');
+    }
+
+    public function positions_store(Request $request)
+    {
+        $request->validate([
+            'position' => 'required|string|max:255',
+            'ranking' => 'required|integer'
+        ]);
+
+        EmployeePosition::create($request->only(['position', 'ranking']));
+        return redirect()->route('user.positions.index')->with('success', 'Position created');
+    }
+
+    public function positions_edit($id)
+    {
+        $position = EmployeePosition::findOrFail($id);
+        return view('user/positions/update', compact('position'));
+    }
+
+    public function positions_update(Request $request, $id)
+    {
+        $request->validate([
+            'position' => 'required|string|max:255',
+            'ranking' => 'required|integer'
+        ]);
+
+        EmployeePosition::findOrFail($id)->update($request->only(['position', 'ranking']));
+        return redirect()->route('user.positions.index')->with('success', 'Position updated');
     }
 }

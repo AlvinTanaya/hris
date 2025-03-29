@@ -17,6 +17,7 @@ class TimeOffPolicy extends Model
         'id',
         'time_off_name',
         'time_off_description',
+        'requires_time_input',
         'quota',
         'start_date',
         'end_date',

@@ -629,31 +629,10 @@
                     <div>
                         <strong>Note:</strong> Please define the percentage of importance between Degree and Grade.
                         However, you can only adjust the Degree percentage, while the Grade percentage will automatically be adjusted to ensure a total of 100%.
-
-                    </div>
-                </div>
-
-
-                <!-- Configure Ranking Level / Degree Section -->
-                <div class="card mb-4">
-                    <div class="card-header bg-light">
-                        <h6 class="mb-0">Configure Ranking Level Degree</h6>
-                    </div>
-                    <div class="card-body">
-                        <div id="educationLevelsList">
-                            <!-- Education levels will be added here dynamically -->
-                        </div>
-                    </div>
-                </div>
-
-
-                <div class="alert alert-info mt-4 mb-4 d-flex align-items-center border-0 shadow-sm">
-                    <i class="fas fa-info-circle me-3 fa-lg text-primary"></i>
-                    <div>
-                        <strong>Note:</strong> Drag and drop to rearrange education levels. The system will automatically assign a score based on rank (1st rank = highest score).
                         <br><strong>Tip:</strong> It is recommended not to set it as 50/50 for a more meaningful weighting.
                     </div>
                 </div>
+
                 <!-- Weight Distribution Section -->
                 <div class="card">
                     <div class="card-header bg-light">
@@ -683,6 +662,31 @@
                         </div>
                     </div>
                 </div>
+
+
+                <div class="alert alert-info mt-4 mb-4 d-flex align-items-center border-0 shadow-sm">
+                    <i class="fas fa-info-circle me-3 fa-lg text-primary"></i>
+                    <div>
+                        <strong>Note:</strong> Drag and drop to rearrange education levels. The system will automatically assign a score based on rank (1st rank = highest score).
+
+                    </div>
+                </div>
+
+
+
+                <!-- Configure Ranking Level / Degree Section -->
+                <div class="card mb-4">
+                    <div class="card-header bg-light">
+                        <h6 class="mb-0">Configure Ranking Level Degree</h6>
+                    </div>
+                    <div class="card-body">
+                        <div id="educationLevelsList">
+                            <!-- Education levels will be added here dynamically -->
+                        </div>
+                    </div>
+                </div>
+
+
 
 
 
@@ -716,7 +720,16 @@
                         <div class="col-12">
                             <h5>Language Weight Distribution</h5>
                             <p class="text-muted">Configure how verbal and written language skills are weighted in the total language score.</p>
+                            <div class="alert alert-info mt-4 d-flex align-items-center border-0 shadow-sm">
+                                <i class="fas fa-info-circle me-3 fa-lg text-primary"></i>
+                                <div>
+                                    <strong>Note:</strong> Please define the percentage of importance between Written and Verbal.
+                                    However, you can only adjust the Written percentage, while the Verbal percentage will automatically be adjusted to ensure a total of 100%.
+                                    <br><strong>Tip:</strong> It is recommended not to set it as 50/50 for a more meaningful weighting.
+                                </div>
+                            </div>
                             <div class="row">
+
                                 <div class="col-md-5">
                                     <div class="mb-3">
                                         <label for="languageVerbalWeight" class="form-label">Verbal Language Weight (%)</label>
@@ -847,6 +860,14 @@
             <div class="modal-body">
                 <div class="mb-4">
                     <div class="mb-3 fw-bold">Period and Amount Weights</div>
+                    <div class="alert alert-info mt-4 d-flex align-items-center border-0 shadow-sm">
+                        <i class="fas fa-info-circle me-3 fa-lg text-primary"></i>
+                        <div>
+                            <strong>Note:</strong> Please define the percentage of importance between Period and Amount.
+                            However, you can only adjust the Period percentage, while the Amount percentage will automatically be adjusted to ensure a total of 100%.
+                            <br><strong>Tip:</strong> It is recommended not to set it as 50/50 for a more meaningful weighting.
+                        </div>
+                    </div>
                     <div class="row align-items-center">
                         <div class="col-md-5">
                             <div class="mb-3">
@@ -930,6 +951,14 @@
             <div class="modal-body">
                 <div class="mb-4">
                     <div class="mb-3 fw-bold">Period and Amount Weights</div>
+                    <div class="alert alert-info mt-4 d-flex align-items-center border-0 shadow-sm">
+                        <i class="fas fa-info-circle me-3 fa-lg text-primary"></i>
+                        <div>
+                            <strong>Note:</strong> Please define the percentage of importance between Period and Amount.
+                            However, you can only adjust the Period percentage, while the Amount percentage will automatically be adjusted to ensure a total of 100%.
+                            <br><strong>Tip:</strong> It is recommended not to set it as 50/50 for a more meaningful weighting.
+                        </div>
+                    </div>
                     <div class="row align-items-center">
                         <div class="col-md-5">
                             <div class="mb-3">
@@ -1013,6 +1042,14 @@
             <div class="modal-body">
                 <div class="mb-4">
                     <div class="mb-3 fw-bold">Period and Amount Weights</div>
+                    <div class="alert alert-info mt-4 d-flex align-items-center border-0 shadow-sm">
+                        <i class="fas fa-info-circle me-3 fa-lg text-primary"></i>
+                        <div>
+                            <strong>Note:</strong> Please define the percentage of importance between Period and Amount.
+                            However, you can only adjust the Period percentage, while the Amount percentage will automatically be adjusted to ensure a total of 100%.
+                            <br><strong>Tip:</strong> It is recommended not to set it as 50/50 for a more meaningful weighting.
+                        </div>
+                    </div>
                     <div class="row align-items-center">
                         <div class="col-md-5">
                             <div class="mb-3">
@@ -1166,13 +1203,13 @@
         const criteriaConfigs = {
             age: {
                 ranges: [{
-                        min: 15,
-                        max: 20,
+                        min: 21,
+                        max: 25,
                         rank: 1
                     },
                     {
-                        min: 21,
-                        max: 25,
+                        min: 15,
+                        max: 20,
                         rank: 2
                     },
                     {
@@ -1299,12 +1336,12 @@
                         rank: 2
                     },
                     {
-                        min: 1.1,
+                        min: 1,
                         max: 3,
                         rank: 3
                     },
                     {
-                        min: 0,
+                        min: 0.1,
                         max: 1,
                         rank: 4
                     },
@@ -1390,17 +1427,17 @@
 
             experience_duration: { // Memasukkan levels dan weights ke dalam education
                 period: [{
-                        min: 5,
+                        min: 5.1,
                         max: 8,
                         rank: 1
                     },
                     {
-                        min: 3,
+                        min: 3.1,
                         max: 5,
                         rank: 2
                     },
                     {
-                        min: 1,
+                        min: 1.1,
                         max: 3,
                         rank: 3
                     },
@@ -1901,11 +1938,11 @@
             if (typeof Sortable !== 'undefined') {
                 new Sortable(document.getElementById('educationLevelsList'), {
                     handle: '.education-level-handle',
-                    animation: 400, // Increased from 150 to 400ms
-                    easing: "cubic-bezier(0.68, -0.55, 0.265, 1.55)", // Add bouncy easing
-                    ghostClass: "sortable-ghost", // Class for the drop placeholder
-                    chosenClass: "sortable-chosen", // Class for the dragging item
-                    dragClass: "sortable-drag", // Class for the dragging item
+                    animation: 400,
+                    easing: "cubic-bezier(0.68, -0.55, 0.265, 1.55)",
+                    ghostClass: "sortable-ghost",
+                    chosenClass: "sortable-chosen",
+                    dragClass: "sortable-drag",
                     onEnd: function(evt) {
                         // Update rank numbers after sorting
                         $('.education-level-row').each(function(index) {
@@ -1937,7 +1974,7 @@
         $('#educationLevelWeight').on('input', function() {
             let levelWeight = parseInt($(this).val()) || 0;
 
-            // Validasi untuk memastikan nilai tidak negatif dan tidak lebih dari 100
+            // Validation to ensure value is not negative and not more than 100
             if (levelWeight < 0) {
                 levelWeight = 0;
                 $(this).val(0);
@@ -1951,7 +1988,7 @@
             $('#educationGradeWeight').val(gradeWeight);
             $('#educationWeightTotalValue').text('100.0');
 
-            // Selalu hapus class error karena inputnya sudah dibatasi
+            // Always remove error class and enable save button
             $('#educationWeightTotal').removeClass('error');
             $('#saveEducationConfig').prop('disabled', false);
         });
@@ -1966,8 +2003,8 @@
         $('#saveEducationConfig').on('click', function() {
             const levels = [];
 
-            // Get level weight
-            const levelWeight = parseInt($('#educationLevelWeight').val()) || 80;
+            // Get level weight (allow 0 and 100)
+            const levelWeight = parseInt($('#educationLevelWeight').val());
             const gradeWeight = 100 - levelWeight;
 
             // Collect education levels with their ranks
@@ -1986,7 +2023,9 @@
             levels.sort((a, b) => a.rank - b.rank);
 
             // Save the configuration
-            criteriaConfigs.education.levels = levels;
+            criteriaConfigs.education.levels = {
+                list: levels // Wrap levels in a 'list' property to match original structure
+            };
             criteriaConfigs.education.weights = {
                 level: levelWeight,
                 grade: gradeWeight
@@ -2033,32 +2072,33 @@
             $('#languageWrittenWeight').val(writtenWeight);
             $('#languageWeightTotalValue').text('100.0');
 
-            if (verbalWeight < 0 || verbalWeight > 100) {
-                $('#languageWeightTotal').addClass('error');
-                $('#saveLanguageConfig').prop('disabled', true);
-            } else {
-                $('#languageWeightTotal').removeClass('error');
-                $('#saveLanguageConfig').prop('disabled', false);
-            }
+            // Always remove error class and enable save button
+            $('#languageWeightTotal').removeClass('error');
+            $('#saveLanguageConfig').prop('disabled', false);
         });
 
         // Add input validation directly on the input element
         $('#languageVerbalWeight').attr('min', '0').attr('max', '100').on('change', function() {
-            const value = parseInt($(this).val());
+            let value = parseInt($(this).val());
+
+            // Handle out-of-range values
             if (isNaN(value) || value < 0) {
+                value = 0;
                 $(this).val(0);
                 $('#languageWrittenWeight').val(100);
             } else if (value > 100) {
+                value = 100;
                 $(this).val(100);
                 $('#languageWrittenWeight').val(0);
             }
+
             $('#languageWeightTotalValue').text('100.0');
         });
 
         // Save language configuration
         $('#saveLanguageConfig').on('click', function() {
             // Get weights
-            const verbalWeight = parseInt($('#languageVerbalWeight').val()) || 50;
+            const verbalWeight = parseInt($('#languageVerbalWeight').val());
             const writtenWeight = 100 - verbalWeight;
 
             // Save the configuration
@@ -2617,13 +2657,13 @@
                 <div class="col-md-4" style="flex: 3;">
                     <div class="form-group">
                         <label>Min ${type === 'period' ? 'Years' : 'Count'}</label>
-                        <input type="number" class="form-control training-min" value="${min}" min="0" max="${type === 'period' ? '50' : '100'}">
+                        <input type="number" class="form-control training-min" value="${min}" min="0" max="${type === 'period' ? '50' : '100'}" step="0.1">
                     </div>
                 </div>
                 <div class="col-md-4" style="flex: 3;">
                     <div class="form-group">
                         <label>Max ${type === 'period' ? 'Years' : 'Count'}</label>
-                        <input type="number" class="form-control training-max" value="${max}" min="0" max="${type === 'period' ? '50' : '100'}">
+                        <input type="number" class="form-control training-max" value="${max}" min="0" max="${type === 'period' ? '50' : '100'}" step="0.1">
                     </div>
                 </div>
                 <div class="col-md-1 align-items-center d-flex" style="flex: 1; justify-content: center;">
@@ -2694,8 +2734,8 @@
 
             // Check each row
             rows.each(function(i) {
-                const minVal = parseInt($(this).find('.training-min').val());
-                const maxVal = parseInt($(this).find('.training-max').val());
+                const minVal = parseFloat($(this).find('.training-min').val());
+                const maxVal = parseFloat($(this).find('.training-max').val());
 
                 // Check min <= max
                 if (minVal >= maxVal) {
@@ -2708,10 +2748,10 @@
                 // Check for overlaps with other rows
                 rows.each(function(j) {
                     if (i !== j) {
-                        const otherMin = parseInt($(this).find('.training-min').val());
-                        const otherMax = parseInt($(this).find('.training-max').val());
+                        const otherMin = parseFloat($(this).find('.training-min').val());
+                        const otherMax = parseFloat($(this).find('.training-max').val());
 
-                        if ((minVal <= otherMax && maxVal >= otherMin)) {
+                        if ((minVal < otherMax && maxVal > otherMin)) {
                             rows.eq(i).addClass('border border-danger');
                             if (!rows.eq(i).find('.validation-error').length) {
                                 rows.eq(i).append('<div class="validation-error text-danger mt-2">Ranges cannot overlap</div>');
@@ -2727,6 +2767,7 @@
 
             return !hasError;
         }
+
 
         // Update ranks for training ranges
         function updateTrainingRanks(type) {
@@ -2744,7 +2785,7 @@
             // Find the highest max value to suggest a new range
             let highestMax = 0;
             $('#trainingPeriodList').find('.training-max').each(function() {
-                const max = parseInt($(this).val());
+                const max = parseFloat($(this).val());
                 if (max > highestMax) highestMax = max;
             });
 
@@ -2761,7 +2802,7 @@
             // Find the highest max value to suggest a new range
             let highestMax = 0;
             $('#trainingAmountList').find('.training-max').each(function() {
-                const max = parseInt($(this).val());
+                const max = parseFloat($(this).val());
                 if (max > highestMax) highestMax = max;
             });
 
@@ -2783,9 +2824,8 @@
         });
 
         // Handle training weight changes
-        // Handle training weight changes with validation
         $('#trainingPeriodWeight').on('input', function() {
-            const periodWeight = parseInt($(this).val()) || 0;
+            const periodWeight = parseFloat($(this).val()) || 0;
 
             // Ensure periodWeight is between 0-100
             const validPeriodWeight = Math.min(Math.max(periodWeight, 0), 100);
@@ -2798,19 +2838,15 @@
             $('#trainingAmountWeight').val(amountWeight);
             $('#trainingWeightTotalValue').text('100.0');
 
-            // Enable/disable save button based on valid range
-            if (validPeriodWeight < 0 || validPeriodWeight > 100) {
-                $('#trainingWeightTotal').addClass('error');
-                $('#saveTrainingConfig').prop('disabled', true);
-            } else {
-                $('#trainingWeightTotal').removeClass('error');
-                $('#saveTrainingConfig').prop('disabled', false);
-            }
+            // Hapus kondisi pembatasan sebelumnya
+            $('#trainingWeightTotal').removeClass('error');
+            $('#saveTrainingConfig').prop('disabled', false);
         });
+
 
         // Add input validation directly on the input element
         $('#trainingPeriodWeight').attr('min', '0').attr('max', '100').on('change', function() {
-            const value = parseInt($(this).val());
+            const value = parseFloat($(this).val());
             if (isNaN(value) || value < 0) {
                 $(this).val(0);
                 $('#trainingAmountWeight').val(100);
@@ -2820,14 +2856,15 @@
             }
         });
 
+
         // Save training configuration
         $('#saveTrainingConfig').on('click', function() {
             // Collect period ranges with their ranks
             const periodRanges = [];
             $('#trainingPeriodList').children().each(function() {
-                const min = parseInt($(this).find('.training-min').val());
-                const max = parseInt($(this).find('.training-max').val());
-                const rank = parseInt($(this).attr('data-rank'));
+                const min = parseFloat($(this).find('.training-min').val());
+                const max = parseFloat($(this).find('.training-max').val());
+                const rank = parseFloat($(this).attr('data-rank'));
 
                 periodRanges.push({
                     min,
@@ -2839,9 +2876,9 @@
             // Collect amount ranges with their ranks
             const amountRanges = [];
             $('#trainingAmountList').children().each(function() {
-                const min = parseInt($(this).find('.training-min').val());
-                const max = parseInt($(this).find('.training-max').val());
-                const rank = parseInt($(this).attr('data-rank'));
+                const min = parseFloat($(this).find('.training-min').val());
+                const max = parseFloat($(this).find('.training-max').val());
+                const rank = parseFloat($(this).attr('data-rank'));
 
                 amountRanges.push({
                     min,
@@ -2851,36 +2888,47 @@
             });
 
             // Get weights
-            const periodWeight = parseInt($('#trainingPeriodWeight').val()) || 70;
-            const amountWeight = 100 - periodWeight;
+            const periodWeight = parseFloat($('#trainingPeriodWeight').val());
+            const amountWeight = parseFloat($('#trainingAmountWeight').val());
 
-            // Sort ranges by rank (lowest first)
-            periodRanges.sort((a, b) => a.rank - b.rank);
-            amountRanges.sort((a, b) => a.rank - b.rank);
+            // Tambahkan validasi untuk memastikan bobot tidak diatur ulang ke default
+            if (periodRanges.length > 0 && amountRanges.length > 0) {
+                // Sort ranges by rank (lowest first)
+                periodRanges.sort((a, b) => a.rank - b.rank);
+                amountRanges.sort((a, b) => a.rank - b.rank);
 
-            // Save the configuration
-            criteriaConfigs.training.period = periodRanges;
-            criteriaConfigs.training.amount = amountRanges;
-            criteriaConfigs.training.weights = {
-                period: periodWeight,
-                amount: amountWeight
-            };
-            criteriaConfigs.training.customized = true;
+                // Save the configuration
+                criteriaConfigs.training.period = periodRanges;
+                criteriaConfigs.training.amount = amountRanges;
+                criteriaConfigs.training.weights = {
+                    period: periodWeight,
+                    amount: amountWeight
+                };
+                criteriaConfigs.training.customized = true;
 
-            // Show the configuration badge
-            $('#config-badge-training').addClass('active');
+                // Show the configuration badge
+                $('#config-badge-training').addClass('active');
 
-            // Close the modal
-            $('#trainingConfigModal').modal('hide');
+                // Close the modal
+                $('#trainingConfigModal').modal('hide');
 
-            // Confirm to the user
-            Swal.fire({
-                icon: 'success',
-                title: 'Training Settings Configured',
-                text: 'Your custom training scoring configuration has been saved',
-                timer: 2000,
-                showConfirmButton: false
-            });
+                // Confirm to the user
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Training Settings Configured',
+                    text: 'Your custom training scoring configuration has been saved',
+                    timer: 2000,
+                    showConfirmButton: false
+                });
+            } else {
+                // Tampilkan pesan kesalahan jika tidak ada range yang valid
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Invalid Configuration',
+                    text: 'Please add at least one range for both period and amount',
+                    showConfirmButton: true
+                });
+            }
         });
 
         // ----------------------- EXPERIENCE CONFIGURATION -----------------------
@@ -2930,13 +2978,13 @@
                 <div class="col-md-4" style="flex: 3;">
                     <div class="form-group">
                         <label>Min ${type === 'period' ? 'Years' : 'Jobs'}</label>
-                        <input type="number" class="form-control experience-min" value="${min}" min="0" max="${type === 'period' ? '50' : '100'}">
+                        <input type="number" class="form-control experience-min" value="${min}" min="0" max="${type === 'period' ? '50' : '100'}" step="0.1">
                     </div>
                 </div>
                 <div class="col-md-4" style="flex: 3;">
                     <div class="form-group">
                         <label>Max ${type === 'period' ? 'Years' : 'Jobs'}</label>
-                        <input type="number" class="form-control experience-max" value="${max}" min="0" max="${type === 'period' ? '50' : '100'}">
+                        <input type="number" class="form-control experience-max" value="${max}" min="0" max="${type === 'period' ? '50' : '100'}" step="0.1">
                     </div>
                 </div>
                 <div class="col-md-1 align-items-center d-flex" style="flex: 1; justify-content: center;">
@@ -3006,8 +3054,8 @@
 
             // Check each row
             rows.each(function(i) {
-                const minVal = parseInt($(this).find('.experience-min').val());
-                const maxVal = parseInt($(this).find('.experience-max').val());
+                const minVal = parseFloat($(this).find('.experience-min').val());
+                const maxVal = parseFloat($(this).find('.experience-max').val());
 
                 // Check min <= max
                 if (minVal >= maxVal) {
@@ -3020,8 +3068,8 @@
                 // Check for overlaps with other rows
                 rows.each(function(j) {
                     if (i !== j) {
-                        const otherMin = parseInt($(this).find('.experience-min').val());
-                        const otherMax = parseInt($(this).find('.experience-max').val());
+                        const otherMin = parseFloat($(this).find('.experience-min').val());
+                        const otherMax = parseFloat($(this).find('.experience-max').val());
 
                         if ((minVal <= otherMax && maxVal >= otherMin)) {
                             rows.eq(i).addClass('border border-danger');
@@ -3056,7 +3104,7 @@
             // Find the highest max value to suggest a new range
             let highestMax = 0;
             $('#experiencePeriodList').find('.experience-max').each(function() {
-                const max = parseInt($(this).val());
+                const max = parseFloat($(this).val());
                 if (max > highestMax) highestMax = max;
             });
 
@@ -3073,7 +3121,7 @@
             // Find the highest max value to suggest a new range
             let highestMax = 0;
             $('#experienceAmountList').find('.experience-max').each(function() {
-                const max = parseInt($(this).val());
+                const max = parseFloat($(this).val());
                 if (max > highestMax) highestMax = max;
             });
 
@@ -3095,34 +3143,26 @@
         });
 
         // Handle experience weight changes
-        // Handle experience weight changes with validation
         $('#experiencePeriodWeight').on('input', function() {
-            const periodWeight = parseInt($(this).val()) || 0;
-
-            // Ensure periodWeight is between 0-100
+            const periodWeight = parseFloat($(this).val()) || 0;
             const validPeriodWeight = Math.min(Math.max(periodWeight, 0), 100);
+
             if (validPeriodWeight !== periodWeight) {
                 $(this).val(validPeriodWeight);
             }
 
             const amountWeight = 100 - validPeriodWeight;
-
             $('#experienceAmountWeight').val(amountWeight);
             $('#experienceWeightTotalValue').text('100.0');
 
-            // Enable/disable save button based on valid range
-            if (validPeriodWeight < 0 || validPeriodWeight > 100) {
-                $('#experienceWeightTotal').addClass('error');
-                $('#saveExperienceConfig').prop('disabled', true);
-            } else {
-                $('#experienceWeightTotal').removeClass('error');
-                $('#saveExperienceConfig').prop('disabled', false);
-            }
+            // Hapus kondisi pembatasan
+            $('#experienceWeightTotal').removeClass('error');
+            $('#saveExperienceConfig').prop('disabled', false);
         });
 
         // Add input validation directly on the input element
         $('#experiencePeriodWeight').attr('min', '0').attr('max', '100').on('change', function() {
-            const value = parseInt($(this).val());
+            const value = parseFloat($(this).val());
             if (isNaN(value) || value < 0) {
                 $(this).val(0);
                 $('#experienceAmountWeight').val(100);
@@ -3137,9 +3177,9 @@
             // Collect period ranges with their ranks
             const periodRanges = [];
             $('#experiencePeriodList').children().each(function() {
-                const min = parseInt($(this).find('.experience-min').val());
-                const max = parseInt($(this).find('.experience-max').val());
-                const rank = parseInt($(this).attr('data-rank'));
+                const min = parseFloat($(this).find('.experience-min').val());
+                const max = parseFloat($(this).find('.experience-max').val());
+                const rank = parseFloat($(this).attr('data-rank'));
 
                 periodRanges.push({
                     min,
@@ -3151,9 +3191,9 @@
             // Collect amount ranges with their ranks
             const amountRanges = [];
             $('#experienceAmountList').children().each(function() {
-                const min = parseInt($(this).find('.experience-min').val());
-                const max = parseInt($(this).find('.experience-max').val());
-                const rank = parseInt($(this).attr('data-rank'));
+                const min = parseFloat($(this).find('.experience-min').val());
+                const max = parseFloat($(this).find('.experience-max').val());
+                const rank = parseFloat($(this).attr('data-rank'));
 
                 amountRanges.push({
                     min,
@@ -3163,36 +3203,61 @@
             });
 
             // Get weights
-            const periodWeight = parseInt($('#experiencePeriodWeight').val()) || 70;
-            const amountWeight = 100 - periodWeight;
+            const periodWeight = parseFloat($('#experiencePeriodWeight').val());
+            const amountWeight = parseFloat($('#experienceAmountWeight').val());
 
-            // Sort ranges by rank (lowest first)
-            periodRanges.sort((a, b) => a.rank - b.rank);
-            amountRanges.sort((a, b) => a.rank - b.rank);
+            // Tambahkan validasi untuk memastikan range dan bobot valid
+            if (periodRanges.length > 0 && amountRanges.length > 0) {
+                // Validasi min max di setiap range
+                const isPeriodRangesValid = periodRanges.every(range => range.min < range.max);
+                const isAmountRangesValid = amountRanges.every(range => range.min < range.max);
 
-            // Save the configuration
-            criteriaConfigs.experience_duration.period = periodRanges;
-            criteriaConfigs.experience_duration.amount = amountRanges;
-            criteriaConfigs.experience_duration.weights = {
-                period: periodWeight,
-                amount: amountWeight
-            };
-            criteriaConfigs.experience_duration.customized = true;
+                if (isPeriodRangesValid && isAmountRangesValid) {
+                    // Sort ranges by rank (lowest first)
+                    periodRanges.sort((a, b) => a.rank - b.rank);
+                    amountRanges.sort((a, b) => a.rank - b.rank);
 
-            // Show the configuration badge
-            $('#config-badge-experience_duration').addClass('active');
+                    // Save the configuration
+                    criteriaConfigs.experience_duration.period = periodRanges;
+                    criteriaConfigs.experience_duration.amount = amountRanges;
+                    criteriaConfigs.experience_duration.weights = {
+                        period: periodWeight,
+                        amount: amountWeight
+                    };
+                    criteriaConfigs.experience_duration.customized = true;
 
-            // Close the modal
-            $('#experienceConfigModal').modal('hide');
+                    // Show the configuration badge
+                    $('#config-badge-experience_duration').addClass('active');
 
-            // Confirm to the user
-            Swal.fire({
-                icon: 'success',
-                title: 'Experience Settings Configured',
-                text: 'Your custom experience scoring configuration has been saved',
-                timer: 2000,
-                showConfirmButton: false
-            });
+                    // Close the modal
+                    $('#experienceConfigModal').modal('hide');
+
+                    // Confirm to the user
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Experience Settings Configured',
+                        text: 'Your custom experience scoring configuration has been saved',
+                        timer: 2000,
+                        showConfirmButton: false
+                    });
+                } else {
+                    // Tampilkan pesan kesalahan jika range tidak valid
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Invalid Ranges',
+                        text: 'Ensure each range has a minimum value less than its maximum value',
+                        showConfirmButton: true
+                    });
+                }
+            } else {
+                // Tampilkan pesan kesalahan jika tidak ada range
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Incomplete Configuration',
+                    text: 'Please add at least one range for both period and amount',
+                    showConfirmButton: true
+                });
+            }
         });
 
         // ----------------------- ORGANIZATION CONFIGURATION -----------------------
@@ -3241,13 +3306,13 @@
                 <div class="col-md-4">
                     <div class="form-group">
                         <label>Min Years</label>
-                        <input type="number" class="form-control period-min" value="${min}" min="0" step="0.5">
+                        <input type="number" class="form-control period-min" value="${min}" min="0" step="0.1">
                     </div>
                 </div>
                 <div class="col-md-4">
                     <div class="form-group">
                         <label>Max Years</label>
-                        <input type="number" class="form-control period-max" value="${max}" min="0" step="0.5">
+                        <input type="number" class="form-control period-max" value="${max}" min="0" step="0.1">
                     </div>
                 </div>
                 <div class="col-md-1 align-items-center d-flex" style="justify-content: center;">
@@ -3348,35 +3413,23 @@
             }
         }
 
-        // Update weights for organizations
-        // Handle organization weight changes with validation
+        // Tambahkan handler untuk input bobot
         $('#organizationPeriodWeight').on('input', function() {
-            const periodWeight = parseInt($(this).val()) || 0;
-
-            // Ensure periodWeight is between 0-100
+            const periodWeight = parseFloat($(this).val()) || 0;
             const validPeriodWeight = Math.min(Math.max(periodWeight, 0), 100);
+
             if (validPeriodWeight !== periodWeight) {
                 $(this).val(validPeriodWeight);
             }
 
             const amountWeight = 100 - validPeriodWeight;
-
             $('#organizationAmountWeight').val(amountWeight);
             $('#organizationWeightTotalValue').text('100.0');
-
-            // Enable/disable save button based on valid range
-            if (validPeriodWeight < 0 || validPeriodWeight > 100) {
-                $('#organizationWeightTotal').addClass('error');
-                $('#saveOrganizationConfig').prop('disabled', true);
-            } else {
-                $('#organizationWeightTotal').removeClass('error');
-                $('#saveOrganizationConfig').prop('disabled', false);
-            }
         });
 
         // Add input validation directly on the input element
         $('#organizationPeriodWeight').attr('min', '0').attr('max', '100').on('change', function() {
-            const value = parseInt($(this).val());
+            const value = parseFloat($(this).val());
             if (isNaN(value) || value < 0) {
                 $(this).val(0);
                 $('#organizationAmountWeight').val(100);
@@ -3416,18 +3469,17 @@
             updateOrganizationRanks(listId);
         });
 
-        // Save organization configuration
         $('#saveOrganizationConfig').on('click', function() {
             // Get weight values
-            const periodWeight = parseFloat($('#organizationPeriodWeight').val()) || 70;
-            const amountWeight = parseFloat($('#organizationAmountWeight').val()) || 30;
+            const periodWeight = parseFloat($('#organizationPeriodWeight').val());
+            const amountWeight = parseFloat($('#organizationAmountWeight').val());
 
             // Collect period ranges with their ranks
             const periodRanges = [];
             $('#organizationPeriodList').children().each(function() {
-                const min = parseFloat($(this).find('.period-min').val()) || 0;
-                const max = parseFloat($(this).find('.period-max').val()) || 0;
-                const rank = parseInt($(this).attr('data-rank'));
+                const min = parseFloat($(this).find('.period-min').val());
+                const max = parseFloat($(this).find('.period-max').val());
+                const rank = parseFloat($(this).attr('data-rank'));
 
                 periodRanges.push({
                     min,
@@ -3439,9 +3491,9 @@
             // Collect amount ranges with their ranks
             const amountRanges = [];
             $('#organizationAmountList').children().each(function() {
-                const min = parseFloat($(this).find('.amount-min').val()) || 0;
-                const max = parseFloat($(this).find('.amount-max').val()) || 0;
-                const rank = parseInt($(this).attr('data-rank'));
+                const min = parseFloat($(this).find('.amount-min').val());
+                const max = parseFloat($(this).find('.amount-max').val());
+                const rank = parseFloat($(this).attr('data-rank'));
 
                 amountRanges.push({
                     min,
@@ -3450,34 +3502,75 @@
                 });
             });
 
-            // Sort by rank (lowest first)
-            periodRanges.sort((a, b) => a.rank - b.rank);
-            amountRanges.sort((a, b) => a.rank - b.rank);
+            // Validasi menyeluruh
+            if (periodRanges.length > 0 && amountRanges.length > 0) {
+                // Validasi range
+                const isPeriodRangesValid = periodRanges.every(range =>
+                    !isNaN(range.min) && !isNaN(range.max) && range.min < range.max
+                );
+                const isAmountRangesValid = amountRanges.every(range =>
+                    !isNaN(range.min) && !isNaN(range.max) && range.min < range.max
+                );
 
-            // Save the configuration
-            criteriaConfigs.organization.period = periodRanges;
-            criteriaConfigs.organization.amount = amountRanges;
-            criteriaConfigs.organization.weights = {
-                period: periodWeight,
-                amount: amountWeight
-            };
-            criteriaConfigs.organization.customized = true;
+                // Validasi bobot
+                const isWeightValid = !isNaN(periodWeight) &&
+                    !isNaN(amountWeight) &&
+                    periodWeight >= 0 &&
+                    amountWeight >= 0 &&
+                    periodWeight + amountWeight === 100;
 
-            // Show the configuration badge
-            $('#config-badge-organization').addClass('active');
+                if (isPeriodRangesValid && isAmountRangesValid && isWeightValid) {
+                    // Sort by rank (lowest first)
+                    periodRanges.sort((a, b) => a.rank - b.rank);
+                    amountRanges.sort((a, b) => a.rank - b.rank);
 
-            // Close the modal
-            $('#organizationConfigModal').modal('hide');
+                    // Save the configuration
+                    criteriaConfigs.organization.period = periodRanges;
+                    criteriaConfigs.organization.amount = amountRanges;
+                    criteriaConfigs.organization.weights = {
+                        period: periodWeight,
+                        amount: amountWeight
+                    };
+                    criteriaConfigs.organization.customized = true;
 
-            // Confirm to the user
-            Swal.fire({
-                icon: 'success',
-                title: 'Organization Settings Configured',
-                text: 'Your custom organization scoring configuration has been saved',
-                timer: 2000,
-                showConfirmButton: false
-            });
+                    // Show the configuration badge
+                    $('#config-badge-organization').addClass('active');
+
+                    // Close the modal
+                    $('#organizationConfigModal').modal('hide');
+
+                    // Confirm to the user
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Organization Settings Configured',
+                        text: 'Your custom organization scoring configuration has been saved',
+                        timer: 2000,
+                        showConfirmButton: false
+                    });
+                } else {
+                    // Pesan kesalahan yang spesifik
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Invalid Configuration',
+                        html: `
+                    ${!isPeriodRangesValid ? '- Invalid period ranges<br>' : ''}
+                    ${!isAmountRangesValid ? '- Invalid amount ranges<br>' : ''}
+                    ${!isWeightValid ? '- Weights must total 100%' : ''}
+                `,
+                        showConfirmButton: true
+                    });
+                }
+            } else {
+                // Pesan kesalahan jika tidak ada range
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Incomplete Configuration',
+                    text: 'Please add at least one range for both period and amount',
+                    showConfirmButton: true
+                });
+            }
         });
+
 
 
 

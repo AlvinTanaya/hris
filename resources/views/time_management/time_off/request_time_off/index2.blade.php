@@ -71,7 +71,7 @@
 
     /* Time off balance card styling */
     .time-off-balance-section {
-        margin-bottom: 35px;
+        margin-bottom: 5px;
     }
 
     .time-off-balance-section h4 {
@@ -156,8 +156,8 @@
             $progress = ($assignment->quota > 0) ? ($assignment->balance / $assignment->quota) * 100 : 0;
             $progressColor = $progress >= 50 ? 'bg-success' : ($progress >= 25 ? 'bg-warning' : 'bg-danger');
             @endphp
-            <div class="col-md-4">
-                <div class="balance-card p-3 border rounded shadow">
+            <div class="col-md-3 mb-4">
+                <div class="balance-card mb-2 p-3 border rounded shadow">
                     <h3 class="text-primary text-center">{{ $assignment->time_off_name }}</h3>
                     <div class="balance-value text-center fw-bold">{{ $assignment->balance }}</div>
                     <div class="balance-unit text-center text-muted">days</div>
@@ -208,62 +208,51 @@
         <!-- Tab Content -->
         <div class="tab-content p-0 mt-3" id="timeOffTabsContent">
             <!-- Pending Requests Tab -->
-            <div class="tab-pane fade show active" id="pending" role="tabpanel" aria-labelledby="pending-tab">
-                <div class="card shadow-sm w-100">
+            <div class="tab-pane fade show active" id="pending" role="tabpanel">
+                <div class="card shadow-sm">
                     <div class="card-header bg-warning text-white">
-                        <h5 class="mt-2"><i class="fas fa-calendar"></i> Pending Time Off Requests</h5>
+                        <h5 class="mt-2"><i class="fas fa-calendar"></i> Pending Requests</h5>
                     </div>
                     <div class="card-body">
                         <div class="table-responsive">
-                            <table id="pendingTable" class="table table-bordered table-striped table-hover">
+                            <table id="pendingTable" class="table table-bordered table-striped table-hover w-100">
                                 <thead class="table-dark">
                                     <tr>
-                                        <th width="5%">No</th>
-                                        <th width="10%">Start Date</th>
-                                        <th width="10%">End Date</th>
-                                        <th width="8%">Days</th>
+                                        <th width="3%">No</th>
+                                        <th width="12%">Start Date</th>
+                                        <th width="12%">End Date</th>
+                                        <th width="8%">Duration</th>
                                         <th width="12%">Type</th>
-                                        <th width="20%">Reason</th>
+                                        <th width="23%">Reason</th>
                                         <th width="15%">Proof File</th>
-                                        <th width="20%">Actions</th>
+                                        <th width="15%">Actions</th>
                                     </tr>
+
                                 </thead>
                                 <tbody>
-                                    @foreach($pendingRequests as $index => $timeOff)
+                                    @foreach($pendingRequests as $index => $request)
                                     <tr>
                                         <td>{{ $index + 1 }}</td>
-                                        <td>{{ date('d M Y', strtotime($timeOff->start_date)) }}</td>
-                                        <td>{{ date('d M Y', strtotime($timeOff->end_date)) }}</td>
+                                        <td>{{ $request->formatted_start_date }}</td>
+                                        <td>{{ $request->formatted_end_date }}</td>
+                                        <td>{{ $request->duration }}</td>
                                         <td>
-                                            @php
-                                            $start = new DateTime($timeOff->start_date);
-                                            $end = new DateTime($timeOff->end_date);
-                                            $interval = $start->diff($end);
-                                            $days = $interval->days + 1; // Including both start and end days
-                                            @endphp
-                                            {{ $days }} days
+                                            <span class="badge bg-info">
+                                                {{ $request->time_off_name ?? 'Unknown' }}
+                                            </span>
                                         </td>
+                                        <td>{{ $request->reason }}</td>
                                         <td>
-                                            @php
-                                            $type = App\Models\TimeOffPolicy::find($timeOff->time_off_id);
-                                            $typeName = $type ? $type->time_off_name : 'Unknown';
-                                            @endphp
-                                            <span class="badge badge-info">{{ $typeName }}</span>
-                                        </td>
-                                        <td>{{ $timeOff->reason }}</td>
-                                        <td>
-                                            @if($timeOff->file_reason_path)
-                                            <button type="button" class="btn btn-sm btn-info view-file-btn text-white"
-                                                data-file="{{ $timeOff->file_reason_path }}">
-                                                <i class="fas fa-file-image"></i> View File
+                                            @if($request->file_reason_path)
+                                            <button class="btn btn-sm btn-info view-file-btn" data-file="{{ $request->file_reason_path }}">
+                                                <i class="fas fa-file-image"></i> View
                                             </button>
                                             @else
-                                            <span class="text-muted">No file attached</span>
+                                            <span class="text-muted">No file</span>
                                             @endif
                                         </td>
                                         <td>
-                                            <button type="button" class="btn btn-sm btn-danger delete-btn"
-                                                data-id="{{ $timeOff->id }}">
+                                            <button class="btn btn-sm btn-danger delete-btn" data-id="{{ $request->id }}">
                                                 <i class="fas fa-trash"></i> Delete
                                             </button>
                                         </td>
@@ -277,55 +266,42 @@
             </div>
 
             <!-- Approved Requests Tab -->
-            <div class="tab-pane fade" id="approved" role="tabpanel" aria-labelledby="approved-tab">
-                <div class="card shadow-sm w-100">
+            <div class="tab-pane fade" id="approved" role="tabpanel">
+                <div class="card shadow-sm">
                     <div class="card-header bg-success text-white">
-                        <h5 class="mt-2"><i class="fas fa-calendar-check"></i> Approved Time Off Requests</h5>
+                        <h5 class="mt-2"><i class="fas fa-calendar-check"></i> Approved Requests</h5>
                     </div>
                     <div class="card-body">
                         <div class="table-responsive">
-                            <table id="approvedTable" class="table table-bordered table-striped table-hover">
+                            <table id="approvedTable" class="table table-bordered table-striped table-hover w-100">
                                 <thead class="table-dark">
                                     <tr>
-                                        <th width="5%">No</th>
-                                        <th width="12%">Start Date</th>
-                                        <th width="12%">End Date</th>
-                                        <th width="8%">Days</th>
-                                        <th width="15%">Type</th>
+                                        <th width="3%">No</th>
+                                        <th width="13%">Start Date</th>
+                                        <th width="13%">End Date</th>
+                                        <th width="8%">Duration</th>
+                                        <th width="16%">Type</th>
                                         <th width="23%">Reason</th>
-                                        <th width="25%">Approved By/On</th>
+                                        <th width="24%">Approved By/On</th>
                                     </tr>
+
                                 </thead>
                                 <tbody>
-                                    @foreach($approvedRequests as $index => $timeOff)
+                                    @foreach($approvedRequests as $index => $request)
                                     <tr>
                                         <td>{{ $index + 1 }}</td>
-                                        <td>{{ date('d M Y', strtotime($timeOff->start_date)) }}</td>
-                                        <td>{{ date('d M Y', strtotime($timeOff->end_date)) }}</td>
+                                        <td>{{ $request->formatted_start_date }}</td>
+                                        <td>{{ $request->formatted_end_date }}</td>
+                                        <td>{{ $request->duration }}</td>
                                         <td>
-                                            @php
-                                            $start = new DateTime($timeOff->start_date);
-                                            $end = new DateTime($timeOff->end_date);
-                                            $interval = $start->diff($end);
-                                            $days = $interval->days + 1; // Including both start and end days
-                                            @endphp
-                                            {{ $days }} days
+                                            <span class="badge bg-info">
+                                                {{ $request->time_off_name ?? 'Unknown' }}
+                                            </span>
                                         </td>
+                                        <td>{{ $request->reason }}</td>
                                         <td>
-                                            @php
-                                            $type = App\Models\TimeOffPolicy::find($timeOff->time_off_id);
-                                            $typeName = $type ? $type->time_off_name : 'Unknown';
-                                            @endphp
-                                            <span class="badge badge-info">{{ $typeName }}</span>
-                                        </td>
-                                        <td>{{ $timeOff->reason }}</td>
-                                        <td>
-                                            @php
-                                            $approver = App\Models\User::find($timeOff->answered_by);
-                                            $approverName = $approver ? $approver->name : 'Unknown';
-                                            @endphp
-                                            {{ $approverName }}<br>
-                                            <small class="text-muted">{{ date('d M Y', strtotime($timeOff->updated_at)) }}</small>
+                                            {{ $request->answered_by_name ?? 'System' }}<br>
+                                            <small class="text-muted">{{ $request->updated_at->format('d M Y H:i') }}</small>
                                         </td>
                                     </tr>
                                     @endforeach
@@ -337,58 +313,45 @@
             </div>
 
             <!-- Declined Requests Tab -->
-            <div class="tab-pane fade" id="declined" role="tabpanel" aria-labelledby="declined-tab">
-                <div class="card shadow-sm w-100">
+            <div class="tab-pane fade" id="declined" role="tabpanel">
+                <div class="card shadow-sm">
                     <div class="card-header bg-danger text-white">
-                        <h5 class="mt-2"><i class="fas fa-calendar-times"></i> Declined Time Off Requests</h5>
+                        <h5 class="mt-2"><i class="fas fa-calendar-times"></i> Declined Requests</h5>
                     </div>
                     <div class="card-body">
                         <div class="table-responsive">
-                            <table id="declinedTable" class="table table-bordered table-striped table-hover">
+                            <table id="declinedTable" class="table table-bordered table-striped table-hover w-100">
                                 <thead class="table-dark">
                                     <tr>
-                                        <th width="5%">No</th>
-                                        <th width="12%">Start Date</th>
-                                        <th width="12%">End Date</th>
-                                        <th width="8%">Days</th>
-                                        <th width="12%">Type</th>
-                                        <th width="18%">Reason</th>
-                                        <th width="33%">Declined Reason/By</th>
+                                        <th width="3%">No</th>
+                                        <th width="13%">Start Date</th>
+                                        <th width="13%">End Date</th>
+                                        <th width="8%">Duration</th>
+                                        <th width="14%">Type</th>
+                                        <th width="22%">Reason</th>
+                                        <th width="27%">Declined Reason/By</th>
                                     </tr>
+
                                 </thead>
                                 <tbody>
-                                    @foreach($declinedRequests as $index => $timeOff)
+                                    @foreach($declinedRequests as $index => $request)
                                     <tr>
                                         <td>{{ $index + 1 }}</td>
-                                        <td>{{ date('d M Y', strtotime($timeOff->start_date)) }}</td>
-                                        <td>{{ date('d M Y', strtotime($timeOff->end_date)) }}</td>
+                                        <td>{{ $request->formatted_start_date }}</td>
+                                        <td>{{ $request->formatted_end_date }}</td>
+                                        <td>{{ $request->duration }}</td>
                                         <td>
-                                            @php
-                                            $start = new DateTime($timeOff->start_date);
-                                            $end = new DateTime($timeOff->end_date);
-                                            $interval = $start->diff($end);
-                                            $days = $interval->days + 1; // Including both start and end days
-                                            @endphp
-                                            {{ $days }} days
+                                            <span class="badge bg-info">
+                                                {{ $request->time_off_name ?? 'Unknown' }}
+                                            </span>
                                         </td>
+                                        <td>{{ $request->reason }}</td>
                                         <td>
-                                            @php
-                                            $type = App\Models\TimeOffPolicy::find($timeOff->time_off_id);
-                                            $typeName = $type ? $type->time_off_name : 'Unknown';
-                                            @endphp
-                                            <span class="badge badge-info">{{ $typeName }}</span>
-                                        </td>
-                                        <td>{{ $timeOff->reason }}</td>
-                                        <td>
-                                            <button type="button" class="btn btn-sm btn-info view-reason-btn mb-1"
-                                                data-reason="{{ $timeOff->declined_reason }}">
+                                            <button class="btn btn-sm btn-info view-reason-btn mb-1"
+                                                data-reason="{{ $request->declined_reason }}">
                                                 <i class="fas fa-info-circle"></i> View Reason
                                             </button><br>
-                                            @php
-                                            $approver = App\Models\User::find($timeOff->answered_by);
-                                            $approverName = $approver ? $approver->name : 'Unknown';
-                                            @endphp
-                                            <small>By: {{ $approverName }}</small>
+                                            <small>By: {{ $request->answered_by_name ?? 'System' }}</small>
                                         </td>
                                     </tr>
                                     @endforeach

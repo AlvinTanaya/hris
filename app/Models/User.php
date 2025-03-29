@@ -27,8 +27,8 @@ class User extends Authenticatable
     protected $fillable = [
         'employee_id',
         'name',
-        'position',
-        'department',
+        'position_id',
+        'department_id',
         'email',
         'phone_number',
         'employee_status',
@@ -69,26 +69,73 @@ class User extends Authenticatable
         'updated_at'
     ];
 
-    /**
-     * The attributes that should be hidden for serialization.
-     *
-     * @var list<string>
-     */
+
+
     protected $hidden = [
         'password',
         'remember_token',
     ];
 
-    /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
-     */
     protected function casts(): array
     {
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'contract_start_date' => 'date',
+            'contract_end_date' => 'date',
+            'join_date' => 'date',
+            'birth_date' => 'date',
+            'otp_expired_at' => 'datetime',
         ];
+    }
+
+    // Relationship with Position
+    public function position()
+    {
+        return $this->belongsTo(EmployeePosition::class, 'position_id');
+    }
+    
+    public function department()
+    {
+        return $this->belongsTo(EmployeeDepartment::class, 'department_id');
+    }
+
+    // Accessor for Position Name
+    public function getPositionNameAttribute()
+    {
+        return $this->position ? $this->position->position : null;
+    }
+
+    // Accessor for Department Name
+    public function getDepartmentNameAttribute()
+    {
+        return $this->department ? $this->department->department : null;
+    }
+
+    // Scope to filter by position
+    public function scopeByPosition($query, $position)
+    {
+        return $query->whereHas('position', function ($q) use ($position) {
+            $q->where('position', $position);
+        });
+    }
+
+    // Scope to filter by department
+    public function scopeByDepartment($query, $department)
+    {
+        return $query->whereHas('department', function ($q) use ($department) {
+            $q->where('department', $department);
+        });
+    }
+
+    // Additional utility methods
+    public function isManager()
+    {
+        return $this->position ? in_array($this->position->position, ['Manager', 'General Manager', 'Director']) : false;
+    }
+
+    public function isHR()
+    {
+        return $this->department ? $this->department->department === 'Human Resources' : false;
     }
 }

@@ -79,21 +79,16 @@
                             @endforeach
                         </select>
                     </div>
-                    <div class="col-12 d-flex justify-content-between align-items-center gap-2">
-                        <div>
-                            <button type="submit" class="btn btn-primary">
-                                <i class="fas fa-search me-2"></i>Apply Filters
-                            </button>
-                            <a href="{{ route('time.off.assign.index') }}" class="btn btn-secondary">
-                                <i class="fas fa-redo me-2"></i>Reset
-                            </a>
-                        </div>
+                    <div class="col-md-12">
 
-                        <div>
-                            <a href="{{ route('time.off.assign.create') }}" class="btn btn-primary shadow-sm">
-                                <i class="fas fa-plus me-2"></i>Assign Time Off
-                            </a>
-                        </div>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-search me-2"></i>Apply Filters
+                        </button>
+                        <a href="{{ route('time.off.assign.index') }}" class="btn btn-secondary">
+                            <i class="fas fa-redo me-2"></i>Reset
+                        </a>
+
+
                     </div>
 
                 </div>
@@ -103,6 +98,13 @@
 
     <!-- Data Table Card -->
     <div class="card shadow my-4 w-100">
+        <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">Assign Time Off</h5>
+            <a href="{{ route('time.off.assign.create') }}" class="btn btn-light text-primary shadow-sm">
+                <i class="fas fa-plus me-2"></i>Assign Time Off
+            </a>
+
+        </div>
         <div class="card-body">
             <div class="table-responsive">
                 <table class="table table-bordered table-hover w-100" id="timeOffAssignmentTable">

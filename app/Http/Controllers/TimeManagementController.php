@@ -28,11 +28,14 @@ use App\Models\RequestResign;
 use App\Models\EmployeeAbsent;
 use App\Models\User;
 use App\Models\WarningLetter;
+use App\Models\WarningLetterRule;
 use App\Models\Notification;
 use App\Models\EmployeeOvertime;
 use App\Models\TimeOffPolicy;
 use App\Models\TimeOffAssign;
 use App\Models\RequestTimeOff;
+use App\Models\EmployeeDepartment;
+use App\Models\EmployeePosition;
 
 use App\Mail\WarningLetterMail;
 use App\Mail\EmployeeShiftAssigned;
@@ -200,7 +203,7 @@ class TimeManagementController extends Controller
     public function set_shift_index(Request $request)
     {
         // Original code for employee shifts (unchanged)
-        $query = EmployeeShift::with(['user', 'ruleShift']);
+        $query = EmployeeShift::with(['user', 'ruleShift', 'user.position', 'user.department']);
 
         // Filter berdasarkan tipe shift
         if ($request->has('type') && $request->type != '') {
@@ -218,13 +221,13 @@ class TimeManagementController extends Controller
         }
 
         if ($request->has('position') && $request->position != '') {
-            $query->whereHas('user', function ($q) use ($request) {
+            $query->whereHas('user.position', function ($q) use ($request) {
                 $q->where('position', $request->position);
             });
         }
 
         if ($request->has('department') && $request->department != '') {
-            $query->whereHas('user', function ($q) use ($request) {
+            $query->whereHas('user.department', function ($q) use ($request) {
                 $q->where('department', $request->department);
             });
         }
@@ -232,7 +235,7 @@ class TimeManagementController extends Controller
         $employeeShifts = $query->whereNull('end_date')->get()->groupBy('rule_id');
 
         // History filter code (unchanged)
-        $query_history = EmployeeShift::with(['user', 'ruleShift']);
+        $query_history = EmployeeShift::with(['user', 'ruleShift', 'user.position', 'user.department']);
 
         if ($request->has('type_history') && $request->type_history != '') {
             $query_history->where('rule_id', $request->type_history);
@@ -247,13 +250,13 @@ class TimeManagementController extends Controller
         }
 
         if ($request->has('position_history') && $request->position_history != '') {
-            $query_history->whereHas('user', function ($q) use ($request) {
+            $query_history->whereHas('user.position', function ($q) use ($request) {
                 $q->where('position', $request->position_history);
             });
         }
 
         if ($request->has('department_history') && $request->department_history != '') {
-            $query_history->whereHas('user', function ($q) use ($request) {
+            $query_history->whereHas('user.department', function ($q) use ($request) {
                 $q->where('department', $request->department_history);
             });
         }
@@ -275,12 +278,16 @@ class TimeManagementController extends Controller
             ->get();
 
         // Shift Request filter - For admin tab
-        $requestQuery = RequestShiftChange::with(['user', 'ruleShiftBefore', 'ruleShiftAfter', 'exchangeUser', 'ruleExchangeBefore', 'ruleExchangeAfter']);
-
-        // Apply filters for shift requests
-        // if ($request->has('status_request') && $request->status_request != '') {
-        //     $requestQuery->where('status_change', $request->status_request);
-        // }
+        $requestQuery = RequestShiftChange::with([
+            'user',
+            'ruleShiftBefore',
+            'ruleShiftAfter',
+            'exchangeUser',
+            'ruleExchangeBefore',
+            'ruleExchangeAfter',
+            'user.position',
+            'user.department'
+        ]);
 
         if ($request->has('employee_request') && $request->employee_request != '') {
             $requestQuery->where('user_id', $request->employee_request);
@@ -303,13 +310,13 @@ class TimeManagementController extends Controller
         }
 
         if ($request->has('position_request') && $request->position_request != '') {
-            $requestQuery->whereHas('user', function ($q) use ($request) {
+            $requestQuery->whereHas('user.position', function ($q) use ($request) {
                 $q->where('position', $request->position_request);
             });
         }
 
         if ($request->has('department_request') && $request->department_request != '') {
-            $requestQuery->whereHas('user', function ($q) use ($request) {
+            $requestQuery->whereHas('user.department', function ($q) use ($request) {
                 $q->where('department', $request->department_request);
             });
         }
@@ -318,15 +325,12 @@ class TimeManagementController extends Controller
 
         $rules = rule_shift::all();
         $employees = User::where('employee_status', '!=', 'Inactive')->get();
-        $departments = User::where('employee_status', '!=', 'Inactive')
-            ->whereNotNull('department')
-            ->distinct()
-            ->pluck('department');
 
-        $positions = User::where('employee_status', '!=', 'Inactive')
-            ->whereNotNull('position')
-            ->distinct()
-            ->pluck('position');
+        // Get distinct departments from EmployeeDepartment model
+        $departments = EmployeeDepartment::distinct()->pluck('department');
+
+        // Get distinct positions from EmployeePosition model
+        $positions = EmployeePosition::distinct()->pluck('position');
 
         // Get active tab
         $activeTab = $request->tab ?? 'current';
@@ -346,7 +350,6 @@ class TimeManagementController extends Controller
     }
     public function set_shift_create()
     {
-
         $existShift = EmployeeShift::whereNull('end_date')
             ->distinct()
             ->pluck('user_id');
@@ -355,28 +358,19 @@ class TimeManagementController extends Controller
 
         $employees = User::where('employee_status', '!=', 'Inactive')
             ->whereNotIn('id', $existShift)
+            ->with(['position', 'department']) // Eager load relationships
             ->get();
 
-        // Mengambil daftar departemen unik dari pegawai yang aktif
-        $departments = User::where('employee_status', '!=', 'Inactive')
-            ->whereNotIn('id', $existShift)
-            ->whereNotNull('department')
-            ->distinct()
+        // Mengambil daftar departemen unik dari model EmployeeDepartment
+        $departments = EmployeeDepartment::distinct()
             ->pluck('department');
 
-        // Mengambil daftar posisi unik dari pegawai yang aktif
-        $positions = User::where('employee_status', '!=', 'Inactive')
-            ->whereNotIn('id', $existShift)
-            ->whereNotNull('position')
-            ->distinct()
+        // Mengambil daftar posisi unik dari model EmployeePosition
+        $positions = EmployeePosition::distinct()
             ->pluck('position');
-
-
 
         return view('/time_management/set_shift/create', compact('employees', 'rules', 'departments', 'positions'));
     }
-
-
 
     public function set_shift_store(Request $request)
     {
@@ -396,12 +390,17 @@ class TimeManagementController extends Controller
                     'user_id' => $employeeId,
                 ]);
 
+                // Eager load the ruleShift relationship
+                $shift->load('ruleShift');
+
                 // Get user
                 $user = User::find($employeeId);
                 if ($user) {
-                    // Get rule_shift to access the type
-                    $ruleShift = rule_shift::find($request->rule_id);
-                    $shiftType = $ruleShift ? $ruleShift->type : 'unknown';
+                    // Akses relasi dengan nama yang benar
+                    $shiftType = $shift->ruleShift ? $shift->ruleShift->type : 'unknown';
+
+                    // Hapus dd() yang tidak diperlukan
+                    // dd($shift->ruleShift->type);
 
                     // Kirim email
                     Mail::to($user->email)->send(new EmployeeShiftAssigned($user, $shift));
@@ -418,7 +417,7 @@ class TimeManagementController extends Controller
             }
         }
 
-        return redirect()->route('time.employee.shift.index')->with('success', 'Employee shift added successfully.');
+        return redirect()->route('time.set.shift.index')->with('success', 'Employee shift added successfully.');
     }
 
     public function set_shift_destroy($id)
@@ -1174,265 +1173,153 @@ class TimeManagementController extends Controller
     /**
      * Display Warning letter
      */
-    public function warning_letter_index()
+    // Index - List all rules
+    public function warning_letter_rule_index(Request $request)
     {
-        $employees = User::where('employee_status', '!=', 'Inactive')->get();
+        $rules = WarningLetterRule::orderBy('name')->get();
+        return view('time_management/warning_letter/rule/index', compact('rules'));
+    }
 
-        // Get unique departments and positions
-        $departments = User::where('employee_status', '!=', 'Inactive')
-            ->whereNotNull('department')
-            ->distinct()
-            ->pluck('department');
+    // Create - Show create form
+    public function warning_letter_rule_create()
+    {
+        return view('time_management/warning_letter/rule/create');
+    }
 
-        $positions = User::where('employee_status', '!=', 'Inactive')
-            ->whereNotNull('position')
-            ->distinct()
-            ->pluck('position');
+    // Store - Save new rule
+    public function warning_letter_rule_store(Request $request)
+    {
+        $validated = $request->validate([
+            'name' => 'required|string|max:50',
+            'description' => 'nullable|string|max:255',
+            'expired_length' => 'nullable|integer|min:1',
+        ]);
 
-        // Join employee_warning_letter with users table
-        $warning_letter = DB::table('employee_warning_letter as ewl')
-            ->join('users as u1', 'ewl.user_id', '=', 'u1.id')
-            ->join('users as u2', 'ewl.maker_id', '=', 'u2.id')
-            ->select(
-                'ewl.*',
-                'u1.name as employee_name',
-                'u1.department as employee_department',
-                'u1.position as employee_position',
-                'u1.employee_id as employee_id',
-                'u2.name as maker_name',
-                'u2.department as maker_department',
-                'u2.position as maker_position',
-                'u2.employee_id as maker_id',
-            )
-            ->whereIn('ewl.user_id', $employees->pluck('id'))
+        WarningLetterRule::create($validated);
+
+        return redirect()->route('warning.letter.rule.index')
+            ->with('success', 'Warning letter rule created successfully');
+    }
+
+    // Edit - Show edit form
+    public function warning_letter_rule_edit($id)
+    {
+        $rule = WarningLetterRule::findOrFail($id);
+        return view('time_management/warning_letter/rule/update', compact('rule'));
+    }
+
+    // Update - Update existing rule
+    public function warning_letter_rule_update(Request $request, $id)
+    {
+        $rule = WarningLetterRule::findOrFail($id);
+
+        $validated = $request->validate([
+            'name' => 'required|string|max:50',
+            'description' => 'nullable|string|max:255',
+            'expired_length' => 'nullable|integer|min:1',
+        ]);
+
+        $rule->update($validated);
+
+        return redirect()->route('warning.letter.rule.index')
+            ->with('success', 'Warning letter rule updated successfully');
+    }
+
+
+
+
+    public function warning_letter_index(Request $request)
+    {
+        // Get employees with their department and position relationships
+        $employees = User::with(['department', 'position'])
+            ->where('employee_status', '!=', 'Inactive')
             ->get();
 
-        return view('time_management/warning_letter/index', compact('warning_letter', 'employees', 'departments', 'positions'));
-    }
+        // Get unique departments and positions
+        $departments = EmployeeDepartment::distinct()->pluck('department');
+        $positions = EmployeePosition::distinct()->pluck('position');
 
-    public function getAvailableWarningTypes(Request $request)
-    {
-        $userId = $request->user_id;
-        $available_types = [];
-        $message = '';
+        // Get all warning letter types for filter
+        $types = WarningLetterRule::orderBy('name')->get();
 
-        if ($userId) {
-            // Get current date
-            $currentDate = Carbon::now();
+        // Build query with proper field names
+        $query = DB::table('employee_warning_letter as ewl')
+            ->join('users as employee', 'ewl.user_id', '=', 'employee.id')
+            ->join('users as maker', 'ewl.maker_id', '=', 'maker.id')
+            ->leftJoin('employee_departments as emp_dept', 'employee.department_id', '=', 'emp_dept.id')
+            ->leftJoin('employee_positions as emp_pos', 'employee.position_id', '=', 'emp_pos.id')
+            ->leftJoin('employee_positions as maker_pos', 'maker.position_id', '=', 'maker_pos.id')
+            ->leftJoin('rule_warning_letter as rule', 'ewl.type_id', '=', 'rule.id')
+            ->select(
+                'ewl.*',
+                'employee.name as employee_name',
+                'employee.employee_id as employee_id',
+                'emp_dept.department as employee_department',
+                'emp_pos.position as employee_position',
+                'maker.name as maker_name',
+                'maker.employee_id as maker_id',
+                'maker_pos.position as maker_position',
+                'rule.name as type_name' // Add type name to the select
+            );
 
-            // Check if employee has any ST1 or ST2 in the last 3 months
-            $hasST1Last3Months = DB::table('employee_warning_letter')
-                ->where('user_id', $userId)
-                ->where('type', 'ST1')
-                ->where('created_at', '>=', $currentDate->copy()->subMonths(3))
-                ->exists();
-
-            $hasST2Last3Months = DB::table('employee_warning_letter')
-                ->where('user_id', $userId)
-                ->where('type', 'ST2')
-                ->where('created_at', '>=', $currentDate->copy()->subMonths(3))
-                ->exists();
-
-            // Check if employee has SP1, SP2, or SP3 in the last 6 months
-            $hasSP1Last6Months = DB::table('employee_warning_letter')
-                ->where('user_id', $userId)
-                ->where('type', 'SP1')
-                ->where('created_at', '>=', $currentDate->copy()->subMonths(6))
-                ->exists();
-
-            $hasSP2Last6Months = DB::table('employee_warning_letter')
-                ->where('user_id', $userId)
-                ->where('type', 'SP2')
-                ->where('created_at', '>=', $currentDate->copy()->subMonths(6))
-                ->exists();
-
-            $hasSP3Last6Months = DB::table('employee_warning_letter')
-                ->where('user_id', $userId)
-                ->where('type', 'SP3')
-                ->where('created_at', '>=', $currentDate->copy()->subMonths(6))
-                ->exists();
-
-            // Check if employee has ever received any formal warning (ST or SP)
-            $hasAnyFormalWarning = DB::table('employee_warning_letter')
-                ->where('user_id', $userId)
-                ->whereIn('type', ['ST1', 'ST2', 'SP1', 'SP2', 'SP3'])
-                ->exists();
-
-            // Add Verbal warning if employee has never received any formal warning
-            if (!$hasAnyFormalWarning) {
-                $available_types['Verbal'] = 'Verbal Warning';
-            }
-
-            // Add ST1 if not received in last 3 months
-            if (!$hasST1Last3Months) {
-                $available_types['ST1'] = 'ST1 (Surat Teguran 1)';
-            } else {
-                $message .= 'ST1 is not available - employee received ST1 within the last 3 months. ';
-            }
-
-            // Add ST2 if not received in last 3 months
-            if (!$hasST2Last3Months) {
-                $available_types['ST2'] = 'ST2 (Surat Teguran 2)';
-            } else {
-                $message .= 'ST2 is not available - employee received ST2 within the last 3 months. ';
-            }
-
-            // Add SP1 if not received in last 6 months
-            if (!$hasSP1Last6Months) {
-                $available_types['SP1'] = 'SP1 (Surat Peringatan 1)';
-            } else {
-                $message .= 'SP1 is not available - employee received SP1 within the last 6 months. ';
-            }
-
-            // Add SP2 if not received in last 6 months
-            if (!$hasSP2Last6Months) {
-                $available_types['SP2'] = 'SP2 (Surat Peringatan 2)';
-            } else {
-                $message .= 'SP2 is not available - employee received SP2 within the last 6 months. ';
-            }
-
-            // Add SP3 if not received in last 6 months
-            if (!$hasSP3Last6Months) {
-                $available_types['SP3'] = 'SP3 (Surat Peringatan 3)';
-            } else {
-                $message .= 'SP3 is not available - employee received SP3 within the last 6 months. ';
-            }
+        // Apply filters
+        if ($request->has('employee') && $request->employee != '') {
+            $query->where('ewl.user_id', $request->employee);
         }
 
-        return response()->json([
-            'available_types' => $available_types,
-            'message' => $message
-        ]);
-    }
-
-    public function getAvailableWarningTypesForEdit(Request $request)
-    {
-        $userId = $request->user_id;
-        $warningId = $request->warning_id; // ID of the warning letter being edited
-        $available_types = [];
-        $message = '';
-
-        if ($userId) {
-            // Get current date
-            $currentDate = Carbon::now();
-
-            // Check if employee has any ST1 or ST2 in the last 3 months (excluding current warning)
-            $hasST1Last3Months = DB::table('employee_warning_letter')
-                ->where('user_id', $userId)
-                ->where('type', 'ST1')
-                ->where('id', '!=', $warningId) // Exclude current warning
-                ->where('created_at', '>=', $currentDate->copy()->subMonths(3))
-                ->exists();
-
-            $hasST2Last3Months = DB::table('employee_warning_letter')
-                ->where('user_id', $userId)
-                ->where('type', 'ST2')
-                ->where('id', '!=', $warningId) // Exclude current warning
-                ->where('created_at', '>=', $currentDate->copy()->subMonths(3))
-                ->exists();
-
-            // Check if employee has SP1, SP2, or SP3 in the last 6 months (excluding current warning)
-            $hasSP1Last6Months = DB::table('employee_warning_letter')
-                ->where('user_id', $userId)
-                ->where('type', 'SP1')
-                ->where('id', '!=', $warningId) // Exclude current warning
-                ->where('created_at', '>=', $currentDate->copy()->subMonths(6))
-                ->exists();
-
-            $hasSP2Last6Months = DB::table('employee_warning_letter')
-                ->where('user_id', $userId)
-                ->where('type', 'SP2')
-                ->where('id', '!=', $warningId) // Exclude current warning
-                ->where('created_at', '>=', $currentDate->copy()->subMonths(6))
-                ->exists();
-
-            $hasSP3Last6Months = DB::table('employee_warning_letter')
-                ->where('user_id', $userId)
-                ->where('type', 'SP3')
-                ->where('id', '!=', $warningId) // Exclude current warning
-                ->where('created_at', '>=', $currentDate->copy()->subMonths(6))
-                ->exists();
-
-            // Check if employee has ever received any formal warning (excluding current warning)
-            $hasAnyFormalWarning = DB::table('employee_warning_letter')
-                ->where('user_id', $userId)
-                ->where('id', '!=', $warningId) // Exclude current warning
-                ->whereIn('type', ['ST1', 'ST2', 'SP1', 'SP2', 'SP3'])
-                ->exists();
-
-            // Add Verbal warning if employee has never received any formal warning
-            if (!$hasAnyFormalWarning) {
-                $available_types['Verbal'] = 'Verbal Warning';
-            }
-
-            // Add ST1 if not received in last 3 months
-            if (!$hasST1Last3Months) {
-                $available_types['ST1'] = 'ST1 (Surat Teguran 1)';
-            } else {
-                $message .= 'ST1 is not available - employee received ST1 within the last 3 months. ';
-            }
-
-            // Add ST2 if not received in last 3 months
-            if (!$hasST2Last3Months) {
-                $available_types['ST2'] = 'ST2 (Surat Teguran 2)';
-            } else {
-                $message .= 'ST2 is not available - employee received ST2 within the last 3 months. ';
-            }
-
-            // Add SP1 if not received in last 6 months
-            if (!$hasSP1Last6Months) {
-                $available_types['SP1'] = 'SP1 (Surat Peringatan 1)';
-            } else {
-                $message .= 'SP1 is not available - employee received SP1 within the last 6 months. ';
-            }
-
-            // Add SP2 if not received in last 6 months
-            if (!$hasSP2Last6Months) {
-                $available_types['SP2'] = 'SP2 (Surat Peringatan 2)';
-            } else {
-                $message .= 'SP2 is not available - employee received SP2 within the last 6 months. ';
-            }
-
-            // Add SP3 if not received in last 6 months
-            if (!$hasSP3Last6Months) {
-                $available_types['SP3'] = 'SP3 (Surat Peringatan 3)';
-            } else {
-                $message .= 'SP3 is not available - employee received SP3 within the last 6 months. ';
-            }
+        if ($request->has('position') && $request->position != '') {
+            $query->where('emp_pos.position', $request->position);
         }
 
-        return response()->json([
-            'available_types' => $available_types,
-            'message' => $message
-        ]);
+        if ($request->has('department') && $request->department != '') {
+            $query->where('emp_dept.department', $request->department);
+        }
+
+        // Add type filter
+        if ($request->has('type') && $request->type != '') {
+            $query->where('ewl.type_id', $request->type);
+        }
+
+        $warning_letter = $query->get();
+
+        return view(
+            'time_management/warning_letter/assign/index',
+            compact('warning_letter', 'employees', 'departments', 'positions', 'types')
+        );
     }
+
+
 
     public function warning_letter_index2($id)
     {
-
-
         $warning_letter = DB::table('employee_warning_letter as ewl')
-            ->join('users', 'ewl.maker_id', '=', 'users.id')
-            ->select('ewl.*', 'users.name', 'users.department', 'users.position', 'users.employee_id')
-            ->where('ewl.user_id', $id)->get();
+            ->join('users as employee', 'ewl.user_id', '=', 'employee.id')
+            ->join('users as maker', 'ewl.maker_id', '=', 'maker.id')
+            ->leftJoin('employee_departments as emp_dept', 'employee.department_id', '=', 'emp_dept.id')
+            ->leftJoin('employee_positions as emp_pos', 'employee.position_id', '=', 'emp_pos.id')
+            ->leftJoin('employee_departments as maker_dept', 'maker.department_id', '=', 'maker_dept.id')
+            ->leftJoin('employee_positions as maker_pos', 'maker.position_id', '=', 'maker_pos.id')
+            ->select(
+                'ewl.*',
+                'employee.name as employee_name',
+                'employee.employee_id as employee_id',
+                'emp_dept.department as employee_department',
+                'emp_pos.position as employee_position',
+                'maker.name as maker_name',
+                'maker.employee_id as maker_employee_id',
+                'maker_pos.position as maker_position',
+                'maker_dept.department as maker_department'
+            )
+            ->where('ewl.user_id', $id)
+            ->get();
 
-
-
-        return view('time_management/warning_letter/index2', compact('warning_letter'));
+        return view('time_management/warning_letter/assign/index2', compact('warning_letter'));
     }
 
     public function warning_letter_create()
     {
         $employees = User::where('employee_status', '!=', 'Inactive')->get();
-        return view('time_management/warning_letter/create', compact('employees'));
-    }
-
-    public function warning_letter_edit($id)
-    {
-        $warning_letter = WarningLetter::where('id', $id)->first();
-
-        $employee = User::where('id', $warning_letter->user_id)->first();
-        return view('time_management/warning_letter/update', compact('warning_letter', 'employee'));
+        return view('time_management/warning_letter/assign/create', compact('employees'));
     }
 
     public function warning_letter_store(Request $request)
@@ -1441,156 +1328,294 @@ class TimeManagementController extends Controller
             'user_id' => 'required|exists:users,id',
             'reason_warning' => 'required|string',
             'maker_id' => 'required|exists:users,id',
-            'type' => 'required|string'
+            'type_id' => 'required'
         ]);
 
         $user = User::findOrFail($request->user_id);
         $maker = User::findOrFail($request->maker_id);
+        $warningType = WarningLetterRule::findOrFail($request->type_id);
 
-        // Hitung jumlah warning letter berdasarkan tipe
-        $typeCount = WarningLetter::where('user_id', $request->user_id)
-            ->where('type', $request->type)
-            ->count() + 1;
+        // Generate warning letter number
+        $warningLetterNumber = $this->generateWarningLetterNumber($warningType->name, $request->type_id);
 
-        // Simpan Warning Letter dengan tipe
-        WarningLetter::create([
+        // Calculate expired date
+        $expiredAt = $this->calculateExpiredDate($warningType);
+
+        // Create Warning Letter
+        $warningLetter = WarningLetter::create([
             'user_id' => $request->user_id,
             'maker_id' => $request->maker_id,
-            'type' => $request->type,
-            'reason_warning' => $request->reason_warning
+            'type_id' => $request->type_id,
+            'reason_warning' => $request->reason_warning,
+            'warning_letter_number' => $warningLetterNumber,
+            'expired_at' => $expiredAt
         ]);
 
-        // Ubah status employee menjadi Inactive jika menerima SP3
-        if ($request->type === 'SP3') {
+        // Change employee status to Inactive if SP3
+        if (str_contains($warningType->name, 'SP3')) {
             $user->update(['employee_status' => 'Inactive']);
         }
 
-        // Prepare notification message with type and count
-        $notificationMessage = "You received warning letter {$request->type} #{$typeCount}: " . $request->reason_warning;
+        // Prepare notification
+        $this->createOrUpdateNotification($user->id, $maker->id, $warningType->name, $request->reason_warning);
 
-        // Cek apakah notifikasi sudah ada
-        $notification = Notification::where('users_id', $request->user_id)
-            ->where('type', 'warning_letter')
-            ->first();
-
-        if ($notification) {
-            // Update notifikasi yang sudah ada
-            $notification->update([
-                'message' => $notificationMessage,
-                'status' => 'Unread'
-            ]);
-        } else {
-            // Buat notifikasi baru jika belum ada
-            Notification::create([
-                'users_id' => $request->user_id,
-                'message' => $notificationMessage,
-                'type' => 'warning_letter',
-                'maker_id' => $request->maker_id,
-                'status' => 'Unread'
-            ]);
-        }
-
-        // Kirim Email dengan informasi tipe warning dan hitungan per tipe
-        Mail::to($user->email)->send(new WarningLetterMail($user, $request->type, $typeCount, $request->reason_warning, $maker, false));
+        // Send email
+        Mail::to($user->email)->send(new WarningLetterMail(
+            $user,
+            $warningType->name,
+            $this->getWarningCountByType($request->user_id, $request->type_id),
+            $request->reason_warning,
+            $maker,
+            false
+        ));
 
         return redirect()->route('warning.letter.index')->with('success', 'Warning letter created successfully');
     }
+
+
+    public function warning_letter_edit($id)
+    {
+        $warning_letter = WarningLetter::with(['rule', 'employee'])->findOrFail($id);
+        $employee = $warning_letter->employee;
+        $warningTypes = WarningLetterRule::orderBy('name')->get();
+
+        return view('time_management/warning_letter/assign/update', compact('warning_letter', 'employee', 'warningTypes'));
+    }
+
     public function warning_letter_update(Request $request, $id)
     {
         $request->validate([
             'user_id' => 'required|exists:users,id',
             'reason_warning' => 'required|string',
             'maker_id' => 'required|exists:users,id',
-            'type' => 'required|string'
+            'type_id' => 'required|exists:rule_warning_later,id'
         ]);
 
         $warning_letter = WarningLetter::findOrFail($id);
         $user = User::findOrFail($request->user_id);
         $maker = User::findOrFail($request->maker_id);
+        $newType = WarningLetterRule::findOrFail($request->type_id);
 
         // Check if the type has changed
-        $typeChanged = $warning_letter->type !== $request->type;
+        $typeChanged = $warning_letter->type_id != $request->type_id;
+        $oldType = $warning_letter->rule;
 
-        // Get the current warning letter type count (excluding the one being updated)
-        $typeCount = WarningLetter::where('user_id', $request->user_id)
-            ->where('type', $request->type)
-            ->where('id', '!=', $id) // Exclude the current warning letter
-            ->count() + 1;
+        // Calculate new expired date if type changed
+        $expiredAt = $typeChanged ? $this->calculateExpiredDate($newType) : $warning_letter->expired_at;
 
-        // Store the old type for reference
-        $oldType = $warning_letter->type;
+        // Generate new warning letter number if type changed
+        $warningLetterNumber = $typeChanged
+            ? $this->generateWarningLetterNumber($newType->name, $request->type_id)
+            : $warning_letter->warning_letter_number;
 
-        // Update warning letter
+        // Update warning letter with all fields
         $warning_letter->update([
             'user_id' => $request->user_id,
             'maker_id' => $request->maker_id,
-            'type' => $request->type,
-            'reason_warning' => $request->reason_warning
+            'type_id' => $request->type_id,
+            'reason_warning' => $request->reason_warning,
+            'expired_at' => $expiredAt,
+            'warning_letter_number' => $warningLetterNumber
         ]);
 
+        // Handle employee status changes
+        $this->handleEmployeeStatus($user, $newType->name, $oldType->name, $request->user_id, $id);
+
+        // Send notification and email
+        $this->sendNotifications($user, $maker, $newType, $oldType, $request->reason_warning, $id, $typeChanged);
+
+        return redirect()->route('warning.letter.index')->with('success', 'Warning letter updated successfully');
+    }
+
+    protected function handleEmployeeStatus($user, $newTypeName, $oldTypeName, $userId, $warningId)
+    {
         // If changed to SP3, update employee status
-        if ($request->type === 'SP3') {
+        if ($newTypeName === 'SP3') {
             $user->update(['employee_status' => 'Inactive']);
         }
 
         // If changed from SP3 to something else, check if we need to reactivate the employee
-        if ($oldType === 'SP3' && $request->type !== 'SP3') {
-            // Check if there are any other SP3 warnings for this user
-            $hasOtherSP3 = WarningLetter::where('user_id', $request->user_id)
-                ->where('type', 'SP3')
-                ->where('id', '!=', $id)
+        if ($oldTypeName === 'SP3' && $newTypeName !== 'SP3') {
+            $hasOtherSP3 = WarningLetter::where('user_id', $userId)
+                ->whereHas('rule', function ($q) {
+                    $q->where('name', 'SP3');
+                })
+                ->where('id', '!=', $warningId)
                 ->exists();
 
-            // If no other SP3 exists, reactivate the employee
             if (!$hasOtherSP3) {
                 $user->update(['employee_status' => 'Active']);
             }
         }
+    }
+
+    protected function sendNotifications($user, $maker, $newType, $oldType, $reason, $warningId, $typeChanged)
+    {
+        // Get the warning count for this type
+        $typeCount = WarningLetter::where('user_id', $user->id)
+            ->where('type_id', $newType->id)
+            ->where('id', '!=', $warningId)
+            ->count() + 1;
 
         // Prepare notification message
-        $notificationMessage = "";
-        if ($typeChanged) {
-            $notificationMessage = "Your warning letter has been updated from {$oldType} to {$request->type} #{$typeCount}: " . $request->reason_warning;
-        } else {
-            $notificationMessage = "Your {$request->type} warning letter #{$typeCount} has been updated: " . $request->reason_warning;
-        }
+        $notificationMessage = $typeChanged
+            ? "Your warning letter has been updated from {$oldType->name} to {$newType->name} #{$typeCount}: " . $reason
+            : "Your {$newType->name} warning letter #{$typeCount} has been updated: " . $reason;
 
-        // Update notification if it exists
-        $notification = Notification::where('users_id', $request->user_id)
-            ->where('type', 'warning_letter')
-            ->first();
-
-        if ($notification) {
-            $notification->update([
+        // Update or create notification
+        Notification::updateOrCreate(
+            [
+                'users_id' => $user->id,
+                'type' => 'warning_letter'
+            ],
+            [
                 'message' => $notificationMessage,
                 'status' => 'Unread',
-                'updated_at' => now() // Fixed typo 'upadted_at' to 'updated_at'
-            ]);
-        } else {
-            // Create a new notification if it doesn't exist
-            Notification::create([
-                'users_id' => $request->user_id,
-                'message' => $notificationMessage,
-                'type' => 'warning_letter',
-                'maker_id' => $request->maker_id,
-                'status' => 'Unread'
-            ]);
-        }
+                'maker_id' => $maker->id,
+                'updated_at' => now()
+            ]
+        );
 
-        // Send email with updated information
+        // Send email
         Mail::to($user->email)->send(new WarningLetterMail(
             $user,
-            $request->type,
+            $newType->name,
             $typeCount,
-            $request->reason_warning,
+            $reason,
             $maker,
             true,
-            $oldType
+            $oldType->name
         ));
+    }
 
 
 
-        return redirect()->route('warning.letter.index')->with('success', 'Warning letter updated successfully');
+    protected function generateWarningLetterNumber($typeName, $typeId)
+    {
+        $now = now();
+
+        // Get count of this type for numbering
+        $count = WarningLetter::where('type_id', $typeId)->count() + 1;
+
+        // Format: no.{count}/TJI/{type}/{month}/{date}-{dailyCount}
+        $monthRoman = $this->convertToRoman($now->month);
+        $datePart = $now->format('dmy');
+
+        // Get daily count for this type
+        $dailyCount = WarningLetter::where('type_id', $typeId)
+            ->whereDate('created_at', $now->toDateString())
+            ->count() + 1;
+
+        return "no.{$count}/TJI/{$typeName}/{$monthRoman}/{$datePart}-{$dailyCount}";
+    }
+
+    protected function calculateExpiredDate($warningType)
+    {
+        if ($warningType->expired_length) {
+            return now()->addMonths($warningType->expired_length);
+        }
+
+        // Default fallback based on type name
+        if (str_contains($warningType->name, 'ST')) {
+            return now()->addMonths(3);
+        } elseif (str_contains($warningType->name, 'SP')) {
+            return now()->addMonths(6);
+        }
+
+        return null; // For Verbal or other types without expiration
+    }
+
+    protected function getWarningCountByType($userId, $typeId)
+    {
+        return WarningLetter::where('user_id', $userId)
+            ->where('type_id', $typeId)
+            ->count() + 1;
+    }
+
+    protected function createOrUpdateNotification($userId, $makerId, $typeName, $reason)
+    {
+        $count = $this->getWarningCountByType($userId, $typeName);
+        $message = "You received warning letter {$typeName} #{$count}: " . $reason;
+
+        Notification::updateOrCreate(
+            [
+                'users_id' => $userId,
+                'type' => 'warning_letter'
+            ],
+            [
+                'message' => $message,
+                'status' => 'Unread',
+                'maker_id' => $makerId
+            ]
+        );
+    }
+
+    protected function convertToRoman($number)
+    {
+        $map = ['', 'I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII'];
+        return $map[$number] ?? '';
+    }
+
+    public function getAvailableWarningTypes(Request $request)
+    {
+        $userId = $request->user_id;
+        $availableTypes = [];
+        $description =  [];
+        $message = '';
+
+        if ($userId) {
+            $currentDate = now();
+            $warningTypes = WarningLetterRule::orderBy('name')->get();
+
+            foreach ($warningTypes as $type) {
+                $isAvailable = true;
+                $currentMessage = '';
+
+                // Skip expiration check for Verbal warnings
+                if ($type->name !== 'Verbal') {
+                    $checkMonths = str_contains($type->name, 'ST') ? 3 : 6;
+
+                    // Check if this type has been given within the period
+                    $hasRecentWarning = WarningLetter::where('user_id', $userId)
+                        ->where('type_id', $type->id)
+                        ->where('created_at', '>=', $currentDate->copy()->subMonths($checkMonths))
+                        ->exists();
+
+                    if ($hasRecentWarning) {
+                        $isAvailable = false;
+                        $currentMessage = "{$type->name} is not available - employee received within last {$checkMonths} months.";
+                    }
+                }
+
+                // Check if this is Verbal and employee has any formal warnings
+                if ($type->name === 'Verbal') {
+                    $hasFormalWarning = WarningLetter::where('user_id', $userId)
+                        ->whereHas('rule', function ($q) {
+                            $q->where('name', '!=', 'Verbal');
+                        })
+                        ->exists();
+
+                    if ($hasFormalWarning) {
+                        $isAvailable = false;
+                        $currentMessage = "Verbal is not available - employee already has formal warnings.";
+                    }
+                }
+
+                if ($isAvailable) {
+                    $availableTypes[$type->id] = $type->name;
+                    $description[$type->id] = $type->description;
+                } elseif (!empty($currentMessage)) {
+                    // Add message with line break if it's not the first message
+                    $message .= (empty($message) ? $currentMessage : '<br>' . $currentMessage);
+                }
+            }
+        }
+
+        return response()->json([
+            'available_types' => $availableTypes,
+            'description' => $description,
+            'message' => $message
+        ]);
     }
 
     /**
@@ -1767,7 +1792,12 @@ class TimeManagementController extends Controller
                 $shiftChange->save();
 
                 // Get HR users
-                $hrUsers = User::where('department', 'Human Resources')->where('employee_status', '!=', 'Inactive')->get();
+                $hrUsers = User::whereHas('department', function ($query) {
+                    $query->where('department', 'Human Resources');
+                })
+                    ->where('employee_status', '!=', 'Inactive')
+                    ->get();
+
                 // Create notifications & send emails
                 foreach ($hrUsers as $hr) {
                     Notification::create([
@@ -1948,9 +1978,13 @@ class TimeManagementController extends Controller
 
 
 
-            // Get HR users
-            $hrUsers = User::where('department', 'Human Resources')->where('employee_status', '!=', 'Inactive')->get();
+            // First get the HR department ID
+            $hrDepartment = EmployeeDepartment::where('department', 'Human Resources')->first();
 
+            // Then get users in that department
+            $hrUsers = User::where('department_id', $hrDepartment->id)
+                ->where('employee_status', '!=', 'Inactive')
+                ->get();
 
             // Create notifications & send emails
             foreach ($hrUsers as $hr) {
@@ -2005,57 +2039,53 @@ class TimeManagementController extends Controller
     /**
      * Display Resign management page
      */
+
+
     public function request_resign_index(Request $request)
     {
         // Get all employees for filter dropdown
-        $employees = User::where('employee_status', '!=', 'Inactive')->get();
+        $employees = User::with(['department', 'position'])
+            ->where('employee_status', '!=', 'Inactive')
+            ->get();
 
-        // Get unique departments and positions
-        $departments = User::where('employee_status', '!=', 'Inactive')
-            ->whereNotNull('department')
-            ->distinct()
-            ->pluck('department');
+        // Get unique departments and positions from their respective tables
+        $departments = EmployeeDepartment::distinct()->pluck('department');
+        $positions = EmployeePosition::distinct()->pluck('position');
 
-        $positions = User::where('employee_status', '!=', 'Inactive')
-            ->whereNotNull('position')
-            ->distinct()
-            ->pluck('position');
-
-        // Ambil daftar unik resign_type
+        // Get unique resign types
         $types = RequestResign::whereNotNull('resign_type')
             ->distinct()
             ->pluck('resign_type')
-            ->toArray(); // Ubah ke array agar mudah dicek
+            ->toArray();
 
-        // Definisikan tipe yang wajib ada
         $requiredTypes = ['Voluntary', 'Retirement'];
-
-        // Gabungkan tipe yang ada dengan yang wajib
         $finalTypes = array_unique(array_merge($types, $requiredTypes));
 
-        // Base query with joins to get employee information
+        // Base query with joins
         $query = DB::table('request_resign')
             ->join('users as employee', 'request_resign.user_id', '=', 'employee.id')
+            ->leftJoin('employee_departments as emp_dept', 'employee.department_id', '=', 'emp_dept.id')
+            ->leftJoin('employee_positions as emp_pos', 'employee.position_id', '=', 'emp_pos.id')
             ->leftJoin('users as responder', 'request_resign.response_user_id', '=', 'responder.id')
             ->select(
                 'request_resign.*',
                 'employee.name as employee_name',
-                'employee.position as employee_position',
-                'employee.department as employee_department',
+                'emp_pos.position as employee_position',
+                'emp_dept.department as employee_department',
                 'responder.name as response_name'
             );
 
-        // Apply filters if provided
+        // Apply filters
         if ($request->filled('user_id')) {
             $query->where('request_resign.user_id', $request->user_id);
         }
 
         if ($request->filled('position')) {
-            $query->where('employee.position', $request->position);
+            $query->where('emp_pos.position', $request->position);
         }
 
         if ($request->filled('department')) {
-            $query->where('employee.department', $request->department);
+            $query->where('emp_dept.department', $request->department);
         }
 
         if ($request->filled('resign_type')) {
@@ -2066,23 +2096,17 @@ class TimeManagementController extends Controller
             $query->where('request_resign.resign_date', $request->date);
         }
 
-        // Whether to show specific status cards
         $show_pending = true;
         $show_approved = true;
         $show_declined = true;
 
-        // Filter by response type if provided
         if ($request->filled('response_type')) {
-            // Only include records with the matching status
             $query->where('request_resign.resign_status', $request->response_type);
-
-            // Set visibility flags for cards
             $show_pending = $request->response_type == 'Pending';
             $show_approved = $request->response_type == 'Approved';
             $show_declined = $request->response_type == 'Declined';
         }
 
-        // Get requests by status
         $pending_requests = (clone $query)->where('resign_status', 'Pending')->get();
         $approved_requests = (clone $query)->where('resign_status', 'Approved')->get();
         $declined_requests = (clone $query)->where('resign_status', 'Declined')->get();
@@ -2101,29 +2125,27 @@ class TimeManagementController extends Controller
         ));
     }
 
-
     public function request_resign_index2($id)
     {
-        // Check if the request exists for this user
         $query = DB::table('request_resign')
             ->join('users as employee', 'request_resign.user_id', '=', 'employee.id')
+            ->leftJoin('employee_departments as emp_dept', 'employee.department_id', '=', 'emp_dept.id')
+            ->leftJoin('employee_positions as emp_pos', 'employee.position_id', '=', 'emp_pos.id')
             ->leftJoin('users as responder', 'request_resign.response_user_id', '=', 'responder.id')
             ->select(
                 'request_resign.*',
                 'employee.name as employee_name',
-                'employee.position as employee_position',
-                'employee.department as employee_department',
+                'emp_pos.position as employee_position',
+                'emp_dept.department as employee_department',
                 'responder.name as response_name'
             )
             ->where('request_resign.user_id', $id);
 
-        // Get requests by status for this specific user
         $pending_requests = (clone $query)->where('resign_status', 'Pending')->get();
         $approved_requests = (clone $query)->where('resign_status', 'Approved')->get();
         $declined_requests = (clone $query)->where('resign_status', 'Declined')->get();
 
-        // Get user info for display
-        $user = User::find($id);
+        $user = User::with(['department', 'position'])->find($id);
 
         return view('time_management/request_resign/index2', compact(
             'pending_requests',
@@ -2389,18 +2411,20 @@ class TimeManagementController extends Controller
         $employee = $request->input('employee', 'all');
         $overtimeType = $request->input('overtime_type', 'all');
         $date = $request->input('date');
-        $department = $request->input('department_request'); // Fixed
-        $position = $request->input('position_request'); // Fixed
+        $department = $request->input('department_request');
+        $position = $request->input('position_request');
 
-        // Base query
+        // Base query with proper joins
         $query = EmployeeOvertime::query()
             ->join('users', 'employee_overtime.user_id', '=', 'users.id')
+            ->leftJoin('employee_departments as ed', 'users.department_id', '=', 'ed.id')
+            ->leftJoin('employee_positions as ep', 'users.position_id', '=', 'ep.id')
             ->leftJoin('users as responder', 'employee_overtime.answer_user_id', '=', 'responder.id')
             ->select(
                 'employee_overtime.*',
                 'users.name as employee_name',
-                'users.position as employee_position',
-                'users.department as employee_department',
+                'ep.position as employee_position',
+                'ed.department as employee_department',
                 'responder.name as response_name'
             );
 
@@ -2410,11 +2434,11 @@ class TimeManagementController extends Controller
         }
 
         if ($position) {
-            $query->where('users.position', $position); // Fixed alias
+            $query->where('ep.position', $position);
         }
 
         if ($department) {
-            $query->where('users.department', $department); // Fixed alias
+            $query->where('ed.department', $department);
         }
 
         if ($overtimeType !== 'all') {
@@ -2433,16 +2457,9 @@ class TimeManagementController extends Controller
         // Get all employees for filter dropdown
         $employees = User::where('employee_status', '!=', 'Inactive')->get();
 
-        // Get unique departments and positions
-        $departments = User::where('employee_status', '!=', 'Inactive')
-            ->whereNotNull('department')
-            ->distinct()
-            ->pluck('department');
-
-        $positions = User::where('employee_status', '!=', 'Inactive')
-            ->whereNotNull('position')
-            ->distinct()
-            ->pluck('position');
+        // Get unique departments and positions from their tables
+        $departments = EmployeeDepartment::distinct()->pluck('department');
+        $positions = EmployeePosition::distinct()->pluck('position');
 
         return view('time_management.overtime.index', compact(
             'pendingRequests',
@@ -2458,27 +2475,28 @@ class TimeManagementController extends Controller
     }
 
 
-    // View overtime requests for a specific employee
     public function overtime_index2($id)
     {
         $query = EmployeeOvertime::query()
             ->join('users', 'employee_overtime.user_id', '=', 'users.id')
+            ->leftJoin('employee_departments as ed', 'users.department_id', '=', 'ed.id')
+            ->leftJoin('employee_positions as ep', 'users.position_id', '=', 'ep.id')
             ->leftJoin('users as responder', 'employee_overtime.answer_user_id', '=', 'responder.id')
-            ->select('employee_overtime.*', 'users.name as employee_name', 'users.position as employee_position', 'users.department as employee_department',    'responder.name as response_name')
+            ->select(
+                'employee_overtime.*',
+                'users.name as employee_name',
+                'ep.position as employee_position',
+                'ed.department as employee_department',
+                'responder.name as response_name'
+            )
             ->where('employee_overtime.user_id', $id);
 
+        // Separate queries for each tab
+        $pendingRequests = (clone $query)->where('approval_status', 'Pending')->get();
+        $approvedRequests = (clone $query)->where('approval_status', 'Approved')->get();
+        $declinedRequests = (clone $query)->where('approval_status', 'Declined')->get();
 
-        // Separate queries for each tab (Pending, Approved, Declined)
-        $pendingRequests = clone $query;
-        $pendingRequests = $pendingRequests->where('approval_status', 'Pending')->get();
-
-        $approvedRequests = clone $query;
-        $approvedRequests = $approvedRequests->where('approval_status', 'Approved')->get();
-
-        $declinedRequests = clone $query;
-        $declinedRequests = $declinedRequests->where('approval_status', 'Declined')->get();
-
-        $employee = User::where('id', $id)->first();
+        $employee = User::with(['department', 'position'])->find($id);
 
         return view('time_management.overtime.index2', compact(
             'pendingRequests',
@@ -2678,7 +2696,9 @@ class TimeManagementController extends Controller
         $employee = User::find($request->user_id);
 
         // Find HR personnel that are active
-        $hr_personnel = User::where('department', 'Human Resources')
+        $hr_personnel = User::whereHas('department', function ($query) {
+            $query->where('department', 'Human Resources');
+        })
             ->where('employee_status', '!=', 'Inactive')
             ->get();
 
@@ -2777,7 +2797,9 @@ class TimeManagementController extends Controller
         $employee = User::find($overtime->user_id);
 
         // Find HR personnel that are active
-        $hr_personnel = User::where('department', 'Human Resources')
+        $hr_personnel = User::whereHas('department', function ($query) {
+            $query->where('department', 'Human Resources');
+        })
             ->where('employee_status', '!=', 'Inactive')
             ->get();
 
@@ -2834,6 +2856,7 @@ class TimeManagementController extends Controller
             'quota' => 'required|numeric|min:0',
             'start_date' => 'required|date',
             'end_date' => 'nullable|date|after_or_equal:start_date',
+            'requires_time_input' => 'nullable'
         ]);
 
         if ($validator->fails()) {
@@ -2843,10 +2866,19 @@ class TimeManagementController extends Controller
         }
 
         // Prepare data and handle nullable end_date
-        $data = $request->only(['time_off_name', 'time_off_description', 'quota', 'start_date']);
+        $data = $request->only([
+            'time_off_name',
+            'time_off_description',
+            'quota',
+            'start_date',
+            'requires_time_input' // Ambil nilai dari form
+        ]);
         $data['end_date'] = $request->end_date ?: null;
+        $data['requires_time_input'] = $request->has('requires_time_input'); // Konversi ke boolean
 
         TimeOffPolicy::create($data);
+
+
 
         return redirect()->route('time.off.policy.index')
             ->with('success', 'Time off policy has been created successfully.');
@@ -2866,6 +2898,7 @@ class TimeManagementController extends Controller
             'quota' => 'required|numeric|min:0',
             'start_date' => 'required|date',
             'end_date' => 'nullable|date|after_or_equal:start_date',
+            'requires_time_input' => 'nullable'
         ]);
 
         if ($validator->fails()) {
@@ -2876,9 +2909,16 @@ class TimeManagementController extends Controller
 
         $policy = TimeOffPolicy::findOrFail($id);
 
-        // Prepare data and handle nullable end_date
-        $data = $request->only(['time_off_name', 'time_off_description', 'quota', 'start_date']);
+        $data = $request->only([
+            'time_off_name',
+            'time_off_description',
+            'quota',
+            'start_date',
+            'requires_time_input' // Include this field
+        ]);
+
         $data['end_date'] = $request->end_date ?: null;
+        $data['requires_time_input'] = $request->has('requires_time_input'); // Convert checkbox to boolean
 
         $policy->update($data);
 
@@ -2891,13 +2931,15 @@ class TimeManagementController extends Controller
     {
         $query = DB::table('time_off_assign')
             ->join('users', 'time_off_assign.user_id', '=', 'users.id')
+            ->leftJoin('employee_departments as ed', 'users.department_id', '=', 'ed.id')
+            ->leftJoin('employee_positions as ep', 'users.position_id', '=', 'ep.id')
             ->join('time_off_policy', 'time_off_assign.time_off_id', '=', 'time_off_policy.id')
             ->select(
                 'time_off_assign.id',
                 'users.name as employee_name',
                 'users.employee_id',
-                'users.department as department_name', // Ambil langsung dari users
-                'users.position as position_name', // Ambil langsung dari users
+                'ed.department as department_name',
+                'ep.position as position_name',
                 'time_off_policy.time_off_name',
                 'time_off_policy.quota',
                 'time_off_assign.balance',
@@ -2910,11 +2952,11 @@ class TimeManagementController extends Controller
         }
 
         if ($request->filled('department')) {
-            $query->where('users.department', $request->department);
+            $query->where('ed.department', $request->department);
         }
 
         if ($request->filled('position')) {
-            $query->where('users.position', $request->position);
+            $query->where('ep.position', $request->position);
         }
 
         if ($request->filled('time_off_type')) {
@@ -2924,9 +2966,9 @@ class TimeManagementController extends Controller
         $timeOffAssignments = $query->orderBy('users.name')->paginate(10);
 
         // Get data for filter dropdowns
-        $employees = DB::table('users')->select('id', 'name')->orderBy('name')->get();
-        $departments = DB::table('users')->select('department')->distinct()->whereNotNull('department')->orderBy('department')->pluck('department');
-        $positions = DB::table('users')->select('position')->distinct()->whereNotNull('position')->orderBy('position')->pluck('position');
+        $employees = User::select('id', 'name')->orderBy('name')->get();
+        $departments = EmployeeDepartment::select('department')->distinct()->orderBy('department')->pluck('department');
+        $positions = EmployeePosition::select('position')->distinct()->orderBy('position')->pluck('position');
         $timeOffPolicies = DB::table('time_off_policy')->select('id', 'time_off_name')->orderBy('time_off_name')->get();
 
         return view('time_management.time_off.assign.index', compact(
@@ -2943,22 +2985,21 @@ class TimeManagementController extends Controller
         // Get time off policies with their quotas
         $timeOffPolicies = DB::table('time_off_policy')->get();
 
-        // Get all active employees
-        $allEmployees = User::where('employee_status', '!=', 'Inactive')->get();
+        // Get all active employees with their relationships
+        $employees = User::with(['department', 'position'])
+            ->where('employee_status', '!=', 'Inactive')
+            ->get();
 
-        // Get departments and positions for filtering
-        $departments = User::where('employee_status', '!=', 'Inactive')
-            ->whereNotNull('department')
+        // Get departments and positions for filtering from their respective tables
+        $departments = EmployeeDepartment::select('department')
             ->distinct()
+            ->orderBy('department')
             ->pluck('department');
 
-        $positions = User::where('employee_status', '!=', 'Inactive')
-            ->whereNotNull('position')
+        $positions = EmployeePosition::select('position')
             ->distinct()
+            ->orderBy('position')
             ->pluck('position');
-
-        // Get employees that already have this time off policy assigned
-        $employees = $allEmployees;
 
         return view(
             'time_management.time_off.assign.create',
@@ -3191,26 +3232,28 @@ class TimeManagementController extends Controller
 
     public function request_time_off_index(Request $request)
     {
-        // Get all users, positions, departments, and time off policies for filters
-        $users = User::orderBy('name')->get();
+        // Get all users with their relationships
+        $users = User::with(['department', 'position'])
+            ->orderBy('name')
+            ->get();
 
-        // Get unique departments and positions
-        $departments = User::where('employee_status', '!=', 'Inactive')
-            ->whereNotNull('department')
-            ->distinct()
+        // Get unique departments and positions from their respective tables
+        $departments = EmployeeDepartment::distinct()
+            ->orderBy('department')
             ->pluck('department');
 
-        $positions = User::where('employee_status', '!=', 'Inactive')
-            ->whereNotNull('position')
-            ->distinct()
+        $positions = EmployeePosition::distinct()
+            ->orderBy('position')
             ->pluck('position');
 
         $timeOffPolicies = TimeOffPolicy::orderBy('time_off_name')->get();
 
-        // Build the query with joins
+        // Build the query with proper joins
         $query = RequestTimeOff::query()
-            ->join('users as u1', 'request_time_off.user_id', '=', 'u1.id') // User pemohon
-            ->leftJoin('users as u2', 'request_time_off.answered_by', '=', 'u2.id') // User yang menjawab
+            ->join('users as u1', 'request_time_off.user_id', '=', 'u1.id')
+            ->leftJoin('employee_departments as ed', 'u1.department_id', '=', 'ed.id')
+            ->leftJoin('employee_positions as ep', 'u1.position_id', '=', 'ep.id')
+            ->leftJoin('users as u2', 'request_time_off.answered_by', '=', 'u2.id')
             ->join('time_off_policy', 'request_time_off.time_off_id', '=', 'time_off_policy.id')
             ->leftJoin('time_off_assign', function ($join) {
                 $join->on('request_time_off.user_id', '=', 'time_off_assign.user_id')
@@ -3218,25 +3261,24 @@ class TimeManagementController extends Controller
             })
             ->select(
                 'request_time_off.*',
-                'u1.name as user_name', // Nama user pemohon
+                'u1.name as user_name',
                 'time_off_policy.time_off_name as time_off_name',
-                'u1.department',
-                'u1.position',
-                'u2.name as answered_by_name' // Nama user yang menjawab
+                'ed.department as department',
+                'ep.position as position',
+                'u2.name as answered_by_name'
             );
 
-
-        // Apply filters - FIXED parameter names to match the form
+        // Apply filters
         if ($request->filled('employee')) {
             $query->where('request_time_off.user_id', $request->employee);
         }
 
         if ($request->filled('position_request')) {
-            $query->where('users.position', $request->position_request);
+            $query->where('ep.position', $request->position_request);
         }
 
         if ($request->filled('department_request')) {
-            $query->where('users.department', $request->department_request);
+            $query->where('ed.department', $request->department_request);
         }
 
         if ($request->filled('time_off_type')) {
@@ -3256,20 +3298,29 @@ class TimeManagementController extends Controller
         $approvedCount = (clone $query)->where('request_time_off.status', 'Approved')->count();
         $declinedCount = (clone $query)->where('request_time_off.status', 'Declined')->count();
 
-        // Get pending requests
+
+
+        // Get requests by status and format them
         $pendingRequests = (clone $query)->where('request_time_off.status', 'Pending')
             ->orderBy('request_time_off.created_at', 'desc')
-            ->get();
+            ->get()
+            ->map(function ($item) {
+                return $this->formatTimeOffRequest($item);
+            });
 
-        // Get approved requests
         $approvedRequests = (clone $query)->where('request_time_off.status', 'Approved')
             ->orderBy('request_time_off.updated_at', 'desc')
-            ->get();
+            ->get()
+            ->map(function ($item) {
+                return $this->formatTimeOffRequest($item);
+            });
 
-        // Get declined requests
         $declinedRequests = (clone $query)->where('request_time_off.status', 'Declined')
             ->orderBy('request_time_off.updated_at', 'desc')
-            ->get();
+            ->get()
+            ->map(function ($item) {
+                return $this->formatTimeOffRequest($item);
+            });
 
         return view('time_management/time_off/request_time_off/index', compact(
             'pendingRequests',
@@ -3285,27 +3336,35 @@ class TimeManagementController extends Controller
         ));
     }
 
-
     public function request_time_off_index2($id)
     {
         $employee = User::findOrFail($id);
-
-        // Get time off requests for this employee
+    
+        // Get time off requests for this employee and format them
         $pendingRequests = RequestTimeOff::where('user_id', $id)
             ->where('status', 'pending')
             ->orderBy('created_at', 'desc')
-            ->get();
-
+            ->get()
+            ->map(function ($item) {
+                return $this->formatTimeOffRequest($item);
+            });
+    
         $approvedRequests = RequestTimeOff::where('user_id', $id)
             ->where('status', 'approved')
             ->orderBy('created_at', 'desc')
-            ->get();
-
+            ->get()
+            ->map(function ($item) {
+                return $this->formatTimeOffRequest($item);
+            });
+    
         $declinedRequests = RequestTimeOff::where('user_id', $id)
             ->where('status', 'declined')
             ->orderBy('created_at', 'desc')
-            ->get();
-
+            ->get()
+            ->map(function ($item) {
+                return $this->formatTimeOffRequest($item);
+            });
+    
         // Get time off assignments with policy information
         $timeOffAssignments = DB::table('time_off_assign')
             ->join('time_off_policy', 'time_off_assign.time_off_id', '=', 'time_off_policy.id')
@@ -3319,8 +3378,8 @@ class TimeManagementController extends Controller
                 'time_off_policy.quota'
             )
             ->get();
-
-        return view('time_management/time_off/request_time_off/index2', compact(
+    
+        return view('time_management.time_off.request_time_off.index2', compact(
             'employee',
             'pendingRequests',
             'approvedRequests',
@@ -3329,6 +3388,48 @@ class TimeManagementController extends Controller
         ));
     }
 
+    protected function formatTimeOffRequest($request)
+    {
+        $start = Carbon::parse($request->start_date);
+        $end = Carbon::parse($request->end_date);
+        
+        // Format dates
+        $isFullDay = ($start->format('H:i:s') === '00:00:00' && $end->format('H:i:s') === '23:59:59');
+        
+        $request->formatted_start_date = $isFullDay 
+            ? $start->format('d-m-Y') 
+            : $start->format('d-m-Y H:i');
+        
+        $request->formatted_end_date = $isFullDay 
+            ? $end->format('d-m-Y') 
+            : $end->format('d-m-Y H:i');
+        
+        // Calculate duration
+        if ($isFullDay) {
+            $days = $start->diffInDays($end) + 1;
+            $request->duration = $days . ' day' . ($days > 1 ? 's' : '');
+        } else {
+            $diff = $start->diff($end);
+            
+            $parts = [];
+            if ($diff->d > 0) $parts[] = $diff->d . ' day' . ($diff->d > 1 ? 's' : '');
+            if ($diff->h > 0) $parts[] = $diff->h . ' hour' . ($diff->h > 1 ? 's' : '');
+            if ($diff->i > 0) $parts[] = $diff->i . ' minute' . ($diff->i > 1 ? 's' : '');
+            
+            $request->duration = implode(' ', $parts) ?: 'Less than 1 minute';
+        }
+        
+        // For date range display
+        if ($start->format('Y-m-d') === $end->format('Y-m-d')) {
+            $request->formatted_date = $start->format('d M Y');
+        } else {
+            $request->formatted_date = $start->format('d M Y') . ' - ' . $end->format('d M Y');
+        }
+        
+        return $request;
+    }
+
+   
     public function request_time_off_create($id)
     {
         $employee = User::findOrFail($id);
@@ -3341,76 +3442,200 @@ class TimeManagementController extends Controller
         return view('time_management.time_off.request_time_off.create', compact('employee', 'timeOffTypes'));
     }
 
-    public function request_time_off_store(Request $request)
-    {
 
-        // Validate the request data
-        $validated = $request->validate([
+
+    public function checkRequiresTimeInput(Request $request)
+    {
+        $timeOffId = $request->input('time_off_id');
+
+        $policy = TimeOffPolicy::select('requires_time_input')
+            ->where('id', $timeOffId)
+            ->first();
+
+        return response()->json([
+            'requires_time_input' => $policy ? (bool) $policy->requires_time_input : false
+        ]);
+    }
+
+
+    public function getEmployeeShift(Request $request)
+    {
+        $userId = $request->user_id;
+        $date = $request->date;
+        $dayName = $request->day_name;
+
+        // Convert date to Carbon for easier comparison
+        $requestDate = Carbon::parse($date);
+
+        // Find applicable shift
+        $employeeShift = EmployeeShift::where('user_id', $userId)
+            ->where(function ($query) use ($requestDate) {
+                $query->where(function ($q) use ($requestDate) {
+                    // Case 1: Date is within start_date and end_date
+                    $q->where('start_date', '<=', $requestDate)
+                        ->where('end_date', '>=', $requestDate);
+                })->orWhere(function ($q) use ($requestDate) {
+                    // Case 2: Date is after start_date and end_date is null (no expiry)
+                    $q->where('start_date', '<=', $requestDate)
+                        ->whereNull('end_date');
+                });
+            })
+            ->orderBy('start_date', 'desc') // Get the most recent applicable shift rule
+            ->first();
+
+        if (!$employeeShift) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No shift found for this date'
+            ]);
+        }
+
+        // Get the rule details
+        $ruleShift = rule_shift::find($employeeShift->rule_id);
+
+        if (!$ruleShift) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Shift rule not found'
+            ]);
+        }
+
+        // Parse days from JSON
+        $days = json_decode($ruleShift->days, true);
+
+        // Check if the requested day is included in the rule
+        if (!in_array($dayName, $days)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No shift scheduled for this day of the week'
+            ]);
+        }
+
+        // Return shift data
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'hour_start' => $ruleShift->hour_start,
+                'hour_end' => $ruleShift->hour_end,
+                'shift_type' => $ruleShift->type,
+                'days' => $days
+            ]
+        ]);
+    }
+
+    public function checkBalance(Request $request)
+    {
+        $request->validate([
             'user_id' => 'required|exists:users,id',
             'time_off_id' => 'required',
-            'start_date' => 'required|date',
-            'end_date' => 'required|date|after_or_equal:start_date',
-            'reason' => 'required|string|max:255',
-            'file_reason' => 'nullable|file|mimes:jpeg,png,jpg|max:2048',
         ]);
 
-        // Create the time off request
-        $timeOffRequest = new RequestTimeOff();
-        $timeOffRequest->user_id = $request->user_id;
-        $timeOffRequest->time_off_id = $request->time_off_id;
-        $timeOffRequest->start_date = $request->start_date;
-        $timeOffRequest->end_date = $request->end_date;
-        $timeOffRequest->reason = $request->reason;
-        $timeOffRequest->status = 'pending';
-
-        // Simpan request terlebih dahulu agar mendapatkan ID
-        $timeOffRequest->save();
-
-        // Handle file upload if present
-        if ($request->hasFile('file_reason')) {
-            $file = $request->file('file_reason');
-
-            // Ambil ID setelah save
-            $fileName = 'request_time_off_' . $timeOffRequest->id . '_' . $request->time_off_id . '_' . $request->user_id . '.' . $file->getClientOriginalExtension();
-            $path = $file->storeAs('time_management/time_off', $fileName, 'public');
-
-            // Simpan path file setelah upload
-            $timeOffRequest->file_reason_path = 'time_management/time_off/' . $fileName;
-            $timeOffRequest->save();
-        }
+        try {
+            // Find the time off assignment record
+            $timeOffAssign = TimeOffAssign::where('user_id', $request->user_id)
+                ->where('time_off_id', $request->time_off_id)
+                ->first();
 
 
 
-        // Get the user who made the request
-        $user = User::find($request->user_id);
+            // Check if the record exists and has balance
+            if (!$timeOffAssign || $timeOffAssign->balance <= 0) {
+                return response()->json([
+                    'status' => 'success',
+                    'hasBalance' => false,
+                    'balance' => $timeOffAssign ? $timeOffAssign->balance : 0,
+                    'message' => 'User does not have available balance for this time off type.'
+                ]);
+            }
 
-        // Get HR personnel
-        $hr_personnel = User::where('department', 'Human Resources')
-            ->where('employee_status', '!=', 'Inactive')
-            ->get();
+            // Check for existing pending requests
+            $existingRequests = RequestTimeOff::where('user_id', $request->user_id)
+                ->where(function ($query) {
+                    $query->where('status', 'pending')
+                        ->orWhere('status', 'approved');
+                })
+                ->get();
 
 
 
-        // Create notifications for HR personnel
-        foreach ($hr_personnel as $hr) {
-            Notification::create([
-                'users_id' => $hr->id,
-                'message' => "New time off request from {$user->name}.",
-                'type' => 'time_off_request',
-                'maker_id' => Auth::user()->id,
-                'status' => 'Unread'
+
+
+            // If there are no existing requests, return success with the balance
+            if ($existingRequests->isEmpty()) {
+                return response()->json([
+                    'status' => 'success',
+                    'hasBalance' => true,
+                    'balance' => $timeOffAssign->balance,
+                    'message' => 'User has available balance for this time off type.',
+                    'hasConflicts' => false
+                ]);
+            }
+
+            // Create array of dates that are already requested
+            $unavailableDates = [];
+            foreach ($existingRequests as $request) {
+                $startDate = new DateTime($request->start_date);
+                $endDate = new DateTime($request->end_date);
+
+                // Create interval for one day
+                $interval = new DateInterval('P1D');
+
+                // Create date range
+                $dateRange = new DatePeriod($startDate, $interval, $endDate->modify('+1 day'));
+
+                // Add each date to the unavailable dates array
+                foreach ($dateRange as $date) {
+                    $unavailableDates[] = $date->format('Y-m-d');
+                }
+            }
+
+            // Get the next available date (1 day after the last unavailable date)
+            sort($unavailableDates);
+            $firstUnavailableDate = $unavailableDates[0] ?? null;
+            $lastUnavailableDate = end($unavailableDates) ?? null;
+
+            // Reset pointer after using end()
+            reset($unavailableDates);
+
+            // Format the next available dates
+            $nextAvailableDates = [];
+            if ($firstUnavailableDate) {
+                $beforeFirstDate = new DateTime($firstUnavailableDate);
+                $beforeFirstDate->modify('-1 day');
+                if ($beforeFirstDate >= new DateTime()) {
+                    $nextAvailableDates[] = $beforeFirstDate->format('Y-m-d');
+                }
+            }
+
+            if ($lastUnavailableDate) {
+                $afterLastDate = new DateTime($lastUnavailableDate);
+                $afterLastDate->modify('+1 day');
+                $nextAvailableDates[] = $afterLastDate->format('Y-m-d');
+            }
+
+            return response()->json([
+                'status' => 'success',
+                'hasBalance' => true,
+                'balance' => $timeOffAssign->balance,
+                'message' => 'User has available balance for this time off type.',
+                'hasConflicts' => !empty($unavailableDates),
+                'unavailableDates' => $unavailableDates,
+                'nextAvailableDates' => $nextAvailableDates,
+                'suggestions' => [
+                    'before' => !empty($firstUnavailableDate) ? 'Available before: ' . date('d M Y', strtotime($firstUnavailableDate . ' -1 day')) : null,
+                    'after' => !empty($lastUnavailableDate) ? 'Available after: ' . date('d M Y', strtotime($lastUnavailableDate . ' +1 day')) : null,
+                ]
             ]);
-
-            $timeOffPolicy = TimeOffPolicy::where('id',  $timeOffRequest->time_off_id)->first();
-
-
-            // Send email notification to HR personnel
-            Mail::to($hr->email)->send(new TimeOffRequestSubmitted($timeOffRequest, $user,  $timeOffPolicy));
+        } catch (\Exception $e) {
+            Log::error('Error checking time off balance: ' . $e->getMessage());
+            return response()->json([
+                'status' => 'error',
+                'message' => 'An error occurred while checking time off balance.'
+            ], 500);
         }
-
-        return redirect()->route('request.time.off.index2', $request->user_id)
-            ->with('success', 'Time off request submitted successfully.');
     }
+
+
 
     public function request_time_off_destroy($id)
     {
@@ -3454,6 +3679,107 @@ class TimeManagementController extends Controller
         } catch (\Exception $e) {
             return response()->json(['error' => $e->getMessage()], 500);
         }
+    }
+
+
+
+
+
+    public function request_time_off_store(Request $request)
+    {
+        //dd($request->all());
+
+        // Validate the request data
+        $validated = $request->validate([
+            'user_id' => 'required|exists:users,id',
+            'time_off_id' => 'required',
+            'start_date' => 'required|date',
+            'end_date' => 'required|date|after_or_equal:start_date',
+            'hour_in' => 'nullable|date_format:H:i',
+            'hour_out' => 'nullable|date_format:H:i',
+            'reason' => 'required|string|max:255',
+            'file_reason' => 'nullable|file|mimes:jpeg,png,jpg|max:2048',
+        ]);
+
+        // Get the time off type
+        $timeOffType = TimeOffPolicy::find($request->time_off_id);
+
+        // Combine date and time if needed
+        $startDateTime = $request->start_date;
+        $endDateTime = $request->end_date;
+
+        // Check if we have time inputs and if the time off type requires them
+        if ($timeOffType->requires_time_input) {
+            // Use hour_in and hour_out if provided, otherwise use default times
+            $startTime = $request->hour_in ?? '00:00:00';
+            $endTime = $request->hour_out ?? '23:59:59';
+
+            $startDateTime = $request->start_date . ' ' . $startTime;
+            $endDateTime = $request->end_date . ' ' . $endTime;
+        } else {
+            // If time input is not required, use the full day
+            $startDateTime = $request->start_date . ' 00:00:00';
+            $endDateTime = $request->end_date . ' 23:59:59';
+        }
+
+        // Create the time off request
+        $timeOffRequest = new RequestTimeOff();
+        $timeOffRequest->user_id = $request->user_id;
+        $timeOffRequest->time_off_id = $request->time_off_id;
+        $timeOffRequest->start_date = $startDateTime;
+        $timeOffRequest->end_date = $endDateTime;
+        $timeOffRequest->reason = $request->reason;
+        $timeOffRequest->status = 'Pending';
+
+        // Save request first to get ID
+        $timeOffRequest->save();
+
+        // Handle file upload if present
+        if ($request->hasFile('file_reason')) {
+            $file = $request->file('file_reason');
+
+            // Get ID after save
+            $fileName = 'request_time_off_' . $timeOffRequest->id . '_' . $request->time_off_id . '_' . $request->user_id . '.' . $file->getClientOriginalExtension();
+            $path = $file->storeAs('time_management/time_off', $fileName, 'public');
+
+            // Save file path after upload
+            $timeOffRequest->file_reason_path = 'time_management/time_off/' . $fileName;
+            $timeOffRequest->save();
+        }
+
+
+
+
+        // Get the user who made the request
+        $user = User::find($request->user_id);
+
+        $hrDepartment = EmployeeDepartment::where('department', 'Human Resources')->first();
+
+        $hr_personnel = User::where('department_id', $hrDepartment->id)
+            ->where('employee_status', '!=', 'Inactive')
+            ->get();
+
+
+
+        // Create notifications for HR personnel
+        foreach ($hr_personnel as $hr) {
+            Notification::create([
+                'users_id' => $hr->id,
+                'message' => "New time off request from {$user->name}.",
+                'type' => 'time_off_request',
+                'maker_id' => Auth::user()->id,
+                'status' => 'Unread'
+            ]);
+
+            $timeOffPolicy = TimeOffPolicy::where('id',  $timeOffRequest->time_off_id)->first();
+
+
+            // Send email notification to HR personnel
+            Mail::to($hr->email)->send(new TimeOffRequestSubmitted($timeOffRequest, $user,  $timeOffPolicy));
+        }
+
+        return redirect()->route('request.time.off.index2', $request->user_id)
+            ->with('success', 'Time off request submitted successfully.');
     }
 
     public function request_time_off_approve($id)
@@ -3540,114 +3866,5 @@ class TimeManagementController extends Controller
         Mail::to($user->email)->send(new TimeOffRequestDeclined($timeOffRequest, $user, $timeOffPolicy));
 
         return redirect()->back()->with('success', 'Time off request declined successfully.');
-    }
-
-
-
-    public function checkBalance(Request $request)
-    {
-        $request->validate([
-            'user_id' => 'required|exists:users,id',
-            'time_off_id' => 'required',
-        ]);
-
-        try {
-            // Find the time off assignment record
-            $timeOffAssign = TimeOffAssign::where('user_id', $request->user_id)
-                ->where('time_off_id', $request->time_off_id)
-                ->first();
-
-            // Check if the record exists and has balance
-            if (!$timeOffAssign || $timeOffAssign->balance <= 0) {
-                return response()->json([
-                    'status' => 'success',
-                    'hasBalance' => false,
-                    'balance' => $timeOffAssign ? $timeOffAssign->balance : 0,
-                    'message' => 'User does not have available balance for this time off type.'
-                ]);
-            }
-
-            // Check for existing pending requests
-            $existingRequests = RequestTimeOff::where('user_id', $request->user_id)
-                ->where(function ($query) {
-                    $query->where('status', 'pending')
-                        ->orWhere('status', 'approved');
-                })
-                ->get();
-
-
-            // If there are no existing requests, return success with the balance
-            if ($existingRequests->isEmpty()) {
-                return response()->json([
-                    'status' => 'success',
-                    'hasBalance' => true,
-                    'balance' => $timeOffAssign->balance,
-                    'message' => 'User has available balance for this time off type.',
-                    'hasConflicts' => false
-                ]);
-            }
-
-            // Create array of dates that are already requested
-            $unavailableDates = [];
-            foreach ($existingRequests as $request) {
-                $startDate = new DateTime($request->start_date);
-                $endDate = new DateTime($request->end_date);
-
-                // Create interval for one day
-                $interval = new DateInterval('P1D');
-
-                // Create date range
-                $dateRange = new DatePeriod($startDate, $interval, $endDate->modify('+1 day'));
-
-                // Add each date to the unavailable dates array
-                foreach ($dateRange as $date) {
-                    $unavailableDates[] = $date->format('Y-m-d');
-                }
-            }
-
-            // Get the next available date (1 day after the last unavailable date)
-            sort($unavailableDates);
-            $firstUnavailableDate = $unavailableDates[0] ?? null;
-            $lastUnavailableDate = end($unavailableDates) ?? null;
-
-            // Reset pointer after using end()
-            reset($unavailableDates);
-
-            // Format the next available dates
-            $nextAvailableDates = [];
-            if ($firstUnavailableDate) {
-                $beforeFirstDate = new DateTime($firstUnavailableDate);
-                $beforeFirstDate->modify('-1 day');
-                if ($beforeFirstDate >= new DateTime()) {
-                    $nextAvailableDates[] = $beforeFirstDate->format('Y-m-d');
-                }
-            }
-
-            if ($lastUnavailableDate) {
-                $afterLastDate = new DateTime($lastUnavailableDate);
-                $afterLastDate->modify('+1 day');
-                $nextAvailableDates[] = $afterLastDate->format('Y-m-d');
-            }
-
-            return response()->json([
-                'status' => 'success',
-                'hasBalance' => true,
-                'balance' => $timeOffAssign->balance,
-                'message' => 'User has available balance for this time off type.',
-                'hasConflicts' => !empty($unavailableDates),
-                'unavailableDates' => $unavailableDates,
-                'nextAvailableDates' => $nextAvailableDates,
-                'suggestions' => [
-                    'before' => !empty($firstUnavailableDate) ? 'Available before: ' . date('d M Y', strtotime($firstUnavailableDate . ' -1 day')) : null,
-                    'after' => !empty($lastUnavailableDate) ? 'Available after: ' . date('d M Y', strtotime($lastUnavailableDate . ' +1 day')) : null,
-                ]
-            ]);
-        } catch (\Exception $e) {
-            Log::error('Error checking time off balance: ' . $e->getMessage());
-            return response()->json([
-                'status' => 'error',
-                'message' => 'An error occurred while checking time off balance.'
-            ], 500);
-        }
     }
 }

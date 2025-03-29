@@ -8,10 +8,15 @@ use App\Models\elearning_question;
 use App\Models\elearning_schedule;
 use App\Models\elearning_lesson;
 use App\Models\elearning_answer;
+use App\Models\EmployeeDepartment;
+use App\Models\EmployeePosition;
+use App\Models\Notification;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 
-
+use App\Mail\ELearningInvitationMail;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 
@@ -223,62 +228,7 @@ class ElearningController extends Controller
         return view('elearning/create_lesson');
     }
 
-    public function create_schedule()
-    {
-        $lessons = elearning_lesson::all();
-        $employees = User::where('employee_status', '!=', 'Inactive')->get();
 
-        // Mengambil daftar departemen unik dari pegawai yang aktif
-        $departments = User::where('employee_status', '!=', 'Inactive')
-            ->whereNotNull('department')
-            ->distinct()
-            ->pluck('department');
-
-        // Mengambil daftar posisi unik dari pegawai yang aktif
-        $positions = User::where('employee_status', '!=', 'Inactive')
-            ->whereNotNull('position')
-            ->distinct()
-            ->pluck('position');
-
-        return view('elearning.create_schedule', compact('lessons', 'employees', 'departments', 'positions'));
-    }
-
-
-    public function store_schedule(Request $request)
-    {
-        //dd($request->all());
-
-        // Validate request
-        $request->validate([
-            'lesson' => 'required',
-            'startDate' => 'required|date',
-            'endDate' => 'required|date|after_or_equal:startDate',
-            'invited_employees' => 'nullable|string',
-        ]);
-        //dd('coba');
-        // Store schedule
-        $schedule = elearning_schedule::create([
-            'lesson_id' => $request->lesson_id,
-            'start_date' => $request->startDate,
-            'end_date' => $request->endDate,
-        ]);
-
-
-        // Store invitations
-        if ($request->invited_employees) {
-            $employeeIds = explode(',', $request->invited_employees);
-
-            foreach ($employeeIds as $employeeId) {
-                elearning_invitation::create([
-                    'schedule_id' => $schedule->id,
-                    'lesson_id' => $schedule->lesson_id,
-                    'users_id' => $employeeId,
-                ]);
-            }
-        }
-
-        return redirect()->route('elearning.index')->with('success', 'Schedule added successfully!');
-    }
 
     public function store_lesson(Request $request)
     {
@@ -332,6 +282,7 @@ class ElearningController extends Controller
 
         return redirect()->route('elearning.index')->with('success', 'Lesson and questions added successfully!');
     }
+
 
     public function edit_lesson($id)
     {
@@ -451,6 +402,26 @@ class ElearningController extends Controller
 
         return redirect()->route('elearning.index')->with('success', 'Lesson updated successfully.');
     }
+
+
+
+    public function create_schedule()
+    {
+        $lessons = elearning_lesson::all();
+        $employees = User::with(['department', 'position'])
+            ->where('employee_status', '!=', 'Inactive')
+            ->get();
+
+        // Mengambil daftar departemen unik dari pegawai yang aktif
+        $departments = EmployeeDepartment::all();
+
+        // Mengambil daftar posisi unik dari pegawai yang aktif
+        $positions = EmployeePosition::all();
+
+        return view('elearning.create_schedule', compact('lessons', 'employees', 'departments', 'positions'));
+    }
+
+
     public function edit_schedule($id)
     {
         // Get the schedule by ID
@@ -459,6 +430,11 @@ class ElearningController extends Controller
         // Get all lessons
         $lessons = elearning_lesson::all();
         $employees = User::where('employee_status', '!=', 'Inactive')->get();
+        $employees = User::with(['department', 'position'])
+            ->where('employee_status', '!=', 'Inactive')
+            ->get();
+
+
 
         // Get the invitations related to the selected schedule's lesson
         $invitations = elearning_invitation::where('lesson_id', $schedule->lesson_id)->get();
@@ -474,31 +450,76 @@ class ElearningController extends Controller
 
 
 
-        $departments = User::where('employee_status', '!=', 'Inactive')
-            ->whereNotNull('department')
-            ->distinct()
-            ->pluck('department');
+        // Mengambil daftar departemen unik dari pegawai yang aktif
+        $departments = EmployeeDepartment::all();
 
         // Mengambil daftar posisi unik dari pegawai yang aktif
-        $positions = User::where('employee_status', '!=', 'Inactive')
-            ->whereNotNull('position')
-            ->distinct()
-            ->pluck('position');
+        $positions = EmployeePosition::all();
 
         // Return the view with the required data
         return view('elearning/update_schedule', compact('schedule', 'invitedEmployeesPluck', 'lessons', 'invitedEmployees', 'invitedUserIds', 'employees', 'departments', 'positions'));
     }
+    public function store_schedule(Request $request)
+    {
+        // Validate request
+        $request->validate([
+            'lesson' => 'required',
+            'startDate' => 'required|date',
+            'endDate' => 'required|date|after_or_equal:startDate',
+            'invited_employees' => 'nullable|string',
+        ]);
+
+        // Store schedule
+        $schedule = elearning_schedule::create([
+            'lesson_id' => $request->lesson_id,
+            'start_date' => $request->startDate,
+            'end_date' => $request->endDate,
+        ]);
+
+        // Store invitations and send notifications
+        if ($request->invited_employees) {
+            $employeeIds = explode(',', $request->invited_employees);
+            $lesson = elearning_lesson::findOrFail($request->lesson_id);
+
+            foreach ($employeeIds as $employeeId) {
+                // Create invitation
+                $invitation = elearning_invitation::create([
+                    'schedule_id' => $schedule->id,
+                    'lesson_id' => $schedule->lesson_id,
+                    'users_id' => $employeeId,
+                ]);
+
+                // Send email to invited employee
+                $user = User::findOrFail($employeeId);
+                Mail::to($user->email)->send(new ELearningInvitationMail(
+                    $user->name,
+                    $lesson->name,
+                    $schedule->start_date,
+                    $schedule->end_date,
+                    'new'
+                ));
+
+                // Create notification
+                Notification::create([
+                    'users_id' => $employeeId,
+                    'message' => "You have been assigned to the e-learning course: {$lesson->name}",
+                    'type' => 'elearning_duty',
+                    'maker_id' => Auth::user()->id,
+                    'status' => 'Unread'
+                ]);
+            }
+        }
+
+        return redirect()->route('elearning.index')->with('success', 'Schedule added successfully!');
+    }
 
     public function update_schedule(Request $request, $id)
     {
-        //dd($request->all());
         $schedule = elearning_schedule::findOrFail($id);
 
         // Update schedule fields only if changed
         if ($schedule->lesson_id != $request->lesson_id) {
-
-
-            // update pada invitation lesson_id
+            // Update invitation lesson_id
             elearning_invitation::where('schedule_id', $id)
                 ->where('lesson_id', $schedule->lesson_id)
                 ->update(['lesson_id' => $request->lesson_id]);
@@ -518,18 +539,41 @@ class ElearningController extends Controller
         $inputInvitedEmployees = $request->invited_employees ?? '';
         $invitedEmployeesArray = !empty($inputInvitedEmployees) ? explode(',', $inputInvitedEmployees) : [];
 
-        // Get the existing invited employees for the schedule (from the employee_invitation table)
+        // Get the existing invited employees for the schedule
         $existingInvitedEmployees = elearning_invitation::where('schedule_id', $schedule->id)
             ->pluck('users_id')
             ->toArray();
 
+        // Get the lesson details
+        $lesson = elearning_lesson::findOrFail($schedule->lesson_id);
+
         // 1. Handle adding new invitations
         $newEmployees = array_diff($invitedEmployeesArray, $existingInvitedEmployees);
         foreach ($newEmployees as $userId) {
-            elearning_invitation::create([
+            // Create new invitation
+            $invitation = elearning_invitation::create([
                 'schedule_id' => $schedule->id,
                 'lesson_id' => $schedule->lesson_id,
                 'users_id' => $userId,
+            ]);
+
+            // Send email to new invited employee
+            $user = User::findOrFail($userId);
+            Mail::to($user->email)->send(new ELearningInvitationMail(
+                $user->name,
+                $lesson->name,
+                $schedule->start_date,
+                $schedule->end_date,
+                'new'
+            ));
+
+            // Create notification for new invitation
+            Notification::create([
+                'users_id' => $userId,
+                'message' => "You have been assigned to the updated e-learning course: {$lesson->name}",
+                'type' => 'elearning_duty',
+                'maker_id' => Auth::user()->id,
+                'status' => 'Unread'
             ]);
         }
 
@@ -537,16 +581,34 @@ class ElearningController extends Controller
         $removedEmployees = array_diff($existingInvitedEmployees, $invitedEmployeesArray);
         if (!empty($removedEmployees)) {
             foreach ($removedEmployees as $userId) {
+                // Remove invitation
                 elearning_invitation::where('schedule_id', $schedule->id)
                     ->where('users_id', $userId)
                     ->delete();
+
+                // Send email about invitation removal
+                $user = User::findOrFail($userId);
+                Mail::to($user->email)->send(new ELearningInvitationMail(
+                    $user->name,
+                    $lesson->name,
+                    $schedule->start_date,
+                    $schedule->end_date,
+                    'update'
+                ));
+
+                // Create notification for removed invitation
+                Notification::create([
+                    'users_id' => $userId,
+                    'message' => "You have been removed from the e-learning course: {$lesson->name}",
+                    'type' => 'elearning_duty',
+                    'maker_id' => Auth::user()->id,
+                    'status' => 'Unread'
+                ]);
             }
         }
 
-        // Redirect with success message
         return redirect()->route('elearning.index')->with('success', 'Schedule updated successfully!');
     }
-
 
 
     public function elearning_material($id)

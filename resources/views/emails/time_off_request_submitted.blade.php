@@ -169,10 +169,6 @@
                         <td>{{ $user->employee_id ?? 'N/A' }}</td>
                     </tr>
                     <tr>
-                        <th>Department:</th>
-                        <td>{{ $user->department ?? 'N/A' }}</td>
-                    </tr>
-                    <tr>
                         <th>Time Off Type:</th>
                         <td>{{ $policy->time_off_name ?? 'N/A' }}</td>
                     </tr>
@@ -182,15 +178,40 @@
                     </tr>
                     <tr>
                         <th>Start Date:</th>
-                        <td>{{ date('F d, Y', strtotime($timeOffRequest->start_date)) }}</td>
+                        <td>
+                            @if(date('H:i:s', strtotime($timeOffRequest->start_date)) == '00:00:00')
+                            {{ date('F d, Y', strtotime($timeOffRequest->start_date)) }}
+                            @else
+                            {{ date('F d, Y H:i:s', strtotime($timeOffRequest->start_date)) }}
+                            @endif
+                        </td>
                     </tr>
                     <tr>
                         <th>End Date:</th>
-                        <td>{{ date('F d, Y', strtotime($timeOffRequest->end_date)) }}</td>
+                        <td>
+                            @if(date('H:i:s', strtotime($timeOffRequest->end_date)) == '00:00:00')
+                            {{ date('F d, Y', strtotime($timeOffRequest->end_date)) }}
+                            @else
+                            {{ date('F d, Y H:i:s', strtotime($timeOffRequest->end_date)) }}
+                            @endif
+                        </td>
                     </tr>
                     <tr>
                         <th>Total Days:</th>
-                        <td>{{ \Carbon\Carbon::parse($timeOffRequest->start_date)->diffInDays(\Carbon\Carbon::parse($timeOffRequest->end_date)) + 1 }} days</td>
+                        <td>
+                            @php
+                            $start = \Carbon\Carbon::parse($timeOffRequest->start_date);
+                            $end = \Carbon\Carbon::parse($timeOffRequest->end_date);
+
+                            if ($start->isSameDay($end)) {
+                            // Same day - count as 1 day
+                            echo "1 day";
+                            } else {
+                            // Different days - count full calendar days
+                            echo $start->diffInDays($end) + 1 . " days";
+                            }
+                            @endphp
+                        </td>
                     </tr>
                     <tr>
                         <th>Reason:</th>

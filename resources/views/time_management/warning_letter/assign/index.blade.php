@@ -13,30 +13,47 @@
         </div>
         <div class="card-body">
             <form action="{{ route('warning.letter.index') }}" method="GET" class="row g-3">
-                <div class="col-md-4">
+                <div class="col-md-3">
                     <label class="form-label">Employee</label>
                     <select class="form-select" name="employee">
                         <option value="">All Employees</option>
                         @foreach($employees as $employee)
-                        <option value="{{ $employee->id }}" {{ request('employee') == $employee->id ? 'selected' : '' }}>{{ $employee->name }}</option>
+                        <option value="{{ $employee->id }}" {{ request('employee') == $employee->id ? 'selected' : '' }}>
+                            {{ $employee->name }}
+                        </option>
                         @endforeach
                     </select>
                 </div>
-                <div class="col-md-4">
+                <div class="col-md-3">
                     <label for="position" class="form-label">Position</label>
                     <select name="position" id="position" class="form-select">
                         <option value="">All Positions</option>
                         @foreach($positions as $pos)
-                        <option value="{{ $pos }}" {{ request('position') == $pos ? 'selected' : '' }}>{{ $pos }}</option>
+                        <option value="{{ $pos }}" {{ request('position') == $pos ? 'selected' : '' }}>
+                            {{ $pos }}
+                        </option>
                         @endforeach
                     </select>
                 </div>
-                <div class="col-md-4">
-                    <label for="department" class="form-label">Department</label>
-                    <select name="department" id="department" class="form-select">
+                <div class="col-md-3">
+                    <label class="form-label">Department</label>
+                    <select class="form-select" name="department">
                         <option value="">All Departments</option>
                         @foreach($departments as $dept)
-                        <option value="{{ $dept }}" {{ request('department') == $dept ? 'selected' : '' }}>{{ $dept }}</option>
+                        <option value="{{ $dept }}" {{ request('department') == $dept ? 'selected' : '' }}>
+                            {{ $dept }}
+                        </option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Warning Type</label>
+                    <select class="form-select" name="type">
+                        <option value="">All Types</option>
+                        @foreach($types as $type)
+                        <option value="{{ $type->id }}" {{ request('type') == $type->id ? 'selected' : '' }}>
+                            {{ $type->name }}
+                        </option>
                         @endforeach
                     </select>
                 </div>
@@ -51,7 +68,6 @@
             </form>
         </div>
     </div>
-
 
     <div class="card shadow-sm">
         <div class="card-header d-flex justify-content-between align-items-center">
@@ -68,9 +84,13 @@
                         <tr>
                             <th style="width: 5%;">NO</th>
                             <th>Employee</th>
+                            <th>Reference Number</th>
+
                             <th>Type</th>
-                            <th style="width: 40%;">Reason</th>
+                            <th>Reason</th>
                             <th>Maker</th>
+                            <th>Created At</th>
+                            <th>Expired At</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
@@ -78,10 +98,15 @@
                         @foreach ($warning_letter as $index => $item)
                         <tr>
                             <td>{{ $index + 1 }}</td>
-                            <td>{{ $item->employee_name }} ({{ $item->employee_id }}) - {{ $item->employee_position }}</td>
-                            <td>{{$item->type}}</td>
-                            <td>{{$item->reason_warning}}</td>
+                            <td>
+                                {{ $item->employee_name }} ({{ $item->employee_id }}) - {{ $item->employee_position }}
+                            </td>
+                            <td>{{ $item->warning_letter_number ?? "N/A" }}</td>
+                            <td>{{ $item->type_name ?? "N/A"}}</td>
+                            <td>{{ $item->reason_warning }}</td>
                             <td>{{ $item->maker_name }} ({{ $item->maker_id }}) - {{ $item->maker_position }}</td>
+                            <td>{{ \Carbon\Carbon::parse($item->created_at)->format('Y-m-d') }}</td>
+                            <td>{{ $item->expired_at ?? "No Expired Date"}}</td>
                             <td>
                                 <a href="{{ route('warning.letter.edit', $item->id) }}" class="btn btn-warning btn-sm align-items-center d-flex justify-content-center">
                                     <i class="fa-solid fa-pen"></i>&nbsp;Edit
@@ -89,7 +114,6 @@
                             </td>
                         </tr>
                         @endforeach
-
                     </tbody>
                 </table>
             </div>

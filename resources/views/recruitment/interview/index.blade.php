@@ -110,20 +110,24 @@
         <div class="card-body">
             <form action="{{ route('recruitment.index.interview') }}" method="GET" class="row g-3">
                 <div class="col-md-4">
-                    <label for="department" class="form-label">Department</label>
-                    <select class="form-select" id="department" name="department">
+                    <label for="department_id" class="form-label">Department</label>
+                    <select class="form-select" id="department_id" name="department_id">
                         <option value="">All Departments</option>
                         @foreach($departments as $dept)
-                        <option value="{{ $dept }}" {{ request('department') == $dept ? 'selected' : '' }}>{{ $dept }}</option>
+                        <option value="{{ $dept->id }}" {{ request('department_id') == $dept->id ? 'selected' : '' }}>
+                            {{ $dept->department }}
+                        </option>
                         @endforeach
                     </select>
                 </div>
                 <div class="col-md-4">
-                    <label for="position" class="form-label">Position</label>
-                    <select class="form-select" id="position" name="position">
+                    <label for="position_id" class="form-label">Position</label>
+                    <select class="form-select" id="position_id" name="position_id">
                         <option value="">All Positions</option>
                         @foreach($positions as $pos)
-                        <option value="{{ $pos }}" {{ request('position') == $pos ? 'selected' : '' }}>{{ $pos }}</option>
+                        <option value="{{ $pos->id }}" {{ request('position_id') == $pos->id ? 'selected' : '' }}>
+                            {{ $pos->position }}
+                        </option>
                         @endforeach
                     </select>
                 </div>
@@ -171,8 +175,8 @@
                         <tr>
                             <th>ID</th>
 
-                            <th>department</th>
-                            <th>position</th>
+                            <th>Department</th>
+                            <th>Position</th>
                             <th>Opened At</th>
                             <th>Closed At</th>
                             <th>Qty Needed</th>
@@ -185,8 +189,8 @@
                         @foreach ($demand as $item)
                         <tr>
                             <td>{{ $item->recruitment_demand_id }}</td>
-                            <td>{{ $item->department }}</td>
-                            <td>{{ $item->position}}</td>
+                            <td>{{ $item->department_name }}</td>
+                            <td>{{ $item->position_name }}</td>
                             <td>{{ $item->opening_date }}</td>
                             <td>{{ $item->closing_date }}</td>
                             <td>{{ $item->qty_needed }}</td>
@@ -202,8 +206,8 @@
                                     data-id="{{ $item->id }}"
                                     data-recruitment_demand_id="{{ $item->recruitment_demand_id }}"
                                     data-status="{{ $item->status_demand }}"
-                                    data-department="{{ $item->department }}"
-                                    data-position="{{ $item->position }}"
+                                    data-department="{{ $item->department_name }}"
+                                    data-position="{{ $item->position_name }}"
                                     data-opened="{{ $item->opening_date }}"
                                     data-closed="{{ $item->closing_date }}"
                                     data-status-job="{{ $item->status_job }}"
@@ -421,9 +425,32 @@
     function showLaborDetails(data) {
         // Basic information
         $('#view-recruitment_demand_id').text(data.recruitment_demand_id);
-        $('#view-status').text(data.status_ptk);
-        $('#view-department').text(data.department);
-        $('#view-position').text(data.position);
+        // Status with appropriate badge color
+        const statusElement = $('#view-status');
+        statusElement.text(data.status_demand);
+
+        // Remove all existing badge classes
+        statusElement.removeClass('badge-primary badge-success badge-danger badge-warning');
+
+        // Add appropriate badge class based on status
+        switch (data.status_demand) {
+            case 'Approved':
+                statusElement.addClass('badge bg-success');
+                break;
+            case 'Declined':
+                statusElement.addClass('badge bg-danger');
+                break;
+            case 'Pending':
+                statusElement.addClass('badge bg-warning text-dark');
+                break;
+            case 'Revised':
+                statusElement.addClass('badge bg-primary');
+                break;
+            default:
+                statusElement.addClass('badge bg-secondary');
+        }
+        $('#view-department').text(data.department_name);
+        $('#view-position').text(data.position_name);
         $('#view-opened').text(formatDate(data.opening_date));
         $('#view-closed').text(formatDate(data.closing_date));
         $('#view-status-job').text(data.status_job);

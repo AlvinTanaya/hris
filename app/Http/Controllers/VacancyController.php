@@ -11,6 +11,10 @@ use App\Models\recruitment_applicant_family;
 use App\Models\recruitment_applicant_work_experience;
 use App\Models\recruitment_applicant_organization;
 use App\Models\recruitment_applicant_language;
+use App\Models\EmployeeDepartment;
+use App\Models\EmployeePosition;
+
+
 use App\Models\User;
 use Carbon\Carbon;
 use App\Mail\ApplicantSubmitted;
@@ -27,19 +31,22 @@ class VacancyController extends Controller
     public function index(Request $request)
     {
         $today = Carbon::now();
-        $query = recruitment_demand::where('status_demand', 'Approved')
+
+        // Base query with relationships
+        $query = recruitment_demand::with(['departmentRelation', 'positionRelation'])
+            ->where('status_demand', 'Approved')
             ->where('qty_needed', '>', 0)
             ->where('opening_date', '<=', $today)
             ->where('closing_date', '>=', $today);
 
         // Apply department filter
-        if ($request->filled('department')) {
-            $query->where('department', $request->department);
+        if ($request->filled('department_id')) {
+            $query->where('department_id', $request->department_id);
         }
 
         // Apply position filter
-        if ($request->filled('position')) {
-            $query->where('position', $request->position);
+        if ($request->filled('position_id')) {
+            $query->where('position_id', $request->position_id);
         }
 
         // Apply date filter if provided
@@ -49,13 +56,26 @@ class VacancyController extends Controller
                 ->where('closing_date', '>=', $date);
         }
 
-        // Change from get() to paginate(5) to show 5 items per page
-        $demand = $query->paginate(5);
+        // Get distinct departments and positions for filters
+        $departments = EmployeeDepartment::whereHas('demands', function ($q) use ($today) {
+            $q->where('status_demand', 'Approved')
+                ->where('qty_needed', '>', 0)
+                ->where('opening_date', '<=', $today)
+                ->where('closing_date', '>=', $today);
+        })->get(['id', 'department']);
 
-        // Append any query parameters to pagination links
+        $positions = EmployeePosition::whereHas('demands', function ($q) use ($today) {
+            $q->where('status_demand', 'Approved')
+                ->where('qty_needed', '>', 0)
+                ->where('opening_date', '<=', $today)
+                ->where('closing_date', '>=', $today);
+        })->get(['id', 'position']);
+
+        // Paginate results
+        $demand = $query->paginate(5);
         $demand->appends($request->all());
 
-        return view('job_vacancy.index', compact('demand'));
+        return view('job_vacancy.index', compact('demand', 'departments', 'positions'));
     }
 
 
@@ -211,7 +231,7 @@ class VacancyController extends Controller
 
             // Simpan data training
             foreach ($request->training_name ?? [] as $key => $level) {
-                recruitment_applicant_education::create([
+                recruitment_applicant_training::create([
                     'applicant_id' => $applicant->id,
                     'training_name' => $request->training_name[$key] ?? null,
                     'training_city' => $request->training_city[$key] ?? null,
@@ -287,21 +307,34 @@ class VacancyController extends Controller
 
             Mail::to($applicant->email)->send(new ApplicantSubmitted($applicant));
 
+            // Find existing applicant by email or name
             $existingApplicant = recruitment_applicant::where('email', $request->email)
                 ->orWhere('name', $request->name)
                 ->first();
 
-            $hrEmails = User::where('department', 'Human Resources')->pluck('email');
+            // Get HR department users with proper relationship
+            $hrDepartment = EmployeeDepartment::where('department', 'Human Resources')->first();
+            $hrEmails = $hrDepartment ?
+                User::where('department_id', $hrDepartment->id)
+                ->pluck('email') :
+                collect();
 
+            // Get applicant data with proper relationships
             $query = DB::table('recruitment_demand')
                 ->join('recruitment_applicant', 'recruitment_demand.id', '=', 'recruitment_applicant.recruitment_demand_id')
+                ->join('employee_departments', 'recruitment_demand.department_id', '=', 'employee_departments.id')
+                ->join('employee_positions', 'recruitment_demand.position_id', '=', 'employee_positions.id')
                 ->select(
                     'recruitment_applicant.name as name',
                     'recruitment_applicant.email as email',
-                    'recruitment_demand.recruitment_demand_id as labor_demand_id'
-                )->where('recruitment_demand.id', $applicant->recreuitment_demand_id)->first();
+                    'recruitment_demand.recruitment_demand_id as labor_demand_id',
+                    'employee_departments.department as department_name',
+                    'employee_positions.position as position_name'
+                )
+                ->where('recruitment_demand.id', $applicant->recruitment_demand_id) // Fixed typo in column name
+                ->first();
 
-            // Kirim email ke semua HR
+            // Send email to all HR
             if ($hrEmails->isNotEmpty()) {
                 Mail::to($hrEmails)->send(new HRDNotificationApplicantMail($query));
             }

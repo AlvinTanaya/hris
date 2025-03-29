@@ -60,8 +60,9 @@
                             <th width="20%">Name</th>
                             <th>Description</th>
                             <th width="7%">Quota</th>
-                            <th width="15%">Start Date</th>
-                            <th width="15%">End Date</th>
+                            <th width="10%">Require Time</th>
+                            <th width="12%">Start Date</th>
+                            <th width="12%">End Date</th>
                             <th width="10%">Actions</th>
                         </tr>
                     </thead>
@@ -72,6 +73,7 @@
                             <td>{{ $policy->time_off_name }}</td>
                             <td>{{ $policy->time_off_description}}</td>
                             <td>{{ $policy->quota }}</td>
+                            <td>{{ $policy->requires_time_input == 1 ? 'Yes' : 'No' }}</td>
                             <td>{{ date('d-m-Y', strtotime($policy->start_date)) }}</td>
                             <td>
                                 {{ $policy->end_date ? date('d-m-Y', strtotime($policy->end_date)) : 'No Expiration' }}

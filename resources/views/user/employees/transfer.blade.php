@@ -3,7 +3,7 @@
 @section('content')
 <div class="container py-4">
     <!-- Back button with danger color -->
-    <a href="{{ route('user.index') }}" class="btn btn-danger px-4 mb-4">
+    <a href="{{ route('user.employees.index') }}" class="btn btn-danger px-4 mb-4">
         <i class="fas fa-arrow-left me-2"></i>Back
     </a>
 
@@ -24,7 +24,7 @@
                 </div>
                 <div>
                     <h4 class="mb-1">{{ $user->name }}</h4>
-                    <span class="badge bg-light text-black">ID: {{ $user->employee_id }}</span>
+                    <span class="text-white">ID: {{ $user->employee_id }}</span>
                 </div>
             </div>
         </div>
@@ -42,7 +42,7 @@
             </div>
             @endif
 
-            <form action="{{ route('user.transfer_user', $user->id) }}" method="POST">
+            <form action="{{ route('user.employees.transfer_user', $user->id) }}" method="POST">
                 @csrf
                 @method('PUT')
                 <div class="row mb-4">
@@ -62,13 +62,14 @@
                             <option value="Resign">Resign</option>
                         </select>
                     </div>
+
                     <div class="col-md-4 mb-3">
                         <div class="d-flex align-items-center mb-2">
                             <i class="fas fa-briefcase text-primary me-2"></i>
                             <p class="text-muted mb-0">Current Position</p>
                         </div>
-                        <p class="text-primary fw-bold fs-5">{{ $user->position }}</p>
-                        <input type="hidden" name="old_position" value="{{ $user->position }}">
+                        <p class="text-primary fw-bold fs-5">{{ $user->position->position }}</p>
+                        <input type="hidden" name="old_position_id" value="{{ $user->position_id }}">
                     </div>
 
                     <div class="col-md-4 mb-3">
@@ -76,9 +77,10 @@
                             <i class="fas fa-building text-primary me-2"></i>
                             <p class="text-muted mb-0">Current Department</p>
                         </div>
-                        <p class="text-primary fw-bold fs-5">{{ $user->department }}</p>
-                        <input type="hidden" name="old_department" value="{{ $user->department }}">
+                        <p class="text-primary fw-bold fs-5">{{ $user->department->department }}</p>
+                        <input type="hidden" name="old_department_id" value="{{ $user->department_id }}">
                     </div>
+
                 </div>
 
                 <div class="row mb-4">
@@ -107,34 +109,30 @@
                         <div class="col-md-6 mb-3 form-group">
                             <div class="d-flex align-items-center mb-2">
                                 <i class="fas fa-briefcase text-primary me-2"></i>
-                                <label for="new_position" class="form-label fw-bold mb-0">New Position</label>
+                                <label for="new_position_id" class="form-label fw-bold mb-0">New Position</label>
                             </div>
-                            <select class="form-select form-select-lg border" id="new_position" name="new_position" required>
+                            <select class="form-select form-select-lg border" id="new_position_id" name="new_position_id">
                                 <option value="" disabled selected>Select Position</option>
-                                <option value="Director" {{ old('position') == 'Director' ? 'selected' : '' }}>Director</option>
-                                <option value="General Manager" {{ old('position') == 'General Manager' ? 'selected' : '' }}>General Manager</option>
-                                <option value="Manager" {{ old('position') == 'Manager' ? 'selected' : '' }}>Manager</option>
-                                <option value="Supervisor" {{ old('position') == 'Supervisor' ? 'selected' : '' }}>Supervisor</option>
-                                <option value="Staff" {{ old('position') == 'Staff' ? 'selected' : '' }}>Staff</option>
+                                @foreach($positions as $position)
+                                <option value="{{ $position->id }}" {{ old('new_position_id') == $position->id ? 'selected' : '' }}>{{ trim($position->position)}}</option>
+                                @endforeach
                             </select>
                         </div>
 
                         <div class="col-md-6 mb-3 form-group">
                             <div class="d-flex align-items-center mb-2">
                                 <i class="fas fa-building text-primary me-2"></i>
-                                <label for="new_department" class="form-label fw-bold mb-0">New Department</label>
+                                <label for="new_department_id" class="form-label fw-bold mb-0">New Department</label>
                             </div>
-                            <select class="form-select form-select-lg border" id="new_department" name="new_department" required>
+                            <select class="form-select form-select-lg border" id="new_department_id" name="new_department_id">
                                 <option value="" selected disabled>Select Department</option>
-                                <option value="Director" {{ old('department') == 'Director' ? 'selected' : '' }}>Director</option>
-                                <option value="General Manager" {{ old('department') == 'General Manager' ? 'selected' : '' }}>General Manager</option>
-                                <option value="Human Resources" {{ old('department') == 'Human Resources' ? 'selected' : '' }}>Human Resources</option>
-                                <option value="Finance and Accounting" {{ old('department') == 'Finance and Accounting' ? 'selected' : '' }}>Finance and Accounting</option>
+                                @foreach($departments as $department)
+                                <option value="{{ $department->id }}" {{ old('new_department_id') == $department->id ? 'selected' : '' }}>{{ trim($department->department) }}</option>
+                                @endforeach
                             </select>
                         </div>
                     </div>
                 </div>
-
                 <!-- Transfer Employee button (green like in the screenshot) -->
                 <div class="d-flex justify-content-end mt-5">
                     <button type="submit" class="btn btn-success btn-lg px-5">
@@ -153,47 +151,48 @@
         // Handle transfer type change
         $('#transfer_type').on('change', function() {
             var transferType = $(this).val();
-
             if (transferType === 'Mutasi' || transferType === 'Demosi' || transferType === 'Promosi') {
                 $('#transfer-fields').slideDown();
+                $('#new_position_id, #new_department_id').prop('required', true);
             } else {
                 $('#transfer-fields').slideUp();
-                $('#new_position, #new_department').val('');
+                $('#new_position_id, #new_department_id').val('').prop('required', false);
             }
         });
 
-        // Handle position change to update department options
-        $('#new_position').change(function() {
-            var position = $(this).val();
-            var department = $('#new_department');
-            var departmentWrapper = department.closest('.form-group');
+        $('#new_position_id').change(function() {
+            var positionId = $(this).val();
+            var departmentSelect = $('#new_department_id');
+            var departmentWrapper = departmentSelect.closest('.form-group');
 
-            // Remove previous messages
+            // Reset department select
+            departmentSelect.prop('disabled', false).val('');
             departmentWrapper.find('.text-danger').remove();
+            departmentWrapper.find('input[type="hidden"][name="new_department_id"]').remove();
 
-            // Remove previously added hidden inputs
-            departmentWrapper.find('input[type="hidden"][name="new_department"]').remove();
+            // Get selected position text and trim whitespace
+            var selectedPosition = $(this).find('option:selected').text().trim();
 
-            // Reset all options and status
-            department.prop('disabled', false).val('').find('option').show();
+            if (selectedPosition === 'Director') {
+                // Find Director department by ID or text
+                var directorDept = departmentSelect.find('option').filter(function() {
+                    return $(this).text().trim() === 'Director';
+                }).first();
 
-            if (position === 'Director') {
-                // Set department to Director and restrict options
-                department.prop('disabled', true)
-                    .val('Director')
-                    .after('<input type="hidden" name="new_department" value="Director">');
-                department.find('option:not([value="Director"])').hide();
-                departmentWrapper.append('<small class="text-danger">Departments are limited by position</small>');
-            } else if (position === 'General Manager') {
-                // Set department to General Manager and restrict options
-                department.prop('disabled', true)
-                    .val('General Manager')
-                    .after('<input type="hidden" name="new_department" value="General Manager">');
-                department.find('option:not([value="General Manager"])').hide();
-                departmentWrapper.append('<small class="text-danger">Departments are limited by position</small>');
-            } else {
-                // For other positions, hide Director and General Manager options
-                department.find('option[value="Director"], option[value="General Manager"]').hide();
+                if (directorDept.length) {
+                    departmentSelect.val(directorDept.val()).prop('disabled', true);
+                    departmentWrapper.append('<small class="text-danger">Department automatically set for Director</small>');
+                }
+            } else if (selectedPosition === 'General Manager') {
+                // Find General Manager department by ID or text
+                var gmDept = departmentSelect.find('option').filter(function() {
+                    return $(this).text().trim() === 'General Manager';
+                }).first();
+
+                if (gmDept.length) {
+                    departmentSelect.val(gmDept.val()).prop('disabled', true);
+                    departmentWrapper.append('<small class="text-danger">Department automatically set for General Manager</small>');
+                }
             }
         });
     });

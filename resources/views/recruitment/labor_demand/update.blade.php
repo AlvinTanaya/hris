@@ -29,38 +29,33 @@
             <div class="card-body">
                 <div class="row">
                     <div class="col-md-6 mb-3">
-                        <label for="position" class="form-label">
+                        <label for="position_id" class="form-label">
                             <i class="fas fa-briefcase"></i> Position
                         </label>
-                        <select class="form-control" id="position" name="position" required>
+                        <select class="form-control" id="position_id" name="position_id" required>
                             <option value="" selected disabled>Select Position</option>
-                            <option value="Director" {{ $demand->position == 'Director' ? 'selected' : '' }}>Director</option>
-                            <option value="General Manager" {{ $demand->position  == 'General Manager' ? 'selected' : '' }}>General Manager</option>
-                            <option value="Manager" {{ $demand->position == 'Manager' ? 'selected' : '' }}>Manager</option>
-                            <option value="Supervisor" {{ $demand->position == 'Supervisor' ? 'selected' : '' }}>Supervisor</option>
-                            <option value="Staff" {{ $demand->position == 'Staff' ? 'selected' : '' }}>Staff</option>
+                            @foreach($positions as $position)
+                            <option value="{{ $position->id }}"
+                                {{ old('position_id') == $position->id ? 'selected' : '' }}
+                                {{ isset($demand) && $demand->position_id == $position->id ? 'selected' : '' }}>
+                                {{ $position->position }}
+                            </option>
+                            @endforeach
                         </select>
                     </div>
-
                     <div class="col-md-6 mb-3">
-                        <label for="department" class="form-label">
+                        <label for="department_id" class="form-label">
                             <i class="fas fa-building"></i> Department
                         </label>
-                        <select class="form-control" id="department" name="department" required>
-                            <option selected disabled>Choose Department</option>
-                            <option value="Director" {{ old('department', $user->department) == 'Director' ? 'selected' : '' }}>Director</option>
-                            <option value="General Manager" {{ old('department', $user->department) == 'General Manager' ? 'selected' : '' }}>General Manager</option>
-                            <option value="Human Resources" {{ old('department', $user->department) == 'Human Resources' ? 'selected' : '' }}>Human Resources</option>
-                            <option value="Finance and Accounting" {{ old('department', $user->department) == 'Finance and Accounting' ? 'selected' : '' }}>Finance and Accounting</option>
-                            <option value="Administration" {{ old('department', $user->department) == 'Administration' ? 'selected' : '' }}>Administration</option>
-                            <option value="Checker" {{ old('department', $user->department) == 'Checker' ? 'selected' : '' }}>Checker</option>
-                            <option value="Marketing" {{ old('department', $user->department) == 'Marketing' ? 'selected' : '' }}>Marketing</option>
-                            <option value="Driver" {{ old('department', $user->department) == 'Driver' ? 'selected' : '' }}>Driver</option>
-                            <option value="Internal Audit" {{ old('department', $user->department) == 'Internal Audit' ? 'selected' : '' }}>Internal Audit</option>
-                            <option value="Audit" {{ old('department', $user->department) == 'Audit' ? 'selected' : '' }}>Audit</option>
-                            <option value="Information Technology" {{ old('department', $user->department) == 'Information Technology' ? 'selected' : '' }}>Information Technology</option>
-                            <option value="Cleaning" {{ old('department', $user->department) == 'Cleaning' ? 'selected' : '' }}>Cleaning</option>
-                            <option value="Security" {{ old('department', $user->department) == 'Security' ? 'selected' : '' }}>Security</option>
+                        <select class="form-control" id="department_id" name="department_id" required>
+                            <option value="" selected disabled>Choose Department</option>
+                            @foreach($departments as $department)
+                            <option value="{{ $department->id }}"
+                                {{ old('department_id') == $department->id ? 'selected' : '' }}
+                                {{ isset($demand) && $demand->department_id == $department->id ? 'selected' : '' }}>
+                                {{ $department->department }}
+                            </option>
+                            @endforeach
                         </select>
                     </div>
                 </div>
@@ -220,42 +215,64 @@
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>
     $(document).ready(function() {
-        $('#position').change(function() {
-            var position = $(this).val();
-            var department = $('#department');
-            var departmentWrapper = department.closest('.form-group');
+        $('#position_id').change(function() {
+            var positionId = $(this).val();
+            var departmentSelect = $('#department_id');
+            var departmentWrapper = departmentSelect.closest('.form-group');
 
-            // Hapus pesan sebelumnya  
+            // Remove previous messages and hidden inputs
             departmentWrapper.find('.text-danger').remove();
+            departmentWrapper.find('input[type="hidden"][name="department_id"]').remove();
 
-            // Reset semua opsi dan status  
-            department.prop('readonly', false).val('').find('option').show();
+            // Reset department select
+            departmentSelect.prop('readonly', false).val('').find('option').show();
 
-            if (position === 'Director') {
-                // Tambahkan atribut readonly dan hidden input untuk mengirim value  
-                department.prop('readonly', true)
-                    .val('Director')
-                    .after('<input type="hidden" name="department" value="Director">');
-                department.find('option:not([value="Director"])').hide();
-                departmentWrapper.append('<small class="text-danger">Department dibatasi sesuai posisi</small>');
-            } else if (position === 'General Manager') {
-                department.prop('readonly', true)
-                    .val('General Manager')
-                    .after('<input type="hidden" name="department" value="General Manager">');
-                department.find('option:not([value="General Manager"])').hide();
-                departmentWrapper.append('<small class="text-danger">Department dibatasi sesuai posisi</small>');
+            // Get the selected position
+            var selectedPosition = $(this).find('option:selected').text().trim();
+
+            if (selectedPosition === 'Director') {
+                // Find Director department
+                var directorDept = departmentSelect.find('option').filter(function() {
+                    return $(this).text().trim() === 'Director';
+                });
+
+                if (directorDept.length) {
+                    departmentSelect.prop('readonly', true)
+                        .val(directorDept.val())
+                        .after('<input type="hidden" name="department_id" value="' + directorDept.val() + '">');
+                    departmentSelect.find('option').not(directorDept).hide();
+                    departmentWrapper.append('<small class="text-danger">Department dibatasi sesuai posisi</small>');
+                }
+            } else if (selectedPosition === 'General Manager') {
+                // Find General Manager department
+                var gmDept = departmentSelect.find('option').filter(function() {
+                    return $(this).text().trim() === 'General Manager';
+                });
+
+                if (gmDept.length) {
+                    departmentSelect.prop('readonly', true)
+                        .val(gmDept.val())
+                        .after('<input type="hidden" name="department_id" value="' + gmDept.val() + '">');
+                    departmentSelect.find('option').not(gmDept).hide();
+                    departmentWrapper.append('<small class="text-danger">Department dibatasi sesuai posisi</small>');
+                }
             } else {
-                // Hapus hidden input jika ada  
-                departmentWrapper.find('input[type="hidden"][name="department"]').remove();
-                department.find('option[value="Director"], option[value="General Manager"]').hide();
+                // Hide Director and General Manager options for other positions
+                departmentSelect.find('option').each(function() {
+                    var deptName = $(this).text().trim();
+                    if (deptName === 'Director' || deptName === 'General Manager') {
+                        $(this).hide();
+                    } else {
+                        $(this).show();
+                    }
+                });
             }
         });
 
-        // Optional: Tambahkan event listener untuk menghapus hidden input saat form disubmit  
+        // Optional: Enable hidden input on form submit
         $('form').on('submit', function() {
-            $(this).find('input[type="hidden"][name="department"]').prop('disabled', false);
+            $(this).find('input[type="hidden"][name="department_id"]').prop('disabled', false);
         });
-
         // Show/hide working period based on job status
         $('#status_job').on('change', function() {
             var selectedStatus = $(this).val();

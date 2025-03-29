@@ -11,7 +11,7 @@
             <h5 class="text-primary mt-2"><i class="fas fa-filter"></i> Filter Employees</h5>
         </div>
         <div class="card-body">
-            <form action="{{ route('user.index') }}" method="GET" class="row g-3">
+            <form action="{{ route('user.employees.index') }}" method="GET" class="row g-3">
                 <div class="col-md-3">
                     <label for="status" class="form-label">Employment Status</label>
                     <select name="status" id="status" class="form-select">
@@ -23,20 +23,24 @@
                     </select>
                 </div>
                 <div class="col-md-3">
-                    <label for="position" class="form-label">Position</label>
-                    <select name="position" id="position" class="form-select">
+                    <label for="position_id" class="form-label">Position</label>
+                    <select name="position_id" id="position_id" class="form-select">
                         <option value="">All Positions</option>
-                        @foreach($position as $pos)
-                        <option value="{{ $pos }}" {{ request('position') == $pos ? 'selected' : '' }}>{{ $pos }}</option>
+                        @foreach($positions as $position)
+                        <option value="{{ $position->id }}" {{ request('position_id') == $position->id ? 'selected' : '' }}>
+                            {{ $position->position }}
+                        </option>
                         @endforeach
                     </select>
                 </div>
                 <div class="col-md-3">
-                    <label for="department" class="form-label">Department</label>
-                    <select name="department" id="department" class="form-select">
+                    <label for="department_id" class="form-label">Department</label>
+                    <select name="department_id" id="department_id" class="form-select">
                         <option value="">All Departments</option>
-                        @foreach($department as $dept)
-                        <option value="{{ $dept }}" {{ request('department') == $dept ? 'selected' : '' }}>{{ $dept }}</option>
+                        @foreach($departments as $department)
+                        <option value="{{ $department->id }}" {{ request('department_id') == $department->id ? 'selected' : '' }}>
+                            {{ $department->department }}
+                        </option>
                         @endforeach
                     </select>
                 </div>
@@ -52,7 +56,7 @@
                     <button type="submit" class="btn btn-primary">
                         <i class="fas fa-search me-2"></i>Apply Filters
                     </button>
-                    <a href="{{ route('user.index') }}" class="btn btn-secondary">
+                    <a href="{{ route('user.employees.index') }}" class="btn btn-secondary">
                         <i class="fas fa-undo me-2"></i>Reset
                     </a>
                 </div>
@@ -68,7 +72,7 @@
                 <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#importModal">
                     <i class="fas fa-file-excel me-2"></i> Import Employees
                 </button>
-                <a href="{{ route('user.create') }}" class="btn btn-primary">
+                <a href="{{ route('user.employees.create') }}" class="btn btn-primary">
                     <i class="fas fa-plus-circle me-2"></i>Add Employee
                 </a>
             </div>
@@ -93,7 +97,7 @@
                         </tr>
                     </thead>
                     <tbody>
-                        @foreach ($user as $item)
+                        @foreach ($users as $item)
                         <tr>
 
                             <td class="text-center">
@@ -125,22 +129,21 @@
                             <td
                                 @if(!is_null($item->contract_end_date) && !is_null($item->contract_start_date))
                                 @php
-                                $contractEndDate = \Carbon\Carbon::parse($item->contract_end_date);
-                                $now = \Carbon\Carbon::now();
+                                $contractEndDate = strtotime($item->contract_end_date);
+                                $now = time();
                                 @endphp
-                                @if($now->diffInMonths($contractEndDate, false) <= 2 && $now <=$contractEndDate)
+                                @if(($contractEndDate - $now) <= (2 * 30 * 24 * 60 * 60) && $contractEndDate>= $now)
                                     style="background-color: yellow;"
-                                    @elseif($now> $contractEndDate)
-                                    style="background-color: red; color: white;"
-                                    @endif
-                                    @endif
-                                    >
-                                    {{ $item->contract_start_date ? $item->contract_start_date . ' s/d ' . $item->contract_end_date : '' }}
+                                    @elseif($contractEndDate < $now)
+                                        style="background-color: red; color: white;"
+                                        @endif
+                                        @endif>
+                                        {{ $item->contract_start_date ? substr($item->contract_start_date, 0, 10) . ' s/d ' . substr($item->contract_end_date, 0, 10) : '' }}
                             </td>
 
 
-                            <td>{{ $item->position }}</td>
-                            <td>{{ $item->department }}</td>
+                            <td>{{ $item->position->position ?? 'N/A' }}</td>
+                            <td>{{ $item->department->department ?? 'N/A' }}</td>
 
                             {{-- User Status --}}
                             <td>
@@ -151,13 +154,13 @@
 
                             {{-- Actions --}}
                             <td class="d-flex">
-                                <a href="{{ route('user.edit', $item->id) }}" class="btn btn-warning btn-sm me-2">
+                                <a href="{{ route('user.employees.edit', $item->id) }}" class="btn btn-warning btn-sm me-2">
                                     <i class="fas fa-user-tie"></i> Employee Info
                                 </a>
-                                <a href="{{ route('user.transfer', $item->id) }}" class="btn btn-success btn-sm me-2">
+                                <a href="{{ route('user.employees.transfer', $item->id) }}" class="btn btn-success btn-sm me-2">
                                     <i class="fas fa-exchange-alt"></i> Transfer
                                 </a>
-                                <a href="{{ route('user.history', $item->id) }}" class="btn btn-info btn-sm me-2">
+                                <a href="{{ route('user.employees.history', $item->id) }}" class="btn btn-info btn-sm me-2">
                                     <i class="fas fa-history"></i> History
                                 </a>
                                 @if ($item->employee_status == 'Part Time' || $item->employee_status == 'Contract')
@@ -243,8 +246,8 @@
                         <ul class="text-muted small">
                             <li><b>name</b> - Nama Karyawan</li>
                             <li><b>email</b> - Email Karyawan</li>
-                            <li><b>position</b> - Jabatan (Director, Manager, dll.)</li>
-                            <li><b>department</b> - Departemen (Jangan Pakai Singkatan)</li>
+                            <li><b>position</b> - Jabatan (Use the Same Name as in Master Position)</li>
+                            <li><b>department</b> - Department (Use the Same Name as in Master Department)</li>
                             <li><b>ID_number</b> - Nomor Identitas</li>
                             <li><b>birth_date</b> - Tanggal Lahir (YYYY-MM-DD)</li>
                             <li><b>birth_place</b> - Tempat Lahir</li>
@@ -300,7 +303,7 @@
             var formData = new FormData(this);
 
             $.ajax({
-                url: "{{ route('employees.import') }}",
+                url: "{{ route('user.employees.import') }}",
                 type: "POST",
                 data: formData,
                 processData: false,

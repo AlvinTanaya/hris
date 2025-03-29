@@ -82,7 +82,9 @@
                         <select class="form-select" name="position_request">
                             <option value="">All Positions</option>
                             @foreach($positions as $position)
-                            <option value="{{ $position }}" {{ request('position_request') == $position ? 'selected' : '' }}>{{ $position }}</option>
+                            <option value="{{ $position }}" {{ request('position_request') == $position ? 'selected' : '' }}>
+                                {{ $position }}
+                            </option>
                             @endforeach
                         </select>
                     </div>
@@ -91,7 +93,9 @@
                         <select class="form-select" name="department_request">
                             <option value="">All Departments</option>
                             @foreach($departments as $department)
-                            <option value="{{ $department }}" {{ request('department_request') == $department ? 'selected' : '' }}>{{ $department }}</option>
+                            <option value="{{ $department }}" {{ request('department_request') == $department ? 'selected' : '' }}>
+                                {{ $department }}
+                            </option>
                             @endforeach
                         </select>
                     </div>
@@ -100,7 +104,7 @@
                         <select name="overtime_type" id="overtime_type" class="form-select">
                             <option value="all" {{ $overtimeType == 'all' ? 'selected' : '' }}>All Types</option>
                             <option value="Paid_Overtime" {{ $overtimeType == 'Paid_Overtime' ? 'selected' : '' }}>Paid Overtime</option>
-                            <option value="Overtime_Leave" {{ $overtimeType == 'Overtime_Leave' ? 'selected' : '' }}>Overtime Leave</option>
+                            <!-- <option value="Overtime_Leave" {{ $overtimeType == 'Overtime_Leave' ? 'selected' : '' }}>Overtime Leave</option> -->
                         </select>
                     </div>
                     <div class="col-md-4 mb-3">

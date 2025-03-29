@@ -25,17 +25,40 @@ class NotificationController extends Controller
 {
     public function index()
     {
-        $notifications = notification::where('users_id', Auth::id())
+        $notifications = Notification::where('users_id', Auth::id())
             ->orderBy('created_at', 'desc')
-            ->Paginate(5);
-
-        $notificationMakers = User::whereIn('id', $notifications->pluck('maker_id'))
+            ->paginate(5);
+    
+        // Get makers with their department and position relationships
+        $notificationMakers = User::with(['department', 'position'])
+            ->whereIn('id', $notifications->pluck('maker_id'))
             ->get()
             ->keyBy('id');
-
+    
+        // Prepare notification data with formatted display titles
+        $notifications->transform(function ($notification) use ($notificationMakers) {
+            $maker = $notificationMakers[$notification->maker_id] ?? null;
+            
+            $notification->from_name = $maker->name ?? 'System';
+            $notification->from_title = $this->getMakerTitle($maker);
+            
+            return $notification;
+        });
+    
         return view('notification.index', compact('notifications', 'notificationMakers'));
     }
-
+    
+    protected function getMakerTitle($maker)
+    {
+        if (!$maker) {
+            return 'System';
+        }
+    
+        $positionName = $maker->position_name ?? 'System';
+        $departmentName = $maker->department_name ?? 'System';
+    
+        return ($positionName == $departmentName) ? $positionName : "$positionName - $departmentName";
+    }
     public function markAsRead($id)
     {
         $notification = notification::findOrFail($id);

@@ -17,8 +17,8 @@ class recruitment_demand extends Model
         'recruitment_demand_id',
         'maker_id',
         'status_demand',
-        'department',
-        'position',
+        'department_id',
+        'position_id',
         'opening_date',
         'closing_date',
         'status_job',
@@ -37,4 +37,21 @@ class recruitment_demand extends Model
         'created_at',
         'updated_at',
     ];
+
+
+    // In your recruitment_demand model// In RecruitmentDemand model
+    public function departmentRelation()
+    {
+        return $this->belongsTo(EmployeeDepartment::class, 'department_id');
+    }
+
+    public function positionRelation()
+    {
+        return $this->belongsTo(EmployeePosition::class, 'position_id');
+    }
+
+    public function maker()
+    {
+        return $this->belongsTo(User::class, 'maker_id');
+    }
 }

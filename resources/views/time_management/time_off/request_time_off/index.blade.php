@@ -266,75 +266,58 @@
         <!-- Tab Content -->
         <div class="tab-content p-0 mt-3" id="timeOffTabsContent">
             <!-- Pending Requests Tab -->
-            <div class="tab-pane fade show active" id="pending" role="tabpanel" aria-labelledby="pending-tab">
-                <div class="card shadow-sm w-100">
+            <div class="tab-pane fade show active" id="pending" role="tabpanel">
+                <div class="card shadow-sm">
                     <div class="card-header bg-warning text-white">
-                        <h5 class="mt-2"><i class="fas fa-calendar-alt"></i> Pending Time Off Requests</h5>
+                        <h5 class="mt-2"><i class="fas fa-calendar-alt"></i> Pending Requests</h5>
                     </div>
                     <div class="card-body">
                         <div class="table-responsive">
                             <table id="pendingTable" class="table table-bordered table-hover w-100">
                                 <thead class="table-dark">
                                     <tr>
-                                        <th width="5%">No.</th>
-                                        <th width="14%">Employee</th>
-                                        <th width="14%">Date</th>
-                                        <th width="7%">Days</th>
-                                        <th width="12%">Time Off Type</th>
-                                        <th width="23%">Reason</th>
-                                        <th width="13%">Proof File</th>
-                                        <th width="12%">Actions</th>
-
+                                        <th width="3%">No.</th>
+                                        <th width="15%">Employee</th>
+                                        <th width="12%">Start Date</th>
+                                        <th width="12%">End Date</th>
+                                        <th width="8%">Duration</th>
+                                        <th width="12%">Type</th>
+                                        <th width="22%">Reason</th>
+                                        <th width="8%">Proof</th>
+                                        <th width="8%">Actions</th>
                                     </tr>
+
                                 </thead>
                                 <tbody>
                                     @foreach($pendingRequests as $key => $request)
                                     <tr>
                                         <td>{{ $key + 1 }}</td>
                                         <td>{{ $request->user_name }}</td>
-                                        <td>
-                                            @if($request->start_date == $request->end_date)
-                                            {{ \Carbon\Carbon::parse($request->start_date)->format('d M Y') }}
-                                            @else
-                                            {{ \Carbon\Carbon::parse($request->start_date)->format('d M Y') }} -
-                                            {{ \Carbon\Carbon::parse($request->end_date)->format('d M Y') }}
-                                            @endif
-                                        </td>
-                                        <td>
-                                            {{ \Carbon\Carbon::parse($request->start_date)->diffInDays(\Carbon\Carbon::parse($request->end_date)) + 1 }} days
-                                        </td>
-                                        <td>
-                                            <span class="badge badge-info">{{ $request->time_off_name }}</span>
-                                        </td>
+                                        <td>{{ $request->formatted_start_date }}</td>
+                                        <td>{{ $request->formatted_end_date }}</td>
+                                        <td>{{ $request->duration }}</td>
+                                        <td><span class="badge bg-info">{{ $request->time_off_name }}</span></td>
                                         <td>{{ $request->reason }}</td>
                                         <td>
                                             @if($request->file_reason_path)
-                                            <button type="button" class="btn btn-sm btn-info view-file-btn text-white"
-                                                data-file="{{ $request->file_reason_path }}">
-                                                <i class="fas fa-file-image"></i> View File
+                                            <button class="btn btn-sm btn-info view-file-btn" data-file="{{ $request->file_reason_path }}">
+                                                <i class="fas fa-file-image"></i> View
                                             </button>
                                             @else
-                                            <span class="text-muted">No file attached</span>
+                                            <span class="text-muted">No file</span>
                                             @endif
                                         </td>
                                         <td>
                                             <div class="btn-group d-flex">
-                                                <button type="button" class="btn btn-sm btn-success approve-btn flex-fill"
-                                                    data-id="{{ $request->id }}"
-                                                    data-employee="{{ $request->name }}">
-                                                    <i class="fas fa-check me-1"></i> Approve
+                                                <button class="btn btn-sm btn-success approve-btn flex-fill" data-id="{{ $request->id }}">
+                                                    <i class="fas fa-check"></i>
                                                 </button>
-                                                <button type="button" class="btn btn-sm btn-danger decline-btn flex-fill"
-                                                    data-id="{{ $request->id }}"
-                                                    data-employee="{{ $request->name }}"
-                                                    data-bs-toggle="modal"
-                                                    data-bs-target="#declineModal">
-                                                    <i class="fas fa-times me-1"></i> Decline
+                                                <button class="btn btn-sm btn-danger decline-btn flex-fill" data-id="{{ $request->id }}">
+                                                    <i class="fas fa-times"></i>
                                                 </button>
                                             </div>
                                         </td>
                                     </tr>
-
                                     @endforeach
                                 </tbody>
                             </table>
@@ -344,59 +327,48 @@
             </div>
 
             <!-- Approved Requests Tab -->
-            <div class="tab-pane fade" id="approved" role="tabpanel" aria-labelledby="approved-tab">
-                <div class="card shadow-sm w-100">
+            <div class="tab-pane fade" id="approved" role="tabpanel">
+                <div class="card shadow-sm">
                     <div class="card-header bg-success text-white">
-                        <h5 class="mt-2"><i class="fas fa-calendar-check"></i> Approved Time Off Requests</h5>
+                        <h5 class="mt-2"><i class="fas fa-calendar-check"></i> Approved Requests</h5>
                     </div>
                     <div class="card-body">
                         <div class="table-responsive">
                             <table id="approvedTable" class="table table-bordered table-hover w-100">
                                 <thead class="table-dark">
                                     <tr>
-                                        <th width="5%">No.</th>
-                                        <th width="14%">Employee</th>
-                                        <th width="14%">Date</th>
-                                        <th width="8%">Days</th>
-                                        <th width="12%">Time Off Type</th>
+                                        <th width="3%">No.</th>
+                                        <th width="15%">Employee</th>
+                                        <th width="12%">Start Date</th>
+                                        <th width="12%">End Date</th>
+                                        <th width="8%">Duration</th>
+                                        <th width="12%">Type</th>
                                         <th width="22%">Reason</th>
-                                        <th width="13%">Proof File</th>
-                                        <th width="12%">Approved By</th>
-
+                                        <th width="8%">Proof</th>
+                                        <th width="8%">Approved By</th>
                                     </tr>
+
                                 </thead>
                                 <tbody>
                                     @foreach($approvedRequests as $key => $request)
                                     <tr>
                                         <td>{{ $key + 1 }}</td>
                                         <td>{{ $request->user_name }}</td>
-                                        <td>
-                                            @if($request->start_date == $request->end_date)
-                                            {{ \Carbon\Carbon::parse($request->start_date)->format('d M Y') }}
-                                            @else
-                                            {{ \Carbon\Carbon::parse($request->start_date)->format('d M Y') }} -
-                                            {{ \Carbon\Carbon::parse($request->end_date)->format('d M Y') }}
-                                            @endif
-                                        </td>
-                                        <td>
-                                            {{ \Carbon\Carbon::parse($request->start_date)->diffInDays(\Carbon\Carbon::parse($request->end_date)) + 1 }} days
-                                        </td>
-                                        <td>
-                                            <span class="badge badge-info">{{ $request->time_off_name }}</span>
-                                        </td>
+                                        <td>{{ $request->formatted_start_date }}</td>
+                                        <td>{{ $request->formatted_end_date }}</td>
+                                        <td>{{ $request->duration }}</td>
+                                        <td><span class="badge bg-info">{{ $request->time_off_name }}</span></td>
                                         <td>{{ $request->reason }}</td>
                                         <td>
                                             @if($request->file_reason_path)
-                                            <button type="button" class="btn btn-sm btn-info view-file-btn text-white"
-                                                data-file="{{ $request->file_reason_path }}">
-                                                <i class="fas fa-file-image"></i> View File
+                                            <button class="btn btn-sm btn-info view-file-btn" data-file="{{ $request->file_reason_path }}">
+                                                <i class="fas fa-file-image"></i> View
                                             </button>
                                             @else
-                                            <span class="text-muted">No file attached</span>
+                                            <span class="text-muted">No file</span>
                                             @endif
                                         </td>
-                                        <td>{{ $request->answered_by_name  }}</td>
-
+                                        <td>{{ $request->answered_by_name }}</td>
                                     </tr>
                                     @endforeach
                                 </tbody>
@@ -407,26 +379,26 @@
             </div>
 
             <!-- Declined Requests Tab -->
-            <div class="tab-pane fade" id="declined" role="tabpanel" aria-labelledby="declined-tab">
-                <div class="card shadow-sm w-100">
+            <div class="tab-pane fade" id="declined" role="tabpanel">
+                <div class="card shadow-sm">
                     <div class="card-header bg-danger text-white">
-                        <h5 class="mt-2"><i class="fas fa-calendar-times"></i> Declined Time Off Requests</h5>
+                        <h5 class="mt-2"><i class="fas fa-calendar-times"></i> Declined Requests</h5>
                     </div>
                     <div class="card-body">
                         <div class="table-responsive">
                             <table id="declinedTable" class="table table-bordered table-hover w-100">
                                 <thead class="table-dark">
                                     <tr>
-                                        <th width="5%">No.</th>
-                                        <th width="14%">Employee</th>
-                                        <th width="14%">Date</th>
-                                        <th width="8%">Days</th>
-                                        <th width="12%">Time Off Type</th>
-                                        <th width="14%">Reason</th>
-                                        <th width="12%">Proof File</th>
-                                        <th width="15%">Declined Reason</th>
-                                        <th width="10%">Declined By</th>
-
+                                        <th width="3%">No.</th>
+                                        <th width="15%">Employee</th>
+                                        <th width="12%">Start Date</th>
+                                        <th width="12%">End Date</th>
+                                        <th width="8%">Duration</th>
+                                        <th width="12%">Type</th>
+                                        <th width="15%">Reason</th>
+                                        <th width="8%">Proof</th>
+                                        <th width="12%">Decline Reason</th>
+                                        <th width="8%">By</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -434,29 +406,18 @@
                                     <tr>
                                         <td>{{ $key + 1 }}</td>
                                         <td>{{ $request->user_name }}</td>
-                                        <td>
-                                            @if($request->start_date == $request->end_date)
-                                            {{ \Carbon\Carbon::parse($request->start_date)->format('d M Y') }}
-                                            @else
-                                            {{ \Carbon\Carbon::parse($request->start_date)->format('d M Y') }} -
-                                            {{ \Carbon\Carbon::parse($request->end_date)->format('d M Y') }}
-                                            @endif
-                                        </td>
-                                        <td>
-                                            {{ \Carbon\Carbon::parse($request->start_date)->diffInDays(\Carbon\Carbon::parse($request->end_date)) + 1 }} days
-                                        </td>
-                                        <td>
-                                            <span class="badge badge-info">{{ $request->time_off_name }}</span>
-                                        </td>
+                                        <td>{{ $request->formatted_start_date }}</td>
+                                        <td>{{ $request->formatted_end_date }}</td>
+                                        <td>{{ $request->duration }}</td>
+                                        <td><span class="badge bg-info">{{ $request->time_off_name }}</span></td>
                                         <td>{{ $request->reason }}</td>
                                         <td>
                                             @if($request->file_reason_path)
-                                            <button type="button" class="btn btn-sm btn-info view-file-btn text-white"
-                                                data-file="{{ $request->file_reason_path }}">
-                                                <i class="fas fa-file-image"></i> View File
+                                            <button class="btn btn-sm btn-info view-file-btn" data-file="{{ $request->file_reason_path }}">
+                                                <i class="fas fa-file-image"></i> View
                                             </button>
                                             @else
-                                            <span class="text-muted">No file attached</span>
+                                            <span class="text-muted">No file</span>
                                             @endif
                                         </td>
                                         <td>{{ $request->declined_reason }}</td>

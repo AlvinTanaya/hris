@@ -10,6 +10,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\VacancyController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\AnnouncementController;
+use App\Http\Controllers\EvaluationController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -56,7 +57,41 @@ Route::middleware('auth')->group(function () {
     Route::get('/home', [App\Http\Controllers\HomeController::class, 'index'])->name('home');
     Route::post('/logout', [App\Http\Controllers\Auth\LoginController::class, 'logout'])->name('logout');
 
-    // Employee routes  
+    // Employees Routes
+    Route::prefix('user/employees')->group(function () {
+        Route::get('/', [UserController::class, 'employees_index'])->name('user.employees.index');
+        Route::get('/create', [UserController::class, 'employees_create'])->name('user.employees.create');
+        Route::post('/store', [UserController::class, 'employees_store'])->name('user.employees.store');
+        Route::get('/edit/{id}', [UserController::class, 'employees_edit'])->name('user.employees.edit');
+        Route::put('/update/{id}', [UserController::class, 'employees_update'])->name('user.employees.update');
+        Route::get('/transfer/{id}', [UserController::class, 'employees_transfer'])->name('user.employees.transfer');
+        Route::get('/history/{id}', [UserController::class, 'employees_history'])->name('user.employees.history');
+        Route::put('/transfer-user/{id}', [UserController::class, 'employees_transfer_user'])->name('user.employees.transfer_user');
+        Route::post('/extend-date/{id}', [UserController::class, 'employees_extend_date'])->name('user.employees.extend');
+        Route::post('/import', [UserController::class, 'employees_import'])->name('user.employees.import');
+    });
+
+    // Departments Routes
+    Route::prefix('user/departments')->group(function () {
+        Route::get('/', [UserController::class, 'departments_index'])->name('user.departments.index');
+        Route::get('/create', [UserController::class, 'departments_create'])->name('user.departments.create');
+        Route::post('/store', [UserController::class, 'departments_store'])->name('user.departments.store');
+        Route::get('/edit/{id}', [UserController::class, 'departments_edit'])->name('user.departments.edit');
+        Route::put('/update/{id}', [UserController::class, 'departments_update'])->name('user.departments.update');
+        Route::delete('/delete/{id}', [UserController::class, 'departments_destroy'])->name('user.departments.destroy');
+    });
+
+    // Positions Routes
+    Route::prefix('user/positions')->group(function () {
+        Route::get('/', [UserController::class, 'positions_index'])->name('user.positions.index');
+        Route::get('/create', [UserController::class, 'positions_create'])->name('user.positions.create');
+        Route::post('/store', [UserController::class, 'positions_store'])->name('user.positions.store');
+        Route::get('/edit/{id}', [UserController::class, 'positions_edit'])->name('user.positions.edit');
+        Route::put('/update/{id}', [UserController::class, 'positions_update'])->name('user.positions.update');
+        Route::delete('/delete/{id}', [UserController::class, 'positions_destroy'])->name('user.positions.destroy');
+    });
+
+
     Route::get('/user/index', [UserController::class, 'index'])->name('user.index');
     Route::get('/user/create', [UserController::class, 'create'])->name('user.create');
     Route::put('/user/store', [UserController::class, 'store'])->name('user.store');
@@ -67,6 +102,7 @@ Route::middleware('auth')->group(function () {
     Route::put('/user/transfer_user/{id}', [UserController::class, 'transfer_user'])->name('user.transfer_user');
     Route::post('/user/extend-date/{id}', [UserController::class, 'extendDate'])->name('user.extend');
     Route::post('/employees/import', [UserController::class, 'import'])->name('employees.import');
+
 
     // E-learning routes  
     Route::get('/elearning/index', [ElearningController::class, 'index'])->name('elearning.index');
@@ -150,14 +186,21 @@ Route::middleware('auth')->group(function () {
     Route::get('/time_management/employee_absent/attendance/data', [TimeManagementController::class, 'getAttendanceData'])->name('attendance.data');
     Route::post('/time_management/employee_absent/attendance/import', [TimeManagementController::class, 'importAttendance'])->name('attendance.import');
     // Warning Letter
-    Route::get('time_management/warning_letter/index', [TimeManagementController::class, 'warning_letter_index'])->name('warning.letter.index');
-    Route::get('time_management/warning_letter/index2/{id}', [TimeManagementController::class, 'warning_letter_index2'])->name('warning.letter.index2');
-    Route::get('time_management/warning_letter/create', [TimeManagementController::class, 'warning_letter_create'])->name('warning.letter.create');
-    Route::post('time_management/warning_letter/store', [TimeManagementController::class, 'warning_letter_store'])->name('warning.letter.store');
-    Route::get('time_management/warning_letter/edit/{id}', [TimeManagementController::class, 'warning_letter_edit'])->name('warning.letter.edit');
-    Route::put('time_management/warning_letter/update/{id}', [TimeManagementController::class, 'warning_letter_update'])->name('warning.letter.update');
+    Route::get('/time_management/warning_letter/rule/index', [TimeManagementController::class, 'warning_letter_rule_index'])->name('warning.letter.rule.index');
+    Route::get('/time_management/warning_letter/rule/create', [TimeManagementController::class, 'warning_letter_rule_create'])->name('warning.letter.rule.create');
+    Route::post('/time_management/warning_letter/rule/store', [TimeManagementController::class, 'warning_letter_rule_store'])->name('warning.letter.rule.store');
+    Route::get('/time_management/warning_letter/rule/edit/{id}', [TimeManagementController::class, 'warning_letter_rule_edit'])->name('warning.letter.rule.edit');
+    Route::put('/time_management/warning_letter/rule/update/{id}', [TimeManagementController::class, 'warning_letter_rule_update'])->name('warning.letter.rule.update');
+
+    Route::get('/time_management/warning_letter/assign/index', [TimeManagementController::class, 'warning_letter_index'])->name('warning.letter.index');
+    Route::get('/time_management/warning_letter/assign/index2/{id}', [TimeManagementController::class, 'warning_letter_index2'])->name('warning.letter.index2');
+    Route::get('/time_management/warning_letter/assign/create', [TimeManagementController::class, 'warning_letter_create'])->name('warning.letter.create');
+    Route::post('/time_management/warning_letter/assign/store', [TimeManagementController::class, 'warning_letter_store'])->name('warning.letter.store');
+    Route::get('/time_management/warning_letter/assign/edit/{id}', [TimeManagementController::class, 'warning_letter_edit'])->name('warning.letter.edit');
+    Route::put('/time_management/warning_letter/assign/update/{id}', [TimeManagementController::class, 'warning_letter_update'])->name('warning.letter.update');
     Route::get('/warning-letter/get-available-types', [TimeManagementController::class, 'getAvailableWarningTypes'])->name('warning.letter.get-available-types');
     Route::get('/warning-letter/get-available-types-for-edit', [TimeManagementController::class, 'getAvailableWarningTypesForEdit'])->name('warning.letter.get-available-types-for-edit');
+
     // Resign
     Route::get('time_management/request_resign/index', [TimeManagementController::class, 'request_resign_index'])->name('request.resign.index');
     Route::get('time_management/request_resign/index2/{id}', [TimeManagementController::class, 'request_resign_index2'])->name('request.resign.index2');
@@ -215,10 +258,29 @@ Route::middleware('auth')->group(function () {
     Route::get('time_management/time_off/request_time_off/index2/{id}', [TimeManagementController::class, 'request_time_off_index2'])->name('request.time.off.index2');
     Route::get('time_management/time_off/request_time_off/create/{id}', [TimeManagementController::class, 'request_time_off_create'])->name('request.time.off.create');
     Route::post('time_management/time_off/request_time_off/store', [TimeManagementController::class, 'request_time_off_store'])->name('request.time.off.store');
-    Route::get('time_management/time_off/request_time_off/check-time-off-balance', [TimeManagementController::class, 'checkBalance']);
-
-
     Route::post('time_management/time_off/request_time_off/approve/{id}', [TimeManagementController::class, 'request_time_off_approve'])->name('request.time.off.approve');
     Route::post('time_management/time_off/request_time_off/decline/{id}', [TimeManagementController::class, 'request_time_off_decline'])->name('request.time.off.decline');
     Route::delete('time_management/time_off/request_time_off/destroy/{id}', [TimeManagementController::class, 'request_time_off_destroy'])->name('request.time.off.destroy');
+    Route::get('time_management/time_off/request_time_off/check-time-off-balance', [TimeManagementController::class, 'checkBalance']);
+    Route::get('time_management/time_off/request_time_off/check-requires-time',  [TimeManagementController::class, 'checkRequiresTimeInput']);
+    Route::get('time_management/time_off/request_time_off/get-employee-shift', [TimeManagementController::class, 'getEmployeeShift']);
+
+
+
+
+
+    //Evaluation
+    // Rule Performance
+    Route::get('/evaluation/rule/performance/index', [EvaluationController::class, 'rule_performance_index'])->name('evaluation.rule.performance.index');
+    Route::get('/evaluation/rule/performance/create', [EvaluationController::class, 'rule_performance_create'])->name('evaluation.rule.performance.create');
+    Route::post('/evaluation/rule/performance/store', [EvaluationController::class, 'rule_performance_store'])->name('evaluation.rule.performance.store');
+    Route::get('/evaluation/rule/performance/edit/{id}', [EvaluationController::class, 'rule_performance_edit'])->name('evaluation.rule.performance.edit');
+    Route::put('/evaluation/rule/performance/update/{id}', [EvaluationController::class, 'rule_performance_update'])->name('evaluation.rule.performance.update');
+
+    Route::get('/evaluation/assign/performance/index/{id}', [EvaluationController::class, 'assign_performance_index'])->name('evaluation.assign.performance.index');
+    Route::get('/evaluation/assign/performance/create', [EvaluationController::class, 'assign_performance_create'])->name('evaluation.assign.performance.create');
+    Route::post('/evaluation/assign/performance/store', [EvaluationController::class, 'assign_performance_store'])->name('evaluation.assign.performance.store');
+    Route::get('/evaluation/assign/performance/edit/{id}', [EvaluationController::class, 'assign_performance_edit'])->name('evaluation.assign.performance.edit');
+    Route::put('/evaluation/assign/performance/update/{id}', [EvaluationController::class, 'assign_performance_update'])->name('evaluation.assign.performance.update');
+    Route::get('/evaluation/assign/performance/details', [EvaluationController::class, 'getEvaluationDetails'])->name('evaluation.assign.performance.details');
 });

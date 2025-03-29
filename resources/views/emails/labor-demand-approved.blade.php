@@ -130,8 +130,8 @@
             <div class="details-box">
                 <h3>Approved Request Details:</h3>
                 <ul>
-                    <li><strong>Position:</strong> {{ $demand->position }}</li>
-                    <li><strong>Department:</strong> {{ $demand->department }}</li>
+                    <li><strong>Position:</strong> {{ $positionName }}</li>
+                    <li><strong>Department:</strong> {{ $departmentName }}</li>
                     <li><strong>Quantity Needed:</strong> {{ $demand->qty_needed }}</li>
                     <li><strong>Opening Date:</strong> {{ date('d M Y', strtotime($demand->opening_date)) }}</li>
                     <li><strong>Closing Date:</strong> {{ date('d M Y', strtotime($demand->closing_date)) }}</li>

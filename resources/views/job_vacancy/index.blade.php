@@ -259,22 +259,22 @@
                 <form action="{{ route('job_vacancy.index') }}" method="GET" class="row g-3">
                     <div class="col-md-4">
                         <label class="form-label">Department</label>
-                        <select class="form-select" name="department">
+                        <select class="form-select" name="department_id">
                             <option value="">All Departments</option>
-                            @foreach($demand->pluck('department')->unique() as $dept)
-                            <option value="{{ $dept }}" {{ request('department') == $dept ? 'selected' : '' }}>
-                                {{ $dept }}
+                            @foreach($departments as $dept)
+                            <option value="{{ $dept->id }}" {{ request('department_id') == $dept->id ? 'selected' : '' }}>
+                                {{ $dept->department }}
                             </option>
                             @endforeach
                         </select>
                     </div>
                     <div class="col-md-4">
                         <label class="form-label">Position</label>
-                        <select class="form-select" name="position">
+                        <select class="form-select" name="position_id">
                             <option value="">All Positions</option>
-                            @foreach($demand->pluck('position')->unique() as $position)
-                            <option value="{{ $position }}" {{ request('position') == $position ? 'selected' : '' }}>
-                                {{ $position }}
+                            @foreach($positions as $position)
+                            <option value="{{ $position->id }}" {{ request('position_id') == $position->id ? 'selected' : '' }}>
+                                {{ $position->position }}
                             </option>
                             @endforeach
                         </select>
@@ -294,15 +294,14 @@
             <!-- Job Listings -->
             <div class="row">
                 @foreach($demand as $vacancy)
-                <!-- Your existing job card code -->
                 <div class="col-lg-12">
                     <div class="job-card">
                         <div class="d-flex justify-content-between align-items-start">
                             <div>
                                 <h3 class="job-title d-flex align-items-center">
-                                    {{ $vacancy->position }}
+                                    {{ $vacancy->positionRelation->position ?? 'Unknown Position' }}
                                     <span class="department-badge ms-2">
-                                        <i class="fas fa-building"></i> {{ $vacancy->department }}
+                                        <i class="fas fa-building"></i> {{ $vacancy->departmentRelation->department ?? 'Unknown Department' }}
                                     </span>
                                 </h3>
                             </div>

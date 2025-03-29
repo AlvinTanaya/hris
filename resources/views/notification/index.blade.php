@@ -121,21 +121,14 @@
             <div class="notification-card p-3 {{ $notification->status == 'Unread' ? 'unread' : '' }}">
                 <div class="d-flex justify-content-between">
                     <div class="notification-title text-white">
-                        @php
-                        $maker = $notificationMakers[$notification->maker_id] ?? null;
-                        $position = $maker->position ?? 'System';
-                        $department = $maker->department ?? 'System';
-
-                        $displayTitle = ($position == $department) ? $position : "$position $department";
-                        @endphp
-                        From: {{ $maker->name ?? 'System' }} ({{ $displayTitle }})
+                        From: {{ $notification->from_name }} ({{ $notification->from_title }})
                     </div>
                     <div class="notification-time">{{ \Carbon\Carbon::parse($notification->created_at)->diffForHumans() }}</div>
                 </div>
                 <div class="notification-content">{{ $notification->message }}</div>
                 <div class="d-flex justify-content-end mt-2">
                     @if($notification->type == 'elearning_duty')
-                    <a href="{{ url('/elearning/index') }}" class="btn btn-sm btn-primary me-2">
+                    <a href="{{ url('/elearning/index2/' . Auth::user()->id) }}" class="btn btn-sm btn-primary me-2">
                         <i class="fas fa-arrow-right"></i> View
                     </a>
                     @endif

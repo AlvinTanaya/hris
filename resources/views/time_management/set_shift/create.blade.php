@@ -63,8 +63,13 @@
                             <div class="col-md-12">
                                 <label for="employees" class="form-label">Select Employees</label>
                                 <select id="employees" class="form-control select2" style="width: 100%;" multiple>
+                                    <!-- In the employees select options -->
                                     @foreach($employees as $employee)
-                                    <option value="{{ $employee->id }}" data-department="{{ $employee->department }}" data-position="{{ $employee->position }}">{{ $employee->employee_id }} - {{ $employee->name }}</option>
+                                    <option value="{{ $employee->id }}"
+                                        data-department="{{ $employee->department->department ?? '' }}"
+                                        data-position="{{ $employee->position->position ?? '' }}">
+                                        {{ $employee->employee_id }} - {{ $employee->name }}
+                                    </option>
                                     @endforeach
                                 </select>
                             </div>
@@ -266,8 +271,8 @@
                             `<tr data-id="${id}">
                             <td>${emp.employee_id}</td>
                             <td>${emp.name}</td>
-                            <td>${emp.position}</td>
-                            <td>${emp.department}</td>
+                            <td>${emp.position.position}</td>
+                            <td>${emp.department.department}</td>
                             <td><button type="button" class="btn btn-danger btn-sm removeEmployee" data-id="${id}">Remove</button></td>
                         </tr>`
                         );

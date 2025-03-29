@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Position Transfer Notification</title>
+    <title>Employee Transfer Notification</title>
     <style>
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -25,9 +25,10 @@
         }
 
         .email-header {
-            background-color: #2563eb;
+            background-color: #3b82f6;
             color: white;
             padding: 20px 30px;
+            text-align: center;
         }
 
         .email-header h1 {
@@ -40,32 +41,17 @@
             padding: 30px;
         }
 
-        .greeting {
-            font-size: 18px;
+        .message {
+            font-size: 16px;
             margin-bottom: 20px;
         }
 
-        .message {
-            margin-bottom: 25px;
-        }
-
-        .message strong {
-            color: #2563eb;
-        }
-
         .details-box {
-            background-color: #f8fafc;
-            border-left: 4px solid #2563eb;
+            background-color: #eff6ff;
+            border-left: 4px solid #3b82f6;
             padding: 15px 20px;
             margin-bottom: 25px;
             border-radius: 0 4px 4px 0;
-        }
-
-        .details-box h3 {
-            margin-top: 0;
-            margin-bottom: 15px;
-            color: #2563eb;
-            font-size: 16px;
         }
 
         .details-table {
@@ -74,7 +60,7 @@
         }
 
         .details-table tr {
-            border-bottom: 1px solid #e5e7eb;
+            border-bottom: 1px solid #dbeafe;
         }
 
         .details-table tr:last-child {
@@ -86,6 +72,7 @@
             text-align: left;
             width: 35%;
             font-weight: 600;
+            color: #1e40af;
             vertical-align: top;
         }
 
@@ -95,21 +82,6 @@
             vertical-align: top;
         }
 
-        .reason-box {
-            background-color: #f8fafc;
-            border-left: 4px solid #2563eb;
-            padding: 15px 20px;
-            margin-bottom: 25px;
-            border-radius: 0 4px 4px 0;
-        }
-
-        .reason-box h3 {
-            margin-top: 0;
-            margin-bottom: 15px;
-            color: #2563eb;
-            font-size: 16px;
-        }
-
         .button-container {
             text-align: center;
             margin: 30px 0;
@@ -117,7 +89,7 @@
 
         .button {
             display: inline-block;
-            background-color: #2563eb;
+            background-color: #3b82f6;
             color: white;
             text-decoration: none;
             padding: 12px 24px;
@@ -127,7 +99,19 @@
         }
 
         .button:hover {
-            background-color: #1d4ed8;
+            background-color: #2563eb;
+        }
+
+        .signature {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #e5e7eb;
+        }
+
+        .company-details {
+            margin-top: 5px;
+            font-weight: 600;
+            color: #3b82f6;
         }
 
         .email-footer {
@@ -136,10 +120,7 @@
             font-size: 14px;
             color: #6b7280;
             text-align: center;
-        }
-
-        .signature {
-            margin-top: 30px;
+            background-color: #f9fafb;
         }
     </style>
 </head>
@@ -147,62 +128,104 @@
 <body>
     <div class="email-container">
         <div class="email-header">
-            <h1>Position Transfer Notification</h1>
+            <h1>
+                @if($isHR)
+                Employee Transfer Notification
+                @else
+                Your Employment Status Update
+                @endif
+            </h1>
         </div>
 
         <div class="email-content">
-            <p class="greeting">Dear {{ $user->name }},</p>
-
             <p class="message">
-                We are writing to inform you about a change in your employment status or position.
+                @if($isHR)
+                Dear HR Team,
+                @else
+                Dear {{ $user->name }},
+                @endif
             </p>
 
             <div class="details-box">
-                <h3>Transfer Details:</h3>
+                @if($isHR)
+                <p>There has been a change regarding employee {{ $user->name }} (ID: {{ $user->employee_id }}):</p>
+                @else
+                <p>We are writing to inform you about an important change in your employment details:</p>
+                @endif
+
                 <table class="details-table">
                     @if($transferType == "Penetapan")
                     <tr>
                         <th>Status Update:</th>
-                        <td>Congratulations! Your employment status has been updated to <strong>Permanent Employee</strong>.</td>
+                        <td>
+                            @if($isHR)
+                            Employee status changed to <strong>Permanent</strong>
+                            @else
+                            Congratulations! Your status is now <strong>Permanent Employee</strong>
+                            @endif
+                        </td>
                     </tr>
                     @elseif($transferType == "Resign")
                     <tr>
                         <th>Status Update:</th>
-                        <td>Your employment status has been updated to <strong>Inactive</strong>.</td>
+                        <td>
+                            @if($isHR)
+                            Employee status changed to <strong>Inactive (Resigned)</strong>
+                            @else
+                            Your employment status is now <strong>Inactive</strong>
+                            @endif
+                        </td>
                     </tr>
                     @else
                     <tr>
                         <th>Previous Position:</th>
-                        <td>{{ $oldPosition }} in {{ $oldDepartment }} Department</td>
+                        <td>{{ $oldPosition }} ({{ $oldDepartment }})</td>
                     </tr>
                     <tr>
                         <th>New Position:</th>
-                        <td>{{ $newPosition }} in {{ $newDepartment }} Department</td>
+                        <td>{{ $newPosition }} ({{ $newDepartment }})</td>
                     </tr>
                     @endif
+                    @if($isHR && $reason)
+                    <tr>
+                        <th>Reason:</th>
+                        <td>{{ $reason }}</td>
+                    </tr>
+                    @endif
+                    <tr>
+                        <th>Effective Date:</th>
+                        <td>{{ now()->format('F j, Y') }}</td>
+                    </tr>
                 </table>
             </div>
 
+            @if(!$isHR)
             <p class="message">
-                If you have any questions or need further clarification, please feel free to contact the Human Resources Department.
+                If you have any questions about this change, please contact the HR department.
             </p>
+            @endif
 
             <div class="button-container">
-                <a href="{{ route('welcome') }}" class="button">Visit Our Website</a>
+                <a href="{{ route('welcome') }}" class="button">
+                    @if($isHR)
+                    View Employee Profile
+                    @else
+                    View Your Profile
+                    @endif
+                </a>
             </div>
 
             <div class="signature">
-                <p>
-                    Best Regards,<br>
-                    <strong>HR Department</strong><br>
-                    {{ config('app.name') }}
-                </p>
+                <p>Best regards,</p>
+                <div class="company-details">
+                    <p>Human Resources Department</p>
+                    <p>{{ config('app.name') }}</p>
+                </div>
             </div>
         </div>
 
         <div class="email-footer">
-            <p>This is an automated email. Please do not reply to this message.</p>
-            <p>&copy; {{ date('Y') }} {{ config('app.name') }}. All rights reserved.</p>
+            &copy; {{ date('Y') }} {{ config('app.name') }}. All rights reserved.
         </div>
     </div>
 </body>

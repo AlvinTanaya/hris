@@ -15,7 +15,7 @@ class NewEmployeeNotificationMail extends Mailable
 
     public function __construct($employee)
     {
-        $this->employee = $employee;
+        $this->employee = $employee->load(['department', 'position']);
     }
 
     public function build()
@@ -24,8 +24,8 @@ class NewEmployeeNotificationMail extends Mailable
             ->view('emails.new_employee_notification')
             ->with([
                 'name' => $this->employee->name,
-                'position' => $this->employee->position,
-                'department' => $this->employee->department,
+                'position' => $this->employee->position->position ?? 'Unknown Position',
+                'department' => $this->employee->department->department ?? 'Unknown Department',
             ]);
     }
 }
