@@ -182,9 +182,19 @@ Route::middleware('auth')->group(function () {
     Route::post('/time_management/set_shift/approve/{id}', [TimeManagementController::class, 'approveShiftChange'])->name('change_shift.approve');
     Route::post('/time_management/set_shift/decline/{id}', [TimeManagementController::class, 'declineShiftChange'])->name('change_shift.decline');
     // Attendance
-    Route::get('/time_management/employee_absent/index', [TimeManagementController::class, 'employee_absent_index'])->name('time.employee.absent.index');
+    Route::get('/time_management/employee_absent/attendance/index', [TimeManagementController::class, 'employee_absent_index'])->name('time.employee.absent.index');
     Route::get('/time_management/employee_absent/attendance/data', [TimeManagementController::class, 'getAttendanceData'])->name('attendance.data');
     Route::post('/time_management/employee_absent/attendance/import', [TimeManagementController::class, 'importAttendance'])->name('attendance.import');
+
+    Route::get('/time_management/employee_absent/custom_holiday/index', [TimeManagementController::class, 'custom_holiday_index'])->name('time.custom.holiday.index');
+    Route::get('/time_management/employee_absent/custom_holiday/create', [TimeManagementController::class, 'custom_holiday_create'])->name('time.custom.holiday.create');
+    Route::post('/time_management/employee_absent/custom_holiday/store', [TimeManagementController::class, 'custom_holiday_store'])->name('time.custom.holiday.store');
+    Route::get('/time_management/employee_absent/custom_holiday/edit/{id}', [TimeManagementController::class, 'custom_holiday_edit'])->name('time.custom.holiday.edit');
+    Route::put('/time_management/employee_absent/custom_holiday/update/{id}', [TimeManagementController::class, 'custom_holiday_update'])->name('time.custom.holiday.update');
+    Route::get('/time_management/employee_absent/custom_holiday/data', [TimeManagementController::class, 'getCustomHolidays'])->name('time.custom.holiday.data');
+    Route::delete('/time_management/employee_absent/custom_holiday/delete/{id}', [TimeManagementController::class, 'custom_holiday_destroy'])->name('time.custom.holiday.destroy');
+    Route::post('/time_management/employee_absent/custom_holiday/check-date', [TimeManagementController::class, 'checkDate'])->name('time.custom.holiday.check-date');
+    Route::get('/api/custom-holidays', [TimeManagementController::class, 'getCustomHolidaysByYear']);
     // Warning Letter
     Route::get('/time_management/warning_letter/rule/index', [TimeManagementController::class, 'warning_letter_rule_index'])->name('warning.letter.rule.index');
     Route::get('/time_management/warning_letter/rule/create', [TimeManagementController::class, 'warning_letter_rule_create'])->name('warning.letter.rule.create');
@@ -267,20 +277,84 @@ Route::middleware('auth')->group(function () {
 
 
 
-
-
     //Evaluation
-    // Rule Performance
-    Route::get('/evaluation/rule/performance/index', [EvaluationController::class, 'rule_performance_index'])->name('evaluation.rule.performance.index');
-    Route::get('/evaluation/rule/performance/create', [EvaluationController::class, 'rule_performance_create'])->name('evaluation.rule.performance.create');
-    Route::post('/evaluation/rule/performance/store', [EvaluationController::class, 'rule_performance_store'])->name('evaluation.rule.performance.store');
-    Route::get('/evaluation/rule/performance/edit/{id}', [EvaluationController::class, 'rule_performance_edit'])->name('evaluation.rule.performance.edit');
-    Route::put('/evaluation/rule/performance/update/{id}', [EvaluationController::class, 'rule_performance_update'])->name('evaluation.rule.performance.update');
+    // Rule Performance Criteria routes
+    Route::get('/evaluation/rule/performance/criteria/index', [EvaluationController::class, 'rule_performance_criteria_index'])->name('evaluation.rule.performance.criteria.index');
+    Route::get('/evaluation/rule/performance/criteria/create', [EvaluationController::class, 'rule_performance_criteria_create'])->name('evaluation.rule.performance.criteria.create');
+    Route::post('/evaluation/rule/performance/criteria/store', [EvaluationController::class, 'rule_performance_criteria_store'])->name('evaluation.rule.performance.criteria.store');
+    Route::get('/evaluation/rule/performance/criteria/edit/{id}', [EvaluationController::class, 'rule_performance_criteria_edit'])->name('evaluation.rule.performance.criteria.edit');
+    Route::put('/evaluation/rule/performance/criteria/update/{id}', [EvaluationController::class, 'rule_performance_criteria_update'])->name('evaluation.rule.performance.criteria.update');
 
+    // Rule Performance Reduction routes
+    Route::get('/evaluation/rule/performance/reduction/index', [EvaluationController::class, 'rule_performance_reduction_index'])->name('evaluation.rule.performance.reduction.index');
+    Route::get('/evaluation/rule/performance/reduction/create', [EvaluationController::class, 'rule_performance_reduction_create'])->name('evaluation.rule.performance.reduction.create');
+    Route::post('/evaluation/rule/performance/reduction/store', [EvaluationController::class, 'rule_performance_reduction_store'])->name('evaluation.rule.performance.reduction.store');
+    Route::get('/evaluation/rule/performance/reduction/edit/{id}', [EvaluationController::class, 'rule_performance_reduction_edit'])->name('evaluation.rule.performance.reduction.edit');
+    Route::put('/evaluation/rule/performance/reduction/update/{id}', [EvaluationController::class, 'rule_performance_reduction_update'])->name('evaluation.rule.performance.reduction.update');
+    Route::post('/evaluation/rule/performance/reduction/check-type', [EvaluationController::class, 'checkTypeExists'])->name('evaluation.rule.performance.reduction.check.type');
+
+    // Rule Performance Weight routes
+    Route::get('/evaluation/rule/performance/weight/index', [EvaluationController::class, 'weight_performance_index'])->name('evaluation.rule.performance.weight.index');
+    Route::get('/evaluation/rule/performance/weight/create', [EvaluationController::class, 'weight_performance_create'])->name('evaluation.rule.performance.weight.create');
+    Route::post('/evaluation/rule/performance/weight/store', [EvaluationController::class, 'weight_performance_store'])->name('evaluation.rule.performance.weight.store');
+    Route::get('/evaluation/rule/performance/weight/edit/{id}', [EvaluationController::class, 'weight_performance_edit'])->name('evaluation.rule.performance.weight.edit');
+    Route::put('/evaluation/rule/performance/weight/update/{id}', [EvaluationController::class, 'weight_performance_update'])->name('evaluation.rule.performance.weight.update');
+
+    // Rule Performance Grade routes
+    Route::get('/evaluation/rule/performance/grade/index', [EvaluationController::class, 'grade_performance_index'])->name('evaluation.rule.performance.grade.index');
+    Route::get('/evaluation/rule/performance/grade/create', [EvaluationController::class, 'grade_performance_create'])->name('evaluation.rule.performance.grade.create');
+    Route::post('/evaluation/rule/performance/grade/store', [EvaluationController::class, 'grade_performance_store'])->name('evaluation.rule.performance.grade.store');
+    Route::get('/evaluation/rule/performance/grade/edit/{id}', [EvaluationController::class, 'grade_performance_edit'])->name('evaluation.rule.performance.grade.edit');
+    Route::put('/evaluation/rule/performance/grade/update/{id}', [EvaluationController::class, 'grade_performance_update'])->name('evaluation.rule.performance.grade.update');
+    Route::delete('/evaluation/rule/performance/grade/destroy/{id}', [EvaluationController::class, 'grade_performance_destroy'])->name('evaluation.rule.performance.grade.destroy');
+    Route::post('/evaluation/rule/performance/grade/check-overlap', [EvaluationController::class, 'checkPerformanceOverlap'])->name('evaluation.rule.performance.grade.check-overlap');
+
+    // Rule Discipline Grade routes
+    Route::get('/evaluation/rule/discipline/grade/index', [EvaluationController::class, 'rule_discipline_grade_index'])->name('evaluation.rule.discipline.grade.index');
+    Route::get('/evaluation/rule/discipline/grade/create', [EvaluationController::class, 'rule_discipline_grade_create'])->name('evaluation.rule.discipline.grade.create');
+    Route::post('/evaluation/rule/discipline/grade/store', [EvaluationController::class, 'rule_discipline_grade_store'])->name('evaluation.rule.discipline.grade.store');
+    Route::get('/evaluation/rule/discipline/grade/edit/{id}', [EvaluationController::class, 'rule_discipline_grade_edit'])->name('evaluation.rule.discipline.grade.edit');
+    Route::put('/evaluation/rule/discipline/grade/update/{id}', [EvaluationController::class, 'rule_discipline_grade_update'])->name('evaluation.rule.discipline.grade.update');
+    Route::delete('/evaluation/rule/discipline/grade/destroy/{id}', [EvaluationController::class, 'grade_discipline_destroy'])->name('evaluation.rule.discipline.grade.destroy');
+    Route::post('/evaluation/rule/discipline/grade/check-overlap', [EvaluationController::class, 'checkDisciplineOverlap'])->name('evaluation.rule.discipline.grade.check-overlap');
+
+
+    // Rule Discipline Score routes
+    Route::get('/evaluation/rule/discipline/score/index', [EvaluationController::class, 'rule_discipline_score_index'])->name('evaluation.rule.discipline.score.index');
+    Route::get('/evaluation/rule/discipline/score/create', [EvaluationController::class, 'rule_discipline_score_create'])->name('evaluation.rule.discipline.score.create');
+    Route::post('/evaluation/rule/discipline/score/store', [EvaluationController::class, 'rule_discipline_score_store'])->name('evaluation.rule.discipline.score.store');
+    Route::get('/evaluation/rule/discipline/score/edit/{id}', [EvaluationController::class, 'rule_discipline_score_edit'])->name('evaluation.rule.discipline.score.edit');
+    Route::put('/evaluation/rule/discipline/score/update/{id}', [EvaluationController::class, 'rule_discipline_score_update'])->name('evaluation.rule.discipline.score.update');
+    Route::delete('/evaluation/rule/discipline/score/delete/{id}', [EvaluationController::class, 'rule_discipline_score_destroy'])->name('evaluation.rule.discipline.score.destroy');
+
+
+
+    // Assignment Performance routes
     Route::get('/evaluation/assign/performance/index/{id}', [EvaluationController::class, 'assign_performance_index'])->name('evaluation.assign.performance.index');
-    Route::get('/evaluation/assign/performance/create', [EvaluationController::class, 'assign_performance_create'])->name('evaluation.assign.performance.create');
     Route::post('/evaluation/assign/performance/store', [EvaluationController::class, 'assign_performance_store'])->name('evaluation.assign.performance.store');
     Route::get('/evaluation/assign/performance/edit/{id}', [EvaluationController::class, 'assign_performance_edit'])->name('evaluation.assign.performance.edit');
     Route::put('/evaluation/assign/performance/update/{id}', [EvaluationController::class, 'assign_performance_update'])->name('evaluation.assign.performance.update');
-    Route::get('/evaluation/assign/performance/details', [EvaluationController::class, 'getEvaluationDetails'])->name('evaluation.assign.performance.details');
+    Route::get('/evaluation/assign/performance/create/{id}', [EvaluationController::class, 'assign_performance_create'])->name('evaluation.assign.performance.create');
+    Route::get('/evaluation/check/existing', [EvaluationController::class, 'check_existing_evaluation'])->name('evaluation.check.existing');
+    Route::get('/evaluation/get/criteria', [EvaluationController::class, 'get_performance_criteria'])->name('evaluation.get.criteria');
+    Route::get('/evaluation/get/warning-letters', [EvaluationController::class, 'get_warning_letters'])->name('evaluation.get.warning.letters');
+    Route::get('/evaluation/assign/performance/detail/{id}', [EvaluationController::class, 'assign_performance_detail'])->name('evaluation.assign.performance.detail');
+    Route::get('/evaluation/assign/performance/filter', [EvaluationController::class, 'assign_performance_filter'])->name('evaluation.assign.performance.filter');
+
+    // Evaluation Report
+    Route::get('/evaluation/report/performance/index', [EvaluationController::class, 'report_performance_index'])->name('evaluation.report.performance.index');
+    Route::get('/evaluation/report/performance/detail/{id}', [EvaluationController::class, 'report_performance_detail'])->name('evaluation.report.performance.detail');
+    Route::get('/evaluation/report/performance/export', [EvaluationController::class, 'exportExcel'])->name('evaluation.report.performance.export');
+    
+    Route::get('/evaluation/report/discipline/index', [EvaluationController::class, 'report_discipline_index'])->name('evaluation.report.discipline.index');
+    Route::get('/evaluation/report/discipline/getDisciplineReportData', [EvaluationController::class, 'getDisciplineReportData'])->name('evaluation.report.discipline.data');
+    Route::get('/evaluation/report/discipline/grades', [EvaluationController::class, 'getDisciplineGradeSettings'])->name('evaluation.report.discipline.grades');
+    Route::get('/evaluation/report/discipline/export', [EvaluationController::class, 'exportDisciplineReport'])->name('evaluation.report.discipline.export');
+
+    // AHP routes
+    Route::get('/evaluation/ahp/index', [EvaluationController::class, 'ahp_index'])->name('evaluation.ahp.index');
+    Route::get('/evaluation/ahp/create', [EvaluationController::class, 'ahp_create'])->name('evaluation.ahp.create');
+    Route::post('/evaluation/ahp/store', [EvaluationController::class, 'ahp_store'])->name('evaluation.ahp.store');
+    Route::get('/evaluation/ahp/edit/{id}', [EvaluationController::class, 'ahp_edit'])->name('evaluation.ahp.edit');
+    Route::put('/evaluation/ahp/update/{id}', [EvaluationController::class, 'ahp_update'])->name('evaluation.ahp.update');
 });

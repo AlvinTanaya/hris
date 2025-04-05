@@ -1,0 +1,51 @@
+Evalution
+pada index assign ada filter nama, position, department, month, year VV
+buat rule reduction decipline  -> name itu gan ke id aja asu  VV
+pada assign create ada rdeuctionya gitu VV
+buat tabel report (fiter tahun aja) VV
+ada export excelnya xxxx
+
+
+///
+
+dan perlu buat reduction dcipline input V
+range bera sampai bera dia itu nilainya potong nya bserapa V
+kau persentage ya bera sampai bera dan harus ada 100% itu berapa gitu dilihat dari atasnya V
+
+ada bug di attendance tgl 1 kalau merah di agk mau nayala anehnya v
+
+
+
+/////
+
+input text penilai V
+tambahkan input date libur pribadi v
+
+
+apda attendace tambah dia cek cuti/izin gitu V
+sama ada nggk dia pualng awal / dateng terlambat dia juga ada V
+tambah custom holiday di attendance V
+
+
+
+//
+
+report discipline (ui, tambah rule score, grade) V
+report performnance ( ui, tambah rule score, grade) V
+
+grade discipline (kurang kasih unique di grade, lalau pastikan range gk tabrakan, ui dibagusin) V
+grade performnance  (kurang kasih unique di grade, lalau pastikan range gk tabrakan, ui dibagusin) V
+
+report discipline (excel export) V
+report performnance ( excel export) V
+
+
+
+//
+ahp
+
+
+
+
+
+

@@ -36,6 +36,7 @@ use App\Models\TimeOffAssign;
 use App\Models\RequestTimeOff;
 use App\Models\EmployeeDepartment;
 use App\Models\EmployeePosition;
+use App\Models\CustomHoliday;
 
 use App\Mail\WarningLetterMail;
 use App\Mail\EmployeeShiftAssigned;
@@ -832,7 +833,16 @@ class TimeManagementController extends Controller
         $employeeAbsent = EmployeeAbsent::all();
         $years = EmployeeAbsent::selectRaw('YEAR(date) as year')->distinct()->pluck('year')->sortDesc();
 
-        return view('time_management/employee_absent/index', compact('employeeAbsent', 'years'));
+        return view('time_management/employee_absent/attendance/index', compact('employeeAbsent', 'years'));
+    }
+
+    public function getCustomHolidaysByYear(Request $request)
+    {
+        $year = $request->input('year', date('Y'));
+
+        return CustomHoliday::whereYear('date', $year)
+            ->select('name', 'date')
+            ->get();
     }
 
 
@@ -844,8 +854,17 @@ class TimeManagementController extends Controller
         // Fetch all employees
         $employees = User::all();
 
+        // Get all custom holidays for this month and year
+        $customHolidays = CustomHoliday::whereYear('date', $year)
+            ->whereMonth('date', $month)
+            ->get()
+            ->keyBy(function ($item) {
+                return Carbon::parse($item->date)->format('Y-m-d');
+            });
+
         // Prepare attendance data
-        $attendanceData = $employees->map(function ($employee) use ($month, $year) {
+        $attendanceData = $employees->map(function ($employee) use ($month, $year, $customHolidays) {
+
             // Initialize attendance array for all days
             $attendance = [];
 
@@ -858,13 +877,40 @@ class TimeManagementController extends Controller
                     return Carbon::parse($item->date)->day;
                 });
 
+            // Get all approved time-off requests for the employee in this month
+            $timeOffRequests = RequestTimeOff::where('user_id', $employee->id)
+                ->where('status', 'Approved')
+                ->where(function ($query) use ($year, $month) {
+                    // Get requests that overlap with this month
+                    $startDate = Carbon::createFromDate($year, $month, 1);
+                    $endDate = $startDate->copy()->endOfMonth();
+
+                    $query->where(function ($q) use ($startDate, $endDate) {
+                        $q->whereBetween('start_date', [$startDate, $endDate])
+                            ->orWhereBetween('end_date', [$startDate, $endDate])
+                            ->orWhere(function ($innerQ) use ($startDate, $endDate) {
+                                $innerQ->where('start_date', '<=', $startDate)
+                                    ->where('end_date', '>=', $endDate);
+                            });
+                    });
+                })
+                ->with('timeOffPolicy') // Assuming you have this relationship set up
+                ->get();
+
+
+
             // Get all days in the month
             $daysInMonth = Carbon::createFromDate($year, $month, 1)->daysInMonth;
 
             // Process each day
             for ($day = 1; $day <= $daysInMonth; $day++) {
                 $date = Carbon::createFromDate($year, $month, $day);
+                $dateYmd = $date->format('Y-m-d');
                 $dayOfWeek = $date->format('l'); // Get day name (Monday, Tuesday, etc.)
+
+                // Check if this is a custom holiday
+                $isCustomHoliday = isset($customHolidays[$dateYmd]);
+                $customHolidayName = $isCustomHoliday ? $customHolidays[$dateYmd]->name : null;
 
                 // Get the employee's active shift for this day
                 $employeeShift = DB::table('employee_shift')
@@ -908,6 +954,13 @@ class TimeManagementController extends Controller
                 // Find absence record for this day
                 $absence = $absences->get($day);
 
+                // Find time-off requests for this day
+                $dateYmd = $date->format('Y-m-d');
+                $timeOff = $this->getTimeOffForDate($timeOffRequests, $dateYmd);
+
+                // Initialize attendance data for this day
+                $dayAttendance = [];
+
                 if ($absence) {
                     // Original expected hours calculation
                     $shift = $this->getEmployeeShiftForDate($employee->id, $date);
@@ -922,6 +975,9 @@ class TimeManagementController extends Controller
                     // Use rule_in for shift start time if available
                     $shiftStartTime = $ruleIn ?: $expectedIn;
 
+                    // Check if late arrival is planned
+                    $hasLateArrivalRequest = $timeOff && strpos($timeOff->timeOffPolicy->time_off_name, 'include (Masuk Siang)') !== false;
+
                     if ($absence->hour_in && $shiftStartTime) {
                         $actualIn = Carbon::parse($absence->hour_in);
                         $expectedInTime = Carbon::parse($shiftStartTime);
@@ -930,10 +986,12 @@ class TimeManagementController extends Controller
                         }
                     }
 
+                    // Check if early departure is planned
+                    $hasEarlyDepartureRequest = $timeOff && strpos($timeOff->timeOffPolicy->time_off_name, 'include (Pulang Awal)') !== false;
+
                     // Use rule_out for shift end time if available
                     $shiftEndTime = $ruleOut ?: $expectedOut;
 
-                    // In getAttendanceData function where early_minutes is calculated:
                     if ($absence->hour_out && $shiftEndTime) {
                         $actualOut = Carbon::parse($absence->hour_out);
                         $expectedOutTime = Carbon::parse($shiftEndTime);
@@ -946,7 +1004,7 @@ class TimeManagementController extends Controller
 
                     // Only add data if there's something to show
                     if ($absence->hour_in || $absence->hour_out) {
-                        $attendance[$day] = [
+                        $dayAttendance = [
                             'hour_in' => $absence->hour_in,
                             'hour_out' => $absence->hour_out,
                             'status_in' => $absence->status_in,
@@ -958,9 +1016,55 @@ class TimeManagementController extends Controller
                             'early_minutes' => $earlyMinutes,
                             'rule_in' => $ruleIn,
                             'rule_out' => $ruleOut,
-                            'rule_type' => $ruleType
+                            'rule_type' => $ruleType,
+                            'has_late_arrival_request' => $hasLateArrivalRequest,
+                            'has_early_departure_request' => $hasEarlyDepartureRequest,
+
+                            // New fields for enhanced display
+                            'time_off' => $timeOff ? true : false,
+                            'time_off_name' => $timeOff ? ($timeOff->timeOffPolicy->time_off_name ?? 'Time Off') : null,
+                            'time_off_reason' => $timeOff ? ($timeOff->reason ?? '') : null,
+                            'time_off_id' => $timeOff ? $timeOff->id : null,
+                            'is_override' => ($timeOff && (!empty($absence->hour_in) || !empty($absence->hour_out))) ? true : false,
+                            'time_off_type' => $timeOff ? $this->classifyLeaveType($timeOff) : null,
+
+                            // Additional status flags
+                            'is_sick_leave' => $timeOff ? str_contains(strtolower($timeOff->timeOffPolicy->time_off_name ?? ''), 'sakit') : false,
+                            'is_annual_leave' => $timeOff ? str_contains(strtolower($timeOff->timeOffPolicy->time_off_name ?? ''), 'tahunan') : false,
+                            'is_morning_leave' => $hasLateArrivalRequest,
+                            'is_early_departure' => $hasEarlyDepartureRequest
                         ];
                     }
+                }
+
+                // If no attendance record but there's a time-off request
+                if ((!$absence || (empty($absence->hour_in) && empty($absence->hour_out))) && $timeOff) {
+                    $timeOffName = $timeOff->timeOffPolicy->time_off_name ?? 'Unknown';
+                    $timeOffReason = $timeOff->reason ?? '';
+
+                    $dayAttendance = [
+                        'hour_in' => null,
+                        'hour_out' => null,
+                        'time_off' => true,
+                        'time_off_name' => $timeOffName,
+                        'time_off_reason' => $timeOffReason,
+                        'rule_in' => $ruleIn,
+                        'rule_out' => $ruleOut,
+                        'rule_type' => $ruleType,
+                        // Add leave type classification
+                        'leave_type' => $this->classifyLeaveType($timeOff)
+                    ];
+                }
+
+                // For cases with both time-off and attendance (override)
+                elseif ($timeOff && ($absence->hour_in || $absence->hour_out)) {
+                    $dayAttendance['is_override'] = true;
+                    $dayAttendance['leave_type'] = $this->classifyLeaveType($timeOff);
+                }
+
+                // Only add to attendance if we have data
+                if (!empty($dayAttendance)) {
+                    $attendance[$day] = $dayAttendance;
                 }
             }
 
@@ -973,6 +1077,54 @@ class TimeManagementController extends Controller
 
         return response()->json($attendanceData);
     }
+
+
+    private function classifyLeaveType($timeOffRequest)
+    {
+        $policyName = strtolower($timeOffRequest->timeOffPolicy->time_off_name ?? '');
+
+        // Full-day leave types
+        if (str_contains($policyName, 'sakit')) {
+            return 'sick_leave';
+        }
+        if (str_contains($policyName, 'tahunan')) {
+            return 'annual_leave';
+        }
+        if (str_contains($policyName, 'ijin')) {
+            return 'permission_leave'; // New type for "Ijin"
+        }
+
+        // Partial leave types
+        if (str_contains($policyName, 'masuk siang')) {
+            return 'approved_late_arrival';
+        }
+        if (str_contains($policyName, 'pulang awal')) {
+            return 'approved_early_departure';
+        }
+
+        // Default to full-day leave for any other types
+        return 'full_day_leave';
+    }
+
+    /**
+     * Check if a date falls within a time-off request period
+     */
+    private function getTimeOffForDate($timeOffRequests, $date)
+    {
+        $checkDate = Carbon::parse($date);
+
+        foreach ($timeOffRequests as $request) {
+            // Ensure dates are parsed consistently
+            $startDate = Carbon::parse($request->start_date)->startOfDay();
+            $endDate = Carbon::parse($request->end_date)->endOfDay();
+
+            if ($checkDate->between($startDate, $endDate)) {
+                return $request;
+            }
+        }
+        return null;
+    }
+
 
     private function getDayIndex($dayOfWeek, $daysArray)
     {
@@ -1038,6 +1190,8 @@ class TimeManagementController extends Controller
             'end' => $hourEnd[$dayIndex]
         ];
     }
+
+
     public function importAttendance(Request $request)
     {
         $data = $request->json('data');
@@ -1166,6 +1320,72 @@ class TimeManagementController extends Controller
                 'errors' => $errors
             ], 500);
         }
+    }
+
+
+    // Index - List all holidays
+    public function custom_holiday_index()
+    {
+        $holidays = CustomHoliday::orderBy('date', 'desc')->get();
+        return view('time_management/employee_absent/custom_holiday/index', compact('holidays'));
+    }
+
+    // Create form
+    public function custom_holiday_create()
+    {
+        return view('time_management/employee_absent/custom_holiday/create');
+    }
+
+    // Store new holiday
+    public function custom_holiday_store(Request $request)
+    {
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'description' => 'nullable|string',
+            'date' => 'required|date|unique:custom_holiday,date'
+        ]);
+
+        CustomHoliday::create($request->only(['name', 'description', 'date']));
+
+        return redirect()->route('time.custom.holiday.index')
+            ->with('success', 'Holiday created successfully.');
+    }
+
+    // Edit form
+    public function custom_holiday_edit($id)
+    {
+        $holiday = CustomHoliday::findOrFail($id);
+        return view('time_management/employee_absent/custom_holiday/update', compact('holiday'));
+    }
+
+    // Update holiday
+    public function custom_holiday_update(Request $request, $id)
+    {
+        // dd( $request->all());
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'description' => 'nullable|string',
+            'date' => 'required|date|unique:custom_holiday,date,' . $id
+        ]);
+
+        $holiday = CustomHoliday::findOrFail($id);
+        $holiday->update($request->only(['name', 'description', 'date']));
+
+        return redirect()->route('time.custom.holiday.index')
+            ->with('success', 'Holiday updated successfully.');
+    }
+
+    public function checkDate(Request $request)
+    {
+        $query = CustomHoliday::where('date', $request->date);
+
+        if ($request->has('exclude_id')) {
+            $query->where('id', '!=', $request->exclude_id);
+        }
+
+        return response()->json([
+            'exists' => $query->exists()
+        ]);
     }
 
 
@@ -3339,7 +3559,7 @@ class TimeManagementController extends Controller
     public function request_time_off_index2($id)
     {
         $employee = User::findOrFail($id);
-    
+
         // Get time off requests for this employee and format them
         $pendingRequests = RequestTimeOff::where('user_id', $id)
             ->where('status', 'pending')
@@ -3348,7 +3568,7 @@ class TimeManagementController extends Controller
             ->map(function ($item) {
                 return $this->formatTimeOffRequest($item);
             });
-    
+
         $approvedRequests = RequestTimeOff::where('user_id', $id)
             ->where('status', 'approved')
             ->orderBy('created_at', 'desc')
@@ -3356,7 +3576,7 @@ class TimeManagementController extends Controller
             ->map(function ($item) {
                 return $this->formatTimeOffRequest($item);
             });
-    
+
         $declinedRequests = RequestTimeOff::where('user_id', $id)
             ->where('status', 'declined')
             ->orderBy('created_at', 'desc')
@@ -3364,7 +3584,7 @@ class TimeManagementController extends Controller
             ->map(function ($item) {
                 return $this->formatTimeOffRequest($item);
             });
-    
+
         // Get time off assignments with policy information
         $timeOffAssignments = DB::table('time_off_assign')
             ->join('time_off_policy', 'time_off_assign.time_off_id', '=', 'time_off_policy.id')
@@ -3378,7 +3598,7 @@ class TimeManagementController extends Controller
                 'time_off_policy.quota'
             )
             ->get();
-    
+
         return view('time_management.time_off.request_time_off.index2', compact(
             'employee',
             'pendingRequests',
@@ -3392,44 +3612,44 @@ class TimeManagementController extends Controller
     {
         $start = Carbon::parse($request->start_date);
         $end = Carbon::parse($request->end_date);
-        
+
         // Format dates
         $isFullDay = ($start->format('H:i:s') === '00:00:00' && $end->format('H:i:s') === '23:59:59');
-        
-        $request->formatted_start_date = $isFullDay 
-            ? $start->format('d-m-Y') 
+
+        $request->formatted_start_date = $isFullDay
+            ? $start->format('d-m-Y')
             : $start->format('d-m-Y H:i');
-        
-        $request->formatted_end_date = $isFullDay 
-            ? $end->format('d-m-Y') 
+
+        $request->formatted_end_date = $isFullDay
+            ? $end->format('d-m-Y')
             : $end->format('d-m-Y H:i');
-        
+
         // Calculate duration
         if ($isFullDay) {
             $days = $start->diffInDays($end) + 1;
             $request->duration = $days . ' day' . ($days > 1 ? 's' : '');
         } else {
             $diff = $start->diff($end);
-            
+
             $parts = [];
             if ($diff->d > 0) $parts[] = $diff->d . ' day' . ($diff->d > 1 ? 's' : '');
             if ($diff->h > 0) $parts[] = $diff->h . ' hour' . ($diff->h > 1 ? 's' : '');
             if ($diff->i > 0) $parts[] = $diff->i . ' minute' . ($diff->i > 1 ? 's' : '');
-            
+
             $request->duration = implode(' ', $parts) ?: 'Less than 1 minute';
         }
-        
+
         // For date range display
         if ($start->format('Y-m-d') === $end->format('Y-m-d')) {
             $request->formatted_date = $start->format('d M Y');
         } else {
             $request->formatted_date = $start->format('d M Y') . ' - ' . $end->format('d M Y');
         }
-        
+
         return $request;
     }
 
-   
+
     public function request_time_off_create($id)
     {
         $employee = User::findOrFail($id);

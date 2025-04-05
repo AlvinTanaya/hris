@@ -265,6 +265,7 @@
         #sidebar .dropdown-toggle[aria-expanded="true"] .dropdown-icon,
         #sidebar .shift-dropdown.active .dropdown-icon,
         #sidebar .timeOff-dropdown.active .dropdown-icon,
+        #sidebar .attendance-dropdown.active .dropdown-icon,
         #sidebar .warningLetter-dropdown.active .dropdown-icon {
             transform: rotate(90deg);
         }
@@ -272,6 +273,7 @@
         /* Nested Dropdowns */
         .shift-submenu .nav-link,
         .warningLetter-submenu .nav-link,
+        .attendance-submenu .nav-link,
         .timeOff-submenu .nav-link {
             padding-left: 3rem !important;
             font-size: 0.9rem;
@@ -279,6 +281,7 @@
 
         .shift-submenu .nav-link:not(:first-child),
         .warningLetter-submenu .nav-link:not(:first-child),
+        .attendance-submenu .nav-link:not(:first-child),
         .timeOff-submenu .nav-link:not(:first-child) {
             padding-left: 3.5rem !important;
         }
@@ -506,7 +509,9 @@
 
             .shift-submenu .nav-link,
             .warningLetter-submenu .nav-link,
+            .attendance-submenu .nav-link,
             .timeOff-submenu .nav-link {
+
                 padding-left: 3.5rem !important;
             }
 
@@ -698,10 +703,24 @@
                                     <span>Set Shift</span>
                                 </a>
                             </div>
-                            <a href="{{ url('/time_management/employee_absent/index') }}" class="nav-link">
-                                <i class="fas fa-user-clock"></i>
+
+                            <a href="#" class="nav-link dropdown-toggle attendance-dropdown">
+                                <i class="fa-solid fa-clipboard-user"></i>
                                 <span>Attendance</span>
+                                <!-- <i class="dropdown-icon fas fa-chevron-right ms-auto"></i> -->
                             </a>
+                            <div class="attendance-submenu" style="display: none; padding-left: 15px;">
+                                <a href="{{ url('/time_management/employee_absent/custom_holiday/index') }}" class="nav-link">
+                                    <i class="fa-solid fa-snowman"></i>
+                                    <span>Custom Holiday</span>
+                                </a>
+                                <a href="{{ url('/time_management/employee_absent/attendance/index') }}" class="nav-link">
+                                    <i class="fas fa-user-clock"></i>
+                                    <span>Employee Absent</span>
+                                </a>
+
+                            </div>
+
                             <a href="#" class="nav-link dropdown-toggle timeOff-dropdown">
                                 <i class="fas fa-calendar-alt"></i>
                                 <span>Time Off</span>
@@ -779,47 +798,113 @@
 
                 <!-- Evaluation -->
                 <li class="nav-item">
-                    <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown">
+                    <a href="#" class="nav-link dropdown-toggle evaluation-dropdown">
                         <i class="fas fa-chart-line"></i>
                         <span>Evaluation</span>
                     </a>
                     <div class="dropdown-container">
+
+
                         <!-- Rule submenu -->
                         <a href="#" class="nav-link dropdown-toggle rule-dropdown">
                             <i class="fas fa-balance-scale"></i>
                             <span>Rule</span>
-                            <!-- <i class="dropdown-icon fas fa-chevron-right ms-auto"></i> -->
                         </a>
                         <div class="rule-submenu" style="display: none; padding-left: 15px;">
-                            <a href="#" class="nav-link">
-                                <i class="fas fa-user-clock"></i>
-                                <span>Attendance</span>
+
+
+                            <!-- Performance -->
+                            <a href="#" class="nav-link dropdown-toggle rule-discipline-dropdown">
+                                <i class="fa-solid fa-scale-balanced"></i> <!-- Ikon timbangan hukum untuk Discipline -->
+                                <span>Discipline</span>
                             </a>
-                            <a href="{{ route('evaluation.rule.performance.index') }}" class="nav-link">
+                            <div class="rule-discipline-submenu" style="display: none; padding-left: 15px;">
+
+                                <!-- Grade -->
+                                <a href="{{ route('evaluation.rule.discipline.grade.index') }}" class="nav-link">
+                                    <i class="fa-solid fa-graduation-cap"></i> <!-- Ikon topi wisuda untuk Grade -->
+                                    <span>Grade</span>
+                                </a>
+
+                                <!-- Score -->
+                                <a href="{{ route('evaluation.rule.discipline.score.index') }}" class="nav-link">
+                                    <i class="fa-solid fa-medal"></i> <!-- Ikon medali untuk Score -->
+                                    <span>Score</span>
+                                </a>
+
+                            </div>
+
+
+
+                            <!-- Performance -->
+                            <a href="#" class="nav-link dropdown-toggle performance-dropdown">
                                 <i class="fas fa-chart-bar"></i>
                                 <span>Performance</span>
                             </a>
+                            <div class="performance-submenu" style="display: none; padding-left: 15px;">
+                                <!-- Criteria -->
+                                <a href="{{ route('evaluation.rule.performance.criteria.index') }}" class="nav-link">
+                                    <i class="fas fa-list-ol"></i>
+                                    <span>Criteria</span>
+                                </a>
+
+                                <!-- Weight -->
+                                <a href="{{ route('evaluation.rule.performance.weight.index') }}" class="nav-link">
+                                    <i class="fas fa-weight"></i>
+                                    <span>Weight</span>
+                                </a>
+
+                                <!-- Reduction -->
+                                <a href="{{ route('evaluation.rule.performance.reduction.index') }}" class="nav-link">
+                                    <i class="fa-solid fa-square-minus"></i>
+                                    <span>Reduction</span>
+                                </a>
+
+                                <!-- Grade -->
+                                <a href="{{ route('evaluation.rule.performance.grade.index') }}" class="nav-link">
+                                    <i class="fa-solid fa-graduation-cap"></i> <!-- Ikon topi wisuda untuk Grade -->
+                                    <span>Grade</span>
+                                </a>
+
+                            </div>
                         </div>
 
                         <!-- Assignment submenu -->
                         <a href="#" class="nav-link dropdown-toggle evaluation-assignment-dropdown">
                             <i class="fas fa-tasks"></i>
                             <span>Assignment</span>
-                            <!-- <i class="dropdown-icon fas fa-chevron-right ms-auto"></i> -->
                         </a>
                         <div class="evaluation-assignment-submenu" style="display: none; padding-left: 15px;">
-                            <a href="#" class="nav-link">
-                                <i class="fas fa-user-clock"></i>
-                                <span>Attendance</span>
-                            </a>
+                            <!-- Performance -->
                             <a href="{{ url('/evaluation/assign/performance/index/' . Auth::user()->id) }}" class="nav-link">
                                 <i class="fas fa-chart-bar"></i>
                                 <span>Performance</span>
                             </a>
                         </div>
 
-                        <!-- AHP submenu -->
-                        <a href="#" class="nav-link">
+
+                        <!-- Report submenu -->
+                        <a href="#" class="nav-link dropdown-toggle evaluation-report-dropdown">
+                            <i class="fa-solid fa-book"></i>
+                            <span>Report</span>
+                        </a>
+                        <div class="evaluation-report-submenu" style="display: none; padding-left: 15px;">
+                            <!-- Performance -->
+
+                            <a href="{{  route(    'evaluation.report.performance.index') }}" class="nav-link">
+                                <i class="fas fa-chart-bar"></i>
+                                <span>Performance</span>
+                            </a>
+
+                            <a href="{{  route('evaluation.report.discipline.index') }}" class="nav-link">
+                                <i class="fa-solid fa-clipboard-user"></i>
+                                <span>Discipline</span>
+                            </a>
+                        </div>
+
+
+                        <!-- AHP -->
+                        <a href="{{ route('evaluation.ahp.index') }}" class="nav-link">
                             <i class="fas fa-lightbulb"></i>
                             <span>AHP</span>
                         </a>
@@ -1059,6 +1144,19 @@
                 return false;
             });
 
+            $('.attendance-dropdown').on('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+
+                // Toggle active class for arrow rotation
+                $(this).toggleClass('active');
+
+                // Toggle the attendance submenu with animation
+                $('.attendance-submenu').slideToggle(300);
+
+                return false;
+            });
+
             $('.warningLetter-dropdown').on('click', function(e) {
                 e.preventDefault();
                 e.stopPropagation();
@@ -1113,6 +1211,20 @@
                 return false;
             });
 
+            $('.evaluation-report-dropdown').on('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+
+                // Toggle active class for arrow rotation
+                $(this).toggleClass('active');
+
+                // Toggle the rule submenu with animation
+                $('.evaluation-report-submenu').slideToggle(300);
+
+                return false;
+            });
+
+
 
             $('.user-dropdown').on('click', function(e) {
                 e.preventDefault();
@@ -1123,6 +1235,32 @@
 
                 // Toggle the rule submenu with animation
                 $('.user-submenu').slideToggle(300);
+
+                return false;
+            });
+
+            $('.performance-dropdown').on('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+
+                // Toggle active class for arrow rotation
+                $(this).toggleClass('active');
+
+                // Toggle the performance submenu with animation
+                $('.performance-submenu').slideToggle(300);
+
+                return false;
+            });
+
+            $('.rule-discipline-dropdown').on('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+
+                // Toggle active class for arrow rotation
+                $(this).toggleClass('active');
+
+                // Toggle the performance submenu with animation
+                $('.rule-discipline-submenu').slideToggle(300);
 
                 return false;
             });
@@ -1152,6 +1290,16 @@
                 }
             });
 
+            $('.nav-link.dropdown-toggle').not('.attendance-dropdown').on('click', function(e) {
+                e.preventDefault();
+
+                // Ensure the shift submenu is closed when another main dropdown is clicked
+                if (!$(this).hasClass('shift-dropdown') && !$(this).closest('.attendance-submenu').length) {
+                    $('.attendance-dropdown').removeClass('active');
+                    $('.attendance-submenu').slideUp(300);
+                }
+            });
+
             $('.nav-link.dropdown-toggle').not('.warningLetter-dropdown').on('click', function(e) {
                 e.preventDefault();
 
@@ -1161,6 +1309,29 @@
                     $('.warningLetter-submenu').slideUp(300);
                 }
             });
+
+            $('.nav-link.dropdown-toggle').not('.performance-dropdown').on('click', function(e) {
+                e.preventDefault();
+
+                // Ensure the shift submenu is closed when another main dropdown is clicked
+                if (!$(this).hasClass('shift-dropdown') && !$(this).closest('.performance-submenu').length) {
+                    $('.performance-dropdown').removeClass('active');
+                    $('.performance-submenu').slideUp(300);
+                }
+            });
+
+            $('.nav-link.dropdown-toggle').not('.rule-discipline-dropdown').on('click', function(e) {
+                e.preventDefault();
+
+                // Ensure the shift submenu is closed when another main dropdown is clicked
+                if (!$(this).hasClass('shift-dropdown') && !$(this).closest('.rule-discipline-submenu').length) {
+                    $('.rule-discipline-dropdown').removeClass('active');
+                    $('.rule-discipline-submenu').slideUp(300);
+                }
+            });
+
+
+
 
 
 
@@ -1183,6 +1354,17 @@
                     $('.timeOff-dropdown').removeClass('active');
                     $('.timeOff-submenu').slideUp(300);
                 }
+
+                // TimeOff Submenu
+                if (!$(e.target).closest('.attendance-dropdown, .attendance-submenu').length) {
+                    $('.attendance-dropdown').removeClass('active');
+                    $('.attendance-submenu').slideUp(300);
+                }
+                if (!$(e.target).closest('.rule-discipline-dropdown, .rule-discipline-submenu').length) {
+                    $('.rule-discipline-dropdown').removeClass('active');
+                    $('.rule-discipline-submenu').slideUp(300);
+                }
+
 
                 if (!$(e.target).closest('.warningLetter-dropdown, .warningLetter-submenu').length) {
                     $('.warningLetter-dropdown').removeClass('active');
@@ -1208,14 +1390,26 @@
                 }
 
                 // Rule Submenu
+                if (!$(e.target).closest('.evaluation-report-dropdown, .evaluation-report-submenu').length) {
+                    $('.evaluation-report-dropdown').removeClass('active');
+                    $('.evaluation-report-submenu').slideUp(300);
+                }
+
+                // Rule Submenu
                 if (!$(e.target).closest('.user-dropdown, .user-submenu').length) {
                     $('.user-dropdown').removeClass('active');
                     $('.user-submenu').slideUp(300);
                 }
+
+
+                if (!$(e.target).closest('.performance-dropdown, .performance-submenu').length) {
+                    $('.performance-dropdown').removeClass('active');
+                    $('.performance-submenu').slideUp(300);
+                }
             });
 
             // Prevent parent dropdown from closing when clicking on submenu
-            $('.hr-submenu, .shift-submenu, .timeOff-submenu, .warningLetter-submenu, .employee-submenu, .rule-submenu, .user-submenu, .evaluation-assignment-submenu').on('click', function(e) {
+            $('.hr-submenu, .shift-submenu, .timeOff-submenu, .attendance-submenu, rule-discipline-submenu, .warningLetter-submenu, .employee-submenu, .rule-submenu, .user-submenu, .evaluation-assignment-submenu, .evaluation-report-submenu, .performance-submenu').on('click', function(e) {
                 e.stopPropagation();
             });
 

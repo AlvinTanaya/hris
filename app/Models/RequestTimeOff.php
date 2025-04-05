@@ -27,4 +27,9 @@ class RequestTimeOff extends Model
         'created_at',
         'updated_at',
     ];
+
+    public function timeOffPolicy()
+    {
+        return $this->belongsTo(TimeOffPolicy::class, 'time_off_id');
+    }
 }

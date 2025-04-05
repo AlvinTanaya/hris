@@ -17,27 +17,12 @@
 
                 <div class="mb-3">
                     <label for="type" class="form-label">Type</label>
-                    <input type="text" class="form-control" id="type" name="type" value="{{ $performance->type }}" required>
+                    <input type="text" class="form-control" id="type" name="type" value="{{ $criteria_performances->type }}" required>
                     <div class="invalid-feedback" id="typeError"></div>
                 </div>
 
-                <div class="mb-3">
-                    <label for="weight" class="form-label">Weight</label>
-                    <input type="number" class="form-control" id="weight" name="weight"
-                        value="{{ $performance->weight }}" min="0" max="100" step="0.01" required>
-                    <div class="invalid-feedback" id="weightError"></div>
-                </div>
-
-                <div class="mb-3">
-                    <label for="status" class="form-label">Status</label>
-                    <select class="form-select" id="status" name="status" required>
-                        <option value="Active" {{ $performance->status == 'Active' ? 'selected' : '' }}>Active</option>
-                        <option value="Inactive" {{ $performance->status == 'Inactive' ? 'selected' : '' }}>Inactive</option>
-                    </select>
-                </div>
-
                 <div class="d-flex justify-content-between mt-4">
-                    <a href="{{ route('evaluation.rule.performance.index') }}" class="btn btn-danger">
+                    <a href="{{ route('evaluation.rule.performance.criteria.index') }}" class="btn btn-danger">
                         <i class="fas fa-arrow-left me-2"></i> Back to List
                     </a>
                     <button type="submit" class="btn btn-primary" id="updateBtn">
@@ -57,7 +42,7 @@
         $('#editPerformanceForm').on('submit', function(e) {
             e.preventDefault();
             const formData = $(this).serialize();
-            const url = "{{ route('evaluation.rule.performance.update', $performance->id) }}";
+            const url = "{{ route('evaluation.rule.performance.criteria.update', $criteria_performances->id) }}";
 
             // Show loading indicator
             Swal.fire({
@@ -86,7 +71,7 @@
                         confirmButtonText: 'OK'
                     }).then((result) => {
                         if (result.isConfirmed) {
-                            window.location.href = "{{ route('evaluation.rule.performance.index') }}";
+                            window.location.href = "{{ route('evaluation.rule.performance.criteria.index') }}";
                         }
                     });
                 },

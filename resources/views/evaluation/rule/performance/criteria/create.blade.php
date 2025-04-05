@@ -2,13 +2,13 @@
 
 @section('content')
 <h1 class="text-center text-warning" style="margin-bottom: 65px; margin-top:25px">
-    <i class="fas fa-chart-line"></i> Create Rule Performance
+    <i class="fas fa-chart-line"></i> Create Criteria Performance
 </h1>
 
 <div class="container mt-4 mx-auto">
     <div class="card shadow-sm">
         <div class="card-header text-white bg-primary">
-            <h5 class="mt-2"><i class="fas fa-plus-circle"></i> Add New Rule Performance</h5>
+            <h5 class="mt-2"><i class="fas fa-plus-circle"></i> Add New Criteria Performance</h5>
         </div>
         <div class="card-body">
             <form id="performanceForm">
@@ -18,20 +18,8 @@
                     <input type="text" class="form-control" id="type" name="type" required>
                     <div class="invalid-feedback" id="typeError"></div>
                 </div>
-                <div class="mb-3">
-                    <label for="weight" class="form-label">Weight</label>
-                    <input type="number" class="form-control" id="weight" name="weight" min="0" max="100" step="0.01" required>
-                    <div class="invalid-feedback" id="weightError"></div>
-                </div>
-                <div class="mb-3">
-                    <label for="status" class="form-label">Status</label>
-                    <select class="form-select" id="status" name="status" required>
-                        <option value="Active">Active</option>
-                        <option value="Inactive">Inactive</option>
-                    </select>
-                </div>
                 <div class="d-flex justify-content-between mt-5">
-                    <a href="{{ route('evaluation.rule.performance.index') }}" class="btn btn-danger">
+                    <a href="{{ route('evaluation.rule.performance.criteria.index') }}" class="btn btn-danger">
                         <i class="fas fa-arrow-left me-2"></i>Back to List
                     </a>
                     <button type="submit" class="btn btn-primary" id="submitBtn">
@@ -68,7 +56,7 @@
 
             // Submit form via AJAX
             $.ajax({
-                url: "{{ route('evaluation.rule.performance.store') }}",
+                url: "{{ route('evaluation.rule.performance.criteria.store') }}",
                 type: "POST",
                 data: $(this).serialize(),
                 success: function(response) {
@@ -79,7 +67,7 @@
                         confirmButtonText: 'OK'
                     }).then((result) => {
                         if (result.isConfirmed) {
-                            window.location.href = "{{ route('evaluation.rule.performance.index') }}";
+                            window.location.href = "{{ route('evaluation.rule.performance.criteria.index') }}";
                         }
                     });
                 },

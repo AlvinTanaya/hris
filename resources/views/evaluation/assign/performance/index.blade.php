@@ -1,148 +1,159 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="container-fluid">
-    <div class="row mb-4">
-        <div class="col-md-12">
-            <h2>Employee Performance Evaluation</h2>
-        </div>
-    </div>
-
-    <!-- Filters -->
-    <div class="card mb-4">
-        <div class="card-body">
-            <form action="" method="GET">
-                <div class="row">
-                    <div class="col-md-3">
-                        <div class="form-group">
-                            <label for="month">Month</label>
-                            <select name="month" id="month" class="form-control">
-                                @foreach(range(1, 12) as $month)
-                                <option value="{{ $month }}" {{ $month == $currentMonth ? 'selected' : '' }}>
-                                    {{ DateTime::createFromFormat('!m', $month)->format('F') }}
-                                </option>
-                                @endforeach
-                            </select>
-                        </div>
-                    </div>
-                    <div class="col-md-3">
-                        <div class="form-group">
-                            <label for="year">Year</label>
-                            <select name="year" id="year" class="form-control">
-                                @foreach(range(date('Y') - 5, date('Y')) as $year)
-                                <option value="{{ $year }}" {{ $year == $currentYear ? 'selected' : '' }}>
-                                    {{ $year }}
-                                </option>
-                                @endforeach
-                            </select>
-                        </div>
-                    </div>
-                    <div class="col-md-3">
-                        <div class="form-group">
-                            <label for="department">Department</label>
-                            <select name="department" id="department" class="form-control">
-                                <option value="">All Departments</option>
-                                @foreach($departments as $department)
-                                <option value="{{ $department }}">{{ $department }}</option>
-                                @endforeach
-                            </select>
-                        </div>
-                    </div>
-                    <div class="col-md-3">
-                        <div class="form-group">
-                            <label for="position">Position</label>
-                            <select name="position" id="position" class="form-control">
-                                <option value="">All Positions</option>
-                                @foreach($positions as $position)
-                                <option value="{{ $position }}">{{ $position }}</option>
-                                @endforeach
-                            </select>
-                        </div>
-                    </div>
+<div class="container">
+    <div class="row justify-content-center">
+        <!-- Filter Card -->
+        <div class="col-md-12 mb-4">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <i class="fas fa-filter"></i> Filter Evaluations
                 </div>
-                <div class="row mt-3">
-                    <div class="col-md-12 text-right">
-                        <button type="submit" class="btn btn-primary">Filter</button>
-                        <a href="{{ route('evaluation.assign.performance.create') }}" class="btn btn-success">
-                            <i class="fas fa-plus"></i> Create New Evaluation
-                        </a>
-                    </div>
-                </div>
-            </form>
-        </div>
-    </div>
+                <div class="card-body">
+                    <form action="{{ route('evaluation.assign.performance.index', Auth::user()->id) }}" method="GET">
+                        <div class="row">
+                            <div class="col-md-4 mb-2">
+                                <label for="filter-name">Employee</label>
+                                <select id="filter-name" name="employee" class="form-control">
+                                    <option value="">All Employees</option>
+                                    @foreach($employeesList as $emp)
+                                    <option value="{{ $emp->id }}" {{ request('employee') == $emp->id ? 'selected' : '' }}>
+                                        {{ $emp->name }}
+                                    </option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div class="col-md-4 mb-2">
+                                <label for="filter-position">Position</label>
+                                <select id="filter-position" name="position" class="form-control">
+                                    <option value="">All Positions</option>
+                                    @foreach($positionsList as $position)
+                                    <option value="{{ $position->id }}" {{ request('position') == $position->id ? 'selected' : '' }}>
+                                        {{ $position->position }}
+                                    </option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div class="col-md-4 mb-2">
+                                <label for="filter-department">Department</label>
+                                <select id="filter-department" name="department" class="form-control">
+                                    <option value="">All Departments</option>
+                                    @foreach($departmentsList as $department)
+                                    <option value="{{ $department->id }}" {{ request('department') == $department->id ? 'selected' : '' }}>
+                                        {{ $department->department }}
+                                    </option>
+                                    @endforeach
+                                </select>
+                            </div>
 
-    <!-- Evaluation List -->
-    <div class="card">
-        <div class="card-body">
-            <div class="table-responsive">
-                <table class="table table-bordered table-hover">
-                    <thead class="thead-light">
-                        <tr>
-                            <th>No</th>
-                            <th>Employee</th>
-                            <th>Position</th>
-                            <th>Department</th>
-                            <th>Total Score</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach($evaluations as $index => $evaluation)
-                        <tr>
-                            <td>{{ $index + 1 }}</td>
-                            <td>{{ $evaluation->employee_name }}</td>
-                            <td>{{ $evaluation->position }}</td>
-                            <td>{{ $evaluation->department }}</td>
-                            <td>{{ number_format($evaluation->total_score, 2) }}</td>
-                            <td>
-                                <button class="btn btn-info btn-sm view-details" 
-                                        data-user-id="{{ $evaluation->user_id }}"
-                                        data-month="{{ $currentMonth }}"
-                                        data-year="{{ $currentYear }}">
-                                    <i class="fas fa-eye"></i> View
+                        </div>
+
+                        <div class="row mt-3">
+                            <div class="col-md-4 mb-2">
+                                <label for="filter-month">Month</label>
+                                <select id="filter-month" name="month" class="form-control">
+                                    <option value="">All Months</option>
+                                    @foreach(range(1, 12) as $month)
+                                    <option value="{{ $month }}" {{ (request('month', $currentMonth) == $month) ? 'selected' : '' }}>
+                                        {{ date('F', mktime(0, 0, 0, $month, 1)) }}
+                                    </option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div class="col-md-4 mb-2">
+                                <label for="filter-year">Year</label>
+                                <select id="filter-year" name="year" class="form-control">
+                                    <option value="">All Years</option>
+                                    @foreach($availableYears as $year)
+                                    <option value="{{ $year }}" {{ (request('year', $currentYear) == $year) ? 'selected' : '' }}>
+                                        {{ $year }}
+                                    </option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div class="col-md-4 mb-2 d-flex align-items-end">
+                                <button type="submit" class="btn btn-primary mr-2">
+                                    <i class="fas fa-search"></i> Apply Filters
                                 </button>
-                                <a href="{{ route('evaluation.assign.performance.edit', ['id' => $evaluation->user_id]) }}" 
-                                   class="btn btn-warning btn-sm">
-                                    <i class="fas fa-edit"></i> Edit
+                                &nbsp; &nbsp;
+                                <a href="{{ route('evaluation.assign.performance.index', Auth::user()->id) }}" class="btn btn-secondary">
+                                    <i class="fas fa-redo"></i> Reset
                                 </a>
-                            </td>
-                        </tr>
-                        @endforeach
-                    </tbody>
-                </table>
+                            </div>
+                        </div>
+                    </form>
+                </div>
             </div>
         </div>
-    </div>
-</div>
 
-<!-- Modal for Details -->
-<div class="modal fade" id="evaluationDetailsModal" tabindex="-1" role="dialog" aria-labelledby="evaluationDetailsModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg" role="document">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="evaluationDetailsModalLabel">Evaluation Details</h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
-            </div>
-            <div class="modal-body">
-                <table class="table table-bordered">
-                    <thead>
-                        <tr>
-                            <th>Category</th>
-                            <th>Weight</th>
-                            <th>Score</th>
-                            <th>Weighted Score</th>
-                        </tr>
-                    </thead>
-                    <tbody id="detailsContent">
-                        <!-- Content will be loaded via AJAX -->
-                    </tbody>
-                </table>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+        <!-- Data Table Card -->
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Performance Evaluations Assigned</h5>
+                    <a href="{{ route('evaluation.assign.performance.create', Auth::user()->id) }}" class="btn btn-primary">
+                        <i class="fas fa-plus"></i> Assign New Evaluation
+                    </a>
+                </div>
+                <div class="card-body">
+                    @if(session('success'))
+                    <div class="alert alert-success alert-dismissible fade show" role="alert">
+                        {{ session('success') }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                    @endif
+
+
+                    <div class="table-responsive">
+                        <table id="evaluations-table" class="table table-bordered table-striped table-hover">
+                            <thead class="thead-dark">
+                                <tr>
+                                    <th>No</th>
+                                    <th>Employee Name</th>
+                                    <th>Position</th>
+                                    <th>Department</th>
+                                    <th>Evaluation Period</th>
+                                    <th>Score</th>
+
+
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @if($evaluations->count() > 0)
+                                @foreach($evaluations as $key => $evaluation)
+                                <tr>
+                                    <td>{{ $key + 1 }}</td>
+                                    <td>{{ $evaluation->user->name ?? 'N/A' }}</td>
+                                    <td>{{ $evaluation->user->position->position ?? 'N/A' }}</td>
+                                    <td>{{ $evaluation->user->department->department ?? 'N/A' }}</td>
+                                    <td>{{ \Carbon\Carbon::parse($evaluation->date)->format('F Y') }}</td>
+                                    <td>
+                                        <strong>{{ fmod($evaluation->final_score, 1) == 0 ? number_format($evaluation->final_score, 0) : $evaluation->final_score }}</strong>
+                                    </td>
+
+
+                                    <td>
+                                        <a href="{{ route('evaluation.assign.performance.edit', $evaluation->id) }}"
+                                            class="btn btn-sm btn-warning">
+                                            <i class="fas fa-edit"></i> Edit
+                                        </a>
+                                        <a href="{{ route('evaluation.assign.performance.detail', $evaluation->id) }}"
+                                            class="btn btn-sm btn-info">
+                                            <i class="fas fa-eye"></i> Detail
+                                        </a>
+                                    </td>
+                                </tr>
+                                @endforeach
+                                @else
+                                <tr>
+                                    <td colspan="8" class="text-center">No evaluations found</td>
+                                </tr>
+                                @endif
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -151,29 +162,90 @@
 
 @section('scripts')
 <script>
-$(document).ready(function() {
-    $('.view-details').click(function() {
-        var userId = $(this).data('user-id');
-        var month = $(this).data('month');
-        var year = $(this).data('year');
-        
-        $.ajax({
-            url: "{{ route('evaluation.assign.performance.details') }}",
-            type: "GET",
-            data: {
-                user_id: userId,
-                month: month,
-                year: year
+    $(document).ready(function() {
+        // Initialize DataTable
+        var table = $('#evaluations-table').DataTable({
+            "order": [
+                [6, "desc"]
+            ], // Sort by created date by default
+            "pageLength": 25,
+            "language": {
+                "search": "Search:"
             },
-            success: function(response) {
-                $('#detailsContent').html(response);
-                $('#evaluationDetailsModal').modal('show');
-            },
-            error: function(xhr) {
-                alert('Error loading details');
+            "dom": '<"top"f>rt<"bottom"lip><"clear">',
+            "columnDefs": [{
+                    "orderable": false,
+                    "targets": [7]
+                } // Disable sorting on action column
+            ]
+        });
+
+        // Apply custom filters
+        $('#filter-name, #filter-position, #filter-department').on('change', function() {
+            applyFilters();
+        });
+
+        // Date filters are mandatory
+        $('#filter-month, #filter-year').on('change', function() {
+            if ($('#filter-month').val() && $('#filter-year').val()) {
+                applyFilters();
+
+                // Make AJAX call to refresh data with new date
+                $.ajax({
+                    url: "{{ route('evaluation.assign.performance.filter') }}",
+                    type: "GET",
+                    data: {
+                        month: $('#filter-month').val(),
+                        year: $('#filter-year').val()
+                    },
+                    success: function(response) {
+                        // Replace table content
+                        table.clear().draw();
+                        $.each(response.evaluations, function(index, item) {
+                            let badgeClass = item.score >= 80 ? 'success' : (item.score >= 60 ? 'warning' : 'danger');
+
+                            table.row.add([
+                                index + 1,
+                                item.user.name || 'N/A',
+                                item.user.position.name || 'N/A',
+                                item.user.department.name || 'N/A',
+                                item.period,
+                                '<span class="badge badge-' + badgeClass + '">' + item.score.toFixed(2) + '</span>',
+                                item.created_at,
+                                '<a href="/evaluation/assign/performance/edit/' + item.id + '" class="btn btn-sm btn-info"><i class="fas fa-edit"></i> Edit</a> ' +
+                                '<a href="/evaluation/assign/performance/detail/' + item.id + '" class="btn btn-sm btn-secondary"><i class="fas fa-eye"></i> Detail</a>'
+                            ]).draw(false);
+                        });
+                    }
+                });
             }
         });
+
+        // Reset filters
+        $('#reset-filters').click(function() {
+            $('#filter-name, #filter-position, #filter-department, #filter-month, #filter-year').val('');
+            applyFilters();
+
+            // Reload page to reset to default data
+            window.location.reload();
+        });
+
+        // Filter function
+        function applyFilters() {
+            table.columns(1).search($('#filter-name').val());
+            table.columns(2).search($('#filter-position').val());
+            table.columns(3).search($('#filter-department').val());
+            table.draw();
+        }
+
+        // Force selection of month and year on page load
+        if (!$('#filter-month').val() || !$('#filter-year').val()) {
+            $('#filter-month').val("{{ $currentMonth }}");
+            $('#filter-year').val("{{ $currentYear }}");
+
+            // Trigger change event to apply filters
+            $('#filter-month').trigger('change');
+        }
     });
-});
 </script>
 @endsection

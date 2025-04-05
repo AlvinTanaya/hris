@@ -53,7 +53,7 @@
 
                     <div class="col-md-6">
                         <label for="end_date" class="form-label">
-                            End Date <small class="text-danger">(leave empty for no expiration)</small>
+                            End Date <small class="text-danger">(Please Check The Box for no expiration)</small>
                         </label>
                         <input type="date" class="form-control" id="end_date" name="end_date" value="{{ old('end_date') }}">
                         <div class="invalid-feedback">End Date must be after Start Date.</div>

@@ -14,6 +14,8 @@ return [
     */
 
     'name' => env('APP_NAME', 'Laravel'),
+    'Alert' => RealRashid\SweetAlert\Facades\Alert::class,
+
 
     /*
     |--------------------------------------------------------------------------

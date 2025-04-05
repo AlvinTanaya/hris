@@ -49,4 +49,10 @@ class WarningLetter extends Model
     {
         return $this->belongsTo(User::class, 'maker_id');
     }
+
+    // In WarningLetter.php
+    public function evaluationReductions()
+    {
+        return $this->hasMany(EvaluationPerformanceReduction::class, 'warning_letter_id');
+    }
 }
