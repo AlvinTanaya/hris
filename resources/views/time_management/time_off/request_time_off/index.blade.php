@@ -277,7 +277,9 @@
                                 <thead class="table-dark">
                                     <tr>
                                         <th width="3%">No.</th>
-                                        <th width="15%">Employee</th>
+                                        <th>Employee</th>
+                                        <th>Position</th>
+                                        <th>Department</th>
                                         <th width="12%">Start Date</th>
                                         <th width="12%">End Date</th>
                                         <th width="8%">Duration</th>
@@ -293,6 +295,8 @@
                                     <tr>
                                         <td>{{ $key + 1 }}</td>
                                         <td>{{ $request->user_name }}</td>
+                                        <td>{{ $request->department ?? 'N/A' }}</td>
+                                        <td>{{ $request->position ?? 'N/A' }}</td>
                                         <td>{{ $request->formatted_start_date }}</td>
                                         <td>{{ $request->formatted_end_date }}</td>
                                         <td>{{ $request->duration }}</td>
@@ -338,7 +342,9 @@
                                 <thead class="table-dark">
                                     <tr>
                                         <th width="3%">No.</th>
-                                        <th width="15%">Employee</th>
+                                        <th>Employee</th>
+                                        <th>Position</th>
+                                        <th>Department</th>
                                         <th width="12%">Start Date</th>
                                         <th width="12%">End Date</th>
                                         <th width="8%">Duration</th>
@@ -354,6 +360,8 @@
                                     <tr>
                                         <td>{{ $key + 1 }}</td>
                                         <td>{{ $request->user_name }}</td>
+                                        <td>{{ $request->department ?? 'N/A' }}</td>
+                                        <td>{{ $request->position ?? 'N/A' }}</td>
                                         <td>{{ $request->formatted_start_date }}</td>
                                         <td>{{ $request->formatted_end_date }}</td>
                                         <td>{{ $request->duration }}</td>
@@ -390,7 +398,9 @@
                                 <thead class="table-dark">
                                     <tr>
                                         <th width="3%">No.</th>
-                                        <th width="15%">Employee</th>
+                                        <th>Employee</th>
+                                        <th>Position</th>
+                                        <th>Department</th>
                                         <th width="12%">Start Date</th>
                                         <th width="12%">End Date</th>
                                         <th width="8%">Duration</th>
@@ -406,6 +416,8 @@
                                     <tr>
                                         <td>{{ $key + 1 }}</td>
                                         <td>{{ $request->user_name }}</td>
+                                        <td>{{ $request->department ?? 'N/A' }}</td>
+                                        <td>{{ $request->position ?? 'N/A' }}</td>
                                         <td>{{ $request->formatted_start_date }}</td>
                                         <td>{{ $request->formatted_end_date }}</td>
                                         <td>{{ $request->duration }}</td>

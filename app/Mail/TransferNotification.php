@@ -37,6 +37,6 @@ class TransferNotification extends Mailable
             : "Your Employment Status Update";
 
         return $this->subject($subject)
-                    ->view('emails.transfer_notification');
+                    ->view('emails.transfer-notification');
     }
 }

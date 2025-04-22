@@ -775,6 +775,7 @@
         </div>
     </div>
 </div>
+
 <!-- Position Exchange Modal -->
 <div class="modal fade" id="exchangeModal" tabindex="-1">
     <div class="modal-dialog">
@@ -799,6 +800,24 @@
                         <label class="form-label">Reason for Exchange</label>
                         <textarea class="form-control" name="exchange_reason" rows="3" required></textarea>
                     </div>
+
+                    <!-- Reschedule option -->
+                    <div class="mb-3 form-check">
+                        <input type="checkbox" class="form-check-input" id="rescheduleCheckbox" name="needs_reschedule">
+                        <label class="form-check-label" for="rescheduleCheckbox">Reschedule interview?</label>
+                    </div>
+
+                    <!-- Hidden reschedule fields (will show when checkbox is checked) -->
+                    <div id="rescheduleFields" style="display: none;">
+                        <div class="mb-3">
+                            <label class="form-label">New Interview Date & Time</label>
+                            <input type="datetime-local" class="form-control" name="interview_date">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Interview Notes</label>
+                            <textarea class="form-control" name="interview_note" rows="3"></textarea>
+                        </div>
+                    </div>
                 </form>
             </div>
             <div class="modal-footer">
@@ -808,7 +827,6 @@
         </div>
     </div>
 </div>
-
 <!-- Modal for Adding Employee -->
 <div class="modal fade" id="addEmployeeModal" tabindex="-1" aria-labelledby="addEmployeeModalLabel" aria-hidden="true">
     <div class="modal-dialog">
@@ -1176,6 +1194,9 @@
 
     $(document).ready(function() {
 
+
+
+
         // Aktifkan tooltip untuk elemen dengan data-bs-toggle="tooltip"
         $('[data-bs-toggle="tooltip"]').tooltip();
 
@@ -1185,6 +1206,18 @@
             $(table).DataTable();
         });
 
+
+        $('#rescheduleCheckbox').on('change', function() {
+            if ($(this).is(':checked')) {
+                $('#rescheduleFields').show();
+                // Make fields required when checkbox is checked
+                $('#rescheduleFields input, #rescheduleFields textarea').prop('required', true);
+            } else {
+                $('#rescheduleFields').hide();
+                // Remove required attribute when checkbox is unchecked
+                $('#rescheduleFields input, #rescheduleFields textarea').prop('required', false);
+            }
+        });
 
 
         // View Applicant Details
@@ -1368,7 +1401,7 @@
 
                     if (response.positions.length > 0) {
                         response.positions.forEach(position => {
-                            select.append(`<option value="${position.id}">${position.recruitment_demand_id} - ${position.position} - ${position.department}</option>`);
+                            select.append(`<option value="${position.id}">${position.recruitment_demand_id} - ${position.position_relation.position} - ${position.department_relation.department}</option>`);
                         });
                     } else {
                         select.append('<option value="">No available positions</option>');

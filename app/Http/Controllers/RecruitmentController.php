@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
-
+use Illuminate\Support\Facades\Validator;
 
 use App\Models\recruitment_demand;
 use App\Models\recruitment_applicant;
@@ -497,10 +497,12 @@ class RecruitmentController extends Controller
         $recruitmentDemandIds = recruitment_applicant::pluck('recruitment_demand_id')->unique();
 
         // Filter recruitment_demand based on the unique recruitment_demand_ids  
-        $demands = recruitment_demand::whereIn('id', $recruitmentDemandIds)
+        $demands =  recruitment_demand::with(['departmentRelation', 'positionRelation'])->whereIn('id', $recruitmentDemandIds)
             ->where('status_demand', 'Approved')
             ->where('qty_needed', '>', 0)
             ->get();
+
+
 
         // Return the filtered recruitment_demand data to the view  
         return view('recruitment/ahp_recruitment/index', [
@@ -1215,7 +1217,67 @@ class RecruitmentController extends Controller
         return response()->json(['message' => 'Interview scheduled successfully']);
     }
 
+    public function exchange_position(Request $request, $id)
+    {
+        $validator = Validator::make($request->all(), [
+            'new_demand_id' => 'required',
+            'exchange_reason' => 'required|string',
+            'needs_reschedule' => 'nullable|string',
+            'interview_date' => 'required_if:needs_reschedule,on|nullable|date',
+            'interview_note' => 'required_if:needs_reschedule,on|nullable|string',
+        ]);
+    
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()], 422);
+        }
+    
+        $applicant = recruitment_applicant::findOrFail($request->applicant_id);
+    
+        // Get new position data with relationships
+        $newDemand = recruitment_demand::with(['departmentRelation', 'positionRelation'])
+            ->findOrFail($request->new_demand_id);
+    
+        // Update database with position exchange
+        $updateData = [
+            'recruitment_demand_id' => $request->new_demand_id,
+            'exchange_note' => $request->exchange_reason,
+            'updated_at' => now(),
+        ];
+        
+        // Check if reschedule is needed - checkbox is "on" when checked
+        $needsReschedule = $request->has('needs_reschedule') && $request->needs_reschedule === 'on';
+        $oldInterviewDate = null;
+        
+        if ($needsReschedule) {
+            $oldInterviewDate = $applicant->interview_date; // Save old date for email
+            
+            // Add interview schedule data to update
+            $updateData['interview_date'] = $request->interview_date;
+            $updateData['interview_note'] = str_replace("\r\n", "\n", $request->interview_note);
+        }
+    
+        // Update the applicant record
+        $applicant->update($updateData);
+    
+        // Send position exchange email
+        Mail::to($applicant->email)->send(new PositionExchangedMail(
+            $applicant,
+            $newDemand->positionRelation->position ?? 'Unknown Position',
+            $newDemand->departmentRelation->department ?? 'Unknown Department'
+        ));
+    
+        // Send interview reschedule email if needed
+        if ($needsReschedule && $oldInterviewDate) {
+            Mail::to($applicant->email)->send(new InterviewRescheduledMail($applicant, $oldInterviewDate));
+        } elseif ($needsReschedule && is_null($oldInterviewDate)) {
+            // If no previous interview was scheduled, send the initial interview email
+            Mail::to($applicant->email)->send(new InterviewScheduledMail($applicant));
+        }
+    
+        return response()->json(['message' => 'Position exchanged successfully' . ($needsReschedule ? ' and interview rescheduled' : '')]);
+    }
 
+    
     public function update_status(Request $request, $id)
     {
         $request->validate([
@@ -1245,34 +1307,7 @@ class RecruitmentController extends Controller
         return response()->json(['message' => 'Status updated and email sent successfully']);
     }
 
-    public function exchange_position(Request $request, $id)
-    {
-        $request->validate([
-            'new_demand_id' => 'required'
-        ]);
 
-        $applicant = recruitment_applicant::findOrFail($request->applicant_id);
-
-        // Get new position data with relationships
-        $newDemand = recruitment_demand::with(['departmentRelation', 'positionRelation'])
-            ->findOrFail($request->new_demand_id);
-
-        // Update database
-        $applicant->update([
-            'recruitment_demand_id' => $request->new_demand_id,
-            'exchange_note' => $request->exchange_reason,
-            'updated_at' => now(),
-        ]);
-
-        // Send email with proper department and position names
-        Mail::to($applicant->email)->send(new PositionExchangedMail(
-            $applicant,
-            $newDemand->positionRelation->position ?? 'Unknown Position',
-            $newDemand->departmentRelation->department ?? 'Unknown Department'
-        ));
-
-        return response()->json(['message' => 'Position exchanged and email sent successfully']);
-    }
 
     public function get_exchange($id)
     {
@@ -1280,7 +1315,8 @@ class RecruitmentController extends Controller
         $applicant = recruitment_applicant::where('id', $id)->first();
 
         // Ambil posisi yang tersedia kecuali ID yang sedang dipilih
-        $positions = recruitment_demand::where('qty_needed', '>', 0)
+        $positions = recruitment_demand::with(['departmentRelation', 'positionRelation'])
+            ->where('qty_needed', '>', 0)
             ->where('status_demand', 'Approved')
             // ->where('id', '!=', $applicant->id)
             ->get();
@@ -1557,51 +1593,5 @@ class RecruitmentController extends Controller
 
 
 
-    /**
-     * Store a new job request
-     */
-    public function storeJobRequest(Request $request)
-    {
-        // Add validation and storage logic
-    }
-
-    /**
-     * Store AHP calculation results
-     */
-    public function storeAhp(Request $request)
-    {
-        // Add validation and storage logic
-    }
-
-    /**
-     * Store interview results
-     */
-    public function storeInterview(Request $request)
-    {
-        // Add validation and storage logic
-    }
-
-    /**
-     * Update job request status
-     */
-    public function updateJobRequest(Request $request, $id)
-    {
-        // Add validation and update logic
-    }
-
-    /**
-     * Update AHP recommendation
-     */
-    public function updateAhp(Request $request, $id)
-    {
-        // Add validation and update logic
-    }
-
-    /**
-     * Update interview status
-     */
-    public function updateInterview(Request $request, $id)
-    {
-        // Add validation and update logic
-    }
+    
 }

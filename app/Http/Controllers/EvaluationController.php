@@ -9,6 +9,14 @@ use PhpOffice\PhpSpreadsheet\Style\Border;
 use PhpOffice\PhpSpreadsheet\Style\Fill;
 use PhpOffice\PhpSpreadsheet\Style\Conditional;
 use PhpOffice\PhpSpreadsheet\Style\Color;
+use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
+use Maatwebsite\Excel\Concerns\FromArray;
+use Maatwebsite\Excel\Concerns\WithHeadings;
+use Maatwebsite\Excel\Concerns\WithStyles;
+use Maatwebsite\Excel\Concerns\ShouldAutoSize;
+
+
+use Illuminate\Support\Facades\Response;
 
 use Illuminate\Contracts\Validation\Rule;
 use App\Imports\EmployeesImport;
@@ -32,7 +40,7 @@ use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Facades\Http;
 
 
-
+use App\Models\history_transfer_employee;
 use App\Models\RulePerformanceGrade;
 use App\Models\RuleDisciplineGrade;
 use App\Models\RuleEvaluationCriteriaPerformance;
@@ -56,6 +64,12 @@ use App\Models\RequestTimeOff;
 
 
 
+
+use App\Models\elearning_invitation;
+use App\Models\elearning_answer;
+use App\Models\elearning_lesson;
+use App\Models\elearning_schedule;
+use App\Models\RuleElearningGrade;
 
 
 
@@ -436,12 +450,39 @@ class EvaluationController extends Controller
      */
     public function assign_performance_index(Request $request, $id)
     {
+        // Get current user
+        $user = User::findOrFail($id);
+        $userPosition = $user->position_id;
+        $currentPosition = EmployeePosition::findOrFail($userPosition);
+        $currentRank = $currentPosition->ranking;
+
+        // Check if user is Director or GM
+        $isDirectorOrGM = in_array($currentPosition->title, ['Director', 'General Manager'])
+            || in_array($currentPosition->id, [1, 2]); // Adjust IDs as needed
+
         // Get current month and year for default filtering
         $currentMonth = $request->input('month', date('n'));
         $currentYear = $request->input('year', date('Y'));
 
-        // Get available years from evaluations
-        $availableYears = EvaluationPerformance::where('evaluator_id', $id)
+        // Get subordinate users based on hierarchy
+        $subordinateQuery = User::query();
+
+        if ($isDirectorOrGM) {
+            // Directors/GMs can see everyone with lower ranking
+            $subordinateQuery->whereHas('position', function ($query) use ($currentRank) {
+                $query->where('ranking', '>', $currentRank);
+            });
+        } else {
+            // Managers and below can only see their department with lower ranking
+            $subordinateQuery->whereHas('position', function ($query) use ($currentRank) {
+                $query->where('ranking', '>', $currentRank);
+            })->where('department_id', $user->department_id);
+        }
+
+        $subordinateIds = $subordinateQuery->pluck('id')->toArray();
+
+        // Get available years from evaluations for subordinates
+        $availableYears = EvaluationPerformance::whereIn('user_id', $subordinateIds)
             ->selectRaw('YEAR(date) as year')
             ->distinct()
             ->orderBy('year', 'desc')
@@ -452,13 +493,14 @@ class EvaluationController extends Controller
             $availableYears = [$currentYear];
         }
 
-        // Query evaluasi utama
+        // Query evaluations for subordinates
         $query = EvaluationPerformance::with([
+            'user',
             'user.position',
             'user.department',
             'details.weightPerformance.criteria'
         ])
-            ->where('evaluator_id', $id)
+            ->whereIn('user_id', $subordinateIds)
             ->orderBy('date', 'desc');
 
         // Apply filters
@@ -476,29 +518,57 @@ class EvaluationController extends Controller
 
         $evaluations = $query->get();
 
-        // Post-query filtering for position and department
+        // Process each evaluation to add historical position and department
+        foreach ($evaluations as $evaluation) {
+            // Find the transfer history record closest to but before the evaluation date
+            $history = history_transfer_employee::where('users_id', $evaluation->user_id)
+                ->where('created_at', '<', $evaluation->date)
+                ->orderBy('created_at', 'desc')
+                ->first();
+
+            if ($history) {
+                // Use historical position and department
+                $evaluation->historical_position_id = $history->new_position_id;
+                $evaluation->historical_department_id = $history->new_department_id;
+
+                // Add the historical position and department objects
+                $evaluation->historical_position = EmployeePosition::find($history->new_position_id);
+                $evaluation->historical_department = EmployeeDepartment::find($history->new_department_id);
+            } else {
+                // No history found, use current position and department
+                $evaluation->historical_position_id = $evaluation->user->position_id;
+                $evaluation->historical_department_id = $evaluation->user->department_id;
+
+                $evaluation->historical_position = $evaluation->user->position;
+                $evaluation->historical_department = $evaluation->user->department;
+            }
+        }
+
+        // Post-query filtering for position and department using historical data
         if ($request->filled('position')) {
             $evaluations = $evaluations->filter(function ($eval) use ($request) {
-                return $eval->user && $eval->user->position_id == $request->position;
+                return $eval->historical_position_id == $request->position;
             });
         }
 
         if ($request->filled('department')) {
             $evaluations = $evaluations->filter(function ($eval) use ($request) {
-                return $eval->user && $eval->user->department_id == $request->department;
+                return $eval->historical_department_id == $request->department;
             });
         }
 
-        // Get filter dropdown options
-        $employeesList = User::whereIn(
-            'id',
-            EvaluationPerformance::where('evaluator_id', $id)
-                ->distinct('user_id')
-                ->pluck('user_id')
-        )->orderBy('name')->get();
+        // Get employees list for filter dropdown
+        $employeesList = User::whereIn('id', $subordinateIds)
+            ->orderBy('name')
+            ->get();
 
-        $positionsList = EmployeePosition::orderBy('position')->get();
-        $departmentsList = EmployeeDepartment::orderBy('department')->get();
+        // Create a collection of unique historical positions and departments from evaluations
+        $historicalPositionIds = $evaluations->pluck('historical_position_id')->unique();
+        $historicalDepartmentIds = $evaluations->pluck('historical_department_id')->unique();
+
+        // Get positions and departments for filter dropdowns based on historical data
+        $positionsList = EmployeePosition::whereIn('id', $historicalPositionIds)->orderBy('position')->get();
+        $departmentsList = EmployeeDepartment::whereIn('id', $historicalDepartmentIds)->orderBy('department')->get();
 
         return view('evaluation.assign.performance.index', compact(
             'evaluations',
@@ -509,6 +579,39 @@ class EvaluationController extends Controller
             'currentYear',
             'availableYears'
         ));
+    }
+
+    public function assign_performance_create($id)
+    {
+        // Get the current user
+        $user = User::findOrFail($id);
+        $userPosition = $user->position_id;
+        $currentPosition = EmployeePosition::findOrFail($userPosition);
+        $currentRank = $currentPosition->ranking;
+
+        // Check if user is Director or GM (assuming these positions have specific IDs or titles)
+        $isDirectorOrGM = in_array($currentPosition->title, ['Director', 'General Manager'])
+            || in_array($currentPosition->id, [1, 2]); // Adjust IDs as needed
+
+        // Initialize query for subordinates
+        $subordinatesQuery = User::query()
+            ->with('position', 'department');
+
+        if ($isDirectorOrGM) {
+            // Directors/GMs can see everyone with lower ranking
+            $subordinatesQuery->whereHas('position', function ($query) use ($currentRank) {
+                $query->where('ranking', '>', $currentRank);
+            });
+        } else {
+            // Managers and below can only see their department with lower ranking
+            $subordinatesQuery->whereHas('position', function ($query) use ($currentRank) {
+                $query->where('ranking', '>', $currentRank);
+            })->where('department_id', $user->department_id);
+        }
+
+        $subordinates = $subordinatesQuery->get();
+
+        return view('evaluation.assign.performance.create', compact('subordinates'));
     }
 
 
@@ -659,30 +762,6 @@ class EvaluationController extends Controller
     /**
      * Show the form for creating a new evaluation.
      */
-    public function assign_performance_create($id)
-    {
-
-        // Get the current user's position
-        $user = User::findOrFail($id);
-        $userPosition = $user->position_id;
-
-        // Find subordinate positions (positions with rank below the current user's position)
-        $currentPosition = EmployeePosition::findOrFail($userPosition);
-        $currentRank = $currentPosition->ranking;
-
-        // Get positions with rank one level below the current user's rank
-        $subordinatePositions = EmployeePosition::where('ranking', '>', $currentRank)->pluck('id')->toArray();
-
-        // Get users with those positions
-        $subordinates = User::whereIn('position_id', $subordinatePositions)
-            ->with('position')
-            ->get();
-
-        return view('evaluation.assign.performance.create', compact('subordinates'));
-    }
-
-
-
 
 
     /**
@@ -1027,8 +1106,7 @@ class EvaluationController extends Controller
      */
     public function report_performance_index(Request $request)
     {
-        // Get current month and year for default filtering
-        $currentMonth = date('n');
+        // Get current year for default filtering
         $currentYear = date('Y');
 
         // Get filter parameters
@@ -1037,65 +1115,125 @@ class EvaluationController extends Controller
         $departmentFilter = $request->input('department');
         $yearFilter = $request->input('year', $currentYear);
 
-        // Remove this line as we don't need it anymore
-        // $showGrades = $request->has('show_grades') ? (bool)$request->input('show_grades') : false;
-
-        // Get available years from evaluations (unique years)
+        // Get available years from evaluations
         $availableYears = EvaluationPerformance::select(DB::raw('DISTINCT YEAR(date) as year'))
             ->orderBy('year', 'desc')
             ->pluck('year')
             ->toArray();
 
-        // If no years found, use current year
         if (empty($availableYears)) {
             $availableYears = [$currentYear];
         }
 
-        // Build base query for evaluations
-        $evaluationsQuery = EvaluationPerformance::with(['user.position', 'user.department', 'evaluator']);
+        // Get distinct users who have evaluations in the selected year
+        $userIds = EvaluationPerformance::whereYear('date', $yearFilter)
+            ->when($employeeFilter, function ($query) use ($employeeFilter) {
+                return $query->where('user_id', $employeeFilter);
+            })
+            ->pluck('user_id')
+            ->unique()
+            ->toArray();
 
-        // Apply year filter if it exists
-        if ($yearFilter) {
-            $evaluationsQuery->whereYear('date', $yearFilter);
+        // Get all users who have evaluations
+        $users = User::whereIn('id', $userIds)->get();
+
+        // Get all evaluations for these users in the selected year
+        $evaluations = EvaluationPerformance::whereYear('date', $yearFilter)
+            ->whereIn('user_id', $userIds)
+            ->get();
+
+        // Group evaluations by user
+        $evaluationsByUser = $evaluations->groupBy('user_id');
+
+        // Create a mapping of user historical positions and departments
+        $userHistoricalData = [];
+
+        foreach ($users as $user) {
+            // For each user, get their position and department at the end of the year
+            $referenceDate = $yearFilter . '-12-31'; // End of the selected year
+
+            // Find the most recent transfer history before the reference date
+            $history = history_transfer_employee::where('users_id', $user->id)
+                ->where('created_at', '<', $referenceDate)
+                ->orderBy('created_at', 'desc')
+                ->first();
+
+            if ($history) {
+                // Use historical position and department
+                $userHistoricalData[$user->id] = [
+                    'position_id' => $history->new_position_id,
+                    'department_id' => $history->new_department_id,
+                    'position' => EmployeePosition::find($history->new_position_id),
+                    'department' => EmployeeDepartment::find($history->new_department_id)
+                ];
+            } else {
+                // No history found, use current position and department
+                $userHistoricalData[$user->id] = [
+                    'position_id' => $user->position_id,
+                    'department_id' => $user->department_id,
+                    'position' => $user->position,
+                    'department' => $user->department
+                ];
+            }
         }
 
-        // Apply employee filter if set
-        if ($employeeFilter) {
-            $evaluationsQuery->where('user_id', $employeeFilter);
-        }
+        // Filter users based on historical position and department
+        $filteredUserIds = $userIds;
 
-        // Apply position filter through join if set
         if ($positionFilter) {
-            $evaluationsQuery->whereHas('user', function ($query) use ($positionFilter) {
-                $query->where('position_id', $positionFilter);
+            $filteredUserIds = array_filter($filteredUserIds, function ($userId) use ($userHistoricalData, $positionFilter) {
+                return isset($userHistoricalData[$userId]) && $userHistoricalData[$userId]['position_id'] == $positionFilter;
             });
         }
 
-        // Apply department filter through join if set
         if ($departmentFilter) {
-            $evaluationsQuery->whereHas('user', function ($query) use ($departmentFilter) {
-                $query->where('department_id', $departmentFilter);
+            $filteredUserIds = array_filter($filteredUserIds, function ($userId) use ($userHistoricalData, $departmentFilter) {
+                return isset($userHistoricalData[$userId]) && $userHistoricalData[$userId]['department_id'] == $departmentFilter;
             });
         }
 
-        // Get evaluations ordered by date
-        $evaluations = $evaluationsQuery->orderBy('date', 'desc')->get();
+        // Calculate final scores for filtered users
+        $finalEvaluations = [];
+        foreach ($filteredUserIds as $userId) {
+            if (!isset($evaluationsByUser[$userId])) {
+                continue;
+            }
+
+            $user = $users->firstWhere('id', $userId);
+            $userEvaluations = $evaluationsByUser[$userId];
+            $totalScore = $userEvaluations->sum('total_score');
+            $totalReduction = $userEvaluations->sum('total_reduction');
+            $monthCount = $userEvaluations->count();
+
+            if ($monthCount > 0) {
+                $averageScore = $totalScore / $monthCount;
+                $finalScore = $averageScore - $totalReduction;
+
+                // Add historical position and department to the user object
+                $historicalUser = clone $user;
+                $historicalUser->historical_position = $userHistoricalData[$userId]['position'];
+                $historicalUser->historical_department = $userHistoricalData[$userId]['department'];
+
+                $finalEvaluations[] = (object)[
+                    'user_id' => $userId,
+                    'user' => $historicalUser,
+                    'average_score' => $averageScore,
+                    'total_reduction' => $totalReduction,
+                    'final_score' => $finalScore,
+                    'month_count' => $monthCount,
+                    'year' => $yearFilter
+                ];
+            }
+        }
 
         // Get performance grade rules
         $gradeRules = RulePerformanceGrade::orderBy('min_score', 'desc')->get();
 
-        // Calculate grades for each evaluation
-        foreach ($evaluations as $evaluation) {
-            $finalScore = $evaluation->total_score - $evaluation->total_reduction;
-
-            // Find applicable grade
-            $grade = $gradeRules->first(function ($rule) use ($finalScore) {
-                // Handle NULL in max_score (meaning there's no upper limit)
-                $belowMaxOrNoMax = ($rule->max_score === null || $finalScore <= $rule->max_score);
-
-                // Handle NULL in min_score (meaning there's no lower limit)
-                $aboveMinOrNoMin = ($rule->min_score === null || $finalScore >= $rule->min_score);
-
+        // Calculate grades
+        foreach ($finalEvaluations as $evaluation) {
+            $grade = $gradeRules->first(function ($rule) use ($evaluation) {
+                $belowMaxOrNoMax = ($rule->max_score === null || $evaluation->final_score <= $rule->max_score);
+                $aboveMinOrNoMin = ($rule->min_score === null || $evaluation->final_score >= $rule->min_score);
                 return $aboveMinOrNoMin && $belowMaxOrNoMax;
             });
 
@@ -1103,22 +1241,29 @@ class EvaluationController extends Controller
             $evaluation->grade_description = $grade ? $grade->description : 'Not Available';
         }
 
-        // Get lists for filters
-        $employeesList = User::select('id', 'name')
-            ->orderBy('name')
-            ->get();
+        // Get collection of all historical positions and departments for dropdowns
+        $historicalPositionIds = collect($userHistoricalData)->pluck('position_id')->unique()->filter();
+        $historicalDepartmentIds = collect($userHistoricalData)->pluck('department_id')->unique()->filter();
 
-        $positionsList = EmployeePosition::select('id', 'position')
+        // Get position and department lists for dropdowns
+        $positionsList = EmployeePosition::whereIn('id', $historicalPositionIds)
+            ->select('id', 'position')
             ->orderBy('position')
             ->get();
 
-        $departmentsList = EmployeeDepartment::select('id', 'department')
+        $departmentsList = EmployeeDepartment::whereIn('id', $historicalDepartmentIds)
+            ->select('id', 'department')
             ->orderBy('department')
             ->get();
 
-        // Remove showGrades from the compact() function
+        // Get employee list for employee dropdown
+        $employeesList = User::whereIn('id', $userIds)
+            ->select('id', 'name')
+            ->orderBy('name')
+            ->get();
+
         return view('evaluation.report.performance.index', compact(
-            'evaluations',
+            'finalEvaluations',
             'employeesList',
             'positionsList',
             'departmentsList',
@@ -1127,246 +1272,7 @@ class EvaluationController extends Controller
             'gradeRules'
         ));
     }
-    /**
-     * Display detailed performance evaluation report for a specific employee.
-     */
-    public function report_performance_detail($id)
-    {
-        // Get the user with their position and department
-        $user = User::with(['position', 'department'])->findOrFail($id);
-
-        // Get the current year for default period
-        $year = request('year', date('Y'));
-
-        // Month names for display
-        $monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-
-        // Get all active criteria types and weights
-        $criteria = RuleEvaluationWeightPerformance::with('criteria')
-            ->where('Status', "Active")
-            ->get()
-            ->groupBy('criteria.type')
-            ->map(function ($items) {
-                return [
-                    'id' => $items->first()->id,
-                    'name' => $items->first()->criteria->type,
-                    'weight' => $items->first()->weight
-                ];
-            })
-            ->values();
-
-        $criteriaList = $criteria->toArray();
-
-        // Initialize monthly data structure
-        $monthlyData = [];
-        foreach (range(0, 11) as $monthIndex) {
-            $monthlyData[$monthIndex] = [
-                'scores' => [],
-                'rawScore' => 0,
-                'finalScore' => 0,
-                'deductions' => 0
-            ];
-        }
-
-        // Get all evaluations for the user in the selected year
-        $evaluations = EvaluationPerformance::with(['details.weightPerformance.criteria', 'reductions.warningLetter'])
-            ->where('user_id', $user->id)
-            ->whereYear('date', $year)
-            ->get();
-
-        // Process each month
-        foreach (range(1, 12) as $monthNumber) {
-            $monthIndex = $monthNumber - 1;
-            $monthEvaluations = $evaluations->filter(function ($eval) use ($monthNumber) {
-                // Ensure date is parsed as Carbon instance
-                $date = is_string($eval->date) ? Carbon::parse($eval->date) : $eval->date;
-                return $date->month == $monthNumber;
-            });
-
-            if ($monthEvaluations->isNotEmpty()) {
-                // Process criteria scores
-                foreach ($criteriaList as $criterion) {
-                    $values = [];
-                    $scores = [];
-
-                    foreach ($monthEvaluations as $eval) {
-                        $details = $eval->details->filter(function ($detail) use ($criterion) {
-                            return $detail->weightPerformance->criteria->type == $criterion['name'];
-                        });
-
-                        foreach ($details as $detail) {
-                            $values[] = $detail->value;
-                            $scores[] = $detail->value * $criterion['weight'];
-                        }
-                    }
-
-                    if (!empty($values)) {
-                        $avgValue = array_sum($values) / count($values);
-                        $avgScore = array_sum($scores) / count($scores);
-
-                        $monthlyData[$monthIndex]['scores'][] = [
-                            'name' => $criterion['name'],
-                            'value' => $avgValue,
-                            'score' => $avgScore
-                        ];
-
-                        $monthlyData[$monthIndex]['rawScore'] += $avgScore;
-                    }
-                }
-
-                // Calculate deductions for this month (only count reductions that exist)
-                $monthlyData[$monthIndex]['deductions'] = $monthEvaluations->sum(function ($eval) {
-                    return $eval->reductions->sum('reduction_amount');
-                });
-
-                $monthlyData[$monthIndex]['finalScore'] = max(
-                    0,
-                    $monthlyData[$monthIndex]['rawScore'] - $monthlyData[$monthIndex]['deductions']
-                );
-            }
-        }
-
-        // Calculate overall averages
-        $validRawScores = array_filter(array_column($monthlyData, 'rawScore'));
-        $validFinalScores = array_filter(array_column($monthlyData, 'finalScore'));
-
-        $overallRawAverage = $validRawScores ? array_sum($validRawScores) / count($validRawScores) : 0;
-        $overallAverage = $validFinalScores ? array_sum($validFinalScores) / count($validFinalScores) : 0;
-
-        // Calculate criterion averages
-        $averageValues = [];
-        $averageTotals = [];
-
-        foreach ($criteriaList as $criterion) {
-            $sumValues = 0;
-            $sumScores = 0;
-            $count = 0;
-
-            foreach ($monthlyData as $month) {
-                $criterionData = collect($month['scores'])->firstWhere('name', $criterion['name']);
-                if ($criterionData) {
-                    $sumValues += $criterionData['value'];
-                    $sumScores += $criterionData['score'];
-                    $count++;
-                }
-            }
-
-            $averageValues[$criterion['name']] = $count ? $sumValues / $count : 0;
-            $averageTotals[$criterion['name']] = $count ? $sumScores / $count : 0;
-        }
-
-        // Process yearly reductions (only count those actually applied to evaluations)
-        $reductionRules = RuleEvaluationReductionPerformance::where('Status', "Active")->get();
-        $maxPossibleDeductions = $reductionRules->sum('weight');
-        $yearlyReductions = [];
-        $totalDeductions = 0;
-
-        foreach ($reductionRules as $rule) {
-            // Get warning letters that have actually been applied to evaluations
-            $warningLetters = WarningLetter::where('user_id', $user->id)
-                ->where('type_id', $rule->type_id)
-                ->whereYear('created_at', $year)
-                ->whereHas('evaluationReductions')
-                ->get();
-
-            $ruleData = [
-                'id' => $rule->id,
-                'name' => $rule->warningLetterRule->name ?? $rule->name,
-                'weight' => $rule->weight,
-                'monthly' => array_fill(1, 12, ['count' => 0, 'reduction' => 0]),
-                'total_count' => 0,
-                'total_reduction' => 0
-            ];
-
-            foreach ($warningLetters as $letter) {
-                $monthNumber = $letter->date ? $letter->date->month : now()->month;
-
-                // Sum only the actual reductions applied
-                $reductionAmount = $letter->evaluationReductions->sum('reduction_amount');
-
-                $ruleData['monthly'][$monthNumber]['count']++;
-                $ruleData['monthly'][$monthNumber]['reduction'] += $reductionAmount;
-                $ruleData['total_count']++;
-                $ruleData['total_reduction'] += $reductionAmount;
-            }
-
-            $yearlyReductions[$rule->id] = $ruleData;
-            $totalDeductions += $ruleData['total_reduction'];
-        }
-
-        // Calculate total possible score
-        $totalPossible = $criteria->sum('weight') * 3; // Assuming max score per criterion is 3
-
-        // Get evaluation messages
-        $evaluationMessages = EvaluationPerformanceMessage::whereIn(
-            'evaluation_id',
-            EvaluationPerformance::where('user_id', $user->id)
-                ->whereYear('date', $year)
-                ->pluck('id')
-        )
-            ->select(['id', 'message', 'created_at', 'evaluation_id'])
-            ->orderBy('created_at', 'asc')
-            ->get();
-
-
-
-
-
-
-        $finalScore = $overallAverage;
-        $grade = RulePerformanceGrade::query()
-            ->where(function ($q) use ($finalScore) {
-                $q->where(function ($sub) use ($finalScore) {
-                    $sub->whereNotNull('min_score')
-                        ->whereNotNull('max_score')
-                        ->where('min_score', '<=', $finalScore)
-                        ->where('max_score', '>=', $finalScore);
-                })->orWhere(function ($sub) use ($finalScore) {
-                    $sub->whereNotNull('min_score')
-                        ->whereNull('max_score')
-                        ->where('min_score', '<=', $finalScore);
-                })->orWhere(function ($sub) use ($finalScore) {
-                    $sub->whereNull('min_score')
-                        ->whereNotNull('max_score')
-                        ->where('max_score', '>=', $finalScore);
-                });
-            })
-            ->orderBy('min_score', 'asc') // Prioritaskan range yang lebih rendah
-            ->first();
-
-        // Fallback jika tidak ada grade yang cocok
-        if (!$grade) {
-            $grade = (object)[
-                'grade' => '?',
-                'description' => 'Undefined performance'
-            ];
-        }
-
-
-
-        return view('evaluation.report.performance.detail', compact(
-            'user',
-            'year',
-            'grade',
-            'monthNames',
-            'criteria',
-            'criteriaList',
-            'monthlyData',
-            'overallRawAverage',
-            'overallAverage',
-            'reductionRules',
-            'yearlyReductions',
-            'totalDeductions',
-            'totalPossible',
-            'averageValues',
-            'averageTotals',
-            'maxPossibleDeductions',
-            'evaluationMessages'
-        ));
-    }
-
-
-    public function exportExcel()
+    public function exportExcelAll()
     {
         // Get filter parameters
         $employee_id = request('employee');
@@ -1518,12 +1424,45 @@ class EvaluationController extends Controller
                 }
             }
 
-            // Calculate overall averages
+            // With this corrected version:
             $validRawScores = array_filter(array_column($monthlyData, 'rawScore'));
-            $validFinalScores = array_filter(array_column($monthlyData, 'finalScore'));
-
             $overallRawAverage = $validRawScores ? array_sum($validRawScores) / count($validRawScores) : 0;
-            $overallAverage = $validFinalScores ? array_sum($validFinalScores) / count($validFinalScores) : 0;
+
+            // Calculate yearly reductions and total deductions BEFORE using the value
+            $reductionRules = RuleEvaluationReductionPerformance::where('Status', "Active")->get();
+            $maxPossibleDeductions = $reductionRules->sum('weight');
+            $yearlyReductions = [];
+            $totalDeductions = 0;
+            foreach ($reductionRules as $rule) {
+                // Get warning letters that have been applied to evaluations
+                $warningLetters = WarningLetter::where('user_id', $user->id)
+                    ->where('type_id', $rule->type_id)
+                    ->whereYear('created_at', $year)
+                    ->whereHas('evaluationReductions')
+                    ->get();
+                $ruleData = [
+                    'id' => $rule->id,
+                    'name' => $rule->warningLetterRule->name ?? $rule->name,
+                    'weight' => $rule->weight,
+                    'monthly' => array_fill(1, 12, ['count' => 0, 'reduction' => 0]),
+                    'total_count' => 0,
+                    'total_reduction' => 0
+                ];
+                foreach ($warningLetters as $letter) {
+                    $monthNumber = $letter->date ? $letter->date->month : now()->month;
+                    // Sum only the actual reductions applied
+                    $reductionAmount = $letter->evaluationReductions->sum('reduction_amount');
+                    $ruleData['monthly'][$monthNumber]['count']++;
+                    $ruleData['monthly'][$monthNumber]['reduction'] += $reductionAmount;
+                    $ruleData['total_count']++;
+                    $ruleData['total_reduction'] += $reductionAmount;
+                }
+                $yearlyReductions[$rule->id] = $ruleData;
+                $totalDeductions += $ruleData['total_reduction'];
+            }
+
+            // Now calculate the true overall average
+            $overallAverage = max(0, $overallRawAverage - $totalDeductions);
 
             // Calculate criterion averages
             $averageValues = [];
@@ -1799,6 +1738,694 @@ class EvaluationController extends Controller
         $writer->save('php://output');
     }
 
+    public function exportEmployeeExcel(Request $request)
+    {
+        // Get employee ID and year from request (supports both POST and GET)
+        $employee_id = $request->get('id');  // Get from query parameters instead of route parameters
+        $year = $request->get('year', date('Y'));
+
+        if (!$employee_id) {
+            return back()->with('error', 'Employee ID is required for export');
+        }
+
+        // Get employee data
+        $employee = User::with(['position', 'department'])
+            ->findOrFail($employee_id);
+
+        // Month names for display
+        $monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+        // Create new Spreadsheet
+        $spreadsheet = new Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+        $sheet->setTitle('Performance Report');
+
+        // Define column width
+        $sheet->getColumnDimension('A')->setWidth(5);  // No
+        $sheet->getColumnDimension('B')->setWidth(20); // Employee
+        $sheet->getColumnDimension('C')->setWidth(15); // Position
+        $sheet->getColumnDimension('D')->setWidth(15); // Department
+        $sheet->getColumnDimension('E')->setWidth(15); // Period
+
+        // Style for headers
+        $headerStyle = [
+            'font' => ['bold' => true, 'color' => ['rgb' => 'FFFFFF']],
+            'fill' => ['fillType' => Fill::FILL_SOLID, 'color' => ['rgb' => '0062CC']],
+            'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER, 'vertical' => Alignment::VERTICAL_CENTER],
+            'borders' => [
+                'allBorders' => ['borderStyle' => Border::BORDER_THIN, 'color' => ['rgb' => '000000']]
+            ]
+        ];
+
+        // Style for title
+        $titleStyle = [
+            'font' => ['bold' => true, 'size' => 14],
+            'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER]
+        ];
+
+        // Add report title
+        $sheet->mergeCells('A1:E2');
+        $sheet->setCellValue('A1', 'PT. TIMUR JAYA INDOSTEEL - PERFORMANCE EVALUATION ' . $year);
+        $sheet->getStyle('A1')->applyFromArray($titleStyle);
+
+        // Excel row counter
+        $row = 4;
+
+        // Add employee header - similar to exportExcelAll
+        $sheet->setCellValue('A' . $row, 'Employee Details');
+        $sheet->mergeCells('A' . $row . ':E' . $row);
+        $sheet->getStyle('A' . $row)->getFont()->setBold(true);
+        $row++;
+
+        // Get all criteria types and weights
+        $criteria = RuleEvaluationWeightPerformance::with('criteria')
+            ->where('Status', "Active")
+            ->get()
+            ->groupBy('criteria.type')
+            ->map(function ($items) {
+                return [
+                    'id' => $items->first()->id,
+                    'name' => $items->first()->criteria->type,
+                    'weight' => $items->first()->weight
+                ];
+            })
+            ->values();
+
+        $criteriaList = $criteria->toArray();
+
+        // Initialize monthly data structure
+        $monthlyData = [];
+        foreach (range(0, 11) as $monthIndex) {
+            $monthlyData[$monthIndex] = [
+                'scores' => [],
+                'rawScore' => 0,
+                'finalScore' => 0,
+                'deductions' => 0
+            ];
+        }
+
+        // Get all evaluations for the user in the selected year
+        $evaluations = EvaluationPerformance::with(['details.weightPerformance.criteria', 'reductions.warningLetter'])
+            ->where('user_id', $employee->id)
+            ->whereYear('date', $year)
+            ->get();
+
+        // Process each month
+        foreach (range(1, 12) as $monthNumber) {
+            $monthIndex = $monthNumber - 1;
+            $monthEvaluations = $evaluations->filter(function ($eval) use ($monthNumber) {
+                $date = is_string($eval->date) ? Carbon::parse($eval->date) : $eval->date;
+                return $date->month == $monthNumber;
+            });
+
+            if ($monthEvaluations->isNotEmpty()) {
+                // Process criteria scores
+                foreach ($criteriaList as $criterion) {
+                    $values = [];
+                    $scores = [];
+
+                    foreach ($monthEvaluations as $eval) {
+                        $details = $eval->details->filter(function ($detail) use ($criterion) {
+                            return $detail->weightPerformance->criteria->type == $criterion['name'];
+                        });
+
+                        foreach ($details as $detail) {
+                            $values[] = $detail->value;
+                            $scores[] = $detail->value * $criterion['weight'];
+                        }
+                    }
+
+                    if (!empty($values)) {
+                        $avgValue = array_sum($values) / count($values);
+                        $avgScore = array_sum($scores) / count($scores);
+
+                        $monthlyData[$monthIndex]['scores'][] = [
+                            'name' => $criterion['name'],
+                            'value' => $avgValue,
+                            'score' => $avgScore
+                        ];
+
+                        $monthlyData[$monthIndex]['rawScore'] += $avgScore;
+                    }
+                }
+
+                // Calculate deductions for this month
+                $monthlyData[$monthIndex]['deductions'] = $monthEvaluations->sum(function ($eval) {
+                    return $eval->reductions->sum('reduction_amount');
+                });
+
+                $monthlyData[$monthIndex]['finalScore'] = max(
+                    0,
+                    $monthlyData[$monthIndex]['rawScore'] - $monthlyData[$monthIndex]['deductions']
+                );
+            }
+        }
+
+        // With this corrected version:
+        $validRawScores = array_filter(array_column($monthlyData, 'rawScore'));
+        $overallRawAverage = $validRawScores ? array_sum($validRawScores) / count($validRawScores) : 0;
+
+        // Calculate yearly reductions and total deductions BEFORE using the value
+        $reductionRules = RuleEvaluationReductionPerformance::where('Status', "Active")->get();
+        $maxPossibleDeductions = $reductionRules->sum('weight');
+        $yearlyReductions = [];
+        $totalDeductions = 0;
+        foreach ($reductionRules as $rule) {
+            // Get warning letters that have been applied to evaluations
+            $warningLetters = WarningLetter::where('user_id', $employee->id)
+                ->where('type_id', $rule->type_id)
+                ->whereYear('created_at', $year)
+                ->whereHas('evaluationReductions')
+                ->get();
+            $ruleData = [
+                'id' => $rule->id,
+                'name' => $rule->warningLetterRule->name ?? $rule->name,
+                'weight' => $rule->weight,
+                'monthly' => array_fill(1, 12, ['count' => 0, 'reduction' => 0]),
+                'total_count' => 0,
+                'total_reduction' => 0
+            ];
+            foreach ($warningLetters as $letter) {
+                $monthNumber = $letter->date ? $letter->date->month : now()->month;
+                // Sum only the actual reductions applied
+                $reductionAmount = $letter->evaluationReductions->sum('reduction_amount');
+                $ruleData['monthly'][$monthNumber]['count']++;
+                $ruleData['monthly'][$monthNumber]['reduction'] += $reductionAmount;
+                $ruleData['total_count']++;
+                $ruleData['total_reduction'] += $reductionAmount;
+            }
+            $yearlyReductions[$rule->id] = $ruleData;
+            $totalDeductions += $ruleData['total_reduction'];
+        }
+
+        // Now calculate the true overall average
+        $overallAverage = max(0, $overallRawAverage - $totalDeductions);
+
+        // Calculate criterion averages
+        $averageValues = [];
+        $averageTotals = [];
+
+        foreach ($criteriaList as $criterion) {
+            $sumValues = 0;
+            $sumScores = 0;
+            $count = 0;
+
+            foreach ($monthlyData as $month) {
+                $criterionData = collect($month['scores'])->firstWhere('name', $criterion['name']);
+                if ($criterionData) {
+                    $sumValues += $criterionData['value'];
+                    $sumScores += $criterionData['score'];
+                    $count++;
+                }
+            }
+
+            $averageValues[$criterion['name']] = $count ? $sumValues / $count : 0;
+            $averageTotals[$criterion['name']] = $count ? $sumScores / $count : 0;
+        }
+
+        // Get grade
+        $finalScore = $overallAverage;
+        $grade = RulePerformanceGrade::query()
+            ->where(function ($q) use ($finalScore) {
+                $q->where(function ($sub) use ($finalScore) {
+                    $sub->whereNotNull('min_score')
+                        ->whereNotNull('max_score')
+                        ->where('min_score', '<=', $finalScore)
+                        ->where('max_score', '>=', $finalScore);
+                })->orWhere(function ($sub) use ($finalScore) {
+                    $sub->whereNotNull('min_score')
+                        ->whereNull('max_score')
+                        ->where('min_score', '<=', $finalScore);
+                })->orWhere(function ($sub) use ($finalScore) {
+                    $sub->whereNull('min_score')
+                        ->whereNotNull('max_score')
+                        ->where('max_score', '>=', $finalScore);
+                });
+            })
+            ->orderBy('min_score', 'asc')
+            ->first();
+
+        // Fallback if no grade was found
+        $gradeValue = $grade ? $grade->grade : '?';
+        $gradeDescription = $grade ? $grade->description : 'Undefined performance';
+
+        // Add employee information
+        $sheet->setCellValue('A' . $row, 'Name:');
+        $sheet->setCellValue('B' . $row, $employee->name);
+        $row++;
+
+        $sheet->setCellValue('A' . $row, 'Position:');
+        $sheet->setCellValue('B' . $row, $employee->position->position ?? 'N/A');
+        $row++;
+
+        $sheet->setCellValue('A' . $row, 'Department:');
+        $sheet->setCellValue('B' . $row, $employee->department->department ?? 'N/A');
+        $row++;
+
+        $sheet->setCellValue('A' . $row, 'Final Score:');
+        $sheet->setCellValue('B' . $row, number_format($overallAverage, 0));
+        $row++;
+
+        $sheet->setCellValue('A' . $row, 'Grade:');
+        $sheet->setCellValue('B' . $row, $gradeValue . ' - ' . $gradeDescription);
+        $row++;
+
+        // Performance data header (month columns)
+        $row++;
+        $sheet->setCellValue('A' . $row, 'No');
+        $sheet->setCellValue('B' . $row, 'Criteria');
+        $sheet->setCellValue('C' . $row, 'Weight');
+
+        $col = 'D';
+        foreach ($monthNames as $monthIndex => $month) {
+            $sheet->setCellValue($col++ . $row, $month . ' Score');
+            $sheet->setCellValue($col++ . $row, $month . ' Total');
+        }
+        $sheet->setCellValue($col++ . $row, 'Final Score');
+        $sheet->setCellValue($col . $row, 'Final Total');
+
+        $lastColumn = $col;
+        $sheet->getStyle('A' . $row . ':' . $lastColumn . $row)->applyFromArray($headerStyle);
+        $row++;
+
+        // Performance criteria data
+        foreach ($criteriaList as $index => $criterion) {
+            $sheet->setCellValue('A' . $row, $index + 1);
+            $sheet->setCellValue('B' . $row, $criterion['name']);
+            $sheet->setCellValue('C' . $row, $criterion['weight']);
+
+            $col = 'D';
+            // For each month, add score and total
+            foreach ($monthlyData as $monthIndex => $month) {
+                $criteriaScore = collect($month['scores'])->firstWhere('name', $criterion['name']);
+                $value = $criteriaScore['value'] ?? null;
+                $total = $criteriaScore['score'] ?? null;
+
+                $sheet->setCellValue($col++ . $row, $value !== null ? number_format($value, 1) : '');
+                $sheet->setCellValue($col++ . $row, $total !== null ? number_format($total, 0) : '');
+            }
+
+            // Add final averages
+            $finalValue = $averageValues[$criterion['name']] ?? 0;
+            $finalTotal = $averageTotals[$criterion['name']] ?? 0;
+
+            $sheet->setCellValue($col++ . $row, number_format($finalValue, 1));
+            $sheet->setCellValue($col . $row, number_format($finalTotal, 0));
+
+            $row++;
+        }
+
+        // Total Evaluation Score row
+        $sheet->setCellValue('A' . $row, '');
+        $sheet->setCellValue('B' . $row, 'TOTAL EVALUATION SCORE');
+        $sheet->setCellValue('C' . $row, '');
+        $sheet->getStyle('B' . $row)->getFont()->setBold(true);
+
+        $col = 'D';
+        // For each month, add empty cell and total raw score
+        foreach ($monthlyData as $monthIndex => $month) {
+            $sheet->setCellValue($col++ . $row, '');
+            $sheet->setCellValue($col++ . $row, $month['rawScore'] ? number_format($month['rawScore'], 0) : '');
+        }
+
+        // Add final raw score
+        $sheet->setCellValue($col++ . $row, '');
+        $sheet->setCellValue($col . $row, number_format($overallRawAverage, 0));
+        $sheet->getStyle($col . $row)->getFont()->setBold(true);
+
+        $row++;
+
+        // ADD THE MISSING DEDUCTIONS SECTION FROM exportExcelAll
+        // Deductions section header
+        $sheet->setCellValue('A' . $row, '');
+        $sheet->mergeCells('A' . $row . ':' . $lastColumn . $row);
+        $sheet->setCellValue('A' . $row, 'WARNING LETTERS & DEDUCTIONS');
+        $sheet->getStyle('A' . $row)->applyFromArray([
+            'font' => ['bold' => true, 'color' => ['rgb' => 'FFFFFF']],
+            'fill' => ['fillType' => Fill::FILL_SOLID, 'color' => ['rgb' => 'DC3545']]
+        ]);
+        $row++;
+
+        // Process yearly reductions
+        $reductionRules = RuleEvaluationReductionPerformance::where('Status', "Active")->get();
+        $maxPossibleDeductions = $reductionRules->sum('weight');
+        $yearlyReductions = [];
+        $totalDeductions = 0;
+        foreach ($reductionRules as $rule) {
+            // Get warning letters that have been applied to evaluations
+            $warningLetters = WarningLetter::where('user_id', $employee->id)
+                ->where('type_id', $rule->type_id)
+                ->whereYear('created_at', $year)
+                ->whereHas('evaluationReductions')
+                ->get();
+            $ruleData = [
+                'id' => $rule->id,
+                'name' => $rule->warningLetterRule->name ?? $rule->name,
+                'weight' => $rule->weight,
+                'monthly' => array_fill(1, 12, ['count' => 0, 'reduction' => 0]),
+                'total_count' => 0,
+                'total_reduction' => 0
+            ];
+            foreach ($warningLetters as $letter) {
+                $monthNumber = $letter->date ? $letter->date->month : now()->month;
+                // Sum only the actual reductions applied
+                $reductionAmount = $letter->evaluationReductions->sum('reduction_amount');
+                $ruleData['monthly'][$monthNumber]['count']++;
+                $ruleData['monthly'][$monthNumber]['reduction'] += $reductionAmount;
+                $ruleData['total_count']++;
+                $ruleData['total_reduction'] += $reductionAmount;
+            }
+            $yearlyReductions[$rule->id] = $ruleData;
+            $totalDeductions += $ruleData['total_reduction'];
+        }
+
+        // Add warning letters to excel
+        foreach ($yearlyReductions as $ruleId => $ruleData) {
+            $sheet->setCellValue('A' . $row, '');
+            $sheet->setCellValue('B' . $row, $ruleData['name']);
+            $sheet->setCellValue('C' . $row, '-' . $ruleData['weight']);
+            $sheet->getStyle('C' . $row)->getFont()->getColor()->setRGB('DC3545');
+            $col = 'D';
+            // For each month, add warning count and reduction amount
+            foreach ($monthNames as $monthIndex => $month) {
+                $monthNumber = $monthIndex + 1;
+                $monthData = $ruleData['monthly'][$monthNumber] ?? ['count' => 0, 'reduction' => 0];
+                $hasDeduction = $monthData['count'] > 0;
+
+                $sheet->setCellValue($col++ . $row, $hasDeduction ? $monthData['count'] : '');
+                $sheet->setCellValue($col++ . $row, $hasDeduction ? '-' . $monthData['reduction'] : '0');
+                if ($hasDeduction) {
+                    $prevCol = chr(ord($col) - 1);
+                    $sheet->getStyle($prevCol . $row)->getFont()->getColor()->setRGB('DC3545');
+                }
+            }
+
+            // Add final warning count and reduction
+            $sheet->setCellValue($col++ . $row, $ruleData['total_count'] > 0 ? $ruleData['total_count'] : '');
+            $sheet->setCellValue($col . $row, '-' . $ruleData['total_reduction']);
+            $sheet->getStyle($col . $row)->getFont()->getColor()->setRGB('DC3545');
+
+            $row++;
+        }
+
+        // Total Deductions row
+        $sheet->setCellValue('A' . $row, '');
+        $sheet->setCellValue('B' . $row, 'TOTAL DEDUCTIONS');
+        $sheet->setCellValue('C' . $row, '');
+        $sheet->getStyle('B' . $row)->getFont()->setBold(true);
+
+        $col = 'D';
+        // For each month, add empty cell and deduction amount
+        foreach ($monthlyData as $monthIndex => $month) {
+            $deduction = $month['deductions'] ?? 0;
+            $sheet->setCellValue($col++ . $row, '');
+            $sheet->setCellValue($col++ . $row, $deduction > 0 ? '-' . number_format($deduction, 0) : '0');
+        }
+
+        // Add final deductions
+        $sheet->setCellValue($col++ . $row, '');
+        $sheet->setCellValue($col . $row, '-' . number_format($totalDeductions, 0));
+        $sheet->getStyle($col . $row)->getFont()->setBold(true);
+
+        $row++;
+
+        // Final Score row
+        $sheet->setCellValue('A' . $row, '');
+        $sheet->setCellValue('B' . $row, 'FINAL SCORE');
+        $sheet->setCellValue('C' . $row, '');
+        $sheet->getStyle('B' . $row)->getFont()->setBold(true);
+
+        $col = 'D';
+        // For each month, add empty cell and final score
+        foreach ($monthlyData as $monthIndex => $month) {
+            $sheet->setCellValue($col++ . $row, '');
+            $sheet->setCellValue($col++ . $row, $month['finalScore'] ? number_format($month['finalScore'], 0) : '');
+        }
+
+        // Add overall average
+        $sheet->setCellValue($col++ . $row, '');
+        $sheet->setCellValue($col . $row, number_format($overallAverage, 0));
+        $sheet->getStyle($col . $row)->getFont()->setBold(true);
+
+        // Set output filename
+        $filename = 'Performance_Report_' . $employee->name . '_' . $year . '_' . date('YmdHis') . '.xlsx';
+
+        // Create writer and output
+        $writer = new Xlsx($spreadsheet);
+
+        // Save to file
+        header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        header('Content-Disposition: attachment;filename="' . $filename . '"');
+        header('Cache-Control: max-age=0');
+
+        $writer->save('php://output');
+    }
+
+
+
+    /**
+     * Display detailed performance evaluation report for a specific employee.
+     */
+    public function report_performance_detail($id)
+    {
+        // Get the user with their position and department
+        $user = User::with(['position', 'department'])->findOrFail($id);
+
+        // Get the current year for default period
+        $year = request('year', date('Y'));
+
+        // Month names for display
+        $monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+        // Get all active criteria types and weights
+        $criteria = RuleEvaluationWeightPerformance::with('criteria')
+            ->where('Status', "Active")
+            ->get()
+            ->groupBy('criteria.type')
+            ->map(function ($items) {
+                return [
+                    'id' => $items->first()->id,
+                    'name' => $items->first()->criteria->type,
+                    'weight' => $items->first()->weight
+                ];
+            })
+            ->values();
+
+        $criteriaList = $criteria->toArray();
+
+        // Initialize monthly data structure - using 1-based indexing for consistency
+        $monthlyData = [];
+        foreach (range(1, 12) as $monthNumber) {
+            $monthlyData[$monthNumber] = [
+                'scores' => [],
+                'rawScore' => 0,
+                'finalScore' => 0,
+                'deductions' => 0
+            ];
+        }
+
+        // Get all evaluations for the user in the selected year
+        $evaluations = EvaluationPerformance::with(['details.weightPerformance.criteria', 'reductions.warningLetter'])
+            ->where('user_id', $user->id)
+            ->whereYear('date', $year)
+            ->get();
+
+        // Process each month
+        foreach (range(1, 12) as $monthNumber) {
+            $monthEvaluations = $evaluations->filter(function ($eval) use ($monthNumber) {
+                // Ensure date is parsed as Carbon instance
+                $date = is_string($eval->date) ? Carbon::parse($eval->date) : $eval->date;
+                return $date->month == $monthNumber;
+            });
+
+            if ($monthEvaluations->isNotEmpty()) {
+                // Process criteria scores
+                foreach ($criteriaList as $criterion) {
+                    $values = [];
+                    $scores = [];
+
+                    foreach ($monthEvaluations as $eval) {
+                        $details = $eval->details->filter(function ($detail) use ($criterion) {
+                            return $detail->weightPerformance->criteria->type == $criterion['name'];
+                        });
+
+                        foreach ($details as $detail) {
+                            $values[] = $detail->value;
+                            $scores[] = $detail->value * $criterion['weight'];
+                        }
+                    }
+
+                    if (!empty($values)) {
+                        $avgValue = array_sum($values) / count($values);
+                        $avgScore = array_sum($scores) / count($scores);
+
+                        $monthlyData[$monthNumber]['scores'][] = [
+                            'name' => $criterion['name'],
+                            'value' => $avgValue,
+                            'score' => $avgScore
+                        ];
+
+                        $monthlyData[$monthNumber]['rawScore'] += $avgScore;
+                    }
+                }
+
+                // Calculate deductions for this month (only count reductions that exist)
+                $monthlyData[$monthNumber]['deductions'] = $monthEvaluations->sum(function ($eval) {
+                    return $eval->reductions->sum('reduction_amount');
+                });
+
+                $monthlyData[$monthNumber]['finalScore'] = max(
+                    0,
+                    $monthlyData[$monthNumber]['rawScore'] - $monthlyData[$monthNumber]['deductions']
+                );
+            }
+        }
+
+        // Calculate overall averages for individual criteria
+        $averageValues = [];
+        $averageTotals = [];
+
+        foreach ($criteriaList as $criterion) {
+            $sumValues = 0;
+            $sumScores = 0;
+            $count = 0;
+
+            foreach ($monthlyData as $month) {
+                $criterionData = collect($month['scores'])->firstWhere('name', $criterion['name']);
+                if ($criterionData) {
+                    $sumValues += $criterionData['value'];
+                    $sumScores += $criterionData['score'];
+                    $count++;
+                }
+            }
+
+            $averageValues[$criterion['name']] = $count ? $sumValues / $count : 0;
+            $averageTotals[$criterion['name']] = $count ? $sumScores / $count : 0;
+        }
+
+        // Process yearly reductions (only count those actually applied to evaluations)
+        $reductionRules = RuleEvaluationReductionPerformance::where('Status', "Active")->get();
+        $maxPossibleDeductions = $reductionRules->sum('weight');
+        $yearlyReductions = [];
+        $totalDeductions = 0;
+
+        foreach ($reductionRules as $rule) {
+            // Initialize the rule data structure with months 1-12
+            $ruleData = [
+                'id' => $rule->id,
+                'name' => $rule->warningLetterRule->name ?? $rule->name,
+                'weight' => $rule->weight,
+                'monthly' => array_fill(1, 12, ['count' => 0, 'reduction' => 0]),
+                'total_count' => 0,
+                'total_reduction' => 0
+            ];
+
+            // Get warning letters that have actually been applied to evaluations
+            $warningLetters = WarningLetter::where('user_id', $user->id)
+                ->where('type_id', $rule->type_id)
+                ->whereYear('created_at', $year)
+                ->whereHas('evaluationReductions')
+                ->get();
+
+            foreach ($warningLetters as $letter) {
+                // Ensure we're getting the correct month number
+                $monthNumber = $letter->date ? $letter->date->month : ($letter->created_at ? $letter->created_at->month : now()->month);
+
+                // Sum only the actual reductions applied
+                $reductionAmount = $letter->evaluationReductions->sum('reduction_amount');
+
+                $ruleData['monthly'][$monthNumber]['count']++;
+                $ruleData['monthly'][$monthNumber]['reduction'] += $reductionAmount;
+                $ruleData['total_count']++;
+                $ruleData['total_reduction'] += $reductionAmount;
+            }
+
+            $yearlyReductions[$rule->id] = $ruleData;
+            $totalDeductions += $ruleData['total_reduction'];
+        }
+
+        // Calculate total possible score
+        $totalPossible = $criteria->sum('weight') * 3; // Assuming max score per criterion is 3
+
+        // Calculate the overall raw average and final score (sum of raw scores)
+        $overallRawAverage = 0;
+        $totalMonthsWithData = 0;
+
+        foreach ($monthlyData as $month) {
+            if ($month['rawScore'] > 0) {
+                $overallRawAverage += $month['rawScore'];
+                $totalMonthsWithData++;
+            }
+        }
+
+        // If there are months with data, calculate the average
+        if ($totalMonthsWithData > 0) {
+            $overallRawAverage = $overallRawAverage / $totalMonthsWithData;
+        }
+
+        // Calculate the final score as the sum of all criteria averages minus total deductions
+        $overallAverage = max(0, $overallRawAverage - $totalDeductions);
+
+        // Get evaluation messages
+        $evaluationMessages = EvaluationPerformanceMessage::whereIn(
+            'evaluation_id',
+            EvaluationPerformance::where('user_id', $user->id)
+                ->whereYear('date', $year)
+                ->pluck('id')
+        )
+            ->select(['id', 'message', 'created_at', 'evaluation_id'])
+            ->orderBy('created_at', 'asc')
+            ->get();
+
+        $finalScore = $overallAverage;
+        $grade = RulePerformanceGrade::query()
+            ->where(function ($q) use ($finalScore) {
+                $q->where(function ($sub) use ($finalScore) {
+                    $sub->whereNotNull('min_score')
+                        ->whereNotNull('max_score')
+                        ->where('min_score', '<=', $finalScore)
+                        ->where('max_score', '>=', $finalScore);
+                })->orWhere(function ($sub) use ($finalScore) {
+                    $sub->whereNotNull('min_score')
+                        ->whereNull('max_score')
+                        ->where('min_score', '<=', $finalScore);
+                })->orWhere(function ($sub) use ($finalScore) {
+                    $sub->whereNull('min_score')
+                        ->whereNotNull('max_score')
+                        ->where('max_score', '>=', $finalScore);
+                });
+            })
+            ->orderBy('min_score', 'asc') // Prioritaskan range yang lebih rendah
+            ->first();
+
+        // Fallback jika tidak ada grade yang cocok
+        if (!$grade) {
+            $grade = (object)[
+                'grade' => '?',
+                'description' => 'Undefined performance'
+            ];
+        }
+
+        return view('evaluation.report.performance.detail', compact(
+            'user',
+            'year',
+            'grade',
+            'monthNames',
+            'criteria',
+            'criteriaList',
+            'monthlyData',
+            'overallRawAverage',
+            'overallAverage',
+            'reductionRules',
+            'yearlyReductions',
+            'totalDeductions',
+            'totalPossible',
+            'averageValues',
+            'averageTotals',
+            'maxPossibleDeductions',
+            'evaluationMessages'
+        ));
+    }
 
 
     /**
@@ -2076,18 +2703,13 @@ class EvaluationController extends Controller
 
         $query = User::query();
 
+        // Base filtering
         if ($employeeId) {
             $query->where('id', $employeeId);
         }
 
-        if ($departmentId) {
-            $query->where('department_id', $departmentId);
-        }
-
-        if ($positionId) {
-            $query->where('position_id', $positionId);
-        }
-
+        // We'll handle department and position filtering differently 
+        // after we get historical data
         $employees = $query->get();
 
         if ($month === 'final') {
@@ -2143,6 +2765,39 @@ class EvaluationController extends Controller
                 ->whereMonth('created_at', $month)
                 ->get();
 
+            // Find historical position and department
+            // Use the end of the month as reference date
+            $referenceDate = Carbon::create($year, $month, $daysInMonth)->format('Y-m-d');
+
+            // Find the most recent transfer history before the reference date
+            $history = history_transfer_employee::where('users_id', $employee->id)
+                ->where('created_at', '<', $referenceDate)
+                ->orderBy('created_at', 'desc')
+                ->first();
+
+            // Get historical position and department
+            if ($history) {
+                $positionId = $history->new_position_id;
+                $departmentId = $history->new_department_id;
+                $position = EmployeePosition::find($positionId);
+                $department = EmployeeDepartment::find($departmentId);
+            } else {
+                // If no history, use current position and department
+                $positionId = $employee->position_id;
+                $departmentId = $employee->department_id;
+                $position = $employee->position;
+                $department = $employee->department;
+            }
+
+            // Skip this employee if filtering by position/department and they don't match
+            if ($request->input('position_id') && $positionId != $request->input('position_id')) {
+                continue;
+            }
+
+            if ($request->input('department_id') && $departmentId != $request->input('department_id')) {
+                continue;
+            }
+
             // Calculate working days
             $workingDays = $this->calculateWorkingDays($year, $month, $customHolidays);
 
@@ -2173,6 +2828,8 @@ class EvaluationController extends Controller
             $reportData[] = [
                 'employee_id' => $employee->employee_id,
                 'name' => $employee->name,
+                'position' => $position ? $position->position : '',
+                'department' => $department ? $department->department : '',
                 'working_days' => $workingDays,
                 'presence' => $presenceCount,
                 'attendance_percentage' => $attendancePercentage,
@@ -3156,11 +3813,6 @@ class EvaluationController extends Controller
 
 
 
-
-
-
-    // Discipline Grade CRUD
-
     // Discipline Grade
 
     public function rule_discipline_grade_index()
@@ -3335,30 +3987,1459 @@ class EvaluationController extends Controller
 
 
 
+    // Add these methods to your EvaluationController class
 
-    public function getPerformanceGrade($score)
+    public function rule_elearning_grade_index()
     {
-        return RulePerformanceGrade::where(function ($query) use ($score) {
-            $query->where('min_score', '<=', $score)
-                ->where(function ($q) use ($score) {
-                    $q->where('max_score', '>=', $score)
-                        ->orWhereNull('max_score');
-                });
-        })
-            ->orderBy('min_score', 'desc')
-            ->first();
+        $grades = RuleElearningGrade::orderBy('min_score', 'desc')->get();
+        return view('evaluation.rule.elearning.grade.index', compact('grades'));
     }
 
-    public function getDisciplineGrade($score)
+    public function rule_elearning_grade_create()
     {
-        return RuleDisciplineGrade::where(function ($query) use ($score) {
-            $query->where('min_score', '<=', $score)
-                ->where(function ($q) use ($score) {
-                    $q->where('max_score', '>=', $score)
-                        ->orWhereNull('max_score');
-                });
-        })
+        return view('evaluation.rule.elearning.grade.create');
+    }
+
+    public function rule_elearning_grade_store(Request $request)
+    {
+        $request->validate([
+            'grade' => 'required|string|max:2',
+            'min_score' => 'required|integer|min:0|max:100',
+            'max_score' => 'nullable|integer|min:0|max:100|gt:min_score',
+            'description' => 'nullable|string',
+        ]);
+        // Check for overlapping ranges
+        $overlap = $this->checkForElearningOverlap(
+            $request->min_score,
+            $request->max_score,
+            null
+        );
+        if ($overlap) {
+            return back()->withInput()->withErrors(['overlap' => $overlap]);
+        }
+        // Create the new grade rule
+        RuleElearningGrade::create([
+            'grade' => $request->grade,
+            'min_score' => $request->min_score,
+            'max_score' => $request->max_score,
+            'description' => $request->description,
+        ]);
+        return redirect()->route('evaluation.rule.elearning.grade.index')
+            ->with('success', 'E-learning grade rule created successfully.');
+    }
+
+    public function rule_elearning_grade_edit($id)
+    {
+        $grade = RuleElearningGrade::findOrFail($id);
+        return view('evaluation/rule/elearning/grade/update', compact('grade'));
+    }
+
+    public function rule_elearning_grade_update(Request $request, $id)
+    {
+        $request->validate([
+            'grade' => 'required|string|max:2',
+            'min_score' => 'required|integer|min:0|max:100',
+            'max_score' => 'nullable|integer|min:0|max:100|gt:min_score',
+            'description' => 'nullable|string',
+        ]);
+
+        $grade = RuleElearningGrade::findOrFail($id);
+
+        // Check for overlapping ranges
+        $overlap = $this->checkForElearningOverlap(
+            $request->min_score,
+            $request->max_score,
+            $id
+        );
+
+        if ($overlap) {
+            return back()->withInput()->withErrors(['overlap' => $overlap]);
+        }
+
+        // Update the grade rule
+        $grade->update([
+            'grade' => $request->grade,
+            'min_score' => $request->min_score,
+            'max_score' => $request->max_score,
+            'description' => $request->description,
+        ]);
+
+        return redirect()->route('evaluation.rule.elearning.grade.index')->with('success', 'E-learning grade rule updated successfully.');
+    }
+
+    public function grade_elearning_destroy($id)
+    {
+        $grade = RuleElearningGrade::findOrFail($id);
+        $grade->delete();
+
+        return redirect()->route('evaluation.rule.elearning.grade.index')
+            ->with('success', 'E-learning grade rule deleted successfully.');
+    }
+
+    private function checkForElearningOverlap($minScore, $maxScore = null, $excludeId = null)
+    {
+        $query = RuleElearningGrade::query();
+
+        if ($excludeId) {
+            $query->where('id', '!=', $excludeId);
+        }
+
+        // If max_score is null, set it to 100 for comparison
+        $actualMaxScore = $maxScore ?? 100;
+
+        $overlapping = $query->where(function ($query) use ($minScore, $actualMaxScore) {
+            // Case 1: The start of our range is inside an existing range
+            $query->orWhere(function ($q) use ($minScore) {
+                $q->where('min_score', '<=', $minScore)
+                    ->where(function ($sq) use ($minScore) {
+                        $sq->whereNull('max_score')
+                            ->orWhere('max_score', '>', $minScore);
+                    });
+            });
+
+            // Case 2: The end of our range is inside an existing range
+            $query->orWhere(function ($q) use ($actualMaxScore) {
+                $q->where('min_score', '<', $actualMaxScore)
+                    ->where(function ($sq) use ($actualMaxScore) {
+                        $sq->whereNull('max_score')
+                            ->orWhere('max_score', '>=', $actualMaxScore);
+                    });
+            });
+
+            // Case 3: Our range completely contains an existing range
+            $query->orWhere(function ($q) use ($minScore, $actualMaxScore) {
+                $q->where('min_score', '>=', $minScore)
+                    ->where(function ($sq) use ($actualMaxScore) {
+                        $sq->whereNull('max_score')
+                            ->orWhere('max_score', '<=', $actualMaxScore);
+                    });
+            });
+        })->first();
+
+        if ($overlapping) {
+            $maxText = $overlapping->max_score ?? '100';
+            return "The score range overlaps with existing grade '{$overlapping->grade}' ({$overlapping->min_score}-{$maxText}).";
+        }
+
+        return null;
+    }
+
+    public function checkElearningOverlap(Request $request)
+    {
+        $validatedData = $request->validate([
+            'min_score' => 'required|integer|min:0|max:100',
+            'max_score' => 'nullable|integer|min:0|max:100|gt:min_score',
+            'id' => 'nullable|integer|exists:rule_elearning_grades,id',
+        ]);
+
+        $overlap = $this->checkForElearningOverlap(
+            $validatedData['min_score'],
+            $validatedData['max_score'] ?? null,
+            $validatedData['id'] ?? null
+        );
+
+        return response()->json([
+            'valid' => $overlap === null,
+            'message' => $overlap ?: 'No overlap detected'
+        ]);
+    }
+
+
+
+    //Report Elearning
+    public function report_elearning_index(Request $request)
+    {
+        // Get available years from invitation data
+        $years = elearning_invitation::selectRaw('YEAR(created_at) as year')
+            ->distinct()
+            ->orderBy('year', 'desc')
+            ->pluck('year')
+            ->toArray();
+
+        // If no years available, use current year
+        if (empty($years)) {
+            $years = [Carbon::now()->year];
+        }
+
+        // Get selected year, default to the most recent year
+        $selectedYear = $request->input('year', $years[0]);
+
+        // Get all departments and positions for filters
+        $allDepartments = EmployeeDepartment::orderBy('department')->get();
+        $allPositions = EmployeePosition::orderBy('position')->get();
+
+        // Get grading rules for the info box
+        $gradeRules = RuleElearningGrade::orderBy('min_score', 'desc')->get();
+
+        // Get employees with e-learning invitations for the selected year
+        $employeesWithElearning = User::select('users.id')
+            ->join('elearning_invitation', 'users.id', '=', 'elearning_invitation.users_id')
+            ->whereYear('elearning_invitation.created_at', $selectedYear)
+            ->groupBy('users.id')
+            ->get()
+            ->pluck('id')
+            ->toArray();
+
+        // Get historical positions and departments for these employees
+        $userHistoricalPositions = [];
+        $userHistoricalDepartments = [];
+        $historicalPositionIds = collect();
+        $historicalDepartmentIds = collect();
+
+        foreach ($employeesWithElearning as $userId) {
+            // Find the earliest elearning invitation date for this user in the selected year
+            $referenceDate = elearning_invitation::where('users_id', $userId)
+                ->whereYear('created_at', $selectedYear)
+                ->min('created_at');
+
+            if ($referenceDate) {
+                // Find the most recent transfer before the reference date
+                $historicalTransfer = \App\Models\history_transfer_employee::where('users_id', $userId)
+                    ->where('created_at', '<', $referenceDate)
+                    ->orderBy('created_at', 'desc')
+                    ->first();
+
+                $user = User::find($userId);
+
+                if ($historicalTransfer) {
+                    // Use the historical position and department
+                    $userHistoricalPositions[$userId] = $historicalTransfer->new_position_id;
+                    $userHistoricalDepartments[$userId] = $historicalTransfer->new_department_id;
+
+                    $historicalPositionIds->push($historicalTransfer->new_position_id);
+                    $historicalDepartmentIds->push($historicalTransfer->new_department_id);
+                } else {
+                    // No transfer history found, use current position and department
+                    $userHistoricalPositions[$userId] = $user->position_id;
+                    $userHistoricalDepartments[$userId] = $user->department_id;
+
+                    $historicalPositionIds->push($user->position_id);
+                    $historicalDepartmentIds->push($user->department_id);
+                }
+            }
+        }
+
+        // Apply filters
+        $selectedDepartment = $request->input('department_id');
+        $selectedPosition = $request->input('position_id');
+
+        // Filter users by historical position and department if requested
+        $filteredUserIds = collect($employeesWithElearning);
+
+        if ($selectedPosition) {
+            $filteredUserIds = $filteredUserIds->filter(function ($userId) use ($userHistoricalPositions, $selectedPosition) {
+                return isset($userHistoricalPositions[$userId]) && $userHistoricalPositions[$userId] == $selectedPosition;
+            });
+        }
+
+        if ($selectedDepartment) {
+            $filteredUserIds = $filteredUserIds->filter(function ($userId) use ($userHistoricalDepartments, $selectedDepartment) {
+                return isset($userHistoricalDepartments[$userId]) && $userHistoricalDepartments[$userId] == $selectedDepartment;
+            });
+        }
+
+        // Get departments and positions from historical data for the filter dropdowns
+        $positions = EmployeePosition::whereIn('id', $historicalPositionIds->unique())
+            ->orderBy('position')
+            ->get();
+
+        $departments = EmployeeDepartment::whereIn('id', $historicalDepartmentIds->unique())
+            ->orderBy('department')
+            ->get();
+
+        // Get the employees with their historical position and department
+        $employees = collect();
+
+        foreach ($filteredUserIds as $userId) {
+            $user = User::find($userId);
+            $historicalPositionId = $userHistoricalPositions[$userId] ?? $user->position_id;
+            $historicalDepartmentId = $userHistoricalDepartments[$userId] ?? $user->department_id;
+
+            $positionName = EmployeePosition::where('id', $historicalPositionId)
+                ->value('position') ?? '';
+
+            $departmentName = EmployeeDepartment::where('id', $historicalDepartmentId)
+                ->value('department') ?? '';
+
+            // Create a custom object with the required data
+            $employeeData = (object)[
+                'id' => $user->id,
+                'name' => $user->name,
+                'employee_id' => $user->employee_id,
+                'position' => $positionName,
+                'department' => $departmentName,
+                'historical_position_id' => $historicalPositionId,
+                'historical_department_id' => $historicalDepartmentId
+            ];
+
+            $employees->push($employeeData);
+        }
+
+        // Calculate final scores for each employee
+        foreach ($employees as $employee) {
+            $yearScores = $this->calculateYearScores($employee->id, $selectedYear);
+            $employee->final_percentage = $yearScores['final_percentage'];
+            $employee->final_grade = $yearScores['final_grade'];
+            $employee->grade_description = $yearScores['grade_description'];
+        }
+
+        return view('evaluation.report.elearning.index', compact(
+            'employees',
+            'years',
+            'departments',
+            'positions',
+            'selectedYear',
+            'selectedDepartment',
+            'selectedPosition',
+            'gradeRules'
+        ));
+    }
+    public function report_elearning_detail($employee_id, $year = null)
+    {
+        $employee = User::findOrFail($employee_id);
+
+        if (!$year) {
+            // Get the latest year with invitations for this employee
+            $latestYear = elearning_invitation::where('users_id', $employee_id)
+                ->orderBy('created_at', 'desc')
+                ->first();
+
+            $year = $latestYear ? Carbon::parse($latestYear->created_at)->year : Carbon::now()->year;
+        }
+
+        // Get monthly data
+        $monthlyData = [];
+        for ($month = 1; $month <= 12; $month++) {
+            $monthlyData[$month] = $this->getMonthData($employee_id, $year, $month);
+        }
+
+        // Calculate final scores
+        $yearScores = $this->calculateYearScores($employee_id, $year);
+
+        return view('evaluation.report.elearning.detail', compact(
+            'employee',
+            'year',
+            'monthlyData',
+            'yearScores'
+        ));
+    }
+
+    private function getMonthData($employee_id, $year, $month)
+    {
+        $start = Carbon::createFromDate($year, $month, 1)->startOfMonth();
+        $end = Carbon::createFromDate($year, $month, 1)->endOfMonth();
+
+        $invitations = elearning_invitation::select(
+            'elearning_invitation.id as invitation_id',
+            'elearning_invitation.lesson_id',
+            'elearning_invitation.schedule_id',
+            'elearning_lesson.name as lesson_name',
+            'elearning_lesson.passing_grade',
+            'elearning_schedule.start_date',
+            'elearning_schedule.end_date'
+        )
+            ->join('elearning_lesson', 'elearning_invitation.lesson_id', '=', 'elearning_lesson.id')
+            ->join('elearning_schedule', 'elearning_invitation.schedule_id', '=', 'elearning_schedule.id')
+            ->where('elearning_invitation.users_id', $employee_id)
+            ->whereBetween('elearning_schedule.start_date', [$start, $end])
+            ->get();
+
+        $now = Carbon::now();
+
+        foreach ($invitations as $invitation) {
+            // Check if there are answers for this invitation
+            $answers = elearning_answer::where('invitation_id', $invitation->invitation_id)
+                ->where('users_id', $employee_id)
+                ->get();
+
+            if ($answers->count() > 0) {
+                // Get the total possible points for all questions
+                $totalPossiblePoints = 0;
+                $earnedPoints = 0;
+
+                // Calculate total points and earned points
+                foreach ($answers as $answer) {
+                    // Get grade value for this question (from the grade column)
+                    $questionValue = $answer->grade;
+                    $totalPossiblePoints += $questionValue;
+
+                    // If the answer matches the answer_key, add the points
+                    if ($answer->answer == $answer->answer_key) {
+                        $earnedPoints += $questionValue;
+                    }
+                }
+
+                // Calculate raw score (earned points)
+                $invitation->raw_score = $earnedPoints;
+
+                // Store total possible points
+                $invitation->total_possible = $totalPossiblePoints;
+
+                // Calculate score percentage (out of possible points)
+                $invitation->score_percentage = $totalPossiblePoints > 0 ?
+                    round(($earnedPoints / $totalPossiblePoints) * 100, 2) : 0;
+
+                // Calculate passing grade percentage relative to total possible points
+                $invitation->passing_grade_percentage = $totalPossiblePoints > 0 ?
+                    round(($invitation->passing_grade / $totalPossiblePoints) * 100, 2) : 0;
+
+                $invitation->status = 'Completed';
+            } else {
+                // No answers found
+                $endDate = Carbon::parse($invitation->end_date);
+
+                if ($now->gt($endDate)) {
+                    // Past deadline, not completed
+                    $invitation->raw_score = 0;
+                    $invitation->total_possible = 0;
+                    $invitation->score_percentage = 0;
+                    $invitation->passing_grade_percentage = 0;
+                    $invitation->status = 'Not Completed';
+                } else {
+                    // Still has time to complete
+                    $invitation->raw_score = '-';
+                    $invitation->total_possible = '-';
+                    $invitation->score_percentage = '-';
+                    $invitation->passing_grade_percentage = '-';
+                    $invitation->status = 'Not Yet Completed';
+                }
+            }
+
+            // Get grade based on score percentage - use floor to round down decimal scores
+            if (is_numeric($invitation->score_percentage)) {
+                $scoreFloor = floor($invitation->score_percentage); // Round down decimal scores
+
+                $grade = RuleElearningGrade::where('min_score', '<=', $scoreFloor)
+                    ->where(function ($query) use ($scoreFloor) {
+                        $query->where('max_score', '>=', $scoreFloor)
+                            ->orWhereNull('max_score');
+                    })
+                    ->orderBy('min_score', 'desc')
+                    ->first();
+
+                $invitation->grade = $grade ? $grade->grade : '-';
+                $invitation->grade_description = $grade ? $grade->description : '-';
+            } else {
+                $invitation->grade = '-';
+                $invitation->grade_description = '-';
+            }
+        }
+
+        return $invitations;
+    }
+    private function calculateYearScores($employee_id, $year)
+    {
+        $totalPercentage = 0;
+        $totalLessons = 0;
+
+        for ($month = 1; $month <= 12; $month++) {
+            $monthData = $this->getMonthData($employee_id, $year, $month);
+
+            foreach ($monthData as $invitation) {
+                // Fix: Changed 'percentage' to 'score_percentage'
+                if (is_numeric($invitation->score_percentage)) {
+                    $totalPercentage += $invitation->score_percentage;
+                    $totalLessons++;
+                }
+            }
+        }
+
+        // Calculate final percentage
+        $finalPercentage = $totalLessons > 0 ? round($totalPercentage / $totalLessons, 2) : 0;
+
+        // Floor the percentage for grade determination
+        $finalPercentageFloor = floor($finalPercentage);
+
+        // Get grade based on final percentage
+        $grade = RuleElearningGrade::where('min_score', '<=', $finalPercentageFloor)
+            ->where(function ($query) use ($finalPercentageFloor) {
+                $query->where('max_score', '>=', $finalPercentageFloor)
+                    ->orWhereNull('max_score');
+            })
             ->orderBy('min_score', 'desc')
             ->first();
+
+        return [
+            'final_percentage' => $finalPercentage,
+            'final_grade' => $grade ? $grade->grade : '-',
+            'grade_description' => $grade ? $grade->description : '-'
+        ];
+    }
+    public function report_elearning_detail_answers($invitation_id)
+    {
+        $invitation = elearning_invitation::findOrFail($invitation_id);
+
+        $answers = elearning_answer::where('invitation_id', $invitation_id)
+            ->orderBy('id')
+            ->get();
+
+        $lesson = elearning_lesson::find($invitation->lesson_id);
+
+        return response()->json([
+            'invitation' => $invitation,
+            'answers' => $answers,
+            'lesson' => $lesson
+        ]);
+    }
+
+
+    public function report_elearning_export(Request $request)
+    {
+        // Get employee ID from request or session
+        $employee_id = $request->input('employee_id');
+        $year = $request->input('year');
+
+        // Check if employee_id is missing but available in session/referer
+        if (!$employee_id && session()->has('employee_id')) {
+            $employee_id = session('employee_id');
+        }
+
+        // Make sure we have an employee ID
+        if (!$employee_id) {
+            return redirect()->back()->with('error', 'Employee ID is required for export');
+        }
+
+
+        // Find employee
+        $employee = User::findOrFail($employee_id);
+
+        if (!$year) {
+            // Get the latest year with invitations for this employee
+            $latestYear = elearning_invitation::where('users_id', $employee_id)
+                ->orderBy('created_at', 'desc')
+                ->first();
+
+            $year = $latestYear ? Carbon::parse($latestYear->created_at)->year : Carbon::now()->year;
+        }
+
+        // Get yearly scores for the final sheet
+        $yearScores = $this->calculateYearScores($employee_id, $year);
+
+        // Create Excel file
+        $spreadsheet = new Spreadsheet();
+
+        // Remove the default worksheet
+        $spreadsheet->removeSheetByIndex(0);
+
+        // Month names
+        $monthNames = [
+            1 => 'January',
+            2 => 'February',
+            3 => 'March',
+            4 => 'April',
+            5 => 'May',
+            6 => 'June',
+            7 => 'July',
+            8 => 'August',
+            9 => 'September',
+            10 => 'October',
+            11 => 'November',
+            12 => 'December'
+        ];
+
+        // Add monthly sheets
+        foreach ($monthNames as $monthNum => $monthName) {
+            $monthData = $this->getMonthData($employee_id, $year, $monthNum);
+
+            // Only create sheets for months with data
+            if (count($monthData) > 0) {
+                // Create a new sheet
+                $sheet = new \PhpOffice\PhpSpreadsheet\Worksheet\Worksheet($spreadsheet, $monthName);
+                $spreadsheet->addSheet($sheet);
+
+                // Employee Information Header
+                $sheet->setCellValue('A1', 'Employee Information');
+                $sheet->setCellValue('A2', 'ID');
+                $sheet->setCellValue('B2', $employee->employee_id);
+                $sheet->setCellValue('D2', 'Name');
+                $sheet->setCellValue('E2', $employee->name);
+
+                $department = EmployeeDepartment::find($employee->department_id);
+                $position = EmployeePosition::find($employee->position_id);
+
+                $sheet->setCellValue('A3', 'Department');
+                $sheet->setCellValue('B3', $department ? $department->department : '');
+                $sheet->setCellValue('D3', 'Position');
+                $sheet->setCellValue('E3', $position ? $position->position : '');
+
+                $sheet->setCellValue('A4', 'Year');
+                $sheet->setCellValue('B4', $year);
+
+                // Style employee info header
+                $sheet->getStyle('A1')->getFont()->setBold(true)->setSize(14);
+                $sheet->mergeCells('A1:H1');
+                $sheet->getStyle('A2:A4')->getFont()->setBold(true);
+                $sheet->getStyle('D2:D4')->getFont()->setBold(true);
+
+                // Lesson table headers
+                $headers = [
+                    'No',
+                    'Lesson Name',
+                    'Start Date',
+                    'End Date',
+                    'Passing Grade',
+                    'Passing Grade (%)',
+                    'Raw Score',
+                    'Score (%)',
+                    'Grade',
+                    'Status'
+                ];
+
+                $col = 'A';
+                $headerRow = 6; // Leave a blank row after employee info
+
+                foreach ($headers as $header) {
+                    $sheet->setCellValue($col . $headerRow, $header);
+                    $col++;
+                }
+
+                // Style headers
+                $headerRange = 'A' . $headerRow . ':' . 'J' . $headerRow;
+                $sheet->getStyle($headerRange)->getFont()->setBold(true);
+                $sheet->getStyle($headerRange)->getFill()
+                    ->setFillType(Fill::FILL_SOLID)
+                    ->getStartColor()->setRGB('D1E7DD');
+                $sheet->getStyle($headerRange)->getAlignment()
+                    ->setHorizontal(Alignment::HORIZONTAL_CENTER);
+
+                // Add lesson data
+                $row = $headerRow + 1;
+                $count = 1;
+
+                foreach ($monthData as $lesson) {
+                    $sheet->setCellValue('A' . $row, $count);
+                    $sheet->setCellValue('B' . $row, $lesson->lesson_name);
+                    $sheet->setCellValue('C' . $row, $lesson->start_date ? Carbon::parse($lesson->start_date)->format('d M Y') : '-');
+                    $sheet->setCellValue('D' . $row, $lesson->end_date ? Carbon::parse($lesson->end_date)->format('d M Y') : '-');
+                    $sheet->setCellValue('E' . $row, $lesson->passing_grade);
+                    $sheet->setCellValue('F' . $row, is_numeric($lesson->passing_grade_percentage) ? $lesson->passing_grade_percentage . '%' : '-');
+                    $sheet->setCellValue('G' . $row, is_numeric($lesson->raw_score) ? $lesson->raw_score : '-');
+                    $sheet->setCellValue('H' . $row, is_numeric($lesson->score_percentage) ? $lesson->score_percentage . '%' : '-');
+                    $sheet->setCellValue('I' . $row, $lesson->grade);
+                    $sheet->setCellValue('J' . $row, $lesson->status);
+
+                    // Style completed/not completed cells
+                    if ($lesson->status == 'Completed') {
+                        $sheet->getStyle('J' . $row)->getFill()
+                            ->setFillType(Fill::FILL_SOLID)
+                            ->getStartColor()->setRGB('D1E7DD');
+                    } else if ($lesson->status == 'Not Completed') {
+                        $sheet->getStyle('J' . $row)->getFill()
+                            ->setFillType(Fill::FILL_SOLID)
+                            ->getStartColor()->setRGB('F8D7DA');
+                    }
+
+                    $row++;
+                    $count++;
+                }
+
+                // Auto size columns
+                foreach (range('A', 'J') as $columnID) {
+                    $sheet->getColumnDimension($columnID)->setAutoSize(true);
+                }
+            }
+        }
+
+
+        // Create Final sheet (always include this one)
+        $finalSheet = new \PhpOffice\PhpSpreadsheet\Worksheet\Worksheet($spreadsheet, 'Final');
+        $spreadsheet->addSheet($finalSheet);
+
+        // Employee information on Final sheet
+        $finalSheet->setCellValue('A1', 'E-Learning Detail Report');
+        $finalSheet->setCellValue('A2', 'ID');
+        $finalSheet->setCellValue('B2', $employee->employee_id);
+        $finalSheet->setCellValue('D2', 'Name');
+        $finalSheet->setCellValue('E2', $employee->name);
+
+        $department = EmployeeDepartment::find($employee->department_id);
+        $position = EmployeePosition::find($employee->position_id);
+
+        $finalSheet->setCellValue('A3', 'Department');
+        $finalSheet->setCellValue('B3', $department ? $department->department : '');
+        $finalSheet->setCellValue('D3', 'Position');
+        $finalSheet->setCellValue('E3', $position ? $position->position : '');
+
+        $finalSheet->setCellValue('A4', 'Year');
+        $finalSheet->setCellValue('B4', $year);
+
+        // Final score information
+        $finalSheet->setCellValue('A6', 'Final Grade');
+        $finalSheet->setCellValue('B6', $yearScores['final_grade']);
+        $finalSheet->setCellValue('A7', 'Description');
+        $finalSheet->setCellValue('B7', $yearScores['grade_description']);
+        $finalSheet->setCellValue('A8', 'Final Score');
+        $finalSheet->setCellValue('B8', $yearScores['final_percentage'] . '%');
+
+        // Style final score section
+        $finalSheet->getStyle('A1')->getFont()->setBold(true)->setSize(16);
+        $finalSheet->mergeCells('A1:H1');
+        $finalSheet->getStyle('A2:A4')->getFont()->setBold(true);
+        $finalSheet->getStyle('D2:D4')->getFont()->setBold(true);
+        $finalSheet->getStyle('A6:A8')->getFont()->setBold(true);
+        $finalSheet->getStyle('B6')->getFont()->setSize(14);
+
+        // Monthly summary on Final sheet
+        $finalSheet->setCellValue('A10', 'Month');
+        $finalSheet->setCellValue('B10', 'Total Lessons');
+        $finalSheet->setCellValue('C10', 'Completed');
+        $finalSheet->setCellValue('D10', 'Average Score');
+
+        // Style monthly summary header
+        $finalSheet->getStyle('A10:D10')->getFont()->setBold(true);
+        $finalSheet->getStyle('A10:D10')->getFill()
+            ->setFillType(Fill::FILL_SOLID)
+            ->getStartColor()->setRGB('D1E7DD');
+        $finalSheet->getStyle('A10:D10')->getAlignment()
+            ->setHorizontal(Alignment::HORIZONTAL_CENTER);
+
+        // Add monthly summary data
+        $summaryRow = 11;
+
+        foreach ($monthNames as $monthNum => $monthName) {
+            $monthData = $this->getMonthData($employee_id, $year, $monthNum);
+
+            if (count($monthData) > 0) {
+                $totalLessons = count($monthData);
+                $completedLessons = 0;
+                $totalScore = 0;
+                $scoredLessons = 0;
+
+                foreach ($monthData as $lesson) {
+                    if ($lesson->status == 'Completed') {
+                        $completedLessons++;
+                    }
+
+                    if (is_numeric($lesson->score_percentage)) {
+                        $totalScore += $lesson->score_percentage;
+                        $scoredLessons++;
+                    }
+                }
+
+                $averageScore = $scoredLessons > 0 ? round($totalScore / $scoredLessons, 2) . '%' : '-';
+
+                $finalSheet->setCellValue('A' . $summaryRow, $monthName);
+                $finalSheet->setCellValue('B' . $summaryRow, $totalLessons);
+                $finalSheet->setCellValue('C' . $summaryRow, $completedLessons);
+                $finalSheet->setCellValue('D' . $summaryRow, $averageScore);
+
+                $summaryRow++;
+            }
+        }
+
+        // Auto size columns on final sheet
+        foreach (range('A', 'D') as $columnID) {
+            $finalSheet->getColumnDimension($columnID)->setAutoSize(true);
+        }
+
+        // Set the first sheet as active
+        $spreadsheet->setActiveSheetIndex(0);
+
+        // Create the Excel file
+        $writer = new Xlsx($spreadsheet);
+        $filename = 'E-Learning_Report_' . $employee->employee_id . '_' . $employee->name . '_' . $year . '.xlsx';
+
+        // Create a temporary file
+        $temp_file = tempnam(sys_get_temp_dir(), 'elearning_report');
+        $writer->save($temp_file);
+
+        // Return the file as a download
+        return response()->download($temp_file, $filename, [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        ])->deleteFileAfterSend(true);
+    }
+
+
+
+    /**
+     * Show the final evaluation report index
+     */
+
+
+public function report_final_index(Request $request)
+{
+    // Get current year for default filtering
+    $currentYear = date('Y');
+    $selectedYear = $request->input('year', $currentYear);
+
+    // Get filter parameters
+    $employeeFilter = $request->input('employee');
+    $positionFilter = $request->input('position');
+    $departmentFilter = $request->input('department');
+
+    // Get available years from evaluations
+    $availableYears = EvaluationPerformance::select(DB::raw('DISTINCT YEAR(date) as year'))
+        ->orderBy('year', 'desc')
+        ->pluck('year')
+        ->toArray();
+
+    if (empty($availableYears)) {
+        $availableYears = [$currentYear];
+    }
+
+    // Find users that have any evaluation data at all
+    $usersWithData = DB::table('users')
+        ->select('users.id')
+        ->distinct()
+        ->where(function ($query) use ($selectedYear) {
+            // Has performance evaluation
+            $query->whereExists(function ($q) use ($selectedYear) {
+                $q->select(DB::raw(1))
+                    ->from('employee_evaluation_performance')
+                    ->whereRaw('employee_evaluation_performance.user_id = users.id')
+                    ->whereYear('employee_evaluation_performance.date', $selectedYear);
+            })
+                // Or has discipline record (absence)
+                ->orWhereExists(function ($q) use ($selectedYear) {
+                    $q->select(DB::raw(1))
+                        ->from('employee_absent')
+                        ->whereRaw('employee_absent.user_id = users.id')
+                        ->whereYear('employee_absent.date', $selectedYear);
+                })
+                // Or has e-learning record
+                ->orWhereExists(function ($q) use ($selectedYear) {
+                    $q->select(DB::raw(1))
+                        ->from('elearning_invitation')
+                        ->whereRaw('elearning_invitation.users_id = users.id')
+                        ->whereYear('elearning_invitation.created_at', $selectedYear);
+                });
+        })
+        ->when($employeeFilter, function ($query) use ($employeeFilter) {
+            return $query->where('users.id', $employeeFilter);
+        })
+        ->pluck('id')
+        ->toArray();
+
+    // Get basic user data
+    $users = User::whereIn('id', $usersWithData)->get();
+    
+    // Get filter data (without assuming relationships)
+    $employeesList = User::whereIn('id', $usersWithData)
+        ->select('id', 'name', 'employee_id')
+        ->orderBy('name')
+        ->get();
+
+    // Initialize collections for positions and departments
+    $historicalPositionIds = collect();
+    $historicalDepartmentIds = collect();
+    $userHistoricalPositions = [];
+    $userHistoricalDepartments = [];
+
+    // For each user, find their historical position and department
+    foreach ($users as $user) {
+        // Get the reference date for this user (we'll use the earliest event date in the selected year)
+        // Fixed the SQL query construction
+        $minPerformanceDate = DB::table('employee_evaluation_performance')
+            ->where('user_id', $user->id)
+            ->whereYear('date', $selectedYear)
+            ->min('date');
+            
+        $minAbsentDate = DB::table('employee_absent')
+            ->where('user_id', $user->id)
+            ->whereYear('date', $selectedYear)
+            ->min('date');
+            
+        $minElearningDate = DB::table('elearning_invitation')
+            ->where('users_id', $user->id)
+            ->whereYear('created_at', $selectedYear)
+            ->min('created_at');
+        
+        // Find the earliest date among all three types
+        $dates = array_filter([$minPerformanceDate, $minAbsentDate, $minElearningDate]);
+        $referenceDate = !empty($dates) ? min($dates) : null;
+
+        if ($referenceDate) {
+            // Find the most recent transfer before the reference date
+            $historicalTransfer = \App\Models\history_transfer_employee::where('users_id', $user->id)
+                ->where('created_at', '<', $referenceDate)
+                ->orderBy('created_at', 'desc')
+                ->first();
+
+            if ($historicalTransfer) {
+                // Use the historical position and department
+                $userHistoricalPositions[$user->id] = $historicalTransfer->new_position_id;
+                $userHistoricalDepartments[$user->id] = $historicalTransfer->new_department_id;
+                
+                $historicalPositionIds->push($historicalTransfer->new_position_id);
+                $historicalDepartmentIds->push($historicalTransfer->new_department_id);
+            } else {
+                // No transfer history found, use current position and department
+                $userHistoricalPositions[$user->id] = $user->position_id;
+                $userHistoricalDepartments[$user->id] = $user->department_id;
+                
+                $historicalPositionIds->push($user->position_id);
+                $historicalDepartmentIds->push($user->department_id);
+            }
+        } else {
+            // No reference date found, use current values
+            $userHistoricalPositions[$user->id] = $user->position_id;
+            $userHistoricalDepartments[$user->id] = $user->department_id;
+            
+            $historicalPositionIds->push($user->position_id);
+            $historicalDepartmentIds->push($user->department_id);
+        }
+    }
+
+    // Filter users by historical position and department if requested
+    $filteredUsers = collect($usersWithData);
+    
+    if ($positionFilter) {
+        $filteredUsers = $filteredUsers->filter(function ($userId) use ($userHistoricalPositions, $positionFilter) {
+            return isset($userHistoricalPositions[$userId]) && $userHistoricalPositions[$userId] == $positionFilter;
+        });
+    }
+    
+    if ($departmentFilter) {
+        $filteredUsers = $filteredUsers->filter(function ($userId) use ($userHistoricalDepartments, $departmentFilter) {
+            return isset($userHistoricalDepartments[$userId]) && $userHistoricalDepartments[$userId] == $departmentFilter;
+        });
+    }
+    
+    // Update users array with filtered list
+    $users = User::whereIn('id', $filteredUsers->toArray())->get();
+
+    // Get positions and departments for display and filtering
+    $positionsList = EmployeePosition::whereIn('id', $historicalPositionIds->unique())
+        ->select('id', 'position')
+        ->orderBy('position')
+        ->get();
+
+    $departmentsList = EmployeeDepartment::whereIn('id', $historicalDepartmentIds->unique())
+        ->select('id', 'department')
+        ->orderBy('department')
+        ->get();
+
+    // Initialize empty data array with just user info and historical positions/departments
+    $finalData = [];
+    foreach ($users as $user) {
+        $historicalPositionId = $userHistoricalPositions[$user->id] ?? $user->position_id;
+        $historicalDepartmentId = $userHistoricalDepartments[$user->id] ?? $user->department_id;
+        
+        $finalData[] = [
+            'user_id' => $user->id,
+            'employee_id' => $user->employee_id ?? '',
+            'name' => $user->name,
+            'position' => $historicalPositionId ? 
+                ($positionsList->firstWhere('id', $historicalPositionId)->position ?? '') : '',
+            'department' => $historicalDepartmentId ? 
+                ($departmentsList->firstWhere('id', $historicalDepartmentId)->department ?? '') : '',
+            'performance' => null,
+            'discipline' => null,
+            'elearning' => null
+        ];
+    }
+
+    return view('evaluation.report.final.index', compact(
+        'finalData',
+        'employeesList',
+        'positionsList',
+        'departmentsList',
+        'availableYears',
+        'selectedYear',
+        'filteredUsers' // Pass filtered users instead of all usersWithData
+    ));
+}
+
+    public function getFinalReportData(Request $request)
+    {
+
+        $userIds = $request->input('userIds', []);
+        $year = $request->input('year');
+
+        if (empty($userIds) || !$year) {
+            return response()->json(['error' => 'Missing parameters'], 400);
+        }
+
+        if (is_string($userIds)) {
+            $userIds = json_decode($userIds, true);
+        }
+
+        // dd($userIds);
+
+        $performanceData = $this->getPerformanceData($userIds, $year);
+
+        $disciplineData = $this->getDisciplineData($userIds, $year);
+        $elearningData = $this->getElearningData($userIds, $year);
+
+        return response()->json([
+            'performance' => $performanceData,
+            'discipline' => $disciplineData,
+            'elearning' => $elearningData
+        ]);
+    }
+
+    /**
+     * Get performance data for employees
+     */
+    private function getPerformanceData($employeeIds, $year)
+    {
+        $data = [];
+
+        // Get all evaluations for these users in the selected year
+        $evaluations = EvaluationPerformance::whereIn('user_id', $employeeIds)
+            ->whereYear('date', $year)
+            ->get()
+            ->groupBy('user_id');
+
+        // Get performance grade rules
+        $gradeRules = RulePerformanceGrade::orderBy('min_score', 'desc')->get();
+
+        foreach ($evaluations as $userId => $userEvaluations) {
+            $totalScore = $userEvaluations->sum('total_score');
+            $totalReduction = $userEvaluations->sum('total_reduction');
+            $monthCount = $userEvaluations->count();
+
+            if ($monthCount > 0) {
+                $averageScore = $totalScore / $monthCount;
+                $finalScore = $averageScore - $totalReduction;
+
+                $grade = $gradeRules->first(function ($rule) use ($finalScore) {
+                    $belowMaxOrNoMax = ($rule->max_score === null || $finalScore <= $rule->max_score);
+                    $aboveMinOrNoMin = ($rule->min_score === null || $finalScore >= $rule->min_score);
+                    return $aboveMinOrNoMin && $belowMaxOrNoMax;
+                });
+
+                $data[$userId] = [
+                    'score' => round($finalScore, 2),
+                    'grade' => $grade ? $grade->grade : 'E',
+                    'description' => $grade ? $grade->description : 'Poor'
+                ];
+            }
+        }
+
+        return $data;
+    }
+
+    /**
+     * Get discipline data for employees
+     */
+    private function getDisciplineData($employeeIds, $year)
+    {
+        $data = [];
+
+        // Get grade rules from database
+        $gradeRules = RuleDisciplineGrade::orderBy('min_score', 'desc')->get();
+
+        // Get discipline data for each employee
+        foreach ($employeeIds as $employeeId) {
+            $employee = User::find($employeeId);
+            if (!$employee) continue;
+
+            $yearlyData = $this->calculateDisciplineYearlyData($employee, $year);
+
+            if ($yearlyData && isset($yearlyData['total_score']) && $yearlyData['total_score'] !== '') {
+                // Find grade based on score
+                $grade = 'E'; // Default to lowest grade
+                $description = 'Poor';
+
+                foreach ($gradeRules as $rule) {
+                    if (
+                        $yearlyData['total_score'] >= $rule->min_score &&
+                        ($rule->max_score === null || $yearlyData['total_score'] <= $rule->max_score)
+                    ) {
+                        $grade = $rule->grade;
+                        $description = $rule->description;
+                        break;
+                    }
+                }
+
+                $data[$employeeId] = [
+                    'score' => round($yearlyData['total_score'], 2),
+                    'grade' => $grade,
+                    'description' => $description
+                ];
+            }
+        }
+
+        return $data;
+    }
+
+    /**
+     * Calculate discipline yearly data for an employee
+     */
+    private function calculateDisciplineYearlyData($employee, $year)
+    {
+        // This code is based on the existing getDisciplineReportData method
+        // Calculate working days, absences, and scores for the entire year
+
+        // Get discipline rules
+        $attendanceRules = DisciplineRule::where('rule_type', 'attendance')->orderBy('min_value', 'desc')->get();
+        $lateRules = DisciplineRule::where('rule_type', 'late')->orderBy('min_value', 'asc')->get();
+        $afternoonShiftRule = DisciplineRule::where('rule_type', 'afternoon_shift')->first();
+        $earlyLeaveRule = DisciplineRule::where('rule_type', 'early_leave')->first();
+        $stRule = DisciplineRule::where('rule_type', 'st')->first();
+        $spRule = DisciplineRule::where('rule_type', 'sp')->first();
+
+        $yearlyData = [
+            'working_days' => 0,
+            'presence' => 0,
+            'late_arrivals' => 0,
+            'permission' => 0,
+            'afternoon_shift_count' => 0,
+            'early_departures' => 0,
+            'sick_leave' => 0,
+            'st_count' => 0,
+            'sp_count' => 0
+        ];
+
+        for ($month = 1; $month <= 12; $month++) {
+            $customHolidays = CustomHoliday::whereYear('date', $year)
+                ->whereMonth('date', $month)
+                ->pluck('date')
+                ->map(function ($date) {
+                    return Carbon::parse($date)->format('Y-m-d');
+                })
+                ->toArray();
+
+            $workingDays = $this->calculateWorkingDays($year, $month, $customHolidays);
+            $yearlyData['working_days'] += $workingDays;
+
+            $absences = EmployeeAbsent::where('user_id', $employee->id)
+                ->whereYear('date', $year)
+                ->whereMonth('date', $month)
+                ->get();
+
+            $startDate = Carbon::create($year, $month, 1)->format('Y-m-d');
+            $endDate = Carbon::create($year, $month)->endOfMonth()->format('Y-m-d');
+
+            $timeOffRequests = RequestTimeOff::where('user_id', $employee->id)
+                ->where('status', 'Approved')
+                ->where(function ($query) use ($startDate, $endDate) {
+                    $query->whereBetween('start_date', [$startDate, $endDate])
+                        ->orWhereBetween('end_date', [$startDate, $endDate])
+                        ->orWhere(function ($innerQ) use ($startDate, $endDate) {
+                            $innerQ->where('start_date', '<=', $startDate)
+                                ->where('end_date', '>=', $endDate);
+                        });
+                })
+                ->with('timeOffPolicy')
+                ->get();
+
+            $warningLetters = WarningLetter::where('user_id', $employee->id)
+                ->whereYear('created_at', $year)
+                ->whereMonth('created_at', $month)
+                ->get();
+
+            // Sum all monthly values
+            $yearlyData['presence'] += $absences->count();
+            $yearlyData['late_arrivals'] += $this->countLateArrivals($absences);
+            $yearlyData['early_departures'] += $this->countEarlyDepartures($absences);
+            $yearlyData['sick_leave'] += $this->countTimeOffByType($timeOffRequests, 'sick');
+            $yearlyData['permission'] += $this->countTimeOffByType($timeOffRequests, 'permission');
+            $yearlyData['afternoon_shift_count'] += $this->countAfternoonShifts($timeOffRequests);
+            $yearlyData['st_count'] += $this->countWarningLetters($warningLetters, 'ST');
+            $yearlyData['sp_count'] += $this->countWarningLetters($warningLetters, 'SP');
+        }
+
+        // Calculate attendance percentage
+        $attendancePercentage = $yearlyData['working_days'] > 0
+            ? round(($yearlyData['presence'] / $yearlyData['working_days']) * 100)
+            : 0;
+
+        // Calculate scores based on yearly totals
+        $attendanceScore = $yearlyData['presence'] === 0 ? 0 : $this->calculateAttendanceScore($attendancePercentage, $attendanceRules, $yearlyData['presence']);
+        $lateScore = $this->calculateLateScore($yearlyData['late_arrivals'], $lateRules);
+        $afternoonShiftScore = $this->calculateOccurrenceScore($yearlyData['afternoon_shift_count'], $afternoonShiftRule);
+        $earlyDepartureScore = $this->calculateOccurrenceScore($yearlyData['early_departures'], $earlyLeaveRule);
+        $stScore = $this->calculateOccurrenceScore($yearlyData['st_count'], $stRule);
+        $spScore = $this->calculateOccurrenceScore($yearlyData['sp_count'], $spRule);
+
+        // Calculate total score
+        $totalScore = $attendanceScore - $lateScore - $afternoonShiftScore - $earlyDepartureScore - $stScore - $spScore;
+
+        $finalData = [
+            'total_score' => $yearlyData['presence'] > 0 ? $totalScore : ''
+        ];
+
+        return $finalData;
+    }
+
+    /**
+     * Get e-learning data for employees
+     */
+    private function getElearningData($employeeIds, $year)
+    {
+        $data = [];
+
+        // Get grade rules
+        $gradeRules = RuleElearningGrade::orderBy('min_score', 'desc')->get();
+
+        foreach ($employeeIds as $employeeId) {
+            $yearScores = $this->calculateElearningYearScores($employeeId, $year);
+
+            if ($yearScores && isset($yearScores['final_percentage'])) {
+                $data[$employeeId] = [
+                    'score' => round($yearScores['final_percentage'], 2),
+                    'grade' => $yearScores['final_grade'] ?? 'E',
+                    'description' => $yearScores['grade_description'] ?? 'Poor'
+                ];
+            }
+        }
+
+        return $data; // Removed dd() to return the data instead of dumping it
+    }
+
+    /**
+     * Calculate e-learning year scores for an employee
+     */
+    private function calculateElearningYearScores($userId, $year)
+    {
+        // This implementation follows the logic in your original calculateYearScores method
+        $totalPercentage = 0;
+        $totalLessons = 0;
+
+        for ($month = 1; $month <= 12; $month++) {
+            $monthData = $this->getMonthData($userId, $year, $month);
+
+            foreach ($monthData as $invitation) {
+                if (is_numeric($invitation->score_percentage)) {
+                    $totalPercentage += $invitation->score_percentage;
+                    $totalLessons++;
+                }
+            }
+        }
+
+        // Calculate final percentage
+        $finalPercentage = $totalLessons > 0 ? round($totalPercentage / $totalLessons, 2) : 0;
+
+        // Floor the percentage for grade determination
+        $finalPercentageFloor = floor($finalPercentage);
+
+        // Get grade based on final percentage
+        $grade = RuleElearningGrade::where('min_score', '<=', $finalPercentageFloor)
+            ->where(function ($query) use ($finalPercentageFloor) {
+                $query->where('max_score', '>=', $finalPercentageFloor)
+                    ->orWhereNull('max_score');
+            })
+            ->orderBy('min_score', 'desc')
+            ->first();
+
+        return [
+            'final_percentage' => $finalPercentage,
+            'final_grade' => $grade ? $grade->grade : 'E',
+            'grade_description' => $grade ? $grade->description : 'Poor'
+        ];
+    }
+
+
+    public function finalExportToExcel(Request $request)
+    {
+        // Get parameters from the request
+        $selectedYear = $request->input('year', date('Y'));
+        $employeeFilter = $request->input('employee');
+        $positionFilter = $request->input('position');
+        $departmentFilter = $request->input('department');
+
+        // Reuse the query logic from report_final_index to get the same data
+        $usersWithData = DB::table('users')
+            ->select('users.id')
+            ->distinct()
+            ->where(function ($query) use ($selectedYear) {
+                // Has performance evaluation
+                $query->whereExists(function ($q) use ($selectedYear) {
+                    $q->select(DB::raw(1))
+                        ->from('employee_evaluation_performance')
+                        ->whereRaw('employee_evaluation_performance.user_id = users.id')
+                        ->whereYear('employee_evaluation_performance.date', $selectedYear);
+                })
+                    // Or has discipline record (absence)
+                    ->orWhereExists(function ($q) use ($selectedYear) {
+                        $q->select(DB::raw(1))
+                            ->from('employee_absent')
+                            ->whereRaw('employee_absent.user_id = users.id')
+                            ->whereYear('employee_absent.date', $selectedYear);
+                    })
+                    // Or has e-learning record
+                    ->orWhereExists(function ($q) use ($selectedYear) {
+                        $q->select(DB::raw(1))
+                            ->from('elearning_invitation')
+                            ->whereRaw('elearning_invitation.users_id = users.id')
+                            ->whereYear('elearning_invitation.created_at', $selectedYear);
+                    });
+            })
+            ->when($employeeFilter, function ($query) use ($employeeFilter) {
+                return $query->where('users.id', $employeeFilter);
+            })
+            ->when($positionFilter, function ($query) use ($positionFilter) {
+                return $query->where('users.position_id', $positionFilter);
+            })
+            ->when($departmentFilter, function ($query) use ($departmentFilter) {
+                return $query->where('users.department_id', $departmentFilter);
+            })
+            ->pluck('id')
+            ->toArray();
+
+        // Get users and their basic info
+        $users = User::whereIn('id', $usersWithData)->get();
+
+        // Get performance, discipline, e-learning data
+        $performanceData = $this->getPerformanceData($usersWithData, $selectedYear);
+        $disciplineData = $this->getDisciplineData($usersWithData, $selectedYear);
+        $elearningData = $this->getElearningData($usersWithData, $selectedYear);
+
+        // Get positions and departments
+        $positionsList = EmployeePosition::whereIn('id', User::whereIn('id', $usersWithData)
+            ->whereNotNull('position_id')
+            ->pluck('position_id')
+            ->unique()
+            ->toArray())
+            ->select('id', 'position')
+            ->get();
+
+        $departmentsList = EmployeeDepartment::whereIn('id', User::whereIn('id', $usersWithData)
+            ->whereNotNull('department_id')
+            ->pluck('department_id')
+            ->unique()
+            ->toArray())
+            ->select('id', 'department')
+            ->get();
+
+        // Prepare data for Excel
+        $exportData = [];
+        $counter = 1;
+
+        // Calculate weights (default values if not provided)
+        $performanceWeight = $request->input('performance_weight', 60) / 100;
+        $disciplineWeight = $request->input('discipline_weight', 30) / 100;
+        $elearningWeight = $request->input('elearning_weight', 10) / 100;
+
+        // Grade value mapping
+        $gradeValues = [
+            'A' => 5.0,
+            'A-' => 4.75,
+            'B+' => 4.3,
+            'B' => 4.0,
+            'B-' => 3.75,
+            'C+' => 3.3,
+            'C' => 3.0,
+            'C-' => 2.75,
+            'D+' => 2.3,
+            'D' => 2.0,
+            'D-' => 1.75,
+            'E+' => 1.3,
+            'E' => 1.0,
+            'F' => 0.5
+        ];
+
+        foreach ($users as $user) {
+            $performanceGrade = $performanceData[$user->id]['grade'] ?? 'F';
+            $disciplineGrade = $disciplineData[$user->id]['grade'] ?? 'F';
+            $elearningGrade = $elearningData[$user->id]['grade'] ?? 'F';
+
+            $performanceGradeValue = $gradeValues[$performanceGrade] ?? 0;
+            $disciplineGradeValue = $gradeValues[$disciplineGrade] ?? 0;
+            $elearningGradeValue = $gradeValues[$elearningGrade] ?? 0;
+
+            // Calculate weighted scores
+            $weightedPerformance = $performanceGradeValue * $performanceWeight;
+            $weightedDiscipline = $disciplineGradeValue * $disciplineWeight;
+            $weightedElearning = $elearningGradeValue * $elearningWeight;
+
+            // Calculate final score
+            $finalScore = $weightedPerformance + $weightedDiscipline + $weightedElearning;
+            $finalGrade = $this->getGradeFromScore($finalScore);
+
+            $exportData[] = [
+                '#' => $counter++,
+                'Employee ID' => $user->employee_id ?? '',
+                'Name' => $user->name,
+                'Department' => $user->department_id ?
+                    ($departmentsList->firstWhere('id', $user->department_id)->department ?? '') : '',
+                'Position' => $user->position_id ?
+                    ($positionsList->firstWhere('id', $user->position_id)->position ?? '') : '',
+                'Performance' => $performanceGrade,
+                'Performance Score' => number_format($weightedPerformance, 2),
+                'Discipline' => $disciplineGrade,
+                'Discipline Score' => number_format($weightedDiscipline, 2),
+                'E-Learning' => $elearningGrade,
+                'E-Learning Score' => number_format($weightedElearning, 2),
+                'Final Score' => number_format($finalScore, 2),
+                'Final Grade' => $finalGrade
+            ];
+        }
+
+        // Create Excel file
+        $fileName = 'Final_Evaluation_Report_' . $selectedYear . '_' . date('Ymd_His') . '.xlsx';
+
+        return Excel::download(new class($exportData) implements FromArray, WithHeadings, WithStyles, ShouldAutoSize {
+            private $data;
+
+            public function __construct($data)
+            {
+                $this->data = $data;
+            }
+
+            public function array(): array
+            {
+                return $this->data;
+            }
+
+            public function headings(): array
+            {
+                // Return the first row's keys as headings if data exists
+                return !empty($this->data) ? array_keys($this->data[0]) : [];
+            }
+
+            public function styles(Worksheet $sheet)
+            {
+                // Style for the header row
+                $sheet->getStyle('A1:M1')->applyFromArray([
+                    'font' => [
+                        'bold' => true,
+                        'color' => [
+                            'rgb' => 'FFFFFF'
+                        ]
+                    ],
+                    'fill' => [
+                        'fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID,
+                        'startColor' => [
+                            'rgb' => '4472C4'
+                        ]
+                    ]
+                ]);
+
+                // Apply borders to all cells
+                $lastRow = count($this->data) + 1;
+                $sheet->getStyle('A1:M' . $lastRow)->applyFromArray([
+                    'borders' => [
+                        'allBorders' => [
+                            'borderStyle' => \PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN
+                        ]
+                    ]
+                ]);
+
+                // Center align specific columns
+                $sheet->getStyle('A:A')->getAlignment()->setHorizontal('center'); // #
+                $sheet->getStyle('F:F')->getAlignment()->setHorizontal('center'); // Performance
+                $sheet->getStyle('G:G')->getAlignment()->setHorizontal('center'); // Performance Score
+                $sheet->getStyle('H:H')->getAlignment()->setHorizontal('center'); // Discipline
+                $sheet->getStyle('I:I')->getAlignment()->setHorizontal('center'); // Discipline Score
+                $sheet->getStyle('J:J')->getAlignment()->setHorizontal('center'); // E-Learning
+                $sheet->getStyle('K:K')->getAlignment()->setHorizontal('center'); // E-Learning Score
+                $sheet->getStyle('L:L')->getAlignment()->setHorizontal('center'); // Final Score
+                $sheet->getStyle('M:M')->getAlignment()->setHorizontal('center'); // Final Grade
+            }
+        }, $fileName);
+    }
+
+    /**
+     * Helper function to get grade from score
+     */
+    private function getGradeFromScore($score)
+    {
+        if ($score >= 5.0) return 'A';
+        if ($score >= 4.6) return 'A-';
+        if ($score >= 4.1) return 'B+';
+        if ($score >= 4.0) return 'B';
+        if ($score >= 3.6) return 'B-';
+        if ($score >= 3.1) return 'C+';
+        if ($score >= 3.0) return 'C';
+        if ($score >= 2.6) return 'C-';
+        if ($score >= 2.1) return 'D+';
+        if ($score >= 2.0) return 'D';
+        if ($score >= 1.6) return 'D-';
+        if ($score >= 1.1) return 'E+';
+        if ($score >= 1.0) return 'E';
+        return 'F';
     }
 }

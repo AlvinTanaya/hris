@@ -21,6 +21,7 @@ use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
 
+use App\Models\history_transfer_employee;
 use App\Models\rule_shift;
 use App\Models\EmployeeShift;
 use App\Models\RequestShiftChange;
@@ -200,10 +201,9 @@ class TimeManagementController extends Controller
     }
 
 
-
     public function set_shift_index(Request $request)
     {
-        // Original code for employee shifts (unchanged)
+        // Original code for employee shifts with modification to include transfer history
         $query = EmployeeShift::with(['user', 'ruleShift', 'user.position', 'user.department']);
 
         // Filter berdasarkan tipe shift
@@ -221,21 +221,52 @@ class TimeManagementController extends Controller
             $query->whereDate('start_date', $request->start_date);
         }
 
+        // For current shifts, we'll handle position/department filtering after getting results
+
+        $employeeShifts = $query->whereNull('end_date')->get()->groupBy('rule_id');
+
+        // Get historical position and department data for each shift
+        foreach ($employeeShifts as $ruleId => $shifts) {
+            foreach ($shifts as $shift) {
+                // For active shifts (end_date is null), get the most recent transfer record's NEW position/department
+                $latestTransfer = history_transfer_employee::where('users_id', $shift->user_id)
+                    ->orderBy('created_at', 'desc')
+                    ->first();
+
+                if ($latestTransfer) {
+                    // For active shifts, use the most recent transfer's NEW position and department
+                    $shift->historical_position = $latestTransfer->newPosition;
+                    $shift->historical_department = $latestTransfer->newDepartment;
+                } else {
+                    // If no transfer record found, use current position/department
+                    $shift->historical_position = $shift->user->position;
+                    $shift->historical_department = $shift->user->department;
+                }
+            }
+        }
+
+        // Post-processing filter for position and department using historical data
         if ($request->has('position') && $request->position != '') {
-            $query->whereHas('user.position', function ($q) use ($request) {
-                $q->where('position', $request->position);
+            $employeeShifts = $employeeShifts->map(function ($shifts) use ($request) {
+                return $shifts->filter(function ($shift) use ($request) {
+                    return $shift->historical_position == $request->position;
+                });
+            })->filter(function ($shifts) {
+                return $shifts->count() > 0;
             });
         }
 
         if ($request->has('department') && $request->department != '') {
-            $query->whereHas('user.department', function ($q) use ($request) {
-                $q->where('department', $request->department);
+            $employeeShifts = $employeeShifts->map(function ($shifts) use ($request) {
+                return $shifts->filter(function ($shift) use ($request) {
+                    return $shift->historical_department == $request->department;
+                });
+            })->filter(function ($shifts) {
+                return $shifts->count() > 0;
             });
         }
 
-        $employeeShifts = $query->whereNull('end_date')->get()->groupBy('rule_id');
-
-        // History filter code (unchanged)
+        // History section - query modification
         $query_history = EmployeeShift::with(['user', 'ruleShift', 'user.position', 'user.department']);
 
         if ($request->has('type_history') && $request->type_history != '') {
@@ -250,23 +281,54 @@ class TimeManagementController extends Controller
             $query_history->whereDate('start_date', $request->start_date_history);
         }
 
-        if ($request->has('position_history') && $request->position_history != '') {
-            $query_history->whereHas('user.position', function ($q) use ($request) {
-                $q->where('position', $request->position_history);
-            });
-        }
-
-        if ($request->has('department_history') && $request->department_history != '') {
-            $query_history->whereHas('user.department', function ($q) use ($request) {
-                $q->where('department', $request->department_history);
-            });
-        }
-
         if ($request->has('end_date_history') && $request->end_date_history != '') {
             $query_history->whereDate('end_date', $request->end_date_history);
         }
 
+        // Remove position/department filtering from query - will be done post-query
         $employeeShiftsHistory = $query_history->whereNotNull('end_date')->get()->groupBy('rule_id');
+
+        // Get historical position and department data for each history shift (with end date)
+        foreach ($employeeShiftsHistory as $ruleId => $shifts) {
+            foreach ($shifts as $shift) {
+                // For completed shifts (end_date is not null), find the transfer record at the time of start_date
+                $historicalTransfer = history_transfer_employee::where('users_id', $shift->user_id)
+                    ->where('created_at', '<', $shift->start_date)
+                    ->orderBy('created_at', 'desc')
+                    ->first();
+
+                if ($historicalTransfer) {
+                    // Store historical position and department information
+                    $shift->historical_position = $historicalTransfer->oldPosition;
+                    $shift->historical_department = $historicalTransfer->oldDepartment;
+                } else {
+                    // If no transfer record found, use current position/department
+                    $shift->historical_position = $shift->user->position;
+                    $shift->historical_department = $shift->user->department;
+                }
+            }
+        }
+
+        // Post-processing filter for position and department using historical data
+        if ($request->has('position_history') && $request->position_history != '') {
+            $employeeShiftsHistory = $employeeShiftsHistory->map(function ($shifts) use ($request) {
+                return $shifts->filter(function ($shift) use ($request) {
+                    return $shift->historical_position == $request->position_history;
+                });
+            })->filter(function ($shifts) {
+                return $shifts->count() > 0;
+            });
+        }
+
+        if ($request->has('department_history') && $request->department_history != '') {
+            $employeeShiftsHistory = $employeeShiftsHistory->map(function ($shifts) use ($request) {
+                return $shifts->filter(function ($shift) use ($request) {
+                    return $shift->historical_department == $request->department_history;
+                });
+            })->filter(function ($shifts) {
+                return $shifts->count() > 0;
+            });
+        }
 
         // Also fetch user's own pending requests for the "requests" tab
         $pendingRequests = RequestShiftChange::where('user_id', Auth::user()->id)
@@ -310,19 +372,40 @@ class TimeManagementController extends Controller
             $requestQuery->whereDate('date_change_end', '<=', $request->end_date_request);
         }
 
+        // Get all requests first, then apply position/department filtering later
+        $pendingShiftRequests = $requestQuery->orderBy('created_at', 'desc')->get();
+
+        // Add historical position/department data to shift requests
+        foreach ($pendingShiftRequests as $req) {
+            // Find the most recent transfer record before the request creation date
+            $historicalTransfer = history_transfer_employee::where('users_id', $req->user_id)
+                ->where('created_at', '<', $req->created_at)
+                ->orderBy('created_at', 'desc')
+                ->first();
+
+            if ($historicalTransfer) {
+                // Store historical position and department information
+                $req->historical_position = $historicalTransfer->oldPosition;
+                $req->historical_department = $historicalTransfer->oldDepartment;
+            } else {
+                // If no transfer record found, use current position/department
+                $req->historical_position = $req->user->position;
+                $req->historical_department = $req->user->department;
+            }
+        }
+
+        // Post-processing filter for position and department on requests
         if ($request->has('position_request') && $request->position_request != '') {
-            $requestQuery->whereHas('user.position', function ($q) use ($request) {
-                $q->where('position', $request->position_request);
+            $pendingShiftRequests = $pendingShiftRequests->filter(function ($req) use ($request) {
+                return $req->historical_position == $request->position_request;
             });
         }
 
         if ($request->has('department_request') && $request->department_request != '') {
-            $requestQuery->whereHas('user.department', function ($q) use ($request) {
-                $q->where('department', $request->department_request);
+            $pendingShiftRequests = $pendingShiftRequests->filter(function ($req) use ($request) {
+                return $req->historical_department == $request->department_request;
             });
         }
-
-        $pendingShiftRequests = $requestQuery->orderBy('created_at', 'desc')->get();
 
         $rules = rule_shift::all();
         $employees = User::where('employee_status', '!=', 'Inactive')->get();
@@ -349,6 +432,7 @@ class TimeManagementController extends Controller
             'activeTab'
         ));
     }
+
     public function set_shift_create()
     {
         $existShift = EmployeeShift::whereNull('end_date')
@@ -1462,79 +1546,169 @@ class TimeManagementController extends Controller
         // Get all warning letter types for filter
         $types = WarningLetterRule::orderBy('name')->get();
 
-        // Build query with proper field names
+        // Build base query with proper field names
         $query = DB::table('employee_warning_letter as ewl')
             ->join('users as employee', 'ewl.user_id', '=', 'employee.id')
             ->join('users as maker', 'ewl.maker_id', '=', 'maker.id')
-            ->leftJoin('employee_departments as emp_dept', 'employee.department_id', '=', 'emp_dept.id')
-            ->leftJoin('employee_positions as emp_pos', 'employee.position_id', '=', 'emp_pos.id')
-            ->leftJoin('employee_positions as maker_pos', 'maker.position_id', '=', 'maker_pos.id')
             ->leftJoin('rule_warning_letter as rule', 'ewl.type_id', '=', 'rule.id')
             ->select(
                 'ewl.*',
                 'employee.name as employee_name',
                 'employee.employee_id as employee_id',
-                'emp_dept.department as employee_department',
-                'emp_pos.position as employee_position',
+                'employee.id as user_id',
                 'maker.name as maker_name',
                 'maker.employee_id as maker_id',
-                'maker_pos.position as maker_position',
-                'rule.name as type_name' // Add type name to the select
+                'rule.name as type_name'
             );
 
-        // Apply filters
+        // Apply employee filter if specified
         if ($request->has('employee') && $request->employee != '') {
             $query->where('ewl.user_id', $request->employee);
         }
 
-        if ($request->has('position') && $request->position != '') {
-            $query->where('emp_pos.position', $request->position);
-        }
-
-        if ($request->has('department') && $request->department != '') {
-            $query->where('emp_dept.department', $request->department);
-        }
-
-        // Add type filter
+        // Apply type filter if specified
         if ($request->has('type') && $request->type != '') {
             $query->where('ewl.type_id', $request->type);
         }
 
-        $warning_letter = $query->get();
+        // Get all warning letters
+        $warning_letters_raw = $query->get();
+
+        // Process each warning letter to get historical position and department
+        $warning_letters = [];
+        foreach ($warning_letters_raw as $letter) {
+            // Find the user's position and department at the time the warning letter was created
+            $history = DB::table('users_transfer_history')
+                ->where('users_id', $letter->user_id)
+                ->where('created_at', '<', $letter->created_at)
+                ->orderBy('created_at', 'desc')
+                ->first();
+
+            if ($history) {
+                // Find the old position and department names
+                $oldPosition = EmployeePosition::find($history->new_position_id);
+                $oldDepartment = EmployeeDepartment::find($history->new_department_id);
+
+                $letter->employee_position = $oldPosition ? $oldPosition->position : null;
+                $letter->employee_department = $oldDepartment ? $oldDepartment->department : null;
+                $letter->position_id = $history->new_position_id;
+                $letter->department_id = $history->new_department_id;
+            } else {
+                // No history record found, get current position and department
+                $employee = User::with(['department', 'position'])->find($letter->user_id);
+                $letter->employee_position = $employee->position ? $employee->position->position : null;
+                $letter->employee_department = $employee->department ? $employee->department->department : null;
+                $letter->position_id = $employee->position_id;
+                $letter->department_id = $employee->department_id;
+            }
+
+            // Apply position filter
+            if ($request->has('position') && $request->position != '') {
+                if ($letter->employee_position == $request->position) {
+                    $warning_letters[] = $letter;
+                }
+            }
+            // Apply department filter
+            else if ($request->has('department') && $request->department != '') {
+                if ($letter->employee_department == $request->department) {
+                    $warning_letters[] = $letter;
+                }
+            }
+            // No filter, include all
+            else {
+                $warning_letters[] = $letter;
+            }
+        }
+
 
         return view(
             'time_management/warning_letter/assign/index',
-            compact('warning_letter', 'employees', 'departments', 'positions', 'types')
+            compact('warning_letters', 'employees', 'departments', 'positions', 'types')
         );
     }
 
-
-
     public function warning_letter_index2($id)
     {
-        $warning_letter = DB::table('employee_warning_letter as ewl')
+        // Get all warning letter types for filter
+        $types = WarningLetterRule::orderBy('name')->get();
+
+        // Build query with proper field names
+        $query = DB::table('employee_warning_letter as ewl')
             ->join('users as employee', 'ewl.user_id', '=', 'employee.id')
             ->join('users as maker', 'ewl.maker_id', '=', 'maker.id')
-            ->leftJoin('employee_departments as emp_dept', 'employee.department_id', '=', 'emp_dept.id')
-            ->leftJoin('employee_positions as emp_pos', 'employee.position_id', '=', 'emp_pos.id')
-            ->leftJoin('employee_departments as maker_dept', 'maker.department_id', '=', 'maker_dept.id')
-            ->leftJoin('employee_positions as maker_pos', 'maker.position_id', '=', 'maker_pos.id')
+            ->leftJoin('rule_warning_letter as rule', 'ewl.type_id', '=', 'rule.id')
             ->select(
                 'ewl.*',
                 'employee.name as employee_name',
                 'employee.employee_id as employee_id',
-                'emp_dept.department as employee_department',
-                'emp_pos.position as employee_position',
+                'employee.id as user_id',
                 'maker.name as maker_name',
                 'maker.employee_id as maker_employee_id',
-                'maker_pos.position as maker_position',
-                'maker_dept.department as maker_department'
+                'rule.name as type_name'
             )
-            ->where('ewl.user_id', $id)
-            ->get();
+            ->where('ewl.user_id', $id);
 
-        return view('time_management/warning_letter/assign/index2', compact('warning_letter'));
+        // Apply type filter
+        if (request()->has('type') && request()->type != '') {
+            $query->where('ewl.type_id', request()->type);
+        }
+
+        // Apply created_at date range filters
+        if (request()->has('created_from') && request()->created_from != '') {
+            $query->whereDate('ewl.created_at', '>=', request()->created_from);
+        }
+
+        if (request()->has('created_to') && request()->created_to != '') {
+            $query->whereDate('ewl.created_at', '<=', request()->created_to);
+        }
+
+        // If the filter is applied and the checkbox is unchecked, exclude records with null expiry dates
+        if (
+            request()->isMethod('get') && request()->filled('type') &&
+            !request()->has('include_no_expiry')
+        ) {
+            $query->whereNotNull('ewl.expired_at');
+        }
+
+        $warning_letters_raw = $query->get();
+
+        // Process each warning letter to get historical position and department
+        $warning_letters = [];
+        foreach ($warning_letters_raw as $letter) {
+            // Find the user's position and department at the time the warning letter was created
+            $history = DB::table('users_transfer_history')
+                ->where('users_id', $letter->user_id)
+                ->where('created_at', '<', $letter->created_at)
+                ->orderBy('created_at', 'desc')
+                ->first();
+
+            if ($history) {
+                // Find the old position and department names
+                $oldPosition = EmployeePosition::find($history->new_position_id);
+                $oldDepartment = EmployeeDepartment::find($history->new_department_id);
+
+                $letter->employee_position = $oldPosition ? $oldPosition->position : null;
+                $letter->employee_department = $oldDepartment ? $oldDepartment->department : null;
+            } else {
+                // No history record found, get current position and department
+                $employee = User::with(['department', 'position'])->find($letter->user_id);
+                $letter->employee_position = $employee->position ? $employee->position->position : null;
+                $letter->employee_department = $employee->department ? $employee->department->department : null;
+            }
+
+            $warning_letters[] = $letter;
+        }
+
+        // Set default checkbox state for the view (checked by default)
+        $includeNoExpiry = !request()->isMethod('get') || !request()->filled('type') ||
+            request()->has('include_no_expiry');
+
+        return view(
+            'time_management/warning_letter/assign/index2',
+            compact('warning_letters', 'types', 'includeNoExpiry')
+        );
     }
+
 
     public function warning_letter_create()
     {
@@ -2281,31 +2455,21 @@ class TimeManagementController extends Controller
         $requiredTypes = ['Voluntary', 'Retirement'];
         $finalTypes = array_unique(array_merge($types, $requiredTypes));
 
-        // Base query with joins
+        // Base query with joins - remove department and position joins since we'll handle filtering differently
         $query = DB::table('request_resign')
             ->join('users as employee', 'request_resign.user_id', '=', 'employee.id')
-            ->leftJoin('employee_departments as emp_dept', 'employee.department_id', '=', 'emp_dept.id')
-            ->leftJoin('employee_positions as emp_pos', 'employee.position_id', '=', 'emp_pos.id')
             ->leftJoin('users as responder', 'request_resign.response_user_id', '=', 'responder.id')
             ->select(
                 'request_resign.*',
                 'employee.name as employee_name',
-                'emp_pos.position as employee_position',
-                'emp_dept.department as employee_department',
+                'employee.employee_id as employee_id',
+                'employee.id as user_id',
                 'responder.name as response_name'
             );
 
-        // Apply filters
+        // Apply basic filters
         if ($request->filled('user_id')) {
             $query->where('request_resign.user_id', $request->user_id);
-        }
-
-        if ($request->filled('position')) {
-            $query->where('emp_pos.position', $request->position);
-        }
-
-        if ($request->filled('department')) {
-            $query->where('emp_dept.department', $request->department);
         }
 
         if ($request->filled('resign_type')) {
@@ -2327,9 +2491,15 @@ class TimeManagementController extends Controller
             $show_declined = $request->response_type == 'Declined';
         }
 
-        $pending_requests = (clone $query)->where('resign_status', 'Pending')->get();
-        $approved_requests = (clone $query)->where('resign_status', 'Approved')->get();
-        $declined_requests = (clone $query)->where('resign_status', 'Declined')->get();
+        // Get the raw requests separated by status
+        $pending_requests_raw = (clone $query)->where('resign_status', 'Pending')->get();
+        $approved_requests_raw = (clone $query)->where('resign_status', 'Approved')->get();
+        $declined_requests_raw = (clone $query)->where('resign_status', 'Declined')->get();
+
+        // Process each request to add historical position and department and apply filters
+        $pending_requests = $this->processAndFilterRequests($pending_requests_raw, $request);
+        $approved_requests = $this->processAndFilterRequests($approved_requests_raw, $request);
+        $declined_requests = $this->processAndFilterRequests($declined_requests_raw, $request);
 
         return view('time_management/request_resign/index', compact(
             'employees',
@@ -2349,21 +2519,25 @@ class TimeManagementController extends Controller
     {
         $query = DB::table('request_resign')
             ->join('users as employee', 'request_resign.user_id', '=', 'employee.id')
-            ->leftJoin('employee_departments as emp_dept', 'employee.department_id', '=', 'emp_dept.id')
-            ->leftJoin('employee_positions as emp_pos', 'employee.position_id', '=', 'emp_pos.id')
             ->leftJoin('users as responder', 'request_resign.response_user_id', '=', 'responder.id')
             ->select(
                 'request_resign.*',
                 'employee.name as employee_name',
-                'emp_pos.position as employee_position',
-                'emp_dept.department as employee_department',
+                'employee.employee_id as employee_id',
+                'employee.id as user_id',
                 'responder.name as response_name'
             )
             ->where('request_resign.user_id', $id);
 
-        $pending_requests = (clone $query)->where('resign_status', 'Pending')->get();
-        $approved_requests = (clone $query)->where('resign_status', 'Approved')->get();
-        $declined_requests = (clone $query)->where('resign_status', 'Declined')->get();
+        // Get raw request data separated by status
+        $pending_requests_raw = (clone $query)->where('resign_status', 'Pending')->get();
+        $approved_requests_raw = (clone $query)->where('resign_status', 'Approved')->get();
+        $declined_requests_raw = (clone $query)->where('resign_status', 'Declined')->get();
+
+        // Process each request to add historical position and department
+        $pending_requests = $this->processHistoricalPositionDepartment($pending_requests_raw);
+        $approved_requests = $this->processHistoricalPositionDepartment($approved_requests_raw);
+        $declined_requests = $this->processHistoricalPositionDepartment($declined_requests_raw);
 
         $user = User::with(['department', 'position'])->find($id);
 
@@ -2373,6 +2547,84 @@ class TimeManagementController extends Controller
             'declined_requests',
             'user'
         ));
+    }
+
+
+    private function processAndFilterRequests($requests, $request)
+    {
+        $filtered_requests = [];
+
+        foreach ($requests as $item) {
+            // Find the transfer history record closest to, but before the resign date
+            $history = DB::table('users_transfer_history')
+                ->where('users_id', $item->user_id)
+                // ->where('created_at', '<', $item->resign_date)  // Use resign_date
+                  ->where('created_at', '<', $item->created_at)  // Use resign_date
+                ->orderBy('created_at', 'desc')
+                ->first();
+
+            if ($history) {
+                // Get the historical position and department
+                $oldPosition = EmployeePosition::find($history->new_position_id);
+                $oldDepartment = EmployeeDepartment::find($history->new_department_id);
+
+                $item->employee_position = $oldPosition ? $oldPosition->position : null;
+                $item->employee_department = $oldDepartment ? $oldDepartment->department : null;
+            } else {
+                // No transfer history found, get current position/department
+                $employee = User::with(['department', 'position'])->find($item->user_id);
+                $item->employee_position = $employee->position ? $employee->position->position : null;
+                $item->employee_department = $employee->department ? $employee->department->department : null;
+            }
+
+            // Apply position filter
+            if ($request->filled('position')) {
+                if ($item->employee_position == $request->position) {
+                    $filtered_requests[] = $item;
+                }
+            }
+            // Apply department filter
+            else if ($request->filled('department')) {
+                if ($item->employee_department == $request->department) {
+                    $filtered_requests[] = $item;
+                }
+            }
+            // No position/department filter, include all
+            else {
+                $filtered_requests[] = $item;
+            }
+        }
+
+        return $filtered_requests;
+    }
+
+
+    private function processHistoricalPositionDepartment($requests)
+    {
+        foreach ($requests as $item) {
+            // Find the transfer history record closest to, but before the resign date
+            $history = DB::table('users_transfer_history')
+                ->where('users_id', $item->user_id)
+                ->where('created_at', '<', $item->resign_date)  // Use resign_date
+                ->orderBy('created_at', 'desc')
+                ->first();
+
+            if ($history) {
+                // Get the historical position and department
+                $oldPosition = EmployeePosition::find($history->new_position_id);
+                $oldDepartment = EmployeeDepartment::find($history->new_department_id);
+
+                $item->employee_position = $oldPosition ? $oldPosition->position : null;
+                $item->employee_department = $oldDepartment ? $oldDepartment->department : null;
+            } else {
+                // No transfer history found, get current position/department
+                $employee = User::with(['department', 'position'])->find($item->user_id);
+                $item->employee_position = $employee->position ? $employee->position->position : null;
+                $item->employee_department = $employee->department ? $employee->department->department : null;
+            }
+        }
+
+        return $requests;
     }
 
 
@@ -2439,6 +2691,7 @@ class TimeManagementController extends Controller
             'message' => 'You have submitted a resignation request. Please wait for management’s decision.',
             'type' => 'resign',
             'users_id' => $request->user_id,
+            'maker_id' => $request->user_id,
             'status' => 'Unread',
             'created_at' => now(),
             'updated_at' => now(),
@@ -2637,28 +2890,24 @@ class TimeManagementController extends Controller
         // Base query with proper joins
         $query = EmployeeOvertime::query()
             ->join('users', 'employee_overtime.user_id', '=', 'users.id')
-            ->leftJoin('employee_departments as ed', 'users.department_id', '=', 'ed.id')
-            ->leftJoin('employee_positions as ep', 'users.position_id', '=', 'ep.id')
+            ->leftJoin('employee_departments as ed', function ($join) {
+                $join->on('users.department_id', '=', 'ed.id');
+            })
+            ->leftJoin('employee_positions as ep', function ($join) {
+                $join->on('users.position_id', '=', 'ep.id');
+            })
             ->leftJoin('users as responder', 'employee_overtime.answer_user_id', '=', 'responder.id')
             ->select(
                 'employee_overtime.*',
                 'users.name as employee_name',
-                'ep.position as employee_position',
-                'ed.department as employee_department',
+                'ep.position as current_position',
+                'ed.department as current_department',
                 'responder.name as response_name'
             );
 
         // Apply filters
         if ($employee !== 'all' && is_numeric($employee)) {
             $query->where('employee_overtime.user_id', $employee);
-        }
-
-        if ($position) {
-            $query->where('ep.position', $position);
-        }
-
-        if ($department) {
-            $query->where('ed.department', $department);
         }
 
         if ($overtimeType !== 'all') {
@@ -2669,10 +2918,70 @@ class TimeManagementController extends Controller
             $query->whereDate('employee_overtime.date', $date);
         }
 
-        // Separate queries for each tab
-        $pendingRequests = (clone $query)->where('employee_overtime.approval_status', 'Pending')->get();
-        $approvedRequests = (clone $query)->where('employee_overtime.approval_status', 'Approved')->get();
-        $declinedRequests = (clone $query)->where('employee_overtime.approval_status', 'Declined')->get();
+        // Get pending, approved and declined requests
+        $pendingQuery = clone $query;
+        $approvedQuery = clone $query;
+        $declinedQuery = clone $query;
+
+        $pendingRequests = $pendingQuery->where('employee_overtime.approval_status', 'Pending')->get();
+        $approvedRequests = $approvedQuery->where('employee_overtime.approval_status', 'Approved')->get();
+        $declinedRequests = $declinedQuery->where('employee_overtime.approval_status', 'Declined')->get();
+
+        // All requests combined for processing
+        $allRequests = collect()->merge($pendingRequests)
+            ->merge($approvedRequests)
+            ->merge($declinedRequests);
+
+        // Process each record to find historical position and department
+        foreach ($allRequests as $record) {
+            // Find the closest historical transfer record before the overtime request
+            $historyRecord = history_transfer_employee::where('users_id', $record->user_id)
+                ->where('created_at', '<', $record->created_at)
+                ->orderBy('created_at', 'desc')
+                ->first();
+
+            if ($historyRecord) {
+                // Use the historical position and department
+                $histPosition = EmployeePosition::find($historyRecord->new_position_id);
+                $histDepartment = EmployeeDepartment::find($historyRecord->new_department_id);
+
+                $record->employee_position = $histPosition ? $histPosition->position : $record->current_position;
+                $record->employee_department = $histDepartment ? $histDepartment->department : $record->current_department;
+            } else {
+                // No history record found, use current position and department
+                $record->employee_position = $record->current_position;
+                $record->employee_department = $record->current_department;
+            }
+        }
+
+        // Apply position and department filters
+        if ($position) {
+            $pendingRequests = $pendingRequests->filter(function ($record) use ($position) {
+                return $record->employee_position == $position;
+            })->values();
+
+            $approvedRequests = $approvedRequests->filter(function ($record) use ($position) {
+                return $record->employee_position == $position;
+            })->values();
+
+            $declinedRequests = $declinedRequests->filter(function ($record) use ($position) {
+                return $record->employee_position == $position;
+            })->values();
+        }
+
+        if ($department) {
+            $pendingRequests = $pendingRequests->filter(function ($record) use ($department) {
+                return $record->employee_department == $department;
+            })->values();
+
+            $approvedRequests = $approvedRequests->filter(function ($record) use ($department) {
+                return $record->employee_department == $department;
+            })->values();
+
+            $declinedRequests = $declinedRequests->filter(function ($record) use ($department) {
+                return $record->employee_department == $department;
+            })->values();
+        }
 
         // Get all employees for filter dropdown
         $employees = User::where('employee_status', '!=', 'Inactive')->get();
@@ -2694,7 +3003,6 @@ class TimeManagementController extends Controller
         ));
     }
 
-
     public function overtime_index2($id)
     {
         $query = EmployeeOvertime::query()
@@ -2705,16 +3013,43 @@ class TimeManagementController extends Controller
             ->select(
                 'employee_overtime.*',
                 'users.name as employee_name',
-                'ep.position as employee_position',
-                'ed.department as employee_department',
+                'ep.position as current_position',
+                'ed.department as current_department',
                 'responder.name as response_name'
             )
             ->where('employee_overtime.user_id', $id);
 
-        // Separate queries for each tab
-        $pendingRequests = (clone $query)->where('approval_status', 'Pending')->get();
-        $approvedRequests = (clone $query)->where('approval_status', 'Approved')->get();
-        $declinedRequests = (clone $query)->where('approval_status', 'Declined')->get();
+        // Get the results separately for each status
+        $pendingRequests = (clone $query)->where('employee_overtime.approval_status', 'Pending')->get();
+        $approvedRequests = (clone $query)->where('employee_overtime.approval_status', 'Approved')->get();
+        $declinedRequests = (clone $query)->where('employee_overtime.approval_status', 'Declined')->get();
+
+        // All requests combined for processing
+        $allRequests = collect()->merge($pendingRequests)
+            ->merge($approvedRequests)
+            ->merge($declinedRequests);
+
+        // Process each record to find historical position and department
+        foreach ($allRequests as $record) {
+            // Find the closest historical transfer record before the overtime request
+            $historyRecord = history_transfer_employee::where('users_id', $record->user_id)
+                ->where('created_at', '<', $record->created_at)
+                ->orderBy('created_at', 'desc')
+                ->first();
+
+            if ($historyRecord) {
+                // Use the historical position and department
+                $histPosition = EmployeePosition::find($historyRecord->new_position_id);
+                $histDepartment = EmployeeDepartment::find($historyRecord->new_department_id);
+
+                $record->employee_position = $histPosition ? $histPosition->position : $record->current_position;
+                $record->employee_department = $histDepartment ? $histDepartment->department : $record->current_department;
+            } else {
+                // No history record found, use current position and department
+                $record->employee_position = $record->current_position;
+                $record->employee_department = $record->current_department;
+            }
+        }
 
         $employee = User::with(['department', 'position'])->find($id);
 
@@ -2725,6 +3060,7 @@ class TimeManagementController extends Controller
             'employee'
         ));
     }
+
 
     // Show overtime request creation form
     public function overtime_create($id)
@@ -3449,7 +3785,6 @@ class TimeManagementController extends Controller
 
 
 
-
     public function request_time_off_index(Request $request)
     {
         // Get all users with their relationships
@@ -3471,8 +3806,6 @@ class TimeManagementController extends Controller
         // Build the query with proper joins
         $query = RequestTimeOff::query()
             ->join('users as u1', 'request_time_off.user_id', '=', 'u1.id')
-            ->leftJoin('employee_departments as ed', 'u1.department_id', '=', 'ed.id')
-            ->leftJoin('employee_positions as ep', 'u1.position_id', '=', 'ep.id')
             ->leftJoin('users as u2', 'request_time_off.answered_by', '=', 'u2.id')
             ->join('time_off_policy', 'request_time_off.time_off_id', '=', 'time_off_policy.id')
             ->leftJoin('time_off_assign', function ($join) {
@@ -3483,28 +3816,17 @@ class TimeManagementController extends Controller
                 'request_time_off.*',
                 'u1.name as user_name',
                 'time_off_policy.time_off_name as time_off_name',
-                'ed.department as department',
-                'ep.position as position',
+                DB::raw('NULL as department'), // Will be filled later
+                DB::raw('NULL as position'), // Will be filled later
                 'u2.name as answered_by_name'
             );
 
-        // Apply filters
+        // Apply employee filter
         if ($request->filled('employee')) {
             $query->where('request_time_off.user_id', $request->employee);
         }
 
-        if ($request->filled('position_request')) {
-            $query->where('ep.position', $request->position_request);
-        }
-
-        if ($request->filled('department_request')) {
-            $query->where('ed.department', $request->department_request);
-        }
-
-        if ($request->filled('time_off_type')) {
-            $query->where('request_time_off.time_off_id', $request->time_off_type);
-        }
-
+        // Apply date filter
         if ($request->filled('date')) {
             $date = $request->date;
             $query->where(function ($q) use ($date) {
@@ -3513,31 +3835,73 @@ class TimeManagementController extends Controller
             });
         }
 
+        // Apply time off type filter
+        if ($request->filled('time_off_type')) {
+            $query->where('request_time_off.time_off_id', $request->time_off_type);
+        }
+
+        // Get results
+        $results = $query->get();
+
+        // Process each record to find historical position and department
+        foreach ($results as $record) {
+            // Find the closest historical transfer record before the time off request
+            $historyRecord = history_transfer_employee::where('users_id', $record->user_id)
+                ->where('created_at', '<', $record->created_at)
+                ->orderBy('created_at', 'desc')
+                ->first();
+
+            if ($historyRecord) {
+                // Use the historical position and department
+                $position = EmployeePosition::find($historyRecord->new_position_id);
+                $department = EmployeeDepartment::find($historyRecord->new_department_id);
+
+                $record->position = $position ? $position->position : null;
+                $record->department = $department ? $department->department : null;
+            } else {
+                // No history record found, use current position and department
+                $user = User::with(['department', 'position'])->find($record->user_id);
+                $record->position = $user->position->position ?? null;
+                $record->department = $user->department->department ?? null;
+            }
+        }
+
+        // Apply position and department filters after historical data is determined
+        if ($request->filled('position_request')) {
+            $results = $results->filter(function ($record) use ($request) {
+                return $record->position == $request->position_request;
+            });
+        }
+
+        if ($request->filled('department_request')) {
+            $results = $results->filter(function ($record) use ($request) {
+                return $record->department == $request->department_request;
+            });
+        }
+
         // Count statuses for the tabs
-        $pendingCount = (clone $query)->where('request_time_off.status', 'Pending')->count();
-        $approvedCount = (clone $query)->where('request_time_off.status', 'Approved')->count();
-        $declinedCount = (clone $query)->where('request_time_off.status', 'Declined')->count();
-
-
+        $pendingCount = $results->where('status', 'Pending')->count();
+        $approvedCount = $results->where('status', 'Approved')->count();
+        $declinedCount = $results->where('status', 'Declined')->count();
 
         // Get requests by status and format them
-        $pendingRequests = (clone $query)->where('request_time_off.status', 'Pending')
-            ->orderBy('request_time_off.created_at', 'desc')
-            ->get()
+        $pendingRequests = $results->where('status', 'Pending')
+            ->sortByDesc('created_at')
+            ->values()
             ->map(function ($item) {
                 return $this->formatTimeOffRequest($item);
             });
 
-        $approvedRequests = (clone $query)->where('request_time_off.status', 'Approved')
-            ->orderBy('request_time_off.updated_at', 'desc')
-            ->get()
+        $approvedRequests = $results->where('status', 'Approved')
+            ->sortByDesc('updated_at')
+            ->values()
             ->map(function ($item) {
                 return $this->formatTimeOffRequest($item);
             });
 
-        $declinedRequests = (clone $query)->where('request_time_off.status', 'Declined')
-            ->orderBy('request_time_off.updated_at', 'desc')
-            ->get()
+        $declinedRequests = $results->where('status', 'Declined')
+            ->sortByDesc('updated_at')
+            ->values()
             ->map(function ($item) {
                 return $this->formatTimeOffRequest($item);
             });
@@ -3560,27 +3924,49 @@ class TimeManagementController extends Controller
     {
         $employee = User::findOrFail($id);
 
-        // Get time off requests for this employee and format them
-        $pendingRequests = RequestTimeOff::where('user_id', $id)
-            ->where('status', 'pending')
-            ->orderBy('created_at', 'desc')
-            ->get()
+        // Get time off requests for this employee
+        $timeOffRequests = RequestTimeOff::where('user_id', $id)->get();
+
+        // Process each record to find historical position and department
+        foreach ($timeOffRequests as $record) {
+            // Find the closest historical transfer record before the time off request
+            $historyRecord = history_transfer_employee::where('users_id', $record->user_id)
+                ->where('created_at', '<', $record->created_at)
+                ->orderBy('created_at', 'desc')
+                ->first();
+
+            if ($historyRecord) {
+                // Use the historical position and department
+                $position = EmployeePosition::find($historyRecord->new_position_id);
+                $department = EmployeeDepartment::find($historyRecord->new_department_id);
+
+                $record->historical_position = $position ? $position->position : null;
+                $record->historical_department = $department ? $department->department : null;
+            } else {
+                // No history record found, use current position and department
+                $record->historical_position = $employee->position->position ?? null;
+                $record->historical_department = $employee->department->department ?? null;
+            }
+        }
+
+        // Split requests by status and format them
+        $pendingRequests = $timeOffRequests->where('status', 'pending')
+            ->sortByDesc('created_at')
+            ->values()
             ->map(function ($item) {
                 return $this->formatTimeOffRequest($item);
             });
 
-        $approvedRequests = RequestTimeOff::where('user_id', $id)
-            ->where('status', 'approved')
-            ->orderBy('created_at', 'desc')
-            ->get()
+        $approvedRequests = $timeOffRequests->where('status', 'approved')
+            ->sortByDesc('created_at')
+            ->values()
             ->map(function ($item) {
                 return $this->formatTimeOffRequest($item);
             });
 
-        $declinedRequests = RequestTimeOff::where('user_id', $id)
-            ->where('status', 'declined')
-            ->orderBy('created_at', 'desc')
-            ->get()
+        $declinedRequests = $timeOffRequests->where('status', 'declined')
+            ->sortByDesc('created_at')
+            ->values()
             ->map(function ($item) {
                 return $this->formatTimeOffRequest($item);
             });
@@ -3607,9 +3993,32 @@ class TimeManagementController extends Controller
             'timeOffAssignments'
         ));
     }
-
     protected function formatTimeOffRequest($request)
     {
+        // First, process the historical department and position if not already set
+        if (!isset($request->historical_department) && !isset($request->historical_position)) {
+            // Find historical position and department at the time of request creation
+            $historyRecord = history_transfer_employee::where('users_id', $request->user_id)
+                ->where('created_at', '<', $request->created_at)
+                ->orderBy('created_at', 'desc')
+                ->first();
+
+            if ($historyRecord) {
+                // Use historical position and department
+                $position = EmployeePosition::find($historyRecord->new_position_id);
+                $department = EmployeeDepartment::find($historyRecord->new_department_id);
+
+                $request->historical_position = $position ? $position->position : null;
+                $request->historical_department = $department ? $department->department : null;
+            } else {
+                // No history found, so current values will be used
+                // But we'll set these properties to null to show they weren't found
+                $request->historical_position = null;
+                $request->historical_department = null;
+            }
+        }
+
+        // Your original time formatting logic
         $start = Carbon::parse($request->start_date);
         $end = Carbon::parse($request->end_date);
 
@@ -3646,10 +4055,24 @@ class TimeManagementController extends Controller
             $request->formatted_date = $start->format('d M Y') . ' - ' . $end->format('d M Y');
         }
 
+        // Set the department and position properties for display in views
+        // Use historical values if available, otherwise use current values
+        if (!isset($request->department)) {
+            $request->department = $request->historical_department ??
+                ($request->employee_department ??
+                    (isset($request->user) && isset($request->user->department) ?
+                        $request->user->department->department : null));
+        }
+
+        if (!isset($request->position)) {
+            $request->position = $request->historical_position ??
+                ($request->employee_position ??
+                    (isset($request->user) && isset($request->user->position) ?
+                        $request->user->position->position : null));
+        }
+
         return $request;
     }
-
-
     public function request_time_off_create($id)
     {
         $employee = User::findOrFail($id);

@@ -37,10 +37,23 @@ class NotificationController extends Controller
     
         // Prepare notification data with formatted display titles
         $notifications->transform(function ($notification) use ($notificationMakers) {
+            // Check if it's from the user themselves
+            if ($notification->maker_id == Auth::id()) {
+                $notification->from_name = 'You';
+                $notification->from_title = '';
+                return $notification;
+            }
+            
+            // Check if maker exists
             $maker = $notificationMakers[$notification->maker_id] ?? null;
             
-            $notification->from_name = $maker->name ?? 'System';
-            $notification->from_title = $this->getMakerTitle($maker);
+            if (!$maker) {
+                $notification->from_name = 'System';
+                $notification->from_title = '';
+            } else {
+                $notification->from_name = $maker->name;
+                $notification->from_title = $this->getMakerTitle($maker);
+            }
             
             return $notification;
         });
@@ -51,13 +64,15 @@ class NotificationController extends Controller
     protected function getMakerTitle($maker)
     {
         if (!$maker) {
-            return 'System';
+            return '';
         }
     
-        $positionName = $maker->position_name ?? 'System';
-        $departmentName = $maker->department_name ?? 'System';
+        $positionName = $maker->position->position ?? '';
+        $departmentName = $maker->department->department ?? '';
     
-        return ($positionName == $departmentName) ? $positionName : "$positionName - $departmentName";
+        return ($positionName == $departmentName || !$positionName || !$departmentName) 
+            ? $positionName
+            : "$positionName - $departmentName";
     }
     public function markAsRead($id)
     {

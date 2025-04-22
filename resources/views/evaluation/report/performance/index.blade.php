@@ -156,7 +156,7 @@
                     </h5>
                     <div>
                         <button id="btnExportPerformance" class="btn btn-success">
-                            <i class="fas fa-file-excel me-1"></i> Export Excel
+                            <i class="fas fa-file-excel me-1"></i> Export Excel All
                         </button>
                     </div>
                 </div>
@@ -169,75 +169,72 @@
                     @endif
 
                     <div class="table-responsive">
-                        <table id="evaluations-table" class="table table-bordered table-striped mb-2 pt-3 align-middle align-items-center table-hover">
-                            <thead class="table-dark">
-                                <tr>
-                                    <th>No</th>
-                                    <th>Employee Name</th>
-                                    <th>Position</th>
-                                    <th>Department</th>
-                                    <th>Evaluation Period</th>
-                                    <th>Evaluator</th>
-                                    <th>Score</th>
-                                    <th>Deduction</th>
-                                    <th>Final Score</th>
-                                    <th>Grade</th>
-                                    <th>Action</th>
+                    <table id="evaluations-table" class="table table-bordered table-striped mb-2 pt-3 align-middle align-items-center table-hover">
+    <thead class="table-dark">
+        <tr>
+            <th>No</th>
+            <th>Employee Name</th>
+            <th>Position</th>
+            <th>Department</th>
+            <th>Year</th>
+            <th>Months Evaluated</th>
+            <th>Average Score</th>
+            <th>Total Deduction</th>
+            <th>Final Score</th>
+            <th>Grade</th>
+            <th>Action</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach($finalEvaluations as $key => $evaluation)
+        <tr>
+            <td>{{ $key + 1 }}</td>
+            <td>{{ $evaluation->user->name ?? 'N/A' }}</td>
+            <td>{{ $evaluation->user->historical_position ? $evaluation->user->historical_position->position : 'N/A' }}</td>
+<td>{{ $evaluation->user->historical_department ? $evaluation->user->historical_department->department : 'N/A' }}</td>
+            <td>{{ $evaluation->year }}</td>
+            <td>{{ $evaluation->month_count }}</td>
+            <td class="fw-bold">{{ number_format($evaluation->average_score, 2) }}</td>
+            <td class="text-danger">{{ $evaluation->total_reduction }}</td>
+            <td class="fw-bold text-primary">
+                {{ number_format($evaluation->final_score, 2) }}
+            </td>
+            <td class="fw-bold">
+                @php
+                $gradeClass = '';
+                $gradeValue = $evaluation->grade ?? '';
 
-                                </tr>
-                            </thead>
-                            <tbody>
+                if ($gradeValue === '') {
+                    $gradeClass = '';
+                } else {
+                    switch ($gradeValue) {
+                        case 'A': $gradeClass = 'bg-success text-white'; break;
+                        case 'B': $gradeClass = 'bg-info text-white'; break;
+                        case 'C': $gradeClass = 'bg-warning'; break;
+                        case 'D': $gradeClass = 'bg-danger text-white'; break;
+                        default: $gradeClass = 'bg-secondary text-white';
+                    }
+                }
+                @endphp
 
-                                @foreach($evaluations as $key => $evaluation)
-                                <tr>
-                                    <td>{{ $key + 1 }}</td>
-                                    <td>{{ $evaluation->user->name ?? 'N/A' }}</td>
-                                    <td>{{ $evaluation->user->position->position ?? 'N/A' }}</td>
-                                    <td>{{ $evaluation->user->department->department ?? 'N/A' }}</td>
-                                    <td>{{ date('F Y', strtotime($evaluation->date)) }}</td>
-                                    <td>{{ $evaluation->evaluator->name ?? 'N/A' }}</td>
-                                    <td class="fw-bold">{{ $evaluation->total_score }}</td>
-                                    <td class="text-danger">{{ $evaluation->total_reduction }}</td>
-                                    <td class="fw-bold text-primary">
-                                        {{ $evaluation->total_score - $evaluation->total_reduction }}
-                                    </td>
-                                    <td class="fw-bold">
-                                        @php
-                                        $gradeClass = '';
-                                        $gradeValue = $evaluation->grade ?? '';
-
-                                        if ($gradeValue === '') {
-                                        $gradeClass = '';
-                                        } else {
-                                        switch ($gradeValue) {
-                                        case 'A': $gradeClass = 'bg-success text-white'; break;
-                                        case 'B': $gradeClass = 'bg-info text-white'; break;
-                                        case 'C': $gradeClass = 'bg-warning'; break;
-                                        case 'D': $gradeClass = 'bg-danger text-white'; break;
-                                        default: $gradeClass = 'bg-secondary text-white';
-                                        }
-                                        }
-                                        @endphp
-
-                                        @if ($gradeValue !== '')
-                                        <span class="badge {{ $gradeClass }}">{{ $gradeValue }}</span>
-                                        @else
-                                        <span class="text-muted">—</span> {{-- tampilkan strip atau kosong --}}
-                                        @endif
-                                    </td>
-
-                                    <td>
-                                        <div class="d-flex gap-1">
-                                            <a href="{{ route('evaluation.report.performance.detail', $evaluation->user_id) }}" class="btn btn-sm btn-info">
-                                                <i class="fas fa-eye"></i> Detail
-                                            </a>
-                                        </div>
-                                    </td>
-                                </tr>
-                                @endforeach
-
-                            </tbody>
-                        </table>
+                @if ($gradeValue !== '')
+                    <span class="badge {{ $gradeClass }}">{{ $gradeValue }}</span>
+                @else
+                    <span class="text-muted">—</span>
+                @endif
+            </td>
+            <td>
+                <div class="d-flex gap-1">
+                    <a href="{{ route('evaluation.report.performance.detail', $evaluation->user_id) }}?year={{ $evaluation->year }}" 
+                       class="btn btn-sm btn-info">
+                        <i class="fas fa-eye"></i> Detail
+                    </a>
+                </div>
+            </td>
+        </tr>
+        @endforeach
+    </tbody>
+</table>
                     </div>
                 </div>
             </div>
@@ -301,7 +298,7 @@
             showLoadingOverlay('Generating performance report...');
             
             // Construct URL with parameters
-            let url = '{{ route('evaluation.report.performance.export') }}' + 
+            let url = '{{ route('evaluation.report.performance.export.all') }}' + 
                     '?year=' + year + 
                     '&employee=' + employeeId + 
                     '&department=' + departmentId + 

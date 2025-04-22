@@ -430,9 +430,9 @@
                 }
 
                 if (password === confirmation) {
-                    $('#password-match').text('Password cocok').css('color', '#28a745');
+                    $('#password-match').text('Password Match').css('color', '#28a745');
                 } else {
-                    $('#password-match').text('Password tidak cocok').css('color', '#dc3545');
+                    $('#password-match').text('Password Not Match').css('color', '#dc3545');
                 }
             }
 

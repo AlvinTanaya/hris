@@ -84,6 +84,8 @@
                         <tr>
                             <th style="width: 5%;">NO</th>
                             <th>Employee</th>
+                            <th>Department</th>
+                            <th>Position</th>
                             <th>Reference Number</th>
 
                             <th>Type</th>
@@ -95,16 +97,16 @@
                         </tr>
                     </thead>
                     <tbody>
-                        @foreach ($warning_letter as $index => $item)
+                        @foreach ($warning_letters as $index => $item)
                         <tr>
                             <td>{{ $index + 1 }}</td>
-                            <td>
-                                {{ $item->employee_name }} ({{ $item->employee_id }}) - {{ $item->employee_position }}
-                            </td>
+                            <td>{{ $item->employee_name }} ({{ $item->employee_id }})</td>
+                            <td>{{ $item->employee_department ?? "N/A" }}</td>
+                            <td>{{ $item->employee_position ?? "N/A" }}</td>
                             <td>{{ $item->warning_letter_number ?? "N/A" }}</td>
                             <td>{{ $item->type_name ?? "N/A"}}</td>
                             <td>{{ $item->reason_warning }}</td>
-                            <td>{{ $item->maker_name }} ({{ $item->maker_id }}) - {{ $item->maker_position }}</td>
+                            <td>{{ $item->maker_name }} ({{ $item->maker_id }})</td>
                             <td>{{ \Carbon\Carbon::parse($item->created_at)->format('Y-m-d') }}</td>
                             <td>{{ $item->expired_at ?? "No Expired Date"}}</td>
                             <td>

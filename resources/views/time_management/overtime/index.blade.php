@@ -163,7 +163,9 @@
                                 <thead class="table-dark">
                                     <tr>
                                         <th width="5%">No</th>
-                                        <th width="15%">Employee</th>
+                                        <th>Employee</th>
+                                        <th>Position</th>
+                                        <th>Department</th>
                                         <th width="12%">Date</th>
                                         <th width="10%">Hours</th>
                                         <th width="13%">Overtime Type</th>
@@ -177,6 +179,9 @@
                                     <tr>
                                         <td>{{ $index + 1 }}</td>
                                         <td>{{ $overtime->employee_name }}</td>
+
+                                        <td>{{ $overtime->employee_department ?? $overtime->department ?? 'N/A' }}</td>
+                                        <td>{{ $overtime->employee_position ?? $overtime->position ?? 'N/A' }}</td>
                                         <td>{{ date('d M Y', strtotime($overtime->date)) }}</td>
                                         <td>{{ $overtime->total_hours }} hrs</td>
                                         <td>
@@ -226,7 +231,9 @@
                                 <thead class="table-dark">
                                     <tr>
                                         <th width="5%">No</th>
-                                        <th width="15%">Employee</th>
+                                        <th>Employee</th>
+                                        <th>Position</th>
+                                        <th>Department</th>
                                         <th width="12%">Date</th>
                                         <th width="10%">Hours</th>
                                         <th width="13%">Overtime Type</th>
@@ -241,6 +248,8 @@
                                     <tr>
                                         <td>{{ $index + 1 }}</td>
                                         <td>{{ $overtime->employee_name }}</td>
+                                        <td>{{ $overtime->employee_department ?? $overtime->department ?? 'N/A' }}</td>
+                                        <td>{{ $overtime->employee_position ?? $overtime->position ?? 'N/A' }}</td>
                                         <td>{{ date('d M Y', strtotime($overtime->date)) }}</td>
                                         <td>{{ $overtime->total_hours }} hrs</td>
                                         <td>
@@ -280,7 +289,9 @@
                                 <thead class="table-dark">
                                     <tr>
                                         <th width="5%">No</th>
-                                        <th width="15%">Employee</th>
+                                        <th>Employee</th>
+                                        <th>Position</th>
+                                        <th>Department</th>
                                         <th width="12%">Date</th>
                                         <th width="10%">Hours</th>
                                         <th width="13%">Overtime Type</th>
@@ -295,6 +306,8 @@
                                     <tr>
                                         <td>{{ $index + 1 }}</td>
                                         <td>{{ $overtime->employee_name }}</td>
+                                        <td>{{ $overtime->employee_department ?? $overtime->department ?? 'N/A' }}</td>
+                                        <td>{{ $overtime->employee_position ?? $overtime->position ?? 'N/A' }}</td>
                                         <td>{{ date('d M Y', strtotime($overtime->date)) }}</td>
                                         <td>{{ $overtime->total_hours }} hrs</td>
                                         <td>

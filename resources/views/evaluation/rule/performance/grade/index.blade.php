@@ -13,7 +13,7 @@
         <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center py-3">
             <h3 class="card-title m-0 fw-bold"><i class="fas fa-sliders-h me-2"></i> Performance Grade List</h3>
             <a href="{{ route('evaluation.rule.performance.grade.create') }}" class="btn btn-light text-primary">
-                <i class="fas fa-plus-circle me-1"></i> Add New Rule
+                <i class="fas fa-plus-circle me-1"></i> Add New Grade
             </a>
         </div>
 
@@ -26,7 +26,7 @@
 
         <div class="card-body">
             <div class="table-responsive">
-                <table class="table table-hover table-striped align-middle">
+                <table id="gradesTable" class="table table-bordered table-striped mb-3 pt-3 align-middle align-items-center">
                     <thead class="table-dark">
                         <tr>
                             <th>Grade</th>
@@ -118,6 +118,9 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
     $(document).ready(function() {
+
+        $('#gradesTable').DataTable({});
+
         // Set up delete confirmation
         $('.delete-grade').on('click', function() {
             const gradeId = $(this).data('id');

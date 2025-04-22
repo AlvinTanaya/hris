@@ -170,14 +170,14 @@
                                 <label for="join_date" class="form-label">
                                     <i class="fas fa-calendar-alt"></i> Join Date
                                 </label>
-                                <input type="date" class="form-control" id="join_date" name="join_date" value="{{ old('join_date',$user->join_date) }}" required>
+                                <input type="date" class="form-control" id="join_date" name="join_date" value="{{ old('join_date', $user->join_date ? $user->join_date->format('Y-m-d') : '') }}" required>
                             </div>
 
                             <div class="col-md-6 mb-3">
                                 <label for="exit_date" class="form-label">
                                     <i class="fas fa-calendar-alt"></i> Exit Date
                                 </label>
-                                <input type="date" class="form-control" id="exit_date" name="exit_date" value="{{ old('exit_date',$user->exit_date) }}">
+                                <input type="date" class="form-control" id="exit_date" name="exit_date" value="{{ old('exit_date', $user->exit_date ? $user->exit_date->format('Y-m-d') : '') }}">
                             </div>
                         </div>
 
@@ -441,7 +441,7 @@
                                 <label for="birth_date" class="form-label">
                                     <i class="fas fa-calendar-day"></i> Birth Date
                                 </label>
-                                <input type="date" class="form-control" id="birth_date" name="birth_date" value="{{ old('birth_date', $user->birth_date) }}" required>
+                                <input type="date" class="form-control" id="birth_date" name="birth_date" value="{{ old('birth_date', $user->birth_date ? $user->birth_date->format('Y-m-d') : '') }}" required>
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label for="birth_place" class="form-label">
@@ -1690,6 +1690,7 @@
             updateDepartmentOptions(positionId);
         });
 
+
         function updateDepartmentOptions(positionId) {
             var positionText = $('#position_id option:selected').text().trim();
             var departmentSelect = $('#department_id');
@@ -1699,28 +1700,65 @@
             departmentWrapper.find('.text-danger').remove();
             departmentSelect.prop('disabled', false).find('option').show();
 
+            // Remove any previous event handlers to prevent stacking
+            departmentSelect.off('change.positionRestriction mousedown.positionRestriction');
+
             if (positionText === 'Director') {
-                // Cari department Director
+                // Find Director department
                 var directorDept = departmentSelect.find('option').filter(function() {
                     return $(this).text().trim() === 'Director';
                 }).first();
 
                 if (directorDept.length) {
-                    departmentSelect.val(directorDept.val()).prop('disabled', true);
+                    // Set the value BUT DON'T DISABLE IT
+                    departmentSelect.val(directorDept.val());
+
+                    // Prevent changes with event handlers instead of disabled attribute
+                    departmentSelect.on('change.positionRestriction mousedown.positionRestriction', function(e) {
+                        e.preventDefault();
+                        return false;
+                    });
+
+                    // Optional: Style to look disabled but actually still enabled
+                    departmentSelect.css({
+                        'background-color': '#e9ecef',
+                        'pointer-events': 'none' // Makes it appear unclickable
+                    });
+
                     departmentWrapper.append('<small class="text-danger">Department automatically set for Director</small>');
                 }
             } else if (positionText === 'General Manager') {
-                // Cari department General Manager
+                // Find General Manager department
                 var gmDept = departmentSelect.find('option').filter(function() {
                     return $(this).text().trim() === 'General Manager';
                 }).first();
 
                 if (gmDept.length) {
-                    departmentSelect.val(gmDept.val()).prop('disabled', true);
+                    // Set the value BUT DON'T DISABLE IT
+                    departmentSelect.val(gmDept.val());
+
+                    // Prevent changes with event handlers instead of disabled attribute
+                    departmentSelect.on('change.positionRestriction mousedown.positionRestriction', function(e) {
+                        e.preventDefault();
+                        return false;
+                    });
+
+                    // Optional: Style to look disabled but actually still enabled
+                    departmentSelect.css({
+                        'background-color': '#e9ecef',
+                        'pointer-events': 'none' // Makes it appear unclickable
+                    });
+
                     departmentWrapper.append('<small class="text-danger">Department automatically set for General Manager</small>');
                 }
             } else {
-                // Untuk position lain, sembunyikan Director dan General Manager
+                // Reset the styling
+                departmentSelect.css({
+                    'background-color': '',
+                    'pointer-events': ''
+                });
+
+                // For other positions, hide Director and General Manager options
                 departmentSelect.find('option').each(function() {
                     var deptText = $(this).text().trim();
                     if (deptText === 'Director' || deptText === 'General Manager') {
@@ -1728,17 +1766,13 @@
                     }
                 });
 
-                // Jika department saat ini adalah Director/GM, reset ke kosong
+                // If current department is Director/GM, reset to empty
                 var currentDeptText = departmentSelect.find('option:selected').text().trim();
                 if (currentDeptText === 'Director' || currentDeptText === 'General Manager') {
                     departmentSelect.val('');
                 }
             }
         }
-
-
-
-
 
         $(document).on("input", ".list-textarea", function() {
             let lines = $(this).val().split("\n");

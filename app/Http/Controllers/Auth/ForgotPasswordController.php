@@ -111,10 +111,10 @@ class ForgotPasswordController extends Controller
             if ($request->ajax()) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'OTP sudah kadaluarsa.'
+                    'message' => 'OTP Has Expired.'
                 ]);
             }
-            return back()->withErrors(['otp' => 'OTP sudah kadaluarsa.']);
+            return back()->withErrors(['otp' => 'OTP Has Expired.']);
         }
 
         // Clear OTP after successful verification

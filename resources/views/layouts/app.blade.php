@@ -297,6 +297,15 @@
             backdrop-filter: blur(var(--blur-intensity));
         }
 
+        .settings-icon {
+            margin-left: 20px;
+            color: white;
+        }
+
+        .settings-icon i {
+            font-size: 18px;
+        }
+
         .profile-link {
             display: flex;
             align-items: center;
@@ -589,7 +598,7 @@
                 Auth::user()->position->position == 'General Manager'
                 )
                 <li class="nav-item">
-                    <a href="{{ url('/announcement/index')}}" class="nav-link">
+                    <a href="{{ route('announcement.index', ['user_id' => Auth::user()->id]) }}" class="nav-link">
                         <i class="fa-solid fa-bullhorn"></i>
                         <span>Announcement</span>
                     </a>
@@ -867,6 +876,20 @@
                                 </a>
 
                             </div>
+
+
+                            <!-- elearning -->
+                            <a href="#" class="nav-link dropdown-toggle evaluation-elearning-dropdown">
+                                <i class="fas fa-book"></i>
+                                <span>E-learning</span>
+                            </a>
+                            <div class="evaluation-elearning-submenu" style="display: none; padding-left: 15px;">
+                                <!-- Grade -->
+                                <a href="{{ route('evaluation.rule.elearning.grade.index') }}" class="nav-link">
+                                    <i class="fas fa-list-ol"></i>
+                                    <span>Grade</span>
+                                </a>
+                            </div>
                         </div>
 
                         <!-- Assignment submenu -->
@@ -899,6 +922,17 @@
                             <a href="{{  route('evaluation.report.discipline.index') }}" class="nav-link">
                                 <i class="fa-solid fa-clipboard-user"></i>
                                 <span>Discipline</span>
+                            </a>
+
+                            <a href="{{  route('evaluation.report.elearning.index') }}" class="nav-link">
+                                <i class="fa-solid fa-chalkboard"></i>
+                                <span>E-learning</span>
+                            </a>
+
+
+                            <a href="{{  route('evaluation.report.final.index') }}" class="nav-link">
+                                <i class="fa-solid fa-file-lines"></i>
+                                <span>Final</span>
                             </a>
                         </div>
 
@@ -970,12 +1004,18 @@
 
         <!-- Profile section at bottom of sidebar -->
         <div class="profile-section">
-            <a href="{{ route('user.edit', Auth::user()->id) }}" class="profile-link">
-                <img src="{{ Auth::user()->photo_profile_path ? asset('storage/'. Auth::user()->photo_profile_path) : asset('storage/default_profile.png') }}"
-                    alt="Profile Picture" class="profile-image">
-                <span>{{ Auth::user()->name }}</span>
+
+            <a href="{{ route('user.employees.edit', Auth::user()->id) }}" class="profile-link">
+                <img src="{{ Auth::user()->photo_profile_path ? asset('storage/'. Auth::user()->photo_profile_path) : asset('storage/default_profile.png') }}" alt="Profile Picture" class="profile-image">
+                <div class="profile-info">
+                    <span>{{ Auth::user()->name }}</span>
+                </div>
+                <div class="settings-icon">
+                    <i class="fa-solid fa-gear"></i>
+                </div>
             </a>
         </div>
+
     </div>
 
     <div id="content">
@@ -1252,6 +1292,19 @@
                 return false;
             });
 
+            $('.evaluation-elearning-dropdown').on('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+
+                // Toggle active class for arrow rotation
+                $(this).toggleClass('active');
+
+                // Toggle the elearning submenu with animation
+                $('.evaluation-elearning-submenu').slideToggle(300);
+
+                return false;
+            });
+
             $('.rule-discipline-dropdown').on('click', function(e) {
                 e.preventDefault();
                 e.stopPropagation();
@@ -1317,6 +1370,17 @@
                 if (!$(this).hasClass('shift-dropdown') && !$(this).closest('.performance-submenu').length) {
                     $('.performance-dropdown').removeClass('active');
                     $('.performance-submenu').slideUp(300);
+                }
+            });
+
+
+            $('.nav-link.dropdown-toggle').not('.elarning-dropdown').on('click', function(e) {
+                e.preventDefault();
+
+                // Ensure the shift submenu is closed when another main dropdown is clicked
+                if (!$(this).hasClass('shift-dropdown') && !$(this).closest('.elarning-submenu').length) {
+                    $('.elarning-dropdown').removeClass('active');
+                    $('.elarning-submenu').slideUp(300);
                 }
             });
 
@@ -1406,10 +1470,15 @@
                     $('.performance-dropdown').removeClass('active');
                     $('.performance-submenu').slideUp(300);
                 }
+
+                if (!$(e.target).closest('.evaluation-elearning-dropdown, .evaluation-elearning-submenu').length) {
+                    $('.evaluation-elearning-dropdown').removeClass('active');
+                    $('.evaluation-elearning-submenu').slideUp(300);
+                }
             });
 
             // Prevent parent dropdown from closing when clicking on submenu
-            $('.hr-submenu, .shift-submenu, .timeOff-submenu, .attendance-submenu, rule-discipline-submenu, .warningLetter-submenu, .employee-submenu, .rule-submenu, .user-submenu, .evaluation-assignment-submenu, .evaluation-report-submenu, .performance-submenu').on('click', function(e) {
+            $('.hr-submenu, .shift-submenu, .timeOff-submenu,.evaluation-elearning-submenu, .attendance-submenu, rule-discipline-submenu, .warningLetter-submenu, .employee-submenu, .rule-submenu, .user-submenu, .evaluation-assignment-submenu, .evaluation-report-submenu, .performance-submenu').on('click', function(e) {
                 e.stopPropagation();
             });
 

@@ -11,6 +11,11 @@
         min-height: 100vh;
     }
 
+    .error {
+        color: red;
+        font-weight: bold;
+    }
+
     .container {
         max-width: 1200px;
         margin: 0 auto;
@@ -490,7 +495,8 @@
                     <select name="demandId" id="demandId" class="form-select" required>
                         <option value="" disabled selected>-- Select Demand --</option>
                         @foreach($demands as $demand)
-                        <option value="{{ $demand->id }}">{{ $demand->recruitment_demand_id }} - {{ $demand->position }} ({{ $demand->department }})</option>
+
+                        <option value="{{ $demand->id }}">{{ $demand->recruitment_demand_id }} - {{ $demand->positionRelation->position }} ({{ $demand->departmentRelation->department }})</option>
                         @endforeach
                     </select>
                 </div>
@@ -1186,6 +1192,9 @@
         const $addAgeRangeBtn = $('#addAgeRangeBtn');
         const $ageRangesList = $('#ageRangesList');
         const $saveAgeConfig = $('#saveAgeConfig');
+
+
+        $(document).on('input', '.criteria-percentage input', updateTotal);
 
         // Define all criteria
         const allCriteria = {
@@ -3605,19 +3614,26 @@
         // Update the total percentage
         function updateTotal() {
             let total = 0;
-            $criteriaContainer.find('.criteria-percentage input').each(function() {
+            $('.criteria-percentage input').each(function() {
                 total += Number($(this).val()) || 0;
             });
 
-            $totalValueSpan.text(total.toFixed(1));
+            $('#totalValue').text(total.toFixed(1));
 
+            // Make sure this value is visible
+            $('#percentageTotal').show();
+
+            // Better visual indication when total isn't 100%
             if (Math.abs(total - 100) > 0.1) {
-                $percentageTotalDiv.addClass('error');
+                $('#percentageTotal').addClass('error');
+                $('#percentageTotal').css('color', 'red');
+                $('#calculateButton').prop('disabled', true);
             } else {
-                $percentageTotalDiv.removeClass('error');
+                $('#percentageTotal').removeClass('error');
+                $('#percentageTotal').css('color', '');
+                $('#calculateButton').prop('disabled', false);
             }
         }
-
         // Extend the calculate function to include all criteria configs
         $calculateBtn.on('click', function() {
             if (!$demandSelect.val()) {

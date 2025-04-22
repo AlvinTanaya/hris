@@ -17,7 +17,7 @@ class User extends Authenticatable
      *
      * @var string
      */
-    protected $table = 'users'; // Nama tabel di database Anda
+    protected $table = 'users';
 
     /**
      * The attributes that are mass assignable.
@@ -70,7 +70,6 @@ class User extends Authenticatable
     ];
 
 
-
     protected $hidden = [
         'password',
         'remember_token',
@@ -89,16 +88,6 @@ class User extends Authenticatable
         ];
     }
 
-    // Relationship with Position
-    public function position()
-    {
-        return $this->belongsTo(EmployeePosition::class, 'position_id');
-    }
-    
-    public function department()
-    {
-        return $this->belongsTo(EmployeeDepartment::class, 'department_id');
-    }
 
     // Accessor for Position Name
     public function getPositionNameAttribute()
@@ -111,6 +100,20 @@ class User extends Authenticatable
     {
         return $this->department ? $this->department->department : null;
     }
+
+
+    // Relationship with Position
+    public function position()
+    {
+        return $this->belongsTo(EmployeePosition::class, 'position_id');
+    }
+
+    public function department()
+    {
+        return $this->belongsTo(EmployeeDepartment::class, 'department_id');
+    }
+
+
 
     // Scope to filter by position
     public function scopeByPosition($query, $position)

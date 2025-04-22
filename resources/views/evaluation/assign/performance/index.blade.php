@@ -114,6 +114,7 @@
                                     <th>Department</th>
                                     <th>Evaluation Period</th>
                                     <th>Score</th>
+                                    <th>Evaluator</th>
 
 
                                     <th>Actions</th>
@@ -132,12 +133,18 @@
                                         <strong>{{ fmod($evaluation->final_score, 1) == 0 ? number_format($evaluation->final_score, 0) : $evaluation->final_score }}</strong>
                                     </td>
 
+                                    <!-- Untuk menampilkan nama evaluator alih-alih ID -->
+                                    <td>{{ $evaluation->evaluator->name ?? 'N/A' }}</td>
+
 
                                     <td>
+
+                                        @if(Auth::id() == $evaluation->evaluator_id)
                                         <a href="{{ route('evaluation.assign.performance.edit', $evaluation->id) }}"
                                             class="btn btn-sm btn-warning">
                                             <i class="fas fa-edit"></i> Edit
                                         </a>
+                                        @endif
                                         <a href="{{ route('evaluation.assign.performance.detail', $evaluation->id) }}"
                                             class="btn btn-sm btn-info">
                                             <i class="fas fa-eye"></i> Detail

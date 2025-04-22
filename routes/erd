@@ -1,0 +1,354 @@
+erDiagram
+    users {
+        bigint id PK
+    }
+    users_education {
+        bigint id PK
+    }
+    users_language {
+        bigint id PK
+    }
+    users_family {
+        bigint id PK
+    }
+    users_work_experience {
+        bigint id PK
+    }
+    users_transfer_history {
+        bigint id PK
+    }
+    users_extend_history {
+        bigint id PK
+    }
+    employee_positions {
+        bigint id PK
+        varchar position
+        int ranking
+        timestamp created_at
+        timestamp updated_at
+    }
+    employee_departments {
+        bigint id PK
+    }
+    users_training {
+        bigint id PK
+    }
+    users_organization {
+        bigint id PK
+    }
+    recruitment_applicant {
+        bigint id PK
+    }
+    recruitment_applicant_training {
+        bigint id PK
+    }
+    recruitment_applicant_organization {
+        bigint id PK
+    }
+    recruitment_applicant_work_experience {
+        bigint id PK
+    }
+    recruitment_applicant_language {
+        bigint id PK
+    }
+    recruitment_applicant_education {
+        bigint id PK
+    }
+    recruitment_applicant_family {
+        bigint id PK
+    }
+    recruitment_demand {
+        bigint id PK
+    }
+    
+    elearning_lesson {
+        bigint id PK
+        varchar name
+        int duration
+        int passing_grade
+        varchar lesson_file
+        timestamp created_at
+        timestamp updated_at
+    }
+    elearning_question {
+        bigint id PK
+        bigint lesson_id FK
+        text question
+        text multiple_choice
+        text answer_key
+        decimal grade
+        timestamp created_at
+        timestamp updated_at
+    }
+    elearning_schedule {
+        bigint id PK
+        bigint lesson_id FK
+        date start_date
+        date end_date
+        timestamp created_at
+        timestamp updated_at
+    }
+    elearning_invitation {
+        bigint id PK
+        bigint lesson_id FK
+        bigint schedule_id FK
+        bigint users_id FK
+        int grade
+        timestamp created_at
+        timestamp updated_at
+    }
+    elearning_answer {
+        bigint id PK
+        bigint invitation_id FK
+        bigint users_id FK
+        bigint lesson_id FK
+        bigint schedule_id FK
+        text question
+        text multiple_choice
+        text answer
+        decimal grade
+        decimal mark
+        text answer_key
+        timestamp created_at
+        timestamp updated_at
+    }
+    
+    notification {
+        bigint id PK
+    }
+    
+    employee_overtime {
+        bigint id PK
+        bigint users_id FK
+        timestamp created_at
+        timestamp updated_at
+    }
+    request_resign {
+        bigint id PK
+        bigint users_id FK
+        timestamp created_at
+        timestamp updated_at
+    }
+    employee_absent {
+        bigint id PK
+        bigint users_id FK
+        timestamp created_at
+        timestamp updated_at
+    }
+    time_off_assign {
+        bigint id PK
+        bigint users_id FK
+        bigint time_off_policy_id FK
+        timestamp created_at
+        timestamp updated_at
+    }
+    employee_shift {
+        bigint id PK
+        timestamp created_at
+        timestamp updated_at
+    }
+    rule_warning_letter {
+        bigint id PK
+        varchar name
+        varchar description
+        int expired_time
+        timestamp created_at
+        timestamp updated_at
+    }
+    time_off_policy {
+        bigint id PK
+        timestamp created_at
+        timestamp updated_at
+    }
+    rule_shift {
+        bigint id PK
+        timestamp created_at
+        timestamp updated_at
+    }
+    request_time_off {
+        bigint id PK
+        bigint users_id FK
+        bigint time_off_policy_id FK
+        timestamp created_at
+        timestamp updated_at
+    }
+    request_shift_change {
+        bigint id PK
+        bigint users_id FK
+        bigint employee_shift_id FK
+        timestamp created_at
+        timestamp updated_at
+    }
+    employee_warning_letter {
+        bigint id PK
+        bigint user_id FK
+        bigint maker_id FK
+        varchar warning_letter_number
+        text reason_warning
+        timestamp created_at
+        timestamp updated_at
+        bigint type_id FK
+        date expired_at
+    }
+    
+    discipline_rules {
+        bigint id PK
+        varchar rule_type
+        int min_value
+        int max_score
+        int occurrence
+        decimal score_value
+        varchar operation
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    rule_discipline_grades {
+        bigint id PK
+        varchar grade
+        int min_score
+        int max_score
+        text description
+        timestamp created_at
+        timestamp updated_at
+    }
+    custom_holiday {
+        bigint id PK
+        varchar name
+        text description
+        date date
+        timestamp created_at
+        timestamp updated_at
+    }
+    rule_performance_grades {
+        bigint id PK
+        varchar grade
+        int min_score
+        int max_score
+        text description
+        timestamp created_at
+        timestamp updated_at
+    }
+    rule_evaluation_reduction_performance {
+        bigint id PK
+        int type_id
+        decimal weight
+        varchar status
+        timestamp created_at
+        timestamp updated_at
+    }
+    employee_evaluation_performance_message {
+        bigint id PK
+        bigint evaluation_id FK
+        text message
+        timestamp created_at
+        timestamp updated_at
+    }
+    rule_evaluation_weight_performance {
+        bigint id PK
+        int position_id FK
+        bigint criteria_id FK
+        decimal weight
+        enum status
+        timestamp created_at
+        timestamp updated_at
+    }
+    rule_evaluation_criteria_performance {
+        bigint id PK
+        varchar type
+        timestamp created_at
+        timestamp updated_at
+    }
+    
+    employee_evaluation_performance_detail {
+        bigint id PK
+        bigint evaluation_id FK
+        bigint rule_performance_id FK
+        decimal value
+        decimal weight
+        decimal score
+        timestamp created_at
+        timestamp updated_at
+    }
+    employee_evaluation_performance {
+        bigint id PK
+        bigint user_id FK
+        bigint evaluator_id FK
+        date date
+        decimal total_score
+        decimal total_reduction
+        decimal final_score
+        timestamp created_at
+        timestamp updated_at
+    }
+    employee_evaluation_performance_reductions {
+        bigint id PK
+        bigint evaluation_id FK
+        bigint warning_letter_id FK
+        decimal reduction_amount
+        timestamp created_at
+        timestamp updated_at
+    }
+    users ||--o{ users_education : ""
+    users ||--o{ users_language : ""
+    users ||--o{ users_family : ""
+    users ||--o{ users_work_experience : ""
+    users ||--o{ users_transfer_history : ""
+    users ||--o{ users_extend_history : ""
+    users ||--|| employee_positions : ""
+    users ||--|| employee_departments : ""
+    users ||--o{ users_training : ""
+    users ||--o{ users_organization : ""
+    users ||--o{ notification : ""
+    
+    recruitment_applicant ||--o{ recruitment_applicant_training : ""
+    recruitment_applicant ||--o{ recruitment_applicant_organization : ""
+    recruitment_applicant ||--o{ recruitment_applicant_work_experience : ""
+    recruitment_applicant ||--o{ recruitment_applicant_language : ""
+    recruitment_applicant ||--o{ recruitment_applicant_education : ""
+    recruitment_applicant ||--o{ recruitment_applicant_family : ""
+    recruitment_applicant ||--o{ recruitment_demand : ""
+    
+    elearning_lesson ||--o{ elearning_question : ""
+    elearning_lesson ||--o{ elearning_schedule : ""
+    elearning_lesson ||--o{ elearning_invitation : ""
+    elearning_schedule ||--o{ elearning_invitation : ""
+    users ||--o{ elearning_invitation : ""
+    users ||--o{ elearning_answer : ""
+    elearning_invitation ||--o{ elearning_answer : ""
+    elearning_lesson ||--o{ elearning_answer : ""
+    
+    recruitment_demand ||--o{ employee_positions : ""
+    recruitment_demand ||--o{ employee_departments : ""
+    
+    users ||--o{ employee_overtime : ""
+    users ||--o{ request_resign : ""
+    users ||--o{ employee_absent : ""
+    users ||--o{ time_off_assign : ""
+    users ||--o{ request_time_off : ""
+    users ||--o{ request_shift_change : ""
+    users ||--o{ employee_shift : ""
+
+    time_off_policy ||--o{ time_off_assign : ""
+    time_off_policy ||--o{ request_time_off : ""
+    
+    rule_shift ||--o{ employee_shift : ""
+    employee_shift ||--o{ request_shift_change : ""
+
+
+
+    users ||--o{ employee_warning_letter : ""
+    users ||--o{ employee_evaluation_performance : ""
+    
+    employee_positions ||--o{ employee_evaluation_performance : ""
+    
+    rule_evaluation_criteria_performance ||--o{ rule_evaluation_weight_performance : ""
+    rule_evaluation_weight_performance ||--o{ employee_evaluation_performance_detail : ""
+    
+    employee_evaluation_performance ||--o{ employee_evaluation_performance_detail : ""
+    employee_evaluation_performance ||--o{ employee_evaluation_performance_message : ""
+    employee_evaluation_performance ||--o{ employee_evaluation_performance_reductions : ""
+    
+    employee_warning_letter ||--o{ employee_evaluation_performance_reductions : ""
+    rule_warning_letter ||--o{ employee_warning_letter : ""
+    rule_evaluation_reduction_performance ||--o{ employee_evaluation_performance_reductions : ""

@@ -121,17 +121,28 @@
             <div class="notification-card p-3 {{ $notification->status == 'Unread' ? 'unread' : '' }}">
                 <div class="d-flex justify-content-between">
                     <div class="notification-title text-white">
-                        From: {{ $notification->from_name }} ({{ $notification->from_title }})
+                        From: {{ $notification->from_name }}
+                        @if($notification->from_title)
+                        ({{ $notification->from_title }})
+                        @endif
                     </div>
                     <div class="notification-time">{{ \Carbon\Carbon::parse($notification->created_at)->diffForHumans() }}</div>
                 </div>
                 <div class="notification-content">{{ $notification->message }}</div>
                 <div class="d-flex justify-content-end mt-2">
                     @if($notification->type == 'elearning_duty')
-                    <a href="{{ url('/elearning/index2/' . Auth::user()->id) }}" class="btn btn-sm btn-primary me-2">
+                    <a href="{{ url('/elearning/index2/' . Auth::user()->id) }}" class="btn btn-sm btn-warning me-2">
                         <i class="fas fa-arrow-right"></i> View
                     </a>
                     @endif
+
+                    @if($notification->type == 'warning_letter')
+                    <a href="{{ url('/time_management/warning_letter/assign/index2/' . Auth::user()->id) }}" class="btn btn-sm btn-warning me-2">
+                        <i class="fas fa-arrow-right"></i> View
+                    </a>
+                    @endif
+
+                    
 
                     @if($notification->status == 'Unread')
                     <button class="btn btn-sm btn-danger mark-read" data-id="{{ $notification->id }}">

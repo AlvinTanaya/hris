@@ -408,6 +408,13 @@
                     success: function(response) {
                         if (response.success) {
                             window.location.href = response.redirect;
+                        } else {
+                            // Tampilkan Swal untuk response dengan success: false
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Error!',
+                                text: response.message || 'Something went wrong!',
+                            });
                         }
                     }
                 });
@@ -421,7 +428,7 @@
                 $('#otp-error').addClass('d-none');
             }
 
-            // Handle resend OTP button
+            // Update the resend button click handler
             $('#resend-btn').on('click', function() {
                 if ($(this).prop('disabled')) return;
 
@@ -437,9 +444,13 @@
                     success: function(response) {
                         console.log(response);
                         localStorage.removeItem('otpEndTime');
-                        startCountdown(120);
-                        $('#alert-container').html('<div class="alert alert-success text-center">' + response.message + '</div>');
+                        startCountdown(120); // Start a new 120-second countdown
+                        $('#alert-container').html('<div class="alert alert-success text-center text-white">' + response.message + '</div>');
                         $('.otp-input').val('').first().focus();
+
+                        // Reset button text (but it remains disabled until countdown finishes)
+                        $('#resend-btn').html('<i class="fas fa-redo-alt me-1"></i> Resend OTP');
+                        // The button will remain disabled until the countdown completes
                     },
                     error: function(xhr) {
                         let errorMessage = xhr.responseJSON?.message || "An error occurred. Please try again.";
@@ -449,9 +460,25 @@
                 });
             });
 
+            // Improved countdown function
             function startCountdown(seconds) {
-                let endTime = localStorage.getItem('otpEndTime') || (Date.now() + seconds * 1000);
+                // Clear any existing interval
+                if (window.countdownInterval) {
+                    clearInterval(window.countdownInterval);
+                }
+
+                // Remove any existing pulse effect
+                $('#resend-btn').removeClass('pulse');
+
+                // Make sure button is disabled at start of countdown
+                $('#resend-btn').prop('disabled', true);
+
+                // Set end time
+                let endTime = Date.now() + seconds * 1000;
                 localStorage.setItem('otpEndTime', endTime);
+
+                // Reset timer text
+                $('#timer').html('Resend in <span id="countdown">02:00</span>');
 
                 function updateCountdown() {
                     let timeLeft = Math.max(0, Math.floor((endTime - Date.now()) / 1000));
@@ -471,6 +498,9 @@
                 updateCountdown();
                 window.countdownInterval = setInterval(updateCountdown, 1000);
             }
+
+
+
         });
     </script>
 

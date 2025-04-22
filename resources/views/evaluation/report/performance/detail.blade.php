@@ -1,13 +1,109 @@
 @extends('layouts.app')
 
 @section('content')
+
+<style>
+    body {
+        background-color: #f8f9fa;
+    }
+
+    .card {
+        border-radius: 0.5rem;
+        overflow: hidden;
+    }
+
+    .badge.bg-primary {
+        background-color: #0062ff !important;
+    }
+
+    .badge.bg-secondary {
+        background-color: #6c757d !important;
+    }
+
+    .card-header {
+        padding: 0.75rem 1.25rem;
+    }
+
+    .table {
+        font-size: 0.875rem;
+    }
+
+    .table thead th {
+        vertical-align: middle;
+        white-space: nowrap;
+    }
+
+    .table td,
+    .table th {
+        vertical-align: middle;
+    }
+
+    .badge {
+        font-size: 0.75em;
+        font-weight: 500;
+        padding: 0.35em 0.65em;
+    }
+
+    .display-4 {
+        font-size: 2.5rem;
+        font-weight: 300;
+        line-height: 1.2;
+    }
+
+    @media print {
+        body {
+            background-color: white;
+            font-size: 11pt;
+        }
+
+        .card,
+        .card-header {
+            border: none;
+            box-shadow: none;
+        }
+
+        .table {
+            font-size: 9pt;
+        }
+
+        .no-print,
+        .actions,
+        #btn-print,
+        .btn {
+            display: none !important;
+        }
+
+        .card-body {
+            padding: 0;
+        }
+    }
+
+    @media (max-width: 768px) {
+        .table-responsive {
+            display: block;
+            width: 100%;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+    }
+    
+    .me-2 {
+        margin-right: 0.5rem !important;
+    }
+</style>
 <div class="container-fluid">
     <div class="row justify-content-center">
         <div class="col-md-12">
             <div class="card border-0 shadow-sm">
                 <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
                     <h5 class="mb-0 font-weight-bold">Performance Evaluation Report</h5>
-                    <div>
+                    <div class="d-flex">
+                        <button id="btn-print" class="btn btn-light btn-sm me-2" title="Print Report">
+                            <i class="fas fa-print"></i> Print
+                        </button>
+                        <a href="{{ route('evaluation.report.performance.export.employee', ['id' => $user->id, 'year' => $year]) }}" class="btn btn-success btn-sm me-2" title="Export to Excel">
+                            <i class="fas fa-file-excel"></i> Excel
+                        </a>
                         <a href="{{ route('evaluation.report.performance.index') }}" class="btn btn-danger btn-sm">
                             <i class="fas fa-arrow-left"></i> Back
                         </a>
@@ -208,58 +304,57 @@
                                             </td>
                                         </tr>
 
-                                        @foreach($yearlyReductions as $ruleId => $ruleData)
-                                        <tr>
-                                            <td colspan="2">{{ $ruleData['name'] }}</td>
-                                            <td class="text-center text-danger">-{{ $ruleData['weight'] }}</td>
+<!-- Warning Letters & Deductions Section in the view -->
+@foreach($yearlyReductions as $ruleId => $ruleData)
+<tr>
+    <td colspan="2">{{ $ruleData['name'] }}</td>
+    <td class="text-center text-danger">-{{ $ruleData['weight'] }}</td>
 
-                                            @foreach($monthNames as $monthIndex => $month)
-                                            @php
-                                            $monthNumber = $monthIndex + 1;
-                                            $monthData = $ruleData['monthly'][$monthNumber] ?? ['count' => 0, 'reduction' => 0];
-                                            $hasDeduction = $monthData['count'] > 0;
-                                            @endphp
+    @foreach(range(1, 12) as $monthNumber)
+    @php
+        $monthData = $ruleData['monthly'][$monthNumber] ?? ['count' => 0, 'reduction' => 0];
+        $hasDeduction = $monthData['count'] > 0;
+    @endphp
 
-                                            <td class="text-center">
-                                                @if($hasDeduction)
-                                                <span class="badge bg-danger">{{ $monthData['count'] }}</span>
-                                                @endif
-                                            </td>
-                                            <td class="text-center text-danger">
-                                                {{ $hasDeduction ? -$monthData['reduction'] : 0 }}
-                                            </td>
-                                            @endforeach
+    <td class="text-center">
+        @if($hasDeduction)
+        <span class="badge bg-danger">{{ $monthData['count'] }}</span>
+        @endif
+    </td>
+    <td class="text-center text-danger">
+        {{ $hasDeduction ? '-'.$monthData['reduction'] : '' }}
+    </td>
+    @endforeach
 
-                                            <td class="text-center">
-                                                @if($ruleData['total_count'] > 0)
-                                                <span class="badge bg-danger">{{ $ruleData['total_count'] }}</span>
-                                                @endif
-                                            </td>
-                                            <td class="text-center text-danger">
-                                                -{{ $ruleData['total_reduction'] }}
-                                            </td>
-                                        </tr>
-                                        @endforeach
+    <td class="text-center">
+        @if($ruleData['total_count'] > 0)
+        <span class="badge bg-danger">{{ $ruleData['total_count'] }}</span>
+        @endif
+    </td>
+    <td class="text-center text-danger">
+        {{ $ruleData['total_count'] > 0 ? '-'.$ruleData['total_reduction'] : '' }}
+    </td>
+</tr>
+@endforeach
 
-                                        <!-- Total Deductions Row -->
-                                        <tr class="font-weight-bold bg-light">
-                                            <td colspan="2" class="text-right">TOTAL DEDUCTIONS</td>
-                                            <td class="text-center text-danger">-{{ $maxPossibleDeductions }}</td>
+<!-- Total Deductions Row -->
+<tr class="font-weight-bold bg-light">
+    <td colspan="2" class="text-right">TOTAL DEDUCTIONS</td>
+    <td class="text-center text-danger">-{{ $maxPossibleDeductions }}</td>
 
-                                            @foreach($monthNames as $monthIndex => $month)
-                                            <td></td>
-                                            <td class="text-center text-danger">
-                                                @php
-                                                $monthDeduction = $monthlyData[$monthIndex]['deductions'] ?? 0;
-                                                @endphp
-                                                {{ $monthDeduction > 0 ? '-'.number_format($monthDeduction, 0) : 0 }}
-                                            </td>
-                                            @endforeach
+    @foreach(range(1, 12) as $monthNumber)
+    <td></td>
+    <td class="text-center text-danger">
+        @php
+            $monthDeduction = $monthlyData[$monthNumber]['deductions'] ?? 0;
+        @endphp
+        {{ $monthDeduction > 0 ? '-'.number_format($monthDeduction, 0) : '' }}
+    </td>
+    @endforeach
 
-                                            <td></td>
-                                            <td class="text-center text-danger">-{{ number_format($totalDeductions, 0) }}</td>
-                                        </tr>
-
+    <td></td>
+    <td class="text-center text-danger">{{ $totalDeductions > 0 ? '-'.number_format($totalDeductions, 0) : '' }}</td>
+</tr>
                                         <!-- Final Score Row -->
                                         <tr class="font-weight-bold" style="background-color: #f8f9fa; border-top: 2px solid #dee2e6;">
                                             <td colspan="2" class="text-right">FINAL SCORE</td>
@@ -329,7 +424,7 @@
 </div>
 @endsection
 
-@section('scripts')
+@push('scripts')
 <script>
     $(document).ready(function() {
         $('#btn-print').click(function() {
@@ -338,87 +433,4 @@
     });
 </script>
 
-<style>
-    body {
-        background-color: #f8f9fa;
-    }
-
-    .card {
-        border-radius: 0.5rem;
-        overflow: hidden;
-    }
-
-    .badge.bg-primary {
-        background-color: #0062ff !important;
-    }
-
-    .badge.bg-secondary {
-        background-color: #6c757d !important;
-    }
-
-    .card-header {
-        padding: 0.75rem 1.25rem;
-    }
-
-    .table {
-        font-size: 0.875rem;
-    }
-
-    .table thead th {
-        vertical-align: middle;
-        white-space: nowrap;
-    }
-
-    .table td,
-    .table th {
-        vertical-align: middle;
-    }
-
-    .badge {
-        font-size: 0.75em;
-        font-weight: 500;
-        padding: 0.35em 0.65em;
-    }
-
-    .display-4 {
-        font-size: 2.5rem;
-        font-weight: 300;
-        line-height: 1.2;
-    }
-
-    @media print {
-        body {
-            background-color: white;
-            font-size: 11pt;
-        }
-
-        .card,
-        .card-header {
-            border: none;
-            box-shadow: none;
-        }
-
-        .table {
-            font-size: 9pt;
-        }
-
-        .no-print,
-        .actions {
-            display: none !important;
-        }
-
-        .card-body {
-            padding: 0;
-        }
-    }
-
-    @media (max-width: 768px) {
-        .table-responsive {
-            display: block;
-            width: 100%;
-            overflow-x: auto;
-            -webkit-overflow-scrolling: touch;
-        }
-    }
-</style>
-@endsection
+@endpush

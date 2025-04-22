@@ -204,49 +204,51 @@
                     aria-labelledby="tab-{{ $key }}">
 
                     <div class="table-responsive">
-                        <table class="table table-bordered table-striped table-hover" id="discipline-table-{{ $key }}">
-                            <thead class="table-light">
-                                <tr>
-                                    <th rowspan="2" class="align-middle bg-success text-dark">NIK</th>
-                                    <th rowspan="2" class="align-middle bg-success text-dark">NAMA</th>
-                                    <th rowspan="2" class="align-middle bg-success text-dark">TTL KERJA/BL</th>
-                                    <th rowspan="2" class="align-middle bg-success text-dark">KEHADIRAN</th>
-                                    <th rowspan="2" class="align-middle bg-success text-dark">%</th>
-                                    <th rowspan="2" class="align-middle bg-success text-dark">TERLAMBAT</th>
-                                    <th rowspan="2" class="align-middle bg-success text-dark">IJIN</th>
-                                    <th rowspan="2" class="align-middle bg-success text-dark">MASUK SIANG</th>
-                                    <th rowspan="2" class="align-middle bg-success text-dark">PULANG AWAL</th>
-                                    <th rowspan="2" class="align-middle bg-success text-dark">SAKIT</th>
-                                    <th rowspan="2" class="align-middle bg-success text-dark">ST</th>
-                                    <th rowspan="2" class="align-middle bg-success text-dark">SP</th>
-                                    <th colspan="6" class="text-center bg-success text-dark">SCORE</th>
-                                    <th rowspan="2" class="align-middle bg-success text-dark">TOTAL</th>
-                                    @if($key == 'final')
-                                    <th rowspan="2" class="align-middle bg-success text-dark">GRADE</th>
-                                    @endif
-                                </tr>
-                                <tr>
-                                    <th class="align-middle bg-success text-dark">KEHADIRAN</th>
-                                    <th class="align-middle bg-success text-dark">TERLAMBAT</th>
-                                    <th class="align-middle bg-success text-dark">MASUK SIANG</th>
-                                    <th class="align-middle bg-success text-dark">PULANG AWAL</th>
-                                    <th class="align-middle bg-success text-dark">ST</th>
-                                    <th class="align-middle bg-success text-dark">SP</th>
-                                </tr>
-                            </thead>
-                            <tbody id="discipline-data-{{ $key }}">
-                                <!-- Data will be loaded here -->
-                                <tr>
-                                    <td colspan="{{ $key == 'final' ? '20' : '19' }}" class="text-center">
-                                        <div class="spinner-border spinner-border-sm text-primary me-2" role="status">
-                                            <span class="visually-hidden">Loading...</span>
-                                        </div>
-                                        Loading data...
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
+    <table class="table table-bordered table-striped table-hover" id="discipline-table-{{ $key }}">
+        <thead class="table-light">
+            <tr>
+                <th rowspan="2" class="align-middle bg-success text-dark">NIK</th>
+                <th rowspan="2" class="align-middle bg-success text-dark">NAMA</th>
+                <th rowspan="2" class="align-middle bg-success text-dark">JABATAN</th>
+                <th rowspan="2" class="align-middle bg-success text-dark">DEPARTEMEN</th>
+                <th rowspan="2" class="align-middle bg-success text-dark">TTL KERJA/BL</th>
+                <th rowspan="2" class="align-middle bg-success text-dark">KEHADIRAN</th>
+                <th rowspan="2" class="align-middle bg-success text-dark">%</th>
+                <th rowspan="2" class="align-middle bg-success text-dark">TERLAMBAT</th>
+                <th rowspan="2" class="align-middle bg-success text-dark">IJIN</th>
+                <th rowspan="2" class="align-middle bg-success text-dark">MASUK SIANG</th>
+                <th rowspan="2" class="align-middle bg-success text-dark">PULANG AWAL</th>
+                <th rowspan="2" class="align-middle bg-success text-dark">SAKIT</th>
+                <th rowspan="2" class="align-middle bg-success text-dark">ST</th>
+                <th rowspan="2" class="align-middle bg-success text-dark">SP</th>
+                <th colspan="6" class="text-center bg-success text-dark">SCORE</th>
+                <th rowspan="2" class="align-middle bg-success text-dark">TOTAL</th>
+                @if($key == 'final')
+                <th rowspan="2" class="align-middle bg-success text-dark">GRADE</th>
+                @endif
+            </tr>
+            <tr>
+                <th class="align-middle bg-success text-dark">KEHADIRAN</th>
+                <th class="align-middle bg-success text-dark">TERLAMBAT</th>
+                <th class="align-middle bg-success text-dark">MASUK SIANG</th>
+                <th class="align-middle bg-success text-dark">PULANG AWAL</th>
+                <th class="align-middle bg-success text-dark">ST</th>
+                <th class="align-middle bg-success text-dark">SP</th>
+            </tr>
+        </thead>
+        <tbody id="discipline-data-{{ $key }}">
+            <!-- Data will be loaded here -->
+            <tr>
+                <td colspan="{{ $key == 'final' ? '22' : '21' }}" class="text-center">
+                    <div class="spinner-border spinner-border-sm text-primary me-2" role="status">
+                        <span class="visually-hidden">Loading...</span>
                     </div>
+                    Loading data...
+                </td>
+            </tr>
+        </tbody>
+    </table>
+</div>
                 </div>
                 @endforeach
             </div>
@@ -399,66 +401,69 @@
         }
 
         function renderTable(data, month) {
-            if (!data.length) {
-                $(`#discipline-data-${month}`).html(`
-                    <tr>
-                        <td colspan="${month === 'final' ? '20' : '19'}" class="text-center">
-                            <div class="alert alert-info mb-0">
-                                <i class="fa fa-info-circle me-2"></i>
-                                No data available
-                            </div>
-                        </td>
-                    </tr>
-                `);
-                return;
-            }
+    if (!data.length) {
+        $(`#discipline-data-${month}`).html(`
+            <tr>
+                <td colspan="${month === 'final' ? '22' : '21'}" class="text-center">
+                    <div class="alert alert-info mb-0">
+                        <i class="fa fa-info-circle me-2"></i>
+                        No data available
+                    </div>
+                </td>
+            </tr>
+        `);
+        return;
+    }
 
-            let html = '';
-            data.forEach(function(item) {
-                // Apply background color based on total score
-                let rowClass = '';
-                if (item.total_score !== '' && item.total_score < 105) {
-                    rowClass = 'table-danger';
-                } else if (item.total_score !== '' && item.total_score < 110) {
-                    rowClass = 'table-warning';
-                }
-
-                // Generate table row with proper empty cell handling
-                html += `<tr class="${rowClass}">
-                    <td>${item.employee_id}</td>
-                    <td>${item.name}</td>
-                    <td>${item.working_days || ''}</td>
-                    <td>${item.presence || ''}</td>
-                    <td>${item.attendance_percentage || ''}</td>
-                    <td>${item.late_arrivals || ''}</td>
-                    <td>${item.permission || ''}</td>
-                    <td>${item.afternoon_shift_count || ''}</td>
-                    <td>${item.early_departures || ''}</td>
-                    <td>${item.sick_leave || ''}</td>
-                    <td>${item.st_count || ''}</td>
-                    <td>${item.sp_count || ''}</td>
-                    <td>${item.attendance_score || ''}</td>
-                    <td>${item.late_score || ''}</td>
-                    <td>${item.afternoon_shift_score || ''}</td>
-                    <td>${item.early_departure_score || ''}</td>
-                    <td>${item.st_score || ''}</td>
-                    <td>${item.sp_score || ''}</td>
-                    <td class="fw-bold">${item.total_score || ''}</td>`;
-
-                // Add grade column for final view
-                if (month === 'final') {
-                    let gradeClass = '';
-                    if (item.grade) {
-                        gradeClass = `badge bg-${getGradeBadgeColor(item.grade)}`;
-                    }
-                    html += `<td><span class="${gradeClass}">${item.grade || ''}</span></td>`;
-                }
-
-                html += `</tr>`;
-            });
-
-            $(`#discipline-data-${month}`).html(html);
+    let html = '';
+    data.forEach(function(item) {
+        // Apply background color based on total score
+        let rowClass = '';
+        if (item.total_score !== '' && item.total_score < 105) {
+            rowClass = 'table-danger';
+        } else if (item.total_score !== '' && item.total_score < 110) {
+            rowClass = 'table-warning';
         }
+
+        // Generate table row with proper empty cell handling
+        html += `<tr class="${rowClass}">
+            <td>${item.employee_id}</td>
+            <td>${item.name}</td>
+            <td>${item.position || ''}</td>
+            <td>${item.department || ''}</td>
+            <td>${item.working_days || ''}</td>
+            <td>${item.presence || ''}</td>
+            <td>${item.attendance_percentage || ''}</td>
+            <td>${item.late_arrivals || ''}</td>
+            <td>${item.permission || ''}</td>
+            <td>${item.afternoon_shift_count || ''}</td>
+            <td>${item.early_departures || ''}</td>
+            <td>${item.sick_leave || ''}</td>
+            <td>${item.st_count || ''}</td>
+            <td>${item.sp_count || ''}</td>
+            <td>${item.attendance_score || ''}</td>
+            <td>${item.late_score || ''}</td>
+            <td>${item.afternoon_shift_score || ''}</td>
+            <td>${item.early_departure_score || ''}</td>
+            <td>${item.st_score || ''}</td>
+            <td>${item.sp_score || ''}</td>
+            <td class="fw-bold">${item.total_score || ''}</td>`;
+
+        // Add grade column for final view
+        if (month === 'final') {
+            let gradeClass = '';
+            if (item.grade) {
+                gradeClass = `badge bg-${getGradeBadgeColor(item.grade)}`;
+            }
+            html += `<td><span class="${gradeClass}">${item.grade || ''}</span></td>`;
+        }
+
+        html += `</tr>`;
+    });
+
+    $(`#discipline-data-${month}`).html(html);
+}
+
 
         function exportToExcel() {
             const month = $('.nav-link.active').attr('id').replace('tab-', '');

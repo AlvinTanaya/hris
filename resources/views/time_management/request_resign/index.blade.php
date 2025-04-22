@@ -91,6 +91,8 @@
                         <tr>
                             <th style="width: 5%;">NO</th>
                             <th>Employee</th>
+                    <th>Department</th>
+                    <th>Position</th>
                             <th>Resignation Type</th>
                             <th>Resignation Date</th>
                             <th>Reason</th>
@@ -102,7 +104,9 @@
                         @foreach ($pending_requests as $index => $item)
                         <tr>
                             <td>{{ $index + 1 }}</td>
-                            <td>{{ $item->employee_name }} ({{ $item->user_id }}) - {{ $item->employee_position }}</td>
+                            <td>{{ $item->employee_name }} ({{ $item->employee_id }})</td>
+                    <td>{{ $item->employee_department ?? 'N/A' }}</td>
+                    <td>{{ $item->employee_position ?? 'N/A' }}</td>
                             <td>{{ $item->resign_type }}</td>
                             <td>{{ \Carbon\Carbon::parse($item->resign_date)->format('d M Y') }}</td>
                             <td>{{ $item->resign_reason }}</td>
@@ -161,6 +165,8 @@
                         <tr>
                             <th style="width: 5%;">NO</th>
                             <th>Employee</th>
+                    <th>Department</th>
+                    <th>Position</th>
                             <th>Resignation Type</th>
                             <th>Resignation Date</th>
                             <th>Reason</th>
@@ -172,7 +178,9 @@
                         @foreach ($approved_requests as $index => $item)
                         <tr>
                             <td>{{ $index + 1 }}</td>
-                            <td>{{ $item->employee_name }} ({{ $item->user_id }}) - {{ $item->employee_position }}</td>
+                            <td>{{ $item->employee_name }} ({{ $item->employee_id }})</td>
+                    <td>{{ $item->employee_department ?? 'N/A' }}</td>
+                    <td>{{ $item->employee_position ?? 'N/A' }}</td>
                             <td>{{ $item->resign_type }}</td>
                             <td>{{ \Carbon\Carbon::parse($item->resign_date)->format('d M Y') }}</td>
                             <td>{{ $item->resign_reason }}</td>
@@ -212,6 +220,8 @@
                         <tr>
                             <th style="width: 5%;">NO</th>
                             <th>Employee</th>
+                    <th>Department</th>
+                    <th>Position</th>
                             <th>Resignation Type</th>
                             <th>Resignation Date</th>
                             <th>Reason</th>
@@ -224,7 +234,9 @@
                         @foreach ($declined_requests as $index => $item)
                         <tr>
                             <td>{{ $index + 1 }}</td>
-                            <td>{{ $item->employee_name }} ({{ $item->user_id }}) - {{ $item->employee_position }}</td>
+                            <td>{{ $item->employee_name }} ({{ $item->employee_id }})</td>
+                    <td>{{ $item->employee_department ?? 'N/A' }}</td>
+                    <td>{{ $item->employee_position ?? 'N/A' }}</td>
                             <td>{{ $item->resign_type }}</td>
                             <td>{{ \Carbon\Carbon::parse($item->resign_date)->format('d M Y') }}</td>
                             <td>{{ $item->resign_reason }}</td>

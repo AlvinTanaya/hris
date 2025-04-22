@@ -56,8 +56,10 @@
         <!-- Current Shifts Section -->
         <div class="tab-pane fade show active" id="current" role="tabpanel">
             <div id="currentFilter" class="card shadow-sm mb-4">
-                <div class="card-header bg-primary">
-                    <h5 class="text-white mt-2"><i class="fas fa-filter"></i> Filter Current Shifts</h5>
+                
+
+                <div class="card-header">
+                    <h5 class="text-primary mt-2"><i class="fas fa-filter"></i> Filter Current Shifts</h5>
                 </div>
                 <div class="card-body">
                     <form action="{{ route('time.set.shift.index') }}" method="GET" class="row g-3">
@@ -149,6 +151,8 @@
                                 <tr>
                                     <th style="width: 5%">No</th>
                                     <th>Employee</th>
+                                    <th>Position</th> <!-- Added column -->
+                                    <th>Department</th> <!-- Added column -->
                                     <th style="width: 20%">Rule</th>
                                     <th style="width: 10%">Start Date</th>
                                     <th style="width: 10%">End Date</th>
@@ -160,6 +164,8 @@
                                 <tr>
                                     <td>{{ $index + 1 }}</td>
                                     <td>{{ $shift->user->name }}</td>
+                                    <td>{{ $shift->historical_position ? $shift->historical_position->position : 'N/A' }}</td>
+                                    <td>{{ $shift->historical_department ? $shift->historical_department->department : 'N/A' }}</td>
                                     <td>{{ $shift->ruleShift->type }}</td>
                                     <td>{{ $shift->start_date }}</td>
                                     <td>n/d</td>
@@ -186,8 +192,6 @@
                     </div>
                 </div>
             </div>
-
-
             @endforeach
 
 
@@ -274,6 +278,8 @@
                                 <tr>
                                     <th style="width: 5%">No</th>
                                     <th>Employee</th>
+                                    <th>Position</th> <!-- Added column -->
+                                    <th>Department</th>
                                     <th style="width: 20%">Rule</th>
                                     <th style="width: 20%">Start Date</th>
                                     <th style="width: 20%">End Date</th>
@@ -284,6 +290,8 @@
                                 <tr>
                                     <td>{{ $index + 1 }}</td>
                                     <td>{{ $shift->user->name }}</td>
+                                    <td>{{ $shift->historical_position ? $shift->historical_position->position : 'N/A' }}</td>
+                                    <td>{{ $shift->historical_department ? $shift->historical_department->department : 'N/A' }}</td>
                                     <td>{{ $shift->ruleShift->type }}</td>
                                     <td>{{ $shift->start_date }}</td>
                                     <td>{{ $shift->end_date }}</td>
@@ -398,6 +406,8 @@
 
                                 <tr>
                                     <th>Employee</th>
+                                    <th>Position</th> <!-- Added column -->
+                                    <th>Department</th>
                                     <th>Request Date</th>
                                     <th>Current Shift</th>
                                     <th>Requested Shift</th>
@@ -412,6 +422,8 @@
                                 @foreach($pendingShiftRequests->where('status_change', 'Pending') as $request)
                                 <tr class="status-pending">
                                     <td>{{ $request->user->name }}</td>
+                                    <td>{{ $request->historical_position ? $request->historical_position->position : 'N/A' }}</td>
+                                    <td>{{ $request->historical_department ? $request->historical_department->department : 'N/A' }}</td>
                                     <td>{{ Carbon\Carbon::parse($request->created_at)->format('Y-m-d') }}</td>
                                     <td>
                                         @if($request->ruleShiftBefore)
@@ -538,6 +550,8 @@
                             <thead class="table-dark">
                                 <tr>
                                     <th>Employee</th>
+                                    <th>Position</th> <!-- Added column -->
+                                    <th>Department</th>
                                     <th>Request Date</th>
                                     <th>Current Shift</th>
                                     <th>Requested Shift</th>
@@ -552,6 +566,9 @@
                                 @foreach($pendingShiftRequests->where('status_change', 'Approved') as $request)
                                 <tr class="status-approved">
                                     <td>{{ $request->user->name }}</td>
+
+                                    <td>{{ $request->historical_position ? $request->historical_position->position : 'N/A' }}</td>
+                                    <td>{{ $request->historical_department ? $request->historical_department->department : 'N/A' }}</td>
                                     <td>{{ Carbon\Carbon::parse($request->created_at)->format('Y-m-d') }}</td>
                                     <td>
                                         @if($request->ruleShiftBefore)
@@ -615,6 +632,8 @@
                             <thead class="table-dark">
                                 <tr>
                                     <th>Employee</th>
+                                    <th>Position</th> <!-- Added column -->
+                                    <th>Department</th>
                                     <th>Request Date</th>
                                     <th>Current Shift</th>
                                     <th>Requested Shift</th>
@@ -630,6 +649,8 @@
                                 @foreach($pendingShiftRequests->where('status_change', 'Declined') as $request)
                                 <tr class="status-declined">
                                     <td>{{ $request->user->name }}</td>
+                                    <td>{{ $request->historical_position ? $request->historical_position->position : 'N/A' }}</td>
+                                    <td>{{ $request->historical_department ? $request->historical_department->department : 'N/A' }}</td>
                                     <td>{{ Carbon\Carbon::parse($request->created_at)->format('Y-m-d') }}</td>
                                     <td>
                                         @if($request->ruleShiftBefore)

@@ -61,7 +61,7 @@ Route::middleware('auth')->group(function () {
     Route::prefix('user/employees')->group(function () {
         Route::get('/', [UserController::class, 'employees_index'])->name('user.employees.index');
         Route::get('/create', [UserController::class, 'employees_create'])->name('user.employees.create');
-        Route::post('/store', [UserController::class, 'employees_store'])->name('user.employees.store');
+        Route::put('/store', [UserController::class, 'employees_store'])->name('user.employees.store');
         Route::get('/edit/{id}', [UserController::class, 'employees_edit'])->name('user.employees.edit');
         Route::put('/update/{id}', [UserController::class, 'employees_update'])->name('user.employees.update');
         Route::get('/transfer/{id}', [UserController::class, 'employees_transfer'])->name('user.employees.transfer');
@@ -318,6 +318,17 @@ Route::middleware('auth')->group(function () {
     Route::delete('/evaluation/rule/discipline/grade/destroy/{id}', [EvaluationController::class, 'grade_discipline_destroy'])->name('evaluation.rule.discipline.grade.destroy');
     Route::post('/evaluation/rule/discipline/grade/check-overlap', [EvaluationController::class, 'checkDisciplineOverlap'])->name('evaluation.rule.discipline.grade.check-overlap');
 
+    // Rule E-learning Grade routes
+    Route::get('/evaluation/rule/elearning/grade/index', [EvaluationController::class, 'rule_elearning_grade_index'])->name('evaluation.rule.elearning.grade.index');
+    Route::get('/evaluation/rule/elearning/grade/create', [EvaluationController::class, 'rule_elearning_grade_create'])->name('evaluation.rule.elearning.grade.create');
+    Route::post('/evaluation/rule/elearning/grade/store', [EvaluationController::class, 'rule_elearning_grade_store'])->name('evaluation.rule.elearning.grade.store');
+    Route::get('/evaluation/rule/elearning/grade/edit/{id}', [EvaluationController::class, 'rule_elearning_grade_edit'])->name('evaluation.rule.elearning.grade.edit');
+    Route::put('/evaluation/rule/elearning/grade/update/{id}', [EvaluationController::class, 'rule_elearning_grade_update'])->name('evaluation.rule.elearning.grade.update');
+    Route::delete('/evaluation/rule/elearning/grade/destroy/{id}', [EvaluationController::class, 'grade_elearning_destroy'])->name('evaluation.rule.elearning.grade.destroy');
+    Route::post('/evaluation/rule/elearning/grade/check-overlap', [EvaluationController::class, 'checkElearningOverlap'])->name('evaluation.rule.elearning.grade.check-overlap');
+
+
+
 
     // Rule Discipline Score routes
     Route::get('/evaluation/rule/discipline/score/index', [EvaluationController::class, 'rule_discipline_score_index'])->name('evaluation.rule.discipline.score.index');
@@ -344,12 +355,27 @@ Route::middleware('auth')->group(function () {
     // Evaluation Report
     Route::get('/evaluation/report/performance/index', [EvaluationController::class, 'report_performance_index'])->name('evaluation.report.performance.index');
     Route::get('/evaluation/report/performance/detail/{id}', [EvaluationController::class, 'report_performance_detail'])->name('evaluation.report.performance.detail');
-    Route::get('/evaluation/report/performance/export', [EvaluationController::class, 'exportExcel'])->name('evaluation.report.performance.export');
-    
+    Route::get('/evaluation/report/performance/export', [EvaluationController::class, 'exportExcelAll'])->name('evaluation.report.performance.export.all');
+    Route::get('/evaluation/report/performance/export/employee', [EvaluationController::class, 'exportEmployeeExcel'])->name('evaluation.report.performance.export.employee');
+
     Route::get('/evaluation/report/discipline/index', [EvaluationController::class, 'report_discipline_index'])->name('evaluation.report.discipline.index');
     Route::get('/evaluation/report/discipline/getDisciplineReportData', [EvaluationController::class, 'getDisciplineReportData'])->name('evaluation.report.discipline.data');
     Route::get('/evaluation/report/discipline/grades', [EvaluationController::class, 'getDisciplineGradeSettings'])->name('evaluation.report.discipline.grades');
     Route::get('/evaluation/report/discipline/export', [EvaluationController::class, 'exportDisciplineReport'])->name('evaluation.report.discipline.export');
+
+    Route::get('/evaluation/report/elearning/index', [EvaluationController::class, 'report_elearning_index'])
+        ->name('evaluation.report.elearning.index');
+    Route::get('/evaluation/report/elearning/detail/{employee_id}/{year?}', [EvaluationController::class, 'report_elearning_detail'])
+        ->name('evaluation.report.elearning.detail');
+    Route::get('/evaluation/report/elearning/detail-answers/{invitation_id}', [EvaluationController::class, 'report_elearning_detail_answers'])
+        ->name('evaluation.report.elearning.detail.answers');
+    Route::get('/evaluation/report/elearning/index/export', [EvaluationController::class, 'report_elearning_export'])
+        ->name('evaluation.report.elearning.export');
+
+    
+    Route::get('/evaluation/report/final/index', [EvaluationController::class, 'report_final_index'])->name('evaluation.report.final.index');
+    Route::post('/evaluation/report/final/get-data', [EvaluationController::class, 'getFinalReportData'])->name('evaluation.report.final.getData');
+    Route::get('evaluation/report/final/export', [EvaluationController::class, 'finalExportToExcel'])->name('evaluation.report.final.export');
 
     // AHP routes
     Route::get('/evaluation/ahp/index', [EvaluationController::class, 'ahp_index'])->name('evaluation.ahp.index');

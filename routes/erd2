@@ -1,0 +1,647 @@
+// Users and Core Employee Data
+Table users {
+    id bigint [pk]
+    employee_id varchar(255)
+    name varchar(255)
+    email varchar(255)
+    phone_number varchar(255)
+    position_id int [not null, ref: > employee_positions.id]
+    department_id int [not null, ref: > employee_departments.id]
+    employee_status varchar(255)
+    contract_start_date date
+    contract_end_date date
+    user_status varchar(255)
+    join_date date
+    email_verified_at timestamp
+    password varchar(255)
+    remember_token varchar(100)
+    ID_number varchar(255)
+    birth_place varchar(255)
+    birth_date date
+    ID_address varchar(255)
+    domicile_address varchar(255)
+    distance decimal(2,0)
+    gender varchar(255)
+    religion varchar(255)
+    height int
+    weight int
+    blood_type varchar(255)
+    bpjs_employment varchar(255)
+    bpjs_health varchar(255)
+    photo_profile_path varchar(255)
+    ID_card_path varchar(255)
+    cv_path varchar(255)
+    achievement_path varchar(255)
+    sim varchar(255)
+    sim_number varchar(255)
+    exit_date date
+    NPWP varchar(255)
+    bank_number text
+    bank_name text
+    emergency_contact varchar(255)
+    status varchar(255)
+    created_at timestamp
+    updated_at timestamp
+    cap varchar(255)
+    last_expire_at timestamp
+  }
+  
+  Table employee_departments {
+    id bigint [pk]
+    department varchar(255)
+    status varchar(255)
+    created_at timestamp
+    updated_at timestamp
+  }
+  
+  Table employee_positions {
+    id bigint [pk]
+    position varchar(255)
+    ranking int
+    created_at timestamp
+    updated_at timestamp
+  }
+  
+  // User history and supporting tables
+  Table users_education {
+    id bigint [pk]
+    users_id bigint [not null, ref: > users.id]
+    degree varchar(255)
+    educational_place varchar(255)
+    educational_province varchar(255)
+    educational_city varchar(255)
+    start_education date
+    end_education date
+    grade decimal(10,2)
+    transcript_file_path text
+    created_at timestamp
+    updated_at timestamp
+  }
+  
+  Table users_language {
+    id bigint [pk]
+    users_id bigint [not null, ref: > users.id]
+    language varchar(255)
+    verbal varchar(255)
+    written varchar(255)
+    listened varchar(255) 
+    created_at timestamp
+    updated_at timestamp
+  }
+  
+  Table users_family {
+    id bigint [pk]
+    users_id bigint [not null, ref: > users.id]
+    name varchar(255)
+    relation varchar(255)
+    birth_date date
+    birth_place varchar(255)
+    ID_number varchar(255)
+    phone_number varchar(255)
+    address varchar(255)
+    gender varchar(255)
+    job varchar(255)
+    created_at timestamp
+    updated_at timestamp
+  }
+  
+  Table users_work_experience {
+    id bigint [pk]
+    users_id bigint [not null, ref: > users.id]
+    company_name varchar(255)
+    position varchar(255)
+    start_working date
+    end_working date
+    company_address varchar(255)
+    company_phone varchar(255)
+    salary int
+    supervisor_name varchar(255)
+    supervisor_phone varchar(255)
+    job_desc text
+    benefit text
+    facility text
+    reason text
+    created_at timestamp
+    updated_at timestamp
+  }
+  
+  Table users_transfer_history {
+    id bigint [pk]
+    users_id bigint [not null, ref: > users.id]
+    old_position_id int [ref: > employee_positions.id]
+    old_department_id int [ref: > employee_departments.id]
+    new_position_id int [ref: > employee_positions.id]
+    new_department_id int [ref: > employee_departments.id]
+    transfer_date varchar(255)
+    reason text
+    created_at timestamp
+    updated_at timestamp
+  }
+  
+  Table users_extend_history {
+    id bigint [pk]
+    users_id bigint [not null, ref: > users.id]
+    reason text
+    end_date date
+    start_date date
+    created_at timestamp
+    updated_at timestamp
+  }
+  
+  Table users_training {
+    id bigint [pk]
+    users_id bigint [not null, ref: > users.id]
+    training_name varchar(255)
+    training_province varchar(255)
+    training_city varchar(255)
+    end_date date
+    start_date date
+    created_at timestamp
+    updated_at timestamp
+  }
+  
+  Table users_organization {
+    id bigint [pk]
+    users_id bigint [not null, ref: > users.id]
+    organization_name varchar(255)
+    activity_type text
+    position varchar(255)
+    province varchar(255)
+    city varchar(255)
+    start_date date
+    end_date date
+    created_at timestamp
+    updated_at timestamp
+  }
+  
+  Table notification {
+    id bigint [pk]
+    user_id bigint [not null, ref: > users.id]
+    message text
+    type varchar(255)
+    maker_id bigint [ref: > users.id]
+    status varchar(255)
+    created_at timestamp
+    updated_at timestamp
+  }
+  
+  // Recruitment related tables
+  Table recruitment_applicant {
+    id bigint [pk]
+    users_id bigint [ref: > users.id]
+    demand_id varchar(255) [ref: > recruitment_demand.demand_id]
+    name varchar(255)
+    address varchar(255)
+    phone_number varchar(255)
+    religion varchar(255)
+    ID_number varchar(255)
+    birth_date date
+    birth_place varchar(255)
+    gender varchar(255)
+    domicile_address varchar(255)
+    distance decimal(2,0)
+    ID_address varchar(255)
+    weight int
+    height int
+    blood_type varchar(255)
+    marital_statement varchar(255)
+    bpjs_health varchar(255)
+    bpjs_profile_path varchar(255)
+    ID_card_path varchar(255)
+    cv_path varchar(255)
+    achievement_path varchar(255)
+    sim varchar(255)
+    sim_number varchar(255)
+    expected_salary int
+    expected_facility text
+    expected_benefit text
+    status_applicant text
+    status_note text
+    interview_date datetime
+    interview_note text
+    exchange_note text
+    created_at timestamp
+    updated_at timestamp
+  }
+  
+  Table recruitment_applicant_training {
+    id bigint [pk]
+    applicant_id int [not null, ref: > recruitment_applicant.id]
+    training_name varchar(255)
+    training_province varchar(255)
+    training_city varchar(255)
+    start_date date
+    end_date date
+    created_at timestamp
+    updated_at timestamp
+  }
+  
+  Table recruitment_applicant_education {
+    id bigint [pk]
+    applicant_id int [not null, ref: > recruitment_applicant.id]
+    degree varchar(255)
+    educational_place varchar(255)
+    educational_province varchar(255)
+    educational_city varchar(255)
+    start_education date
+    end_education date
+    grade decimal(10,2)
+    image varchar(255)
+    transcript_file_path text
+    created_at timestamp
+    updated_at timestamp
+  }
+  
+  Table recruitment_applicant_organization {
+    id bigint [pk]
+    applicant_id int [not null, ref: > recruitment_applicant.id]
+    organization_name varchar(255)
+    activity_type text
+    position varchar(255)
+    province varchar(255)
+    city varchar(255)
+    start_date date
+    end_date date
+    created_at timestamp
+    updated_at timestamp
+  }
+  
+  Table recruitment_applicant_language {
+    id bigint [pk]
+    applicant_id int [not null, ref: > recruitment_applicant.id]
+    language varchar(255)
+    chatted varchar(255)
+    written varchar(255)
+    listened varchar(255)
+    created_at timestamp
+    updated_at timestamp
+  }
+  
+  Table recruitment_applicant_work_experience {
+    id bigint [pk]
+    applicant_id int [not null, ref: > recruitment_applicant.id]
+    company_name varchar(255)
+    position varchar(255)
+    working_start date
+    working_end date
+    company_address varchar(255)
+    company_phone varchar(255)
+    salary int
+    supervisor_name varchar(255)
+    supervisor_phone varchar(255)
+    job_desc text
+    reason text
+    benefit text
+    facility text
+    created_at timestamp
+    updated_at timestamp
+  }
+  
+  Table recruitment_applicant_family {
+    id bigint [pk]
+    applicant_id int [not null, ref: > recruitment_applicant.id]
+    name varchar(255)
+    relation varchar(255)
+    birth_date date
+    birth_place varchar(255)
+    ID_number varchar(255)
+    phone_number varchar(255)
+    address varchar(255)
+    gender varchar(255)
+    job varchar(255)
+    created_at timestamp
+    updated_at timestamp
+  }
+  
+  Table recruitment_demand {
+    id bigint [pk]
+    demand_id varchar(255)
+    maker_id bigint [ref: > users.id]
+    approval_status enum('Pending','Approved','Declined','Process')
+    department_id int [ref: > employee_departments.id]
+    position_id int [ref: > employee_positions.id]
+    opening_date date
+    closing_date date
+    status_job varchar(255)
+    reason text
+    responbility_reason text
+    qty_fulfill int
+    gender varchar(255)
+    job_goal text
+    education varchar(255)
+    major varchar(255)
+    computer_skill varchar(255)
+    length_of_working int
+    must_work_experience varchar(255)
+    skills text
+    created_at timestamp
+    updated_at timestamp
+  }
+  
+  // E-learning tables
+  Table elearning_lesson {
+    id bigint [pk]
+    name varchar(255)
+    duration int
+    passing_grade int
+    lesson_file varchar(255)
+    created_at timestamp
+    updated_at timestamp
+  }
+  
+  Table elearning_question {
+    id bigint [pk]
+    lesson_id int [not null, ref: > elearning_lesson.id]
+    question text
+    multiple_choice text
+    answer_key text
+    grade decimal(10,2)
+    created_at timestamp
+    updated_at timestamp
+  }
+  
+  Table elearning_schedule {
+    id bigint [pk]
+    lesson_id int [not null, ref: > elearning_lesson.id]
+    start_date date
+    end_date date
+    created_at timestamp
+    updated_at timestamp
+  }
+  
+  Table elearning_invitation {
+    id bigint [pk]
+    lesson_id int [not null, ref: > elearning_lesson.id]
+    users_id bigint [not null, ref: > users.id]
+    schedule_id int [not null, ref: > elearning_schedule.id]
+    grade int
+    created_at timestamp
+    updated_at timestamp
+  }
+  
+  Table elearning_answer {
+    id bigint [pk]
+    invitation_id int [not null, ref: > elearning_invitation.id]
+    users_id bigint [not null, ref: > users.id]
+    lesson_id int [not null, ref: > elearning_lesson.id]
+    schedule_id int [not null, ref: > elearning_schedule.id]
+    question text
+    multiple_choice text
+    answer text
+    grade decimal(10,2)
+    mark decimal(10,2)
+    answer_key text
+    created_at timestamp
+    updated_at timestamp
+  }
+  
+  // Time management tables
+  Table employee_overtime {
+    id bigint [pk]
+    users_id bigint [not null, ref: > users.id]
+    date date
+    start_time time
+    end_time time
+    total_hours decimal(5,2)
+    reason text
+    overtime_type enum('Paid_Overtime','Overtime_Leave')
+    approval_status enum('Pending','Approved','Declined')
+    declined_reason text
+    answer_user_id bigint [ref: > users.id]
+    created_at timestamp
+    updated_at timestamp
+  }
+  
+  Table employee_shift {
+    id bigint [pk]
+    user_id bigint [not null, ref: > users.id]
+    rule_id bigint [ref: > rule_shift.id]
+    start_date date
+    end_date date
+    created_at timestamp
+    updated_at timestamp
+  }
+  
+  Table rule_shift {
+    id bigint [pk]
+    name varchar(255)
+    hour_start longtext
+    hour_end longtext
+    days longtext
+    created_at timestamp
+    updated_at timestamp
+  }
+  
+  Table request_shift_change {
+    id bigint [pk]
+    user_id bigint [not null, ref: > users.id]
+    rule_user_id_before bigint [ref: > rule_shift.id]
+    rule_user_id_after bigint [ref: > rule_shift.id]
+    rule_user_exchange_id_before bigint [ref: > rule_shift.id]
+    rule_user_exchange_id_after bigint [ref: > rule_shift.id]
+    reason_change text
+    status_change enum('Pending','Approved','Declined')
+    date_change_start date
+    date_change_end date
+    user_exchange_id bigint [ref: > users.id]
+    declined_reason text
+    answer_user_id bigint [ref: > users.id]
+    created_at timestamp
+    updated_at timestamp
+  }
+  
+  Table request_resign {
+    id bigint [pk]
+    user_id bigint [not null, ref: > users.id]
+    resign_type varchar(255)
+    resign_reason text
+    resign_date date
+    resign_status enum('Pending','Approved','Declined')
+    declined_reason text
+    file_path text
+    response_user_id bigint [ref: > users.id]
+    created_at timestamp
+    updated_at timestamp
+  }
+  
+  Table employee_absent {
+    id bigint [pk]
+    user_id bigint [not null, ref: > users.id]
+    date date
+    absent_place varchar(255)
+    hour_in time
+    hour_out time
+    status_in varchar(255)
+    status_out varchar(255)
+    created_at timestamp
+    updated_at timestamp
+  }
+  
+  Table time_off_policy {
+    id bigint [pk]
+    time_off_name varchar(255)
+    time_off_code varchar(255)
+    time_off_description text
+    required_doc varchar(255)
+    require_time_input int
+    quota int
+    start_date date
+    end_date date
+    created_at timestamp
+    updated_at timestamp
+  }
+  
+  Table time_off_assign {
+    id bigint [pk]
+    users_id bigint [not null, ref: > users.id]
+    time_off_id bigint [not null, ref: > time_off_policy.id]
+    balance int
+    created_at timestamp
+    updated_at timestamp
+    optional_at timestamp
+  }
+  
+  Table request_time_off {
+    id bigint [pk]
+    time_off_id bigint [not null, ref: > time_off_policy.id]
+    user_id bigint [not null, ref: > users.id]
+    start_date datetime
+    end_date datetime
+    reason text
+    file_reason_path text
+    status enum('Pending','Approved','Declined')
+    declined_reason text
+    response_by bigint [ref: > users.id]
+    created_at timestamp
+    updated_at timestamp
+  }
+  
+  // Rules and policies tables
+  Table rule_warning_letter {
+    id bigint [pk]
+    name varchar(255)
+    description varchar(255)
+    expired_time int
+    created_at timestamp
+    updated_at timestamp
+  }
+  
+  Table employee_warning_letter {
+    id bigint [pk]
+    user_id bigint [not null, ref: > users.id]
+    maker_id bigint [not null, ref: > users.id]
+    warning_letter_number varchar(255)
+    reason_warning text
+    created_at timestamp
+    updated_at timestamp
+    type_id bigint [not null, ref: > rule_warning_letter.id]
+    expired_at date
+  }
+  
+  // Discipline and evaluation tables
+  Table discipline_rules {
+    id bigint [pk]
+    rule_type varchar(255)
+    min_value int
+    max_score int
+    occurrence int
+    score_value decimal(10,2)
+    operation varchar(255)
+    created_at timestamp
+    updated_at timestamp
+  }
+  
+  Table rule_discipline_grades {
+    id bigint [pk]
+    grade varchar(255)
+    min_score int
+    max_score int
+    description text
+    created_at timestamp
+    updated_at timestamp
+  }
+  
+  Table custom_holiday {
+    id bigint [pk]
+    name varchar(255)
+    description text
+    date date
+    created_at timestamp
+    updated_at timestamp
+  }
+  
+  Table rule_performance_grades {
+    id bigint [pk]
+    grade varchar(255)
+    min_score int
+    max_score int
+    description text
+    created_at timestamp
+    updated_at timestamp
+  }
+  
+  Table rule_evaluation_reduction_performance {
+    id bigint [pk]
+    type_id int [ref: > rule_warning_letter.id]
+    weight decimal(10,2)
+    status varchar(255)
+    created_at timestamp
+    updated_at timestamp
+  }
+  
+  Table employee_evaluation_performance {
+    id bigint [pk]
+    user_id bigint [not null, ref: > users.id]
+    evaluator_id bigint [not null, ref: > users.id]
+    date date
+    total_score decimal(10,2)
+    total_reduction decimal(10,2)
+    final_score decimal(10,2)
+    created_at timestamp
+    updated_at timestamp
+  }
+  
+  Table employee_evaluation_performance_message {
+    id bigint [pk]
+    evaluation_id bigint [not null, ref: > employee_evaluation_performance.id]
+    message text
+    created_at timestamp
+    updated_at timestamp
+  }
+  
+  Table rule_evaluation_criteria_performance {
+    id bigint [pk]
+    type varchar(255)
+    created_at timestamp
+    updated_at timestamp
+  }
+  
+  Table rule_evaluation_weight_performance {
+    id bigint [pk]
+    position_id int [not null, ref: > employee_positions.id]
+    criteria_id bigint [not null, ref: > rule_evaluation_criteria_performance.id]
+    weight decimal(10,2)
+    status enum('active', 'inactive')
+    created_at timestamp
+    updated_at timestamp
+  }
+  
+  Table employee_evaluation_performance_detail {
+    id bigint [pk]
+    evaluation_id bigint [not null, ref: > employee_evaluation_performance.id]
+    rule_performance_id bigint [ref: > rule_evaluation_criteria_performance.id]
+    value decimal(10,2)
+    weight decimal(10,2)
+    score decimal(10,2)
+    created_at timestamp
+    updated_at timestamp
+  }
+  
+  Table employee_evaluation_performance_reductions {
+    id bigint [pk]
+    evaluation_id bigint [not null, ref: > employee_evaluation_performance.id]
+    warning_letter_id bigint [not null, ref: > employee_warning_letter.id]
+    reduction_amount decimal(10,2)
+    created_at timestamp
+    updated_at timestamp
+  }

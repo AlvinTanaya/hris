@@ -159,16 +159,18 @@
                 $('#new_position_id, #new_department_id').val('').prop('required', false);
             }
         });
-
         $('#new_position_id').change(function() {
             var positionId = $(this).val();
             var departmentSelect = $('#new_department_id');
             var departmentWrapper = departmentSelect.closest('.form-group');
 
             // Reset department select
-            departmentSelect.prop('disabled', false).val('');
+            departmentSelect.css({
+                'pointer-events': '',
+                'background-color': ''
+            }).val('');
+            departmentSelect.off('mousedown.positionLock change.positionLock');
             departmentWrapper.find('.text-danger').remove();
-            departmentWrapper.find('input[type="hidden"][name="new_department_id"]').remove();
 
             // Get selected position text and trim whitespace
             var selectedPosition = $(this).find('option:selected').text().trim();
@@ -180,7 +182,21 @@
                 }).first();
 
                 if (directorDept.length) {
-                    departmentSelect.val(directorDept.val()).prop('disabled', true);
+                    // Set value
+                    departmentSelect.val(directorDept.val());
+
+                    // Make it appear unchangeable but still submittable
+                    departmentSelect.css({
+                        'pointer-events': 'none',
+                        'background-color': '#e9ecef'
+                    });
+
+                    // Additional protection against JavaScript manipulation
+                    departmentSelect.on('mousedown.positionLock change.positionLock', function(e) {
+                        e.preventDefault();
+                        return false;
+                    });
+
                     departmentWrapper.append('<small class="text-danger">Department automatically set for Director</small>');
                 }
             } else if (selectedPosition === 'General Manager') {
@@ -190,7 +206,21 @@
                 }).first();
 
                 if (gmDept.length) {
-                    departmentSelect.val(gmDept.val()).prop('disabled', true);
+                    // Set value
+                    departmentSelect.val(gmDept.val());
+
+                    // Make it appear unchangeable but still submittable
+                    departmentSelect.css({
+                        'pointer-events': 'none',
+                        'background-color': '#e9ecef'
+                    });
+
+                    // Additional protection against JavaScript manipulation
+                    departmentSelect.on('mousedown.positionLock change.positionLock', function(e) {
+                        e.preventDefault();
+                        return false;
+                    });
+
                     departmentWrapper.append('<small class="text-danger">Department automatically set for General Manager</small>');
                 }
             }

@@ -38,6 +38,7 @@ class AnnouncementController extends Controller
             ->with(['maker' => function($q) {
                 $q->with('position', 'department');
             }])
+            ->where('type', 'general')
             ->select(
                 'message',
                 'maker_id',

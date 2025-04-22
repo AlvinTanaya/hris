@@ -360,7 +360,7 @@
             $("#contract_end_date").val(""); // Kosongkan input end date agar user bisa isi sendiri
 
             // Set action form dinamis
-            let actionUrl = "/user/extend-date/" + userId;
+            let actionUrl = "employees/extend-date/" + userId;
             $("#extendForm").attr("action", actionUrl);
 
             // Tampilkan modal

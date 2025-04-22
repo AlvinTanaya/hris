@@ -465,6 +465,7 @@ class UserController extends Controller
         // Find the User with position and department relationships
         $user = User::with(['position', 'department'])->findOrFail($id);
 
+
         // Get all positions and departments for dropdowns
         $positions = EmployeePosition::orderBy('ranking')->get();
         $departments = EmployeeDepartment::orderBy('department')->get();
@@ -525,11 +526,10 @@ class UserController extends Controller
         ));
     }
 
-    public function update(Request $request, $id)
+    public function employees_update(Request $request, $id)
     {
-        //dd($request->department);
+        // dd($request->department_id);
         // Validasi input
-
 
         $request->validate([
             'password' => 'nullable|min:8',
@@ -553,16 +553,16 @@ class UserController extends Controller
             'employee_status' => 'required',
             'email' => 'required|email',
             'join_date' => 'required',
-            'position' => 'required',
+            'distance' => 'required',
             'contract_start_date' => 'required_if:employee_status,Contract,Part Time|nullable|date',
             'contract_end_date' => 'required_if:employee_status,Contract,Part Time|nullable|date',
-            'distance' => 'required',
             'position_id' => 'required|exists:employee_positions,id',
             'department_id' => 'required|exists:employee_departments,id'
 
         ]);
 
-        //dd('masuk validate');
+
+        // dd('masuk validate');
 
         // Cari data pegawai berdasarkan ID
         $user = User::findOrFail($id);
@@ -1186,6 +1186,27 @@ class UserController extends Controller
         return redirect()->route('user.employees.index')->with('success', 'Data Pegawai berhasil diupdate.');
     }
 
+    public function employees_history($id)
+    {
+        $user = User::findOrFail($id);
+
+        $historyTransfers = history_transfer_employee::where('users_id', $id)->get();
+        $historyExtend = history_extend_employee::where('users_id', $id)->get();
+
+        return view('user.employees.history', compact('user', 'historyTransfers', 'historyExtend'));
+    }
+
+
+    public function employees_transfer($id)
+    {
+        // Find the Pegawai by ID
+        $user = User::with(['position', 'department'])->findOrFail($id);
+        $departments = EmployeeDepartment::orderBy('department')->get();
+        $positions = EmployeePosition::orderBy('ranking')->get();
+        // Pass the data to the update view
+        return view('user.employees.transfer', compact('user', 'departments', 'positions'));
+    }
+
 
 
     public function employees_transfer_user(Request $request, $id)
@@ -1342,8 +1363,11 @@ class UserController extends Controller
     }
 
 
+
+
     public function employees_extend_date(Request $request, $id)
     {
+
         // Validasi input
         $request->validate([
             'contract_start_date' => 'required|date',
