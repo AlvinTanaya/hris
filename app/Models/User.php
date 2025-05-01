@@ -132,13 +132,58 @@ class User extends Authenticatable
     }
 
     // Additional utility methods
-    public function isManager()
+    public function isManagerAcptHR()
     {
-        return $this->position ? in_array($this->position->position, ['Manager', 'General Manager', 'Director']) : false;
+        return $this->position &&
+            $this->position->position === 'Manager' &&
+            $this->department &&
+            $this->department->department !== 'Human Resources';
     }
 
-    public function isHR()
+    // Cek kalau user adalah SuperAdmin: Director, General Manager, atau Manager di Human Resources
+    public function isSuperAdmin()
     {
-        return $this->department ? $this->department->department === 'Human Resources' : false;
+        if (!$this->position || !$this->department) {
+            return false;
+        }
+
+        $position = $this->position->position;
+        $department = $this->department->department;
+
+        return in_array($position, ['Director', 'General Manager']) ||
+            ($position === 'Manager' && $department === 'Human Resources');
+    }
+
+    // Cek kalau user adalah Supervisor
+    public function isSupervisor()
+    {
+        return $this->position && $this->position->position === 'Supervisor';
+    }
+
+    // Cek kalau user adalah Staff
+    public function isStaff()
+    {
+        return $this->position && $this->position->position === 'Staff';
+    }
+
+
+    public function latestTransfer()
+    {
+        return $this->hasOne(history_transfer_employee::class, 'users_id')
+            ->latest('created_at');
+    }
+
+    /**
+     * Get all transfer history records for this user.
+     */
+    public function transferHistory()
+    {
+        return $this->hasMany(history_transfer_employee::class, 'users_id');
+    }
+
+
+    public function salaryHistory()
+    {
+        return $this->hasMany(SalaryHistory::class, 'users_id');
     }
 }

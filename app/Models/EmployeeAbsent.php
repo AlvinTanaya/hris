@@ -19,6 +19,11 @@ class EmployeeAbsent extends Model
         'hour_out',
         'status_in',
         'status_out',
+        'rule_in',
+        'rule_out',
+        'rule_type',
+        'late_minutes',
+        'early_minutes',
         'created_at',
         'updated_at',
     ];

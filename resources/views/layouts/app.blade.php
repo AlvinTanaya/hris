@@ -593,25 +593,15 @@
         <div class="nav-menu">
             <ul class="nav flex-column">
                 <!-- Announcement for management -->
-                @if (
-                Auth::user()->isManager() ||
-                Auth::user()->position->position == 'General Manager'
-                )
+                @if (Auth::user()->isSuperAdmin())
+                <!-- announcement -->
                 <li class="nav-item">
                     <a href="{{ route('announcement.index', ['user_id' => Auth::user()->id]) }}" class="nav-link">
                         <i class="fa-solid fa-bullhorn"></i>
                         <span>Announcement</span>
                     </a>
                 </li>
-                @endif
-
-                <!-- HR and Management Menu Items -->
-                @if (
-                Auth::user()->isHR() ||
-                Auth::user()->isManager() ||
-                Auth::user()->position->position != 'Staff'
-                )
-
+                <!-- Dashboard -->
                 <li class="nav-item">
                     <a href="{{ url('/dashboard') }}" class="nav-link">
                         <i class="fa-solid fa-gauge"></i>
@@ -890,6 +880,19 @@
                                     <span>Grade</span>
                                 </a>
                             </div>
+
+                            <!-- elearning -->
+                            <a href="#" class="nav-link dropdown-toggle evaluation-final-dropdown">
+                                <i class="fa-solid fa-square-poll-vertical"></i>
+                                <span>Final</span>
+                            </a>
+                            <div class="evaluation-final-submenu" style="display: none; padding-left: 15px;">
+                                <!-- Grade -->
+                                <a href="{{ route('evaluation.rule.grade.salary.index') }}" class="nav-link">
+                                    <i class="fa-solid fa-coins"></i>
+                                    <span>Salary Grade</span>
+                                </a>
+                            </div>
                         </div>
 
                         <!-- Assignment submenu -->
@@ -930,23 +933,280 @@
                             </a>
 
 
-                            <a href="{{  route('evaluation.report.final.index') }}" class="nav-link">
+                            <a href="#" class="nav-link dropdown-toggle final-dropdown">
                                 <i class="fa-solid fa-file-lines"></i>
                                 <span>Final</span>
+                                <!-- <i class="dropdown-icon fas fa-chevron-right ms-auto"></i> -->
                             </a>
+                            <div class="final-submenu" style="display: none; padding-left: 15px;">
+                                <a href="{{  route('evaluation.report.final.calculate.index') }}" class="nav-link">
+                                    <i class="fa fa-calculator"></i>
+                                    <span>Calculate</span>
+                                </a>
+                                <a href="{{ route('evaluation.report.final.result.index') }}" class="nav-link">
+                                    <i class="fa-solid fa-square-poll-vertical"></i>
+                                    <span>Result</span>
+                                </a>
+
+                                <a href="{{ route('evaluation.report.final.graph.index') }}" class="nav-link">
+                                    <i class="fa-solid fa-chart-simple"></i>
+                                    <span>Graphic</span>
+                                </a>
+
+                            </div>
                         </div>
+                    </div>
+                </li>
+
+                <!-- Pay Roll -->
+                <a href="#" class="nav-link dropdown-toggle payroll-dropdown d-flex align-items-center gap-2">
+                    <i class="fas fa-money-check-alt"></i>
+                    <span>Payroll</span>
+                </a>
+                <div class="payroll-submenu" style="display: none; padding-left: 15px;">
+                    <a href="{{ route('payroll.master.salary.index') }}" class="nav-link d-flex align-items-center gap-2">
+                        <i class="fas fa-coins"></i>
+                        <span>Base Salary</span>
+                    </a>
+
+                    <a href="{{ route('payroll.salary.history.index') }}" class="nav-link d-flex align-items-center gap-2">
+                        <i class="fas fa-history"></i>
+                        <span>Salary History</span>
+                    </a>
+
+                    <a href="{{ route('payroll.assign.index') }}" class="nav-link d-flex align-items-center gap-2">
+                        <i class="fas fa-user-cog"></i>
+                        <span>Assign Payroll</span>
+                    </a>
+                </div>
 
 
-                        <!-- AHP -->
-                        <a href="{{ route('evaluation.ahp.index') }}" class="nav-link">
-                            <i class="fas fa-lightbulb"></i>
-                            <span>AHP</span>
+                @elseif(Auth::user()->isManagerAcptHR())
+                <li class="nav-item">
+                    <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown">
+                        <i class="fas fa-book"></i>
+                        <span>E-learning</span>
+                    </a>
+                    <div class="dropdown-container">
+                        <a href="{{ url('/elearning/index2/' . Auth::user()->id) }}" class="nav-link">
+                            <i class="fas fa-tasks"></i>
+                            <span>E-learning Duty</span>
                         </a>
                     </div>
                 </li>
 
+                <!-- Time Management -->
+                <li class="nav-item">
+                    <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown">
+                        <i class="fas fa-clock"></i>
+                        <span>Time Management</span>
+                    </a>
+                    <div class="dropdown-container">
+                        <!-- Human Resources -->
+                        <a href="#" class="nav-link dropdown-toggle hr-dropdown">
+                            <i class="fas fa-user-tie"></i>
+                            <span>Human Resources</span>
+                            <!-- <i class="dropdown-icon fas fa-chevron-right ms-auto"></i> -->
+                        </a>
+                        <div class="hr-submenu" style="display: none; padding-left: 15px;">
+                            <a href="#" class="nav-link dropdown-toggle timeOff-dropdown">
+                                <i class="fas fa-calendar-alt"></i>
+                                <span>Time Off</span>
+                                <!-- <i class="dropdown-icon fas fa-chevron-right ms-auto"></i> -->
+                            </a>
+                            <div class="timeOff-submenu" style="display: none; padding-left: 15px;">
+                                <a href="{{ url('/time_management/time_off/request_time_off/index') }}" class="nav-link">
+                                    <i class="fa-solid fa-user-tie"></i>
+                                    <span>Request Time Off</span>
+                                </a>
+                            </div>
+                            <a href="{{ url('/time_management/overtime/index') }}" class="nav-link">
+                                <i class="fas fa-business-time"></i>
+                                <span>Overtime</span>
+                            </a>
+                        </div>
+
+
+                        <!-- Individual Employee -->
+                        <a href="#" class="nav-link dropdown-toggle employee-dropdown">
+                            <i class="fa-solid fa-user"></i>
+                            <span>Individual Employee</span>
+                        </a>
+                        <div class="employee-submenu" style="display: none; padding-left: 15px;">
+                            <a href="{{ url('/time_management/change_shift/index/' . Auth::user()->id) }}" class="nav-link">
+                                <i class="fa-solid fa-user"></i>
+                                <span>Employee Shift</span>
+                            </a>
+                            <a href="{{ url('/time_management/warning_letter/assign/index2/' . Auth::user()->id) }}" class="nav-link">
+                                <i class="fas fa-exclamation-triangle"></i>
+                                <span>Warning Letter</span>
+                            </a>
+                            <a href="{{ url('/time_management/overtime/index2/' . Auth::user()->id) }}" class="nav-link">
+                                <i class="fas fa-business-time"></i>
+                                <span>Overtime</span>
+                            </a>
+                            <a href="{{ url('/time_management/request_resign/index2/' . Auth::user()->id) }}" class="nav-link">
+                                <i class="fas fa-door-open"></i>
+                                <span>Resign</span>
+                            </a>
+                            <a href="{{ url('/time_management/time_off/request_time_off/index2/' . Auth::user()->id) }}" class="nav-link">
+                                <i class="fa-solid fa-user-tie"></i>
+                                <span>Time Off</span>
+                            </a>
+                        </div>
+                    </div>
+                </li>
+
+                <!-- Evaluation -->
+                <li class="nav-item">
+                    <a href="#" class="nav-link dropdown-toggle evaluation-dropdown">
+                        <i class="fas fa-chart-line"></i>
+                        <span>Evaluation</span>
+                    </a>
+                    <div class="dropdown-container">
+                        <!-- Assignment submenu -->
+                        <a href="#" class="nav-link dropdown-toggle evaluation-assignment-dropdown">
+                            <i class="fas fa-tasks"></i>
+                            <span>Assignment</span>
+                        </a>
+                        <div class="evaluation-assignment-submenu" style="display: none; padding-left: 15px;">
+                            <!-- Performance -->
+                            <a href="{{ url('/evaluation/assign/performance/index/' . Auth::user()->id) }}" class="nav-link">
+                                <i class="fas fa-chart-bar"></i>
+                                <span>Performance</span>
+                            </a>
+                        </div>
+                    </div>
+                </li>
+
+
+                @elseif(Auth::user()->isSupervisor())
+                <li class="nav-item">
+                    <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown">
+                        <i class="fas fa-book"></i>
+                        <span>E-learning</span>
+                    </a>
+                    <div class="dropdown-container">
+                        <a href="{{ url('/elearning/index2/' . Auth::user()->id) }}" class="nav-link">
+                            <i class="fas fa-tasks"></i>
+                            <span>E-learning Duty</span>
+                        </a>
+                    </div>
+                </li>
+
+                <!-- Time Management -->
+                <li class="nav-item">
+                    <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown">
+                        <i class="fas fa-clock"></i>
+                        <span>Time Management</span>
+                    </a>
+                    <div class="dropdown-container">
+                        <a href="#" class="nav-link dropdown-toggle employee-dropdown">
+                            <i class="fa-solid fa-user"></i>
+                            <span>Employee</span>
+                        </a>
+                        <div class="employee-submenu" style="display: none; padding-left: 15px;">
+                            <a href="{{ url('/time_management/change_shift/index/' . Auth::user()->id) }}" class="nav-link">
+                                <i class="fa-solid fa-user"></i>
+                                <span>Employee Shift</span>
+                            </a>
+                            <a href="{{ url('/time_management/warning_letter/assign/index2/' . Auth::user()->id) }}" class="nav-link">
+                                <i class="fas fa-exclamation-triangle"></i>
+                                <span>Warning Letter</span>
+                            </a>
+                            <a href="{{ url('/time_management/overtime/index2/' . Auth::user()->id) }}" class="nav-link">
+                                <i class="fas fa-business-time"></i>
+                                <span>Overtime</span>
+                            </a>
+                            <a href="{{ url('/time_management/request_resign/index2/' . Auth::user()->id) }}" class="nav-link">
+                                <i class="fas fa-door-open"></i>
+                                <span>Resign</span>
+                            </a>
+                            <a href="{{ url('/time_management/time_off/request_time_off/index2/' . Auth::user()->id) }}" class="nav-link">
+                                <i class="fa-solid fa-user-tie"></i>
+                                <span>Time Off</span>
+                            </a>
+                        </div>
+                    </div>
+                </li>
+
+                <!-- Evaluation -->
+                <li class="nav-item">
+                    <a href="#" class="nav-link dropdown-toggle evaluation-dropdown">
+                        <i class="fas fa-chart-line"></i>
+                        <span>Evaluation</span>
+                    </a>
+                    <div class="dropdown-container">
+                        <!-- Assignment submenu -->
+                        <a href="#" class="nav-link dropdown-toggle evaluation-assignment-dropdown">
+                            <i class="fas fa-tasks"></i>
+                            <span>Assignment</span>
+                        </a>
+                        <div class="evaluation-assignment-submenu" style="display: none; padding-left: 15px;">
+                            <!-- Performance -->
+                            <a href="{{ url('/evaluation/assign/performance/index/' . Auth::user()->id) }}" class="nav-link">
+                                <i class="fas fa-chart-bar"></i>
+                                <span>Performance</span>
+                            </a>
+                        </div>
+                    </div>
+                </li>
+
+                @elseif(Auth::user()->isStaff())
+                <!-- E-learning -->
+                <li class="nav-item">
+                    <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown">
+                        <i class="fas fa-book"></i>
+                        <span>E-learning</span>
+                    </a>
+                    <div class="dropdown-container">
+                        <a href="{{ url('/elearning/index2/' . Auth::user()->id) }}" class="nav-link">
+                            <i class="fas fa-tasks"></i>
+                            <span>E-learning Duty</span>
+                        </a>
+                    </div>
+                </li>
+
+                <!-- Time Management -->
+                <li class="nav-item">
+                    <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown">
+                        <i class="fas fa-clock"></i>
+                        <span>Time Management</span>
+                    </a>
+                    <div class="dropdown-container">
+                        <a href="#" class="nav-link dropdown-toggle employee-dropdown">
+                            <i class="fa-solid fa-user"></i>
+                            <span>Employee</span>
+                        </a>
+                        <div class="employee-submenu" style="display: none; padding-left: 15px;">
+                            <a href="{{ url('/time_management/change_shift/index/' . Auth::user()->id) }}" class="nav-link">
+                                <i class="fa-solid fa-user"></i>
+                                <span>Employee Shift</span>
+                            </a>
+                            <a href="{{ url('/time_management/warning_letter/assign/index2/' . Auth::user()->id) }}" class="nav-link">
+                                <i class="fas fa-exclamation-triangle"></i>
+                                <span>Warning Letter</span>
+                            </a>
+                            <a href="{{ url('/time_management/overtime/index2/' . Auth::user()->id) }}" class="nav-link">
+                                <i class="fas fa-business-time"></i>
+                                <span>Overtime</span>
+                            </a>
+                            <a href="{{ url('/time_management/request_resign/index2/' . Auth::user()->id) }}" class="nav-link">
+                                <i class="fas fa-door-open"></i>
+                                <span>Resign</span>
+                            </a>
+                            <a href="{{ url('/time_management/time_off/request_time_off/index2/' . Auth::user()->id) }}" class="nav-link">
+                                <i class="fa-solid fa-user-tie"></i>
+                                <span>Time Off</span>
+                            </a>
+                        </div>
+                    </div>
+                </li>
+
+
+
                 @else
-                <!-- Limited menu for Staff users -->
+
                 <!-- E-learning -->
                 <li class="nav-item">
                     <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown">
@@ -997,7 +1257,6 @@
                         </div>
                     </div>
                 </li>
-
                 @endif
             </ul>
         </div>
@@ -1279,6 +1538,19 @@
                 return false;
             });
 
+            $('.payroll-dropdown').on('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+
+                // Toggle active class for arrow rotation
+                $(this).toggleClass('active');
+
+                // Toggle the rule submenu with animation
+                $('.payroll-submenu').slideToggle(300);
+
+                return false;
+            });
+
             $('.performance-dropdown').on('click', function(e) {
                 e.preventDefault();
                 e.stopPropagation();
@@ -1301,6 +1573,32 @@
 
                 // Toggle the elearning submenu with animation
                 $('.evaluation-elearning-submenu').slideToggle(300);
+
+                return false;
+            });
+
+            $('.evaluation-final-dropdown').on('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+
+                // Toggle active class for arrow rotation
+                $(this).toggleClass('active');
+
+
+                $('.evaluation-final-submenu').slideToggle(300);
+
+                return false;
+            });
+
+            $('.final-dropdown').on('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+
+                // Toggle active class for arrow rotation
+                $(this).toggleClass('active');
+
+
+                $('.final-submenu').slideToggle(300);
 
                 return false;
             });
@@ -1466,6 +1764,12 @@
                 }
 
 
+                if (!$(e.target).closest('.payroll-dropdown, .payroll-submenu').length) {
+                    $('.payroll-dropdown').removeClass('active');
+                    $('.payroll-submenu').slideUp(300);
+                }
+
+
                 if (!$(e.target).closest('.performance-dropdown, .performance-submenu').length) {
                     $('.performance-dropdown').removeClass('active');
                     $('.performance-submenu').slideUp(300);
@@ -1475,10 +1779,20 @@
                     $('.evaluation-elearning-dropdown').removeClass('active');
                     $('.evaluation-elearning-submenu').slideUp(300);
                 }
+
+                if (!$(e.target).closest('.evaluation-final-dropdown, .evaluation-final-submenu').length) {
+                    $('.evaluation-final-dropdown').removeClass('active');
+                    $('.evaluation-final-submenu').slideUp(300);
+                }
+
+                if (!$(e.target).closest('.final-dropdown, .final-submenu').length) {
+                    $('.final-dropdown').removeClass('active');
+                    $('.final-submenu').slideUp(300);
+                }
             });
 
             // Prevent parent dropdown from closing when clicking on submenu
-            $('.hr-submenu, .shift-submenu, .timeOff-submenu,.evaluation-elearning-submenu, .attendance-submenu, rule-discipline-submenu, .warningLetter-submenu, .employee-submenu, .rule-submenu, .user-submenu, .evaluation-assignment-submenu, .evaluation-report-submenu, .performance-submenu').on('click', function(e) {
+            $('.hr-submenu, .shift-submenu, .timeOff-submenu,.evaluation-elearning-submenu, .evaluation-final-submenu, .final-submenu, .attendance-submenu, rule-discipline-submenu, .warningLetter-submenu, .employee-submenu, .rule-submenu, .user-submenu, .evaluation-assignment-submenu, .evaluation-report-submenu, .performance-submenu').on('click', function(e) {
                 e.stopPropagation();
             });
 

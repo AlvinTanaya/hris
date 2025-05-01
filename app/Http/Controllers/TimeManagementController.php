@@ -929,7 +929,6 @@ class TimeManagementController extends Controller
             ->get();
     }
 
-
     public function getAttendanceData(Request $request)
     {
         $month = $request->input('month', date('m'));
@@ -1089,6 +1088,7 @@ class TimeManagementController extends Controller
                     // Only add data if there's something to show
                     if ($absence->hour_in || $absence->hour_out) {
                         $dayAttendance = [
+                            'id' => $absence->id, // Add this line to include the ID
                             'hour_in' => $absence->hour_in,
                             'hour_out' => $absence->hour_out,
                             'status_in' => $absence->status_in,
@@ -1127,6 +1127,8 @@ class TimeManagementController extends Controller
                     $timeOffReason = $timeOff->reason ?? '';
 
                     $dayAttendance = [
+                        'id' => null, // No attendance record yet
+                        'time_off_id' => $timeOff->id,
                         'hour_in' => null,
                         'hour_out' => null,
                         'time_off' => true,
@@ -1161,7 +1163,6 @@ class TimeManagementController extends Controller
 
         return response()->json($attendanceData);
     }
-
 
     private function classifyLeaveType($timeOffRequest)
     {
@@ -1404,6 +1405,211 @@ class TimeManagementController extends Controller
                 'errors' => $errors
             ], 500);
         }
+    }
+
+
+
+    /**
+     * Get all employees for dropdown
+     */
+    public function getEmployees()
+    {
+        return User::select('id', 'name', 'employee_id')->orderBy('name')->get();
+    }
+
+    /**
+     * Get expected hours for an employee on a specific date
+     */
+    public function getExpectedHours(Request $request)
+    {
+        $userId = $request->input('user_id');
+        $date = Carbon::parse($request->input('date'));
+
+        $shift = $this->getEmployeeShiftForDate($userId, $date);
+        $expectedHours = $this->getExpectedHoursFromShift($shift, $date);
+
+        return response()->json([
+            'rule_in' => $expectedHours ? $expectedHours['start'] : null,
+            'rule_out' => $expectedHours ? $expectedHours['end'] : null,
+            'rule_type' => $shift && $shift->ruleShift ? $shift->ruleShift->type : null
+        ]);
+    }
+
+    /**
+     * Get a specific attendance record
+     */
+    public function getAttendance($id)
+    {
+        $attendance = EmployeeAbsent::findOrFail($id);
+
+        return response()->json($attendance);
+    }
+
+    /**
+     * Store a new attendance record
+     */
+    public function storeAttendance(Request $request)
+    {
+        $validated = $request->validate([
+            'user_id' => 'required|exists:users,id',
+            'date' => 'required|date',
+            'hour_in' => 'nullable|date_format:H:i',
+            'hour_out' => 'nullable|date_format:H:i',
+            'absent_place' => 'nullable|string|max:255',
+        ]);
+
+        $date = Carbon::parse($validated['date']);
+
+        // Get employee shift for this date
+        $shift = $this->getEmployeeShiftForDate($validated['user_id'], $date);
+        $expectedHours = $this->getExpectedHoursFromShift($shift, $date);
+
+        // Calculate status_in and status_out
+        $statusIn = null;
+        $lateMinutes = null;
+        $statusOut = null;
+        $earlyMinutes = null;
+
+        $ruleIn = $expectedHours ? $expectedHours['start'] : null;
+        $ruleOut = $expectedHours ? $expectedHours['end'] : null;
+
+        if (!empty($validated['hour_in']) && $ruleIn) {
+            $actualIn = Carbon::parse($validated['hour_in']);
+            $expectedIn = Carbon::parse($ruleIn);
+
+            if ($actualIn->lte($expectedIn)) {
+                $statusIn = 'early';
+            } else {
+                $statusIn = 'late';
+                $lateMinutes = $actualIn->diffInMinutes($expectedIn);
+            }
+        }
+
+        if (!empty($validated['hour_out']) && $ruleOut) {
+            $actualOut = Carbon::parse($validated['hour_out']);
+            $expectedOut = Carbon::parse($ruleOut);
+
+            if ($actualOut->gte($expectedOut)) {
+                $statusOut = 'late';
+            } else {
+                $statusOut = 'early';
+                $earlyMinutes = $expectedOut->diffInMinutes($actualOut);
+            }
+        }
+
+        // Create the attendance record
+        $attendance = EmployeeAbsent::create([
+            'user_id' => $validated['user_id'],
+            'date' => $validated['date'],
+            'hour_in' => $validated['hour_in'],
+            'hour_out' => $validated['hour_out'],
+            'absent_place' => $validated['absent_place'],
+            'status_in' => $statusIn,
+            'status_out' => $statusOut,
+            'late_minutes' => $lateMinutes,
+            'early_minutes' => $earlyMinutes,
+            'rule_in' => $ruleIn,
+            'rule_out' => $ruleOut,
+            'rule_type' => $shift && $shift->ruleShift ? $shift->ruleShift->type : null
+        ]);
+
+        return response()->json([
+            'message' => 'Attendance record created successfully',
+            'data' => $attendance
+        ]);
+    }
+
+    /**
+     * Update an existing attendance record
+     */
+    public function updateAttendance(Request $request)
+    {
+        // dd($request->all());
+        $validated = $request->validate([
+            'id' => 'required|exists:employee_absent,id',
+            'user_id' => 'required|exists:users,id',
+            'date' => 'required|date',
+            'hour_in' => 'required',
+            'hour_out' => 'required',
+            'absent_place' => 'nullable|string|max:255',
+        ]);
+
+        $attendance = EmployeeAbsent::findOrFail($validated['id']);
+        $date = Carbon::parse($validated['date']);
+
+        // Get employee shift for this date
+        $shift = $this->getEmployeeShiftForDate($validated['user_id'], $date);
+        $expectedHours = $this->getExpectedHoursFromShift($shift, $date);
+
+        // Calculate status_in and status_out
+        $statusIn = null;
+        $lateMinutes = null;
+        $statusOut = null;
+        $earlyMinutes = null;
+
+        $ruleIn = $expectedHours ? $expectedHours['start'] : null;
+        $ruleOut = $expectedHours ? $expectedHours['end'] : null;
+
+        if (!empty($validated['hour_in']) && $ruleIn) {
+            $actualIn = Carbon::parse($validated['hour_in']);
+            $expectedIn = Carbon::parse($ruleIn);
+
+            if ($actualIn->lte($expectedIn)) {
+                $statusIn = 'early';
+            } else {
+                $statusIn = 'late';
+                $lateMinutes = $actualIn->diffInMinutes($expectedIn);
+            }
+        }
+
+        if (!empty($validated['hour_out']) && $ruleOut) {
+            $actualOut = Carbon::parse($validated['hour_out']);
+            $expectedOut = Carbon::parse($ruleOut);
+
+            if ($actualOut->gte($expectedOut)) {
+                $statusOut = 'late';
+            } else {
+                $statusOut = 'early';
+                $earlyMinutes = $expectedOut->diffInMinutes($actualOut);
+            }
+        }
+
+        // Update the attendance record
+        $attendance->update([
+            'user_id' => $validated['user_id'],
+            'date' => $validated['date'],
+            'hour_in' => $validated['hour_in'],
+            'hour_out' => $validated['hour_out'],
+            'absent_place' => $validated['absent_place'],
+            'status_in' => $statusIn,
+            'status_out' => $statusOut,
+            'late_minutes' => $lateMinutes,
+            'early_minutes' => $earlyMinutes,
+            'rule_in' => $ruleIn,
+            'rule_out' => $ruleOut,
+            'rule_type' => $shift && $shift->ruleShift ? $shift->ruleShift->type : null
+        ]);
+
+
+
+
+        return response()->json([
+            'message' => 'Attendance record updated successfully',
+            'data' => $attendance
+        ]);
+    }
+
+    /**
+     * Delete an attendance record
+     */
+    public function deleteAttendance($id)
+    {
+        $attendance = EmployeeAbsent::findOrFail($id);
+        $attendance->delete();
+
+        return response()->json([
+            'message' => 'Attendance record deleted successfully'
+        ]);
     }
 
 
@@ -2559,7 +2765,7 @@ class TimeManagementController extends Controller
             $history = DB::table('users_transfer_history')
                 ->where('users_id', $item->user_id)
                 // ->where('created_at', '<', $item->resign_date)  // Use resign_date
-                  ->where('created_at', '<', $item->created_at)  // Use resign_date
+                ->where('created_at', '<', $item->created_at)  // Use resign_date
                 ->orderBy('created_at', 'desc')
                 ->first();
 

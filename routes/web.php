@@ -10,6 +10,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\VacancyController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\AnnouncementController;
+use App\Http\Controllers\PayrollController;
 use App\Http\Controllers\EvaluationController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -185,6 +186,16 @@ Route::middleware('auth')->group(function () {
     Route::get('/time_management/employee_absent/attendance/index', [TimeManagementController::class, 'employee_absent_index'])->name('time.employee.absent.index');
     Route::get('/time_management/employee_absent/attendance/data', [TimeManagementController::class, 'getAttendanceData'])->name('attendance.data');
     Route::post('/time_management/employee_absent/attendance/import', [TimeManagementController::class, 'importAttendance'])->name('attendance.import');
+    Route::get('/time_management/employee_absent/attendance/expected-hours', [TimeManagementController::class, 'getExpectedHours'])->name('attendance.expected_hours');
+    Route::get('/time_management/employee_absent/attendance/{id}', [TimeManagementController::class, 'getAttendance'])->name('attendance.show');
+    Route::post('/time_management/employee_absent/attendance', [TimeManagementController::class, 'storeAttendance'])->name('attendance.store');
+    Route::put('/time_management/employee_absent/attendance', [TimeManagementController::class, 'updateAttendance'])->name('attendance.update');
+    Route::delete('/time_management/employee_absent/attendance/{id}', [TimeManagementController::class, 'deleteAttendance'])->name('attendance.delete');
+    Route::get('/time_management/employee_absent/employees', [TimeManagementController::class, 'getEmployees'])->name('attendance.employees');
+
+
+
+
 
     Route::get('/time_management/employee_absent/custom_holiday/index', [TimeManagementController::class, 'custom_holiday_index'])->name('time.custom.holiday.index');
     Route::get('/time_management/employee_absent/custom_holiday/create', [TimeManagementController::class, 'custom_holiday_create'])->name('time.custom.holiday.create');
@@ -338,6 +349,18 @@ Route::middleware('auth')->group(function () {
     Route::put('/evaluation/rule/discipline/score/update/{id}', [EvaluationController::class, 'rule_discipline_score_update'])->name('evaluation.rule.discipline.score.update');
     Route::delete('/evaluation/rule/discipline/score/delete/{id}', [EvaluationController::class, 'rule_discipline_score_destroy'])->name('evaluation.rule.discipline.score.destroy');
 
+    // Rule Final routes
+    Route::get('/evaluation/rule/final/grade/salary/index', [EvaluationController::class, 'rule_grade_salary_index'])->name('evaluation.rule.grade.salary.index');
+    Route::get('/evaluation/rule/final/grade/salary/create', [EvaluationController::class, 'rule_grade_salary_create'])->name('evaluation.rule.grade.salary.create');
+    Route::post('/evaluation/rule/final/grade/salary/store', [EvaluationController::class, 'rule_grade_salary_store'])->name('evaluation.rule.grade.salary.store');
+    Route::get('/evaluation/rule/final/grade/salary/edit/{id}', [EvaluationController::class, 'rule_grade_salary_edit'])->name('evaluation.rule.grade.salary.edit');
+    Route::put('/evaluation/rule/final/grade/salary/update/{id}', [EvaluationController::class, 'rule_grade_salary_update'])->name('evaluation.rule.grade.salary.update');
+    Route::delete('/evaluation/rule/final/grade/salary/delete/{id}', [EvaluationController::class, 'rule_grade_salary_destroy'])->name('evaluation.rule.grade.salary.destroy');
+    Route::post('/evaluation/rule/final/grade/salary/check', [EvaluationController::class, 'rule_grade_salary_check'])
+        ->name('evaluation.rule.grade.salary.check');
+
+
+
 
 
     // Assignment Performance routes
@@ -372,15 +395,59 @@ Route::middleware('auth')->group(function () {
     Route::get('/evaluation/report/elearning/index/export', [EvaluationController::class, 'report_elearning_export'])
         ->name('evaluation.report.elearning.export');
 
-    
-    Route::get('/evaluation/report/final/index', [EvaluationController::class, 'report_final_index'])->name('evaluation.report.final.index');
-    Route::post('/evaluation/report/final/get-data', [EvaluationController::class, 'getFinalReportData'])->name('evaluation.report.final.getData');
-    Route::get('evaluation/report/final/export', [EvaluationController::class, 'finalExportToExcel'])->name('evaluation.report.final.export');
 
-    // AHP routes
-    Route::get('/evaluation/ahp/index', [EvaluationController::class, 'ahp_index'])->name('evaluation.ahp.index');
-    Route::get('/evaluation/ahp/create', [EvaluationController::class, 'ahp_create'])->name('evaluation.ahp.create');
-    Route::post('/evaluation/ahp/store', [EvaluationController::class, 'ahp_store'])->name('evaluation.ahp.store');
-    Route::get('/evaluation/ahp/edit/{id}', [EvaluationController::class, 'ahp_edit'])->name('evaluation.ahp.edit');
-    Route::put('/evaluation/ahp/update/{id}', [EvaluationController::class, 'ahp_update'])->name('evaluation.ahp.update');
+    Route::get('/evaluation/report/final/calculate/index', [EvaluationController::class, 'reportFinalCalculateIndex'])->name('evaluation.report.final.calculate.index');
+    Route::post('/evaluation/report/final/calculate/get-data', [EvaluationController::class, 'getFinalCalculateReportData'])->name('evaluation.report.final.calculate.getData');
+    Route::get('evaluation/report/final/calculate/export', [EvaluationController::class, 'finalCalculateExportToExcel'])->name('evaluation.report.final.calculate.export');
+    Route::post('/evaluation/report/final/calculate/save', [EvaluationController::class, 'saveFinalCalculateResults'])->name('evaluation.report.final.calculate.save');
+
+    // Evaluation report routes
+    // API routes for select2
+    Route::get('/api/employees', [EvaluationController::class, 'getEmployees'])->name('api.employees');
+    Route::get('/evaluation/report/final/graph/years', [EvaluationController::class, 'getAvailableYears'])->name('evaluation.report.years');
+    Route::get('/evaluation/report/final/graph/index', [EvaluationController::class, 'reportFinalGraphIndex'])->name('evaluation.report.final.graph.index');
+    Route::get('/evaluation/report/final/graph/data', [EvaluationController::class, 'reportFinalGraphData'])->name('evaluation.report.final.graph.data');
+
+    Route::get('/evaluation/report/final/result/index', [EvaluationController::class, 'reportFinalResultIndex'])
+        ->name('evaluation.report.final.result.index');
+    Route::put('/evaluation/report/final/result/update/{id}', [EvaluationController::class, 'reportFinalResultUpdate'])
+        ->name('evaluation.report.final.result.update');
+    Route::post('/evaluation/report/final/result/upload-proposal/{id}', [EvaluationController::class, 'reportFinalResultUploadProposal'])
+        ->name('evaluation.report.final.result.upload-proposal');
+    Route::post('/evaluation/report/final/result/mass-update', [EvaluationController::class, 'reportFinalResultMassUpdate'])
+        ->name('evaluation.report.final.result.mass-update');
+    Route::get('/evaluation/report/final/result/get-salary-value', [EvaluationController::class, 'reportFinalResultGetSalaryValue'])
+        ->name('evaluation.report.final.result.get-salary-value');
+    Route::post('/evaluation/report/final/result/save-all', [EvaluationController::class, 'reportFinalResultSaveAll'])
+        ->name('evaluation.report.final.result.saveAll');
+
+
+    Route::get('/payroll/master_salary/index', [PayrollController::class, 'masterSalaryIndex'])
+        ->name('payroll.master.salary.index');
+    Route::post('/payroll/master_salary/store', [PayrollController::class, 'masterSalaryStore'])
+        ->name('payroll.master.salary.store');
+    Route::put('/payroll/master_salary/update', [PayrollController::class, 'masterSalaryUpdate'])
+        ->name('payroll.master.salary.update');
+    Route::delete('/payroll/master_salary/destroy', [PayrollController::class, 'masterSalaryDestroy'])
+        ->name('payroll.master.salary.destroy');
+
+    Route::get('/payroll/salary_history/index', [PayrollController::class, 'salaryHistoryIndex'])
+        ->name('payroll.salary.history.index');
+
+
+
+
+    Route::prefix('payroll')->group(function () {
+        // Employee Payroll Routes
+        Route::get('/assign/index', [PayrollController::class, 'salaryAssignIndex'])->name('payroll.assign.index');
+        Route::get('/assign/create', [PayrollController::class, 'salaryAssignCreate'])->name('payroll.assign.create');
+        Route::post('/assign/store', [PayrollController::class, 'salaryAssignStore'])->name('payroll.assign.store');
+        Route::get('/assign/edit/{id}', [PayrollController::class, 'salaryAssignEdit'])->name('payroll.assign.edit');
+        Route::put('/assign/update/{id}', [PayrollController::class, 'salaryAssignUpdate'])->name('payroll.assign.update');
+        Route::delete('/assign/delete/{id}', [PayrollController::class, 'salaryAssignDestroy'])->name('payroll.assign.destroy');
+        Route::get('/assign/get-filtered-users', [PayrollController::class, 'getFilteredUsers'])->name('payroll.assign.get-filtered-users');
+
+        Route::post('/assign/upload-attachment', [PayrollController::class, 'uploadAttachment'])->name('payroll.assign.upload-attachment');
+        Route::post('/assign/mass-upload', [PayrollController::class, 'uploadMassAttachment'])->name('payroll.assign.mass-upload');
+    });
 });

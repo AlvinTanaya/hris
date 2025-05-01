@@ -31,7 +31,7 @@
                 </li>
                 <li class="nav-item" role="presentation">
                     <button class="nav-link py-3" id="early-leave-tab" data-bs-toggle="tab" data-bs-target="#early-leave" type="button" role="tab">
-                        <i class="fas fa-sign-out-alt me-1"></i> Early Leave
+                        <i class="fas fa-sign-out-alt me-1"></i> Early Leave (Pulang Awal)
                     </button>
                 </li>
                 <li class="nav-item" role="presentation">
@@ -56,7 +56,7 @@
                 <div class="tab-pane fade show active" id="attendance" role="tabpanel">
                     <div class="d-flex justify-content-between align-items-center mb-4">
                         <h5 class="fw-bold text-primary mb-0">
-                            <i class="fas fa-percentage me-2"></i>Attendance Percentage Rules
+                            <i class="fas fa-percentage me-2"></i>Attendance Percentage Rules (Aturan Persentase Kehadiran)
                         </h5>
                         <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#addAttendanceRuleModal">
                             <i class="fas fa-plus me-1"></i> Add Rule
@@ -147,7 +147,7 @@
                 <div class="tab-pane fade" id="late" role="tabpanel">
                     <div class="d-flex justify-content-between align-items-center mb-4">
                         <h5 class="fw-bold text-primary mb-0">
-                            <i class="fas fa-clock me-2"></i>Late Occurrence Rules
+                            <i class="fas fa-clock me-2"></i>Late Occurrence (Kejadian/Peristiwa) Rules
                         </h5>
                         <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#addLateRuleModal">
                             <i class="fas fa-plus me-1"></i> Add Rule
@@ -161,7 +161,7 @@
                             </div>
                             <div>
                                 <h6 class="mb-1 fw-bold">Late Rules Information</h6>
-                                <p class="mb-0">Rules for late occurrences. Multiple non-overlapping ranges allowed.</p>
+                                <p class="mb-0">Rules for late Occurrence (Kejadian/Peristiwa). Multiple non-overlapping ranges allowed.</p>
                             </div>
                         </div>
                     </div>
@@ -171,7 +171,7 @@
                             <thead class="table-light">
                                 <tr>
                                     <th class="py-3">Range</th>
-                                    <th class="py-3">Score Deduction</th>
+                                    <th class="py-3">Score Deduction (Pengurangan Skor)</th>
                                     <th class="py-3 text-center" width="200">Actions</th>
                                 </tr>
                             </thead>
@@ -235,7 +235,7 @@
                 </div>
 
                 <!-- Other Rules Tabs -->
-                @foreach(['early_leave' => ['Early Leave', 'fa-sign-out-alt', 'danger'],
+                @foreach(['early_leave' => ['Early Leave (Pulang Awal)', 'fa-sign-out-alt', 'danger'],
                 'afternoon_shift' => ['Afternoon Shift', 'fa-sun', 'warning'],
                 'st' => ['Surat Teguran (ST)', 'fa-medkit', 'info'],
                 'sp' => ['Surat Peringatan (SP)', 'fa-id-card-alt', 'secondary']] as $type => $data)
@@ -258,7 +258,7 @@
                             </div>
                             <div>
                                 <h6 class="mb-1 fw-bold">{{ $data[0] }} Rules Information</h6>
-                                <p class="mb-0">Rules for {{ strtolower($data[0]) }}. Deduction is applied based on occurrence multiplier.</p>
+                                <p class="mb-0">Rules for {{ strtolower($data[0]) }}. Deduction is applied based on Occurrence Multiplier (Pengali Kejadian).</p>
                             </div>
                         </div>
                     </div>
@@ -281,7 +281,7 @@
                                             </span>
                                             <span>
                                                 Deduction of <span class="fw-bold text-danger">{{ $otherRules[$type]->score_value }}</span>
-                                                every <span class="fw-bold">{{ $otherRules[$type]->occurrence }}</span> occurrence(s)
+                                                every <span class="fw-bold">{{ $otherRules[$type]->occurrence }}</span> occurrence (Kejadian/Peristiwa)(s)
                                             </span>
                                         </div>
                                     </td>
@@ -383,8 +383,7 @@
     Swal.fire({
         icon: 'success',
         title: 'Success!',
-        text: '{{ session('
-        success ') }}',
+        text: '{{ session('success ') }}',
         background: '#fff',
         iconColor: '#198754',
         confirmButtonColor: '#0d6efd',
@@ -453,7 +452,7 @@
                     icon = 'clock';
                     break;
                 case 'early_leave':
-                    title = 'Edit Early Leave Rule';
+                    title = 'Edit Early Leave (Pulang Awal) (Pulang Awal) Rule';
                     icon = 'sign-out-alt';
                     break;
                 case 'afternoon_shift':
@@ -500,7 +499,7 @@
             } else if (ruleType === 'late') {
                 modal.find('.modal-body').append(`
                     <div class="mb-4">
-                        <label class="form-label fw-bold">Occurrence Range</label>
+                        <label class="form-label fw-bold">Occurrence (Kejadian/Peristiwa) Range</label>
                         <div class="input-group">
                             <span class="input-group-text bg-light">Min</span>
                             <input type="number" class="form-control" name="min_value" min="0" value="${minValue}" required>
@@ -511,7 +510,7 @@
                         <div class="form-text mt-2"><i class="fas fa-info-circle me-1"></i> Example: 0-4 means 0 to 3 times (exclusive)</div>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label fw-bold">Score Deduction</label>
+                        <label class="form-label fw-bold">Score Deduction (Pengurangan Skor)</label>
                         <div class="input-group">
                             <span class="input-group-text bg-light text-danger"><i class="fas fa-minus-circle"></i></span>
                             <input type="number" class="form-control" name="score_value" step="0.1" value="${scoreValue}" required>
@@ -522,15 +521,15 @@
             } else {
                 modal.find('.modal-body').append(`
                     <div class="mb-4">
-                        <label class="form-label fw-bold">Occurrence Multiplier</label>
+                        <label class="form-label fw-bold">Occurrence (Kejadian/Peristiwa) Multiplier</label>
                         <div class="input-group">
                             <span class="input-group-text bg-light"><i class="fas fa-repeat"></i></span>
                             <input type="number" class="form-control" name="occurrence" min="1" value="${occurrence || 1}" required>
                         </div>
-                        <div class="form-text mt-2"><i class="fas fa-info-circle me-1"></i> Deduction applied every X occurrences</div>
+                        <div class="form-text mt-2"><i class="fas fa-info-circle me-1"></i> Deduction applied every X occurrences (Pengurangan diterapkan setiap X kejadian)</div>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label fw-bold">Score Deduction</label>
+                        <label class="form-label fw-bold">Score Deduction (Pengurangan Skor)</label>
                         <div class="input-group">
                             <span class="input-group-text bg-light text-danger"><i class="fas fa-minus-circle"></i></span>
                             <input type="number" class="form-control" name="score_value" step="0.1" value="${scoreValue}" required>

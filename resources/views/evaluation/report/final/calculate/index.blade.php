@@ -550,6 +550,7 @@
                                         <option value="{{ $year }}" {{ $year == $selectedYear ? 'selected' : '' }}>{{ $year }}</option>
                                         @endforeach
                                     </select>
+                                    <input type="hidden" id="selectedYear" value="{{ $selectedYear }}">
                                 </div>
                             </div>
                         </div>
@@ -781,7 +782,7 @@
                         <h5 class="mb-0 d-inline">{{ __('Final Evaluation Results') }}</h5>
                     </div>
                     <div>
-                        <a href="{{ route('evaluation.report.final.export', [
+                        <a href="{{ route('evaluation.report.final.calculate.export', [
                                         'year' => $selectedYear,
                                         'employee' => request('employee'),
                                         'position' => request('position'),
@@ -792,6 +793,9 @@
                                     ]) }}" class="btn btn-sm btn-success">
                             <i class="fas fa-file-excel me-1"></i> Export to Excel
                         </a>
+                        <button id="saveResultsBtn" class="btn btn-success ms-2">
+                            <i class="fas fa-save"></i> Save Results
+                        </button>
                     </div>
                 </div>
                 <div class="card-body p-0">
@@ -830,9 +834,7 @@
                                     <td>
                                         <div class="d-flex align-items-center">
                                             <div class="avatar me-2"
-                                                style="background: linear-gradient(135deg, 
-                        {{ '#'.substr(md5($data['name']), 0, 6) }}, 
-                        {{ '#'.substr(md5($data['name'].$data['employee_id']), 0, 6) }});">
+                                                style="background: linear-gradient(135deg, {{ '#'.substr(md5($data['name']), 0, 6) }}, {{ '#'.substr(md5($data['name'].$data['employee_id']), 0, 6) }});">
                                                 <span>{{ strtoupper(substr($data['name'], 0, 1)) }}</span>
                                             </div>
                                             <div>{{ $data['name'] }}</div>
@@ -913,7 +915,7 @@
 
         // Fetch data via AJAX
         $.ajax({
-            url: "{{ route('evaluation.report.final.getData') }}",
+            url: "{{ route('evaluation.report.final.calculate.getData') }}",
             method: "POST",
             data: {
                 userIds: userIds,
@@ -1414,7 +1416,7 @@
     $(document).ready(function() {
         // Initialize year dropdown change handler
         $('#year').on('change', function() {
-            window.location.href = "{{ route('evaluation.report.final.index') }}?year=" + $(this).val();
+            window.location.href = "{{ route('evaluation.report.final.calculate.index') }}?year=" + $(this).val();
         });
 
         $('#finalTable').DataTable({
@@ -1479,6 +1481,86 @@
 
         // Initialize weight validation
         validateWeights();
+
+        // Save Results button click handler
+        $('#saveResultsBtn').click(function() {
+            // Disable the button to prevent multiple submissions
+            $(this).prop('disabled', true);
+            $(this).html('<i class="fas fa-spinner fa-spin"></i> Saving...');
+
+            // Collect data from the table
+            let evaluationData = [];
+            $('#finalTable tbody tr').each(function() {
+                const row = $(this);
+                const userId = row.data('user-id');
+
+                // Get the grade from the badge in the respective columns
+                const performanceGrade = row.find('td:eq(5) .badge').text().trim() || '';
+                const disciplineGrade = row.find('td:eq(7) .badge').text().trim() || '';
+                const elearningGrade = row.find('td:eq(9) .badge').text().trim() || '';
+                
+                // Get the weighted scores (highlighted in the image with red circles)
+                const performanceScore = parseFloat(row.find('td:eq(6) .text-primary').text().trim()) || 0;
+                const disciplineScore = parseFloat(row.find('td:eq(8) .text-warning').text().trim()) || 0;
+                const elearningScore = parseFloat(row.find('td:eq(10) .text-info').text().trim()) || 0;
+                
+                // Get the final score and grade
+                const finalScore = parseFloat(row.find('.final-score').text().trim()) || 0;
+                const finalGrade = row.find('.final-grade .badge').text().trim() || '';
+
+                evaluationData.push({
+                    user_id: userId,
+                    year: $('#selectedYear').val(),
+                    performance: performanceGrade,
+                    performance_score: performanceScore,
+                    discipline: disciplineGrade,
+                    discipline_score: disciplineScore,
+                    elearning: elearningGrade,
+                    elearning_score: elearningScore,
+                    final_score: finalScore,
+                    final_grade: finalGrade
+                });
+            });
+
+            // Send data via AJAX
+            $.ajax({
+                url: '/evaluation/report/final/calculate/save',
+                method: 'POST',
+                data: {
+                    _token: $('meta[name="csrf-token"]').attr('content'),
+                    evaluations: evaluationData
+                },
+                dataType: 'json',
+                success: function(response) {
+                    // Re-enable the button
+                    $('#saveResultsBtn').prop('disabled', false).html('<i class="fas fa-save"></i> Save Results');
+
+                    // Show success message
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Success!',
+                        text: 'Evaluation results have been saved successfully.',
+                        timer: 3000
+                    });
+                },
+                error: function(xhr) {
+                    // Re-enable the button
+                    $('#saveResultsBtn').prop('disabled', false).html('<i class="fas fa-save"></i> Save Results');
+
+                    // Show error message
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error!',
+                        text: 'Failed to save evaluation results. Please try again.',
+                    });
+
+                    console.error('Error saving results:', xhr.responseText);
+                }
+            });
+        });
+ 
+
+
     });
 </script>
 

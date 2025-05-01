@@ -61,9 +61,10 @@ use App\Models\DisciplineRule;
 use App\Models\CustomHoliday;
 use App\Models\EmployeeAbsent;
 use App\Models\RequestTimeOff;
-
-
-
+use App\Models\EmployeeFinalEvaluation;
+use App\Models\RuleEvaluationGradeSalaryFinal;
+use App\Models\EmployeeSalary;
+use App\Models\SalaryHistory;
 
 use App\Models\elearning_invitation;
 use App\Models\elearning_answer;
@@ -4756,191 +4757,191 @@ class EvaluationController extends Controller
      */
 
 
-public function report_final_index(Request $request)
-{
-    // Get current year for default filtering
-    $currentYear = date('Y');
-    $selectedYear = $request->input('year', $currentYear);
+    public function reportFinalCalculateIndex(Request $request)
+    {
+        // Get current year for default filtering
+        $currentYear = date('Y');
+        $selectedYear = $request->input('year', $currentYear);
 
-    // Get filter parameters
-    $employeeFilter = $request->input('employee');
-    $positionFilter = $request->input('position');
-    $departmentFilter = $request->input('department');
+        // Get filter parameters
+        $employeeFilter = $request->input('employee');
+        $positionFilter = $request->input('position');
+        $departmentFilter = $request->input('department');
 
-    // Get available years from evaluations
-    $availableYears = EvaluationPerformance::select(DB::raw('DISTINCT YEAR(date) as year'))
-        ->orderBy('year', 'desc')
-        ->pluck('year')
-        ->toArray();
+        // Get available years from evaluations
+        $availableYears = EvaluationPerformance::select(DB::raw('DISTINCT YEAR(date) as year'))
+            ->orderBy('year', 'desc')
+            ->pluck('year')
+            ->toArray();
 
-    if (empty($availableYears)) {
-        $availableYears = [$currentYear];
-    }
+        if (empty($availableYears)) {
+            $availableYears = [$currentYear];
+        }
 
-    // Find users that have any evaluation data at all
-    $usersWithData = DB::table('users')
-        ->select('users.id')
-        ->distinct()
-        ->where(function ($query) use ($selectedYear) {
-            // Has performance evaluation
-            $query->whereExists(function ($q) use ($selectedYear) {
-                $q->select(DB::raw(1))
-                    ->from('employee_evaluation_performance')
-                    ->whereRaw('employee_evaluation_performance.user_id = users.id')
-                    ->whereYear('employee_evaluation_performance.date', $selectedYear);
-            })
-                // Or has discipline record (absence)
-                ->orWhereExists(function ($q) use ($selectedYear) {
+        // Find users that have any evaluation data at all
+        $usersWithData = DB::table('users')
+            ->select('users.id')
+            ->distinct()
+            ->where(function ($query) use ($selectedYear) {
+                // Has performance evaluation
+                $query->whereExists(function ($q) use ($selectedYear) {
                     $q->select(DB::raw(1))
-                        ->from('employee_absent')
-                        ->whereRaw('employee_absent.user_id = users.id')
-                        ->whereYear('employee_absent.date', $selectedYear);
+                        ->from('employee_evaluation_performance')
+                        ->whereRaw('employee_evaluation_performance.user_id = users.id')
+                        ->whereYear('employee_evaluation_performance.date', $selectedYear);
                 })
-                // Or has e-learning record
-                ->orWhereExists(function ($q) use ($selectedYear) {
-                    $q->select(DB::raw(1))
-                        ->from('elearning_invitation')
-                        ->whereRaw('elearning_invitation.users_id = users.id')
-                        ->whereYear('elearning_invitation.created_at', $selectedYear);
-                });
-        })
-        ->when($employeeFilter, function ($query) use ($employeeFilter) {
-            return $query->where('users.id', $employeeFilter);
-        })
-        ->pluck('id')
-        ->toArray();
+                    // Or has discipline record (absence)
+                    ->orWhereExists(function ($q) use ($selectedYear) {
+                        $q->select(DB::raw(1))
+                            ->from('employee_absent')
+                            ->whereRaw('employee_absent.user_id = users.id')
+                            ->whereYear('employee_absent.date', $selectedYear);
+                    })
+                    // Or has e-learning record
+                    ->orWhereExists(function ($q) use ($selectedYear) {
+                        $q->select(DB::raw(1))
+                            ->from('elearning_invitation')
+                            ->whereRaw('elearning_invitation.users_id = users.id')
+                            ->whereYear('elearning_invitation.created_at', $selectedYear);
+                    });
+            })
+            ->when($employeeFilter, function ($query) use ($employeeFilter) {
+                return $query->where('users.id', $employeeFilter);
+            })
+            ->pluck('id')
+            ->toArray();
 
-    // Get basic user data
-    $users = User::whereIn('id', $usersWithData)->get();
-    
-    // Get filter data (without assuming relationships)
-    $employeesList = User::whereIn('id', $usersWithData)
-        ->select('id', 'name', 'employee_id')
-        ->orderBy('name')
-        ->get();
+        // Get basic user data
+        $users = User::whereIn('id', $usersWithData)->get();
 
-    // Initialize collections for positions and departments
-    $historicalPositionIds = collect();
-    $historicalDepartmentIds = collect();
-    $userHistoricalPositions = [];
-    $userHistoricalDepartments = [];
+        // Get filter data (without assuming relationships)
+        $employeesList = User::whereIn('id', $usersWithData)
+            ->select('id', 'name', 'employee_id')
+            ->orderBy('name')
+            ->get();
 
-    // For each user, find their historical position and department
-    foreach ($users as $user) {
-        // Get the reference date for this user (we'll use the earliest event date in the selected year)
-        // Fixed the SQL query construction
-        $minPerformanceDate = DB::table('employee_evaluation_performance')
-            ->where('user_id', $user->id)
-            ->whereYear('date', $selectedYear)
-            ->min('date');
-            
-        $minAbsentDate = DB::table('employee_absent')
-            ->where('user_id', $user->id)
-            ->whereYear('date', $selectedYear)
-            ->min('date');
-            
-        $minElearningDate = DB::table('elearning_invitation')
-            ->where('users_id', $user->id)
-            ->whereYear('created_at', $selectedYear)
-            ->min('created_at');
-        
-        // Find the earliest date among all three types
-        $dates = array_filter([$minPerformanceDate, $minAbsentDate, $minElearningDate]);
-        $referenceDate = !empty($dates) ? min($dates) : null;
+        // Initialize collections for positions and departments
+        $historicalPositionIds = collect();
+        $historicalDepartmentIds = collect();
+        $userHistoricalPositions = [];
+        $userHistoricalDepartments = [];
 
-        if ($referenceDate) {
-            // Find the most recent transfer before the reference date
-            $historicalTransfer = \App\Models\history_transfer_employee::where('users_id', $user->id)
-                ->where('created_at', '<', $referenceDate)
-                ->orderBy('created_at', 'desc')
-                ->first();
+        // For each user, find their historical position and department
+        foreach ($users as $user) {
+            // Get the reference date for this user (we'll use the earliest event date in the selected year)
+            // Fixed the SQL query construction
+            $minPerformanceDate = DB::table('employee_evaluation_performance')
+                ->where('user_id', $user->id)
+                ->whereYear('date', $selectedYear)
+                ->min('date');
 
-            if ($historicalTransfer) {
-                // Use the historical position and department
-                $userHistoricalPositions[$user->id] = $historicalTransfer->new_position_id;
-                $userHistoricalDepartments[$user->id] = $historicalTransfer->new_department_id;
-                
-                $historicalPositionIds->push($historicalTransfer->new_position_id);
-                $historicalDepartmentIds->push($historicalTransfer->new_department_id);
+            $minAbsentDate = DB::table('employee_absent')
+                ->where('user_id', $user->id)
+                ->whereYear('date', $selectedYear)
+                ->min('date');
+
+            $minElearningDate = DB::table('elearning_invitation')
+                ->where('users_id', $user->id)
+                ->whereYear('created_at', $selectedYear)
+                ->min('created_at');
+
+            // Find the earliest date among all three types
+            $dates = array_filter([$minPerformanceDate, $minAbsentDate, $minElearningDate]);
+            $referenceDate = !empty($dates) ? min($dates) : null;
+
+            if ($referenceDate) {
+                // Find the most recent transfer before the reference date
+                $historicalTransfer = \App\Models\history_transfer_employee::where('users_id', $user->id)
+                    ->where('created_at', '<', $referenceDate)
+                    ->orderBy('created_at', 'desc')
+                    ->first();
+
+                if ($historicalTransfer) {
+                    // Use the historical position and department
+                    $userHistoricalPositions[$user->id] = $historicalTransfer->new_position_id;
+                    $userHistoricalDepartments[$user->id] = $historicalTransfer->new_department_id;
+
+                    $historicalPositionIds->push($historicalTransfer->new_position_id);
+                    $historicalDepartmentIds->push($historicalTransfer->new_department_id);
+                } else {
+                    // No transfer history found, use current position and department
+                    $userHistoricalPositions[$user->id] = $user->position_id;
+                    $userHistoricalDepartments[$user->id] = $user->department_id;
+
+                    $historicalPositionIds->push($user->position_id);
+                    $historicalDepartmentIds->push($user->department_id);
+                }
             } else {
-                // No transfer history found, use current position and department
+                // No reference date found, use current values
                 $userHistoricalPositions[$user->id] = $user->position_id;
                 $userHistoricalDepartments[$user->id] = $user->department_id;
-                
+
                 $historicalPositionIds->push($user->position_id);
                 $historicalDepartmentIds->push($user->department_id);
             }
-        } else {
-            // No reference date found, use current values
-            $userHistoricalPositions[$user->id] = $user->position_id;
-            $userHistoricalDepartments[$user->id] = $user->department_id;
-            
-            $historicalPositionIds->push($user->position_id);
-            $historicalDepartmentIds->push($user->department_id);
         }
+
+        // Filter users by historical position and department if requested
+        $filteredUsers = collect($usersWithData);
+
+        if ($positionFilter) {
+            $filteredUsers = $filteredUsers->filter(function ($userId) use ($userHistoricalPositions, $positionFilter) {
+                return isset($userHistoricalPositions[$userId]) && $userHistoricalPositions[$userId] == $positionFilter;
+            });
+        }
+
+        if ($departmentFilter) {
+            $filteredUsers = $filteredUsers->filter(function ($userId) use ($userHistoricalDepartments, $departmentFilter) {
+                return isset($userHistoricalDepartments[$userId]) && $userHistoricalDepartments[$userId] == $departmentFilter;
+            });
+        }
+
+        // Update users array with filtered list
+        $users = User::whereIn('id', $filteredUsers->toArray())->get();
+
+        // Get positions and departments for display and filtering
+        $positionsList = EmployeePosition::whereIn('id', $historicalPositionIds->unique())
+            ->select('id', 'position')
+            ->orderBy('position')
+            ->get();
+
+        $departmentsList = EmployeeDepartment::whereIn('id', $historicalDepartmentIds->unique())
+            ->select('id', 'department')
+            ->orderBy('department')
+            ->get();
+
+        // Initialize empty data array with just user info and historical positions/departments
+        $finalData = [];
+        foreach ($users as $user) {
+            $historicalPositionId = $userHistoricalPositions[$user->id] ?? $user->position_id;
+            $historicalDepartmentId = $userHistoricalDepartments[$user->id] ?? $user->department_id;
+
+            $finalData[] = [
+                'user_id' => $user->id,
+                'employee_id' => $user->employee_id ?? '',
+                'name' => $user->name,
+                'position' => $historicalPositionId ?
+                    ($positionsList->firstWhere('id', $historicalPositionId)->position ?? '') : '',
+                'department' => $historicalDepartmentId ?
+                    ($departmentsList->firstWhere('id', $historicalDepartmentId)->department ?? '') : '',
+                'performance' => null,
+                'discipline' => null,
+                'elearning' => null
+            ];
+        }
+
+        return view('evaluation.report.final.calculate.index', compact(
+            'finalData',
+            'employeesList',
+            'positionsList',
+            'departmentsList',
+            'availableYears',
+            'selectedYear',
+            'filteredUsers' // Pass filtered users instead of all usersWithData
+        ));
     }
 
-    // Filter users by historical position and department if requested
-    $filteredUsers = collect($usersWithData);
-    
-    if ($positionFilter) {
-        $filteredUsers = $filteredUsers->filter(function ($userId) use ($userHistoricalPositions, $positionFilter) {
-            return isset($userHistoricalPositions[$userId]) && $userHistoricalPositions[$userId] == $positionFilter;
-        });
-    }
-    
-    if ($departmentFilter) {
-        $filteredUsers = $filteredUsers->filter(function ($userId) use ($userHistoricalDepartments, $departmentFilter) {
-            return isset($userHistoricalDepartments[$userId]) && $userHistoricalDepartments[$userId] == $departmentFilter;
-        });
-    }
-    
-    // Update users array with filtered list
-    $users = User::whereIn('id', $filteredUsers->toArray())->get();
-
-    // Get positions and departments for display and filtering
-    $positionsList = EmployeePosition::whereIn('id', $historicalPositionIds->unique())
-        ->select('id', 'position')
-        ->orderBy('position')
-        ->get();
-
-    $departmentsList = EmployeeDepartment::whereIn('id', $historicalDepartmentIds->unique())
-        ->select('id', 'department')
-        ->orderBy('department')
-        ->get();
-
-    // Initialize empty data array with just user info and historical positions/departments
-    $finalData = [];
-    foreach ($users as $user) {
-        $historicalPositionId = $userHistoricalPositions[$user->id] ?? $user->position_id;
-        $historicalDepartmentId = $userHistoricalDepartments[$user->id] ?? $user->department_id;
-        
-        $finalData[] = [
-            'user_id' => $user->id,
-            'employee_id' => $user->employee_id ?? '',
-            'name' => $user->name,
-            'position' => $historicalPositionId ? 
-                ($positionsList->firstWhere('id', $historicalPositionId)->position ?? '') : '',
-            'department' => $historicalDepartmentId ? 
-                ($departmentsList->firstWhere('id', $historicalDepartmentId)->department ?? '') : '',
-            'performance' => null,
-            'discipline' => null,
-            'elearning' => null
-        ];
-    }
-
-    return view('evaluation.report.final.index', compact(
-        'finalData',
-        'employeesList',
-        'positionsList',
-        'departmentsList',
-        'availableYears',
-        'selectedYear',
-        'filteredUsers' // Pass filtered users instead of all usersWithData
-    ));
-}
-
-    public function getFinalReportData(Request $request)
+    public function getFinalCalculateReportData(Request $request)
     {
 
         $userIds = $request->input('userIds', []);
@@ -5222,7 +5223,7 @@ public function report_final_index(Request $request)
     }
 
 
-    public function finalExportToExcel(Request $request)
+    public function finalCalculateExportToExcel(Request $request)
     {
         // Get parameters from the request
         $selectedYear = $request->input('year', date('Y'));
@@ -5441,5 +5442,650 @@ public function report_final_index(Request $request)
         if ($score >= 1.1) return 'E+';
         if ($score >= 1.0) return 'E';
         return 'F';
+    }
+
+
+    /**
+     * Save final evaluation results to the database
+     */
+    public function saveFinalCalculateResults(Request $request)
+    {
+        // dd($request->all());
+        // Validate the request
+        $request->validate([
+            'evaluations' => 'required|array',
+            'evaluations.*.user_id' => 'required|exists:users,id',
+            'evaluations.*.year' => 'required|numeric',
+            'evaluations.*.performance' => 'nullable|string|max:5',
+            'evaluations.*.performance_score' => 'nullable|numeric',
+            'evaluations.*.discipline' => 'nullable|string|max:5',
+            'evaluations.*.discipline_score' => 'nullable|numeric',
+            'evaluations.*.elearning' => 'nullable|string|max:5',
+            'evaluations.*.elearning_score' => 'nullable|numeric',
+            'evaluations.*.final_score' => 'nullable|numeric',
+            'evaluations.*.final_grade' => 'nullable|string|max:5',
+        ]);
+
+        $savedCount = 0;
+        $year = null;
+
+        // Begin transaction
+        DB::beginTransaction();
+
+        try {
+            foreach ($request->evaluations as $evaluation) {
+                $year = $evaluation['year'];
+
+                // Check if record already exists for this user and year
+                $existingRecord = EmployeeFinalEvaluation::where('user_id', $evaluation['user_id'])
+                    ->where('year', $evaluation['year'])
+                    ->first();
+
+                if ($existingRecord) {
+                    // Update existing record
+                    $existingRecord->update([
+                        'performance' => $evaluation['performance'],
+                        'performance_score' => $evaluation['performance_score'],
+                        'discipline' => $evaluation['discipline'],
+                        'discipline_score' => $evaluation['discipline_score'],
+                        'elearning' => $evaluation['elearning'],
+                        'elearning_score' => $evaluation['elearning_score'],
+                        'final_score' => $evaluation['final_score'],
+                        'final_grade' => $evaluation['final_grade'],
+                        'updated_at' => now()
+                    ]);
+                } else {
+                    // Insert new record
+                    EmployeeFinalEvaluation::create([
+                        'user_id' => $evaluation['user_id'],
+                        'year' => $evaluation['year'],
+                        'performance' => $evaluation['performance'],
+                        'performance_score' => $evaluation['performance_score'],
+                        'discipline' => $evaluation['discipline'],
+                        'discipline_score' => $evaluation['discipline_score'],
+                        'elearning' => $evaluation['elearning'],
+                        'elearning_score' => $evaluation['elearning_score'],
+                        'final_score' => $evaluation['final_score'],
+                        'final_grade' => $evaluation['final_grade'],
+                        'created_at' => now(),
+                        'updated_at' => now()
+                    ]);
+                }
+
+                $savedCount++;
+            }
+
+            // Commit transaction
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Successfully saved ' . $savedCount . ' evaluation results.',
+            ]);
+        } catch (\Exception $e) {
+            // Rollback transaction on error
+            DB::rollBack();
+
+            // Log error
+            Log::error('Error saving evaluation results: ' . $e->getMessage());
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to save evaluation results: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+
+
+    public function rule_grade_salary_index()
+    {
+        $gradeSalaries = RuleEvaluationGradeSalaryFinal::all();
+
+        return view('evaluation/rule/final/grade/salary/index', compact('gradeSalaries'));
+    }
+
+    /**
+     * Show the form for creating a new grade salary rule
+     */
+    public function rule_grade_salary_create()
+    {
+        return view('evaluation/rule/final/grade/salary/create');
+    }
+
+    /**
+     * Store a newly created grade salary rule
+     */
+    public function rule_grade_salary_store(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'grade' => 'required|string|max:3|unique:rule_evaluation_grade_salary_final,grade',
+            'value_salary' => 'required|numeric|min:0',
+        ]);
+
+        if ($validator->fails()) {
+            return redirect()->back()
+                ->withErrors($validator)
+                ->withInput();
+        }
+
+        RuleEvaluationGradeSalaryFinal::create([
+            'grade' => $request->grade,
+            'value_salary' => $request->value_salary,
+        ]);
+
+        return redirect()->route('evaluation.rule.grade.salary.index')
+            ->with('success', 'Grade salary rule successfully created!');
+    }
+
+    /**
+     * Show the form for editing the specified grade salary rule
+     */
+    public function rule_grade_salary_edit($id)
+    {
+        $gradeSalary = RuleEvaluationGradeSalaryFinal::findOrFail($id);
+
+        return view('evaluation/rule/final/grade/salary/update', compact('gradeSalary'));
+    }
+
+    /**
+     * Update the specified grade salary rule
+     */
+    public function rule_grade_salary_update(Request $request, $id)
+    {
+        $gradeSalary = RuleEvaluationGradeSalaryFinal::findOrFail($id);
+
+        $rules = [
+            'grade' => 'required|string|max:3',
+            'value_salary' => 'required|numeric|min:0',
+        ];
+
+        // Only validate uniqueness if the grade has changed
+        if ($request->grade != $gradeSalary->grade) {
+            $rules['grade'] .= '|unique:rule_evaluation_grade_salary_final,grade';
+        }
+
+        $validator = Validator::make($request->all(), $rules);
+
+        if ($validator->fails()) {
+            return redirect()->back()
+                ->withErrors($validator)
+                ->withInput();
+        }
+
+        $gradeSalary->update([
+            'grade' => $request->grade,
+            'value_salary' => $request->value_salary,
+        ]);
+
+        return redirect()->route('evaluation.rule.grade.salary.index')
+            ->with('success', 'Grade salary rule successfully updated!');
+    }
+
+    /**
+     * Remove the specified grade salary rule
+     */
+    public function rule_grade_salary_destroy($id)
+    {
+        $gradeSalary = RuleEvaluationGradeSalaryFinal::findOrFail($id);
+        $gradeSalary->delete();
+
+        return redirect()->route('evaluation.rule.grade.salary.index')
+            ->with('success', 'Grade salary rule successfully deleted!');
+    }
+
+    /**
+     * Check if a grade already exists (AJAX endpoint)
+     */
+    public function rule_grade_salary_check(Request $request)
+    {
+        $grade = $request->grade;
+        $currentId = $request->current_id ?? null;
+
+        $query = RuleEvaluationGradeSalaryFinal::where('grade', $grade);
+
+        // Exclude the current record if editing
+        if ($currentId) {
+            $query->where('id', '!=', $currentId);
+        }
+
+        $exists = $query->exists();
+
+        return response()->json([
+            'exists' => $exists
+        ]);
+    }
+
+
+    /**
+     * Show the evaluation final report graph index page
+     */
+    public function reportFinalGraphIndex()
+    {
+        return view('evaluation.report.final.graph.index');
+    }
+
+    /**
+     * Get evaluation data for graphs
+     */
+    public function reportFinalGraphData(Request $request)
+    {
+        $year = $request->input('year', date('Y'));
+        $employeeIds = $request->input('employees', []);
+
+        $evaluations = EmployeeFinalEvaluation::select(
+            'employee_final_evaluations.*',
+            'users.name as employee_name'
+        )
+            ->leftJoin('users', 'users.id', '=', 'employee_final_evaluations.user_id')
+            ->where('year', $year)
+            ->whereIn('user_id', $employeeIds)
+            ->get();
+
+        return response()->json($evaluations);
+    }
+
+    /**
+     * API endpoint to get employees for select2
+     */
+    public function getEmployees(Request $request)
+    {
+        $search = $request->input('search', '');
+        $page = $request->input('page', 1);
+        $limit = 10;
+
+        $query = User::select('id', 'name');
+
+        if (!empty($search)) {
+            $query->where('name', 'like', "%{$search}%");
+        }
+
+        $employees = $query->paginate($limit, ['*'], 'page', $page);
+
+        return response()->json($employees->items());
+    }
+
+    /**
+     * API endpoint to get available years for evaluation reports
+     * This dynamically retrieves all years from the database
+     */
+    public function getAvailableYears()
+    {
+        $years = EmployeeFinalEvaluation::select(DB::raw('DISTINCT year'))
+            ->orderBy('year', 'desc')
+            ->pluck('year')
+            ->toArray();
+
+        // If no years are found, return current year
+        if (empty($years)) {
+            $years = [date('Y')];
+        }
+
+        return response()->json($years);
+    }
+
+
+
+
+
+    public function reportFinalResultIndex(Request $request)
+    {
+        // Build the base query
+        $query = EmployeeFinalEvaluation::with(['user']);
+
+        // Get distinct years for dropdown
+        $years = EmployeeFinalEvaluation::distinct()->orderBy('year', 'desc')->pluck('year');
+
+        // Get distinct names for dropdown
+        $users = EmployeeFinalEvaluation::with('user')
+            ->select('user_id')
+            ->distinct()
+            ->get()
+            ->filter(function ($item) {
+                return $item->user !== null; // pastikan user-nya ada
+            })
+            ->map(function ($item) {
+                return [
+                    'id' => $item->user_id,
+                    'name' => $item->user->name,
+                ];
+            })
+            ->sortBy('name')
+            ->values(); // reset index biar rapih
+
+        // Get distinct departments and positions
+        $departments = EmployeeDepartment::orderBy('department')->get(['id', 'department']);
+        $positions = EmployeePosition::orderBy('position')->get(['id', 'position']);
+
+        // Apply filters
+        if ($request->has('year') && !empty($request->year)) {
+            $query->where('year', $request->year);
+        }
+
+        if ($request->has('user_id') && !empty($request->user_id)) {
+            $query->where('user_id', $request->user_id);
+        }
+
+        if ($request->has('final_grade') && !empty($request->final_grade)) {
+            $query->where('final_grade', $request->final_grade);
+        }
+
+        if ($request->has('performance') && !empty($request->performance)) {
+            $query->where('performance', $request->performance);
+        }
+
+        if ($request->has('discipline') && !empty($request->discipline)) {
+            $query->where('discipline', $request->discipline);
+        }
+
+        if ($request->has('elearning') && !empty($request->elearning)) {
+            $query->where('elearning', $request->elearning);
+        }
+
+        if ($request->has('proposal_grade') && !empty($request->proposal_grade)) {
+            $query->where('proposal_grade', $request->proposal_grade);
+        }
+
+        // Apply department and position filters later after we have processed the evaluations
+
+        $evaluations = $query->paginate(15);
+
+        // Process each evaluation to add department, position, and salary data
+        foreach ($evaluations as $evaluation) {
+            if ($evaluation->user) {
+                // Find the transfer history record closest to but before the evaluation date
+                // Assuming there's a date field in EmployeeFinalEvaluation - if not, use created_at or a similar date field
+                $evalDate = $evaluation->created_at ?? now();
+
+                $history = history_transfer_employee::where('users_id', $evaluation->user_id)
+                    ->where('created_at', '<', $evalDate)
+                    ->orderBy('created_at', 'desc')
+                    ->first();
+
+                if ($history) {
+                    // Use historical position and department
+                    $evaluation->department_id = $history->new_department_id;
+                    $evaluation->position_id = $history->new_position_id;
+                    $evaluation->department = EmployeeDepartment::find($history->new_department_id);
+                    $evaluation->position = EmployeePosition::find($history->new_position_id);
+                } else {
+                    // No history found, use current position and department
+                    $evaluation->department_id = $evaluation->user->department_id;
+                    $evaluation->position_id = $evaluation->user->position_id;
+                    $evaluation->department = $evaluation->user->department;
+                    $evaluation->position = $evaluation->user->position;
+                }
+
+                // Get warning letter information for this employee within the evaluation year
+                $yearStart = $evaluation->year . '-01-01';
+                $yearEnd = $evaluation->year . '-12-31';
+
+                // Get all warning letters for this user in the evaluation year
+                $warningLetters = WarningLetter::with('rule')
+                    ->where('user_id', $evaluation->user_id)
+                    ->whereBetween('created_at', [$yearStart, $yearEnd])
+                    ->get();
+
+                // Group warning letters by type
+                $warningTypes = [];
+                foreach ($warningLetters as $letter) {
+                    if ($letter->rule) {
+                        // Get only the prefix (ST or SP) without the number
+                        $type = preg_replace('/[0-9]+/', '', $letter->rule->name);
+                        $warningTypes[$type] = true;
+                    }
+                }
+
+                // Store warning letter types as a comma-separated string
+                $evaluation->warning_letters = !empty($warningTypes) ? implode(', ', array_keys($warningTypes)) : '-';
+
+                // Get current salary data
+                $salary = EmployeeSalary::where('users_id', $evaluation->user_id)->first();
+                $evaluation->current_salary = $salary ? $salary->basic_salary : 0;
+
+                // Calculate projected new salary if increases are applied
+                $evaluation->projected_salary = $evaluation->current_salary + ($evaluation->salary_increases ?? 0);
+            } else {
+                // Handle case where user might be null
+                $evaluation->department_id = null;
+                $evaluation->position_id = null;
+                $evaluation->department = null;
+                $evaluation->position = null;
+                $evaluation->warning_letters = '-';
+                $evaluation->current_salary = 0;
+                $evaluation->projected_salary = 0;
+            }
+        }
+
+        // Now filter by department and position using the processed data
+        if ($request->has('department_id') && !empty($request->department_id)) {
+            $departmentId = $request->department_id;
+            $evaluations = $evaluations->filter(function ($evaluation) use ($departmentId) {
+                return $evaluation->department_id == $departmentId;
+            });
+        }
+
+        if ($request->has('position_id') && !empty($request->position_id)) {
+            $positionId = $request->position_id;
+            $evaluations = $evaluations->filter(function ($evaluation) use ($positionId) {
+                return $evaluation->position_id == $positionId;
+            });
+        }
+
+        // Get all possible grades for dropdowns
+        $grades = ['A', 'A-', 'B+', 'B', 'B-', 'C+', 'C', 'C-', 'D+', 'D', 'D-', 'E+', 'E', 'F'];
+
+        return view('evaluation.report.final.result.index', compact(
+            'evaluations',
+            'years',
+            'users',
+            'departments',
+            'positions',
+            'grades'
+        ));
+    }
+
+    public function reportFinalResultUpdate(Request $request, $id)
+    {
+        $request->validate([
+            'proposal_grade' => 'nullable|string',
+            'salary_increases' => 'nullable|numeric|min:0',
+        ]);
+
+        $evaluation = EmployeeFinalEvaluation::findOrFail($id);
+        $hasChanges = false;
+        $salaryUpdated = false;
+        $newSalary = 0;
+
+        $data = [];
+
+        // Check if proposal grade changed
+        if ($request->has('proposal_grade') && $evaluation->proposal_grade !== $request->proposal_grade) {
+            $data['proposal_grade'] = $request->proposal_grade;
+            $hasChanges = true;
+        }
+
+
+        // Check if salary increases changed
+        if ($request->has('salary_increases') && $evaluation->salary_increases != $request->salary_increases) {
+            $data['salary_increases'] = $request->salary_increases;
+            $hasChanges = true;
+        }
+
+        // Auto-calculate salary increase if proposal grade is selected
+        if ($request->has('proposal_grade') && !empty($request->proposal_grade) && empty($request->salary_increases)) {
+            $grade = $request->proposal_grade;
+            $salaryRule = RuleEvaluationGradeSalaryFinal::where('grade', $grade)->first();
+
+            if ($salaryRule) {
+                $data['salary_increases'] = $salaryRule->value_salary;
+                $hasChanges = true;
+            }
+        } elseif (empty($evaluation->salary_increases) && !empty($evaluation->final_grade) && empty($request->salary_increases)) {
+            // Use final_grade if proposal_grade is not set
+            $grade = $evaluation->final_grade;
+            $salaryRule = RuleEvaluationGradeSalaryFinal::where('grade', $grade)->first();
+
+            if ($salaryRule) {
+                $data['salary_increases'] = $salaryRule->value_salary;
+                $hasChanges = true;
+            }
+        }
+
+        $message = 'No changes detected';
+
+        if ($hasChanges) {
+
+            $evaluation->update($data);
+
+            // Check if salary should be updated
+            if (isset($data['salary_increases']) && $data['salary_increases'] > 0) {
+                // Update employee's actual salary if there's an increase and it's confirmed
+                $salary = EmployeeSalary::where('users_id', $evaluation->user_id)->first();
+
+                if ($salary) {
+                    DB::transaction(function () use ($salary, $data, &$salaryUpdated, &$newSalary) {
+                        // Store salary history
+                        SalaryHistory::create([
+                            'users_id' => $salary->users_id,
+                            'old_basic_salary' => $salary->basic_salary,
+                            'old_overtime_rate_per_hour' => $salary->overtime_rate_per_hour,
+                            'new_basic_salary' => $salary->basic_salary + $data['salary_increases'],
+                            'new_overtime_rate_per_hour' => $salary->overtime_rate_per_hour
+                        ]);
+
+                        // Update salary
+                        $newSalary = $salary->basic_salary + $data['salary_increases'];
+                        $salary->basic_salary = $newSalary;
+                        $salary->save();
+                        $salaryUpdated = true;
+                    });
+
+                    $message = 'Changes saved successfully and salary updated';
+                } else {
+                    $message = 'Changes saved successfully but employee salary record not found';
+                }
+            } else {
+                $message = 'Changes saved successfully';
+            }
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => $message,
+            'salary_updated' => $salaryUpdated,
+            'new_salary' => $newSalary
+        ]);
+    }
+
+    public function reportFinalResultSaveAll(Request $request)
+    {
+        $request->validate([
+            'data' => 'required|array',
+            'data.*.id' => 'required|integer|exists:employee_final_evaluations,id',
+            'data.*.proposal_grade' => 'nullable|string',
+            'data.*.salary_increases' => 'nullable|numeric|min:0',
+            'confirm_salary_update' => 'nullable|boolean'
+        ]);
+
+        $updatedCount = 0;
+        $salaryUpdatedCount = 0;
+
+        DB::transaction(function () use ($request, &$updatedCount, &$salaryUpdatedCount) {
+            foreach ($request->data as $item) {
+                $evaluation = EmployeeFinalEvaluation::findOrFail($item['id']);
+                $data = [];
+                $hasChanges = false;
+
+                if (isset($item['proposal_grade']) && $evaluation->proposal_grade !== $item['proposal_grade']) {
+                    $data['proposal_grade'] = $item['proposal_grade'];
+                    $hasChanges = true;
+                }
+
+                if (isset($item['salary_increases']) && $evaluation->salary_increases != $item['salary_increases']) {
+                    $data['salary_increases'] = $item['salary_increases'];
+                    $hasChanges = true;
+                }
+
+                if ($hasChanges) {
+                    $evaluation->update($data);
+                    $updatedCount++;
+
+
+                    if (isset($data['salary_increases']) && $data['salary_increases'] > 0) {
+                        $salary = EmployeeSalary::where('users_id', $evaluation->user_id)->first();
+
+                        if ($salary) {
+                            // Store salary history
+                            SalaryHistory::create([
+                                'users_id' => $salary->users_id,
+                                'old_basic_salary' => $salary->basic_salary,
+                                'old_overtime_rate_per_hour' => $salary->overtime_rate_per_hour,
+                                'new_basic_salary' => $salary->basic_salary + $data['salary_increases'],
+                                'new_overtime_rate_per_hour' => $salary->overtime_rate_per_hour
+                            ]);
+
+                            // Update salary
+                            $salary->basic_salary = $salary->basic_salary + $data['salary_increases'];
+                            $salary->save();
+                            $salaryUpdatedCount++;
+                        }
+                    }
+                }
+            }
+        });
+
+        return response()->json([
+            'success' => true,
+            'message' => $updatedCount . ' record(s) updated successfully, ' . $salaryUpdatedCount . ' salary(s) updated'
+        ]);
+    }
+
+
+    public function reportFinalResultGetSalaryValue(Request $request)
+    {
+        $request->validate([
+            'grade' => 'required|string',
+        ]);
+
+        $salaryRule = RuleEvaluationGradeSalaryFinal::where('grade', $request->grade)->first();
+
+        if ($salaryRule) {
+            return response()->json(['value_salary' => $salaryRule->value_salary]);
+        }
+
+        return response()->json(['value_salary' => null]);
+    }
+
+
+    public function reportFinalResultUploadProposal(Request $request, $id)
+    {
+        $request->validate([
+            'file_proposal' => 'required|file|mimes:pdf|max:10240',
+        ]);
+
+        $evaluation = EmployeeFinalEvaluation::with('user')->findOrFail($id);
+
+        // Delete old file if exists
+        if ($evaluation->file_proposal) {
+            Storage::disk('public')->delete($evaluation->file_proposal);
+        }
+
+        // Create directory if it doesn't exist
+        $directory = 'evaluation/report/final/result';
+        Storage::disk('public')->makeDirectory($directory);
+
+        // Create filename based on requirements
+        $filename = 'proposal_salary_' . $evaluation->user->name . '_' . $evaluation->user_id . '_' . $evaluation->year . '.pdf';
+
+        // Store new file
+        $path = $request->file('file_proposal')->storeAs($directory, $filename, 'public');
+        $evaluation->update(['file_proposal' => $path]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'File uploaded successfully',
+            'file_url' => asset('storage/' . $path)
+        ]);
     }
 }

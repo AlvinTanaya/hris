@@ -59,3 +59,88 @@ final report
 
 
 
+// Perbaikan pada metode getFilteredUsers
+public function getFilteredUsers(Request $request)
+{
+    $departmentId = $request->department_id;
+    $positionId = $request->position_id;
+    $monthYear = $request->month_year;
+    $employeeIds = $request->employee_ids ? explode(',', $request->employee_ids) : [];
+
+    if (!$monthYear) {
+        return response()->json([]);
+    }
+
+    $month = Carbon::parse($monthYear)->format('m');
+    $year = Carbon::parse($monthYear)->format('Y');
+    $date = Carbon::parse($monthYear)->endOfMonth();
+
+    // Get existing payroll records for this month
+    $existingPayrollUsers = EmployeePayroll::whereMonth('created_at', $month)
+        ->whereYear('created_at', $year)
+        ->pluck('users_id')
+        ->toArray();
+
+    // Get all active users
+    $query = User::query()
+        ->with(['department', 'position', 'salary'])
+        ->where('status', 'active');
+
+    // Apply department filter if provided
+    if ($departmentId) {
+        $query->where('department_id', $departmentId);
+    }
+
+    // Apply position filter if provided
+    if ($positionId) {
+        $query->where('position_id', $positionId);
+    }
+
+    // Apply employee filter if provided
+    if (!empty($employeeIds)) {
+        $query->whereIn('id', $employeeIds);
+    }
+
+    // Get users based on basic query
+    $users = $query->get();
+    $filteredUsers = [];
+
+    foreach ($users as $user) {
+        // Skip if already in payroll
+        if (in_array($user->id, $existingPayrollUsers)) {
+            continue;
+        }
+
+        // Get latest transfer record before the end of the selected month
+        $latestTransfer = history_transfer_employee::where('users_id', $user->id)
+            ->whereDate('created_at', '<=', $date)
+            ->latest('created_at')
+            ->first();
+
+        // Store historical department and position for display if a transfer exists
+        if ($latestTransfer) {
+            $user->historical_department = EmployeeDepartment::find($latestTransfer->new_department_id);
+            $user->historical_position = EmployeePosition::find($latestTransfer->new_position_id);
+            
+            // Apply department filter if provided
+            if ($departmentId && $latestTransfer->new_department_id != $departmentId) {
+                continue;
+            }
+
+            // Apply position filter if provided
+            if ($positionId && $latestTransfer->new_position_id != $positionId) {
+                continue;
+            }
+        }
+
+        // Get salary and overtime information
+        $this->addSalaryAndOvertimeInfo($user, $date, $month, $year);
+
+        // Calculate absences for this month
+        $user->absences = $this->getAbsencesForMonth($user->id, $month, $year);
+
+        $filteredUsers[] = $user;
+    }
+
+    return response()->json($filteredUsers);
+}

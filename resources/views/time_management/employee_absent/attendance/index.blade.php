@@ -1,8 +1,4 @@
 @extends('layouts.app')
-
-
-
-
 @section('content')
 <div class="container-fluid mt-4">
     <div class="row">
@@ -16,7 +12,7 @@
         <div class="card-header bg-primary text-white mb-1 d-flex justify-content-between align-items-center">
             <h3 class="card-title mb-0">Attendance Records</h3>
             <div class="d-flex">
-                <select id="yearFilter" class="form-control mr-2 me-2" style="width: 100px;">
+                <select id="yearFilter" class="form-control me-2" style="width: 100px;">
                     @foreach ($years as $year)
                     <option value="{{ $year }}" {{ now()->year == $year ? 'selected' : '' }}>
                         {{ $year }}
@@ -24,7 +20,7 @@
                     @endforeach
                 </select>
 
-                <select id="monthFilter" class="form-control mr-2 me-2" style="width: 130px;">
+                <select id="monthFilter" class="form-control me-2" style="width: 130px;">
                     @for ($m = 1; $m <= 12; $m++)
                         <option value="{{ $m }}" {{ date('m') == $m ? 'selected' : '' }}>
                         {{ date('F', mktime(0, 0, 0, $m, 1)) }}
@@ -32,8 +28,12 @@
                         @endfor
                 </select>
 
-                <button class="btn btn-success" id="importBtn">
-                    <i class="fas fa-file-upload"></i> Import Excel
+                <button class="btn btn-success me-2" id="importBtn">
+                    <i class="fas fa-file-upload me-1"></i> Import Excel
+                </button>
+
+                <button class="btn btn-light text-primary" id="addAttendanceBtn">
+                    <i class="fas fa-plus me-1"></i> Add Attendance
                 </button>
             </div>
         </div>
@@ -100,7 +100,86 @@
     </div>
 </div>
 
-@endsection
+
+<!-- Styled Attendance Modal -->
+<div class="modal fade" id="attendanceModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-lg" role="document" style="border-radius: 10px;">
+        <div class="modal-content" style="border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.2);">
+            <div class="modal-header bg-primary text-white" style="border-top-left-radius: 12px; border-top-right-radius: 12px;">
+                <h5 class="modal-title" id="attendanceModalTitle">🕒 Add Attendance Record</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+
+            <div class="modal-body" style="padding: 1.5rem 2rem;">
+                <form id="attendanceForm">
+                    <input type="hidden" id="attendanceId" name="id">
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="employeeSelect" class="form-label fw-semibold">👤 Employee</label>
+                            <select class="form-control select2" id="employeeSelect" name="user_id" required>
+                                <option value="">Select Employee</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="attendanceDate" class="form-label fw-semibold">📅 Date</label>
+                            <input type="date" class="form-control" id="attendanceDate" name="date" required>
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="hourIn" class="form-label fw-semibold">🕘 Hour In</label>
+                            <input type="time" class="form-control" id="hourIn" name="hour_in">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="hourOut" class="form-label fw-semibold">🕔 Hour Out</label>
+                            <input type="time" class="form-control" id="hourOut" name="hour_out">
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-12">
+                            <label for="absentPlace" class="form-label fw-semibold">📍 Absent Place</label>
+                            <input type="text" class="form-control" id="absentPlace" name="absent_place" placeholder="e.g., Office Lobby">
+                        </div>
+                    </div>
+
+                    <div class="row" id="calculatedFieldsSection" style="display:none;">
+                        <div class="col-12">
+                            <div class="card mb-3" style="background: #f9f9f9; border: 1px solid #ddd;">
+                                <div class="card-header bg-light fw-bold">📊 Calculated Information</div>
+                                <div class="card-body">
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <p class="mb-1"><strong>Expected In:</strong> <span id="expectedIn">-</span></p>
+                                            <p class="mb-0"><strong>Expected Out:</strong> <span id="expectedOut">-</span></p>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <p class="mb-1"><strong>Status In:</strong> <span id="statusIn">-</span></p>
+                                            <p class="mb-0"><strong>Status Out:</strong> <span id="statusOut">-</span></p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+
+            <div class="modal-footer" style="padding: 1rem 2rem;">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+                    ❌ Close
+                </button>
+                <button type="button" class="btn btn-primary" id="saveAttendanceBtn" style="box-shadow: 0 2px 8px rgba(0,123,255,0.4);">
+                    💾 Save
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
 
 <style>
     .table-responsive {
@@ -144,42 +223,27 @@
     /* Tooltip Styling */
     .tooltip-custom {
         position: absolute;
-        background-color: rgba(0, 0, 0, 0.9);
+        background-color: rgba(33, 37, 41, 0.95);
         color: white;
-        border-radius: 4px;
-        font-size: 12px;
+        border-radius: 6px;
+        font-size: 13px;
         z-index: 1000;
         display: none;
         pointer-events: none;
-        min-width: 220px;
-        padding: 10px;
-        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        min-width: 250px;
+        padding: 12px;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        border-left: 4px solid #0d6efd;
+        max-width: 350px;
     }
 
     .tooltip-content {
-        padding: 8px;
+        padding: 5px;
     }
 
-    .attendance-cell {
-        cursor: pointer;
-        transition: all 0.2s ease;
-    }
 
-    .attendance-cell:hover {
-        opacity: 0.9;
-    }
 
     /* Status colors */
-    .bg-success {
-        background-color: #28a745 !important;
-        color: white;
-    }
-
-    .bg-warning {
-        background-color: #ffc107 !important;
-        color: black;
-    }
-
     .bg-danger {
         background-color: #dc3545 !important;
         color: white;
@@ -212,7 +276,122 @@
     .DTFC_LeftBodyLiner {
         border-right: 1px solid #dee2e6;
     }
+
+
+    /* Better spacing for pagination controls */
+    .dataTables_paginate {
+        margin-top: 15px !important;
+    }
+
+    .dataTables_paginate .paginate_button {
+        margin: 0 5px !important;
+        padding: 5px 10px !important;
+    }
+
+    /* Enhanced styles for action buttons */
+    .btn-outline-primary,
+    .btn-outline-danger {
+        border-width: 2px;
+        padding: 3px 8px;
+        transition: all 0.3s;
+        font-weight: bold;
+        background-color: rgba(255, 255, 255, 0.9);
+    }
+
+    .btn-outline-primary {
+        border-color: #0d6efd;
+        color: #0d6efd;
+    }
+
+    .btn-outline-danger {
+        border-color: #dc3545;
+        color: #dc3545;
+    }
+
+    .btn-outline-primary:hover {
+        background-color: #0d6efd;
+        color: white;
+        transform: scale(1.05);
+    }
+
+    .btn-outline-danger:hover {
+        background-color: #dc3545;
+        color: white;
+        transform: scale(1.05);
+    }
+
+    /* Improved styling for "Need Action" cells */
+    .bg-danger.need-action {
+        background-color: #ffdddd !important;
+        color: #dc3545 !important;
+        font-weight: bold;
+        border: 1px dashed #dc3545;
+    }
+
+    /* Better action button container */
+    .action-group {
+        display: flex;
+        justify-content: flex-start;
+        align-items: center;
+        margin-top: 5px;
+        background-color: rgba(255, 255, 255, 0.5);
+        padding: 3px;
+        border-radius: 4px;
+    }
+
+    /* Fix for Need Action buttons */
+    .bg-danger.need-action {
+        background-color: #ffdddd !important;
+        color: #dc3545 !important;
+        font-weight: bold;
+        border: 2px dashed #dc3545;
+    }
+
+
+
+    /* Better header styling */
+    .card-header.bg-primary {
+        background: linear-gradient(135deg, #0d6efd, #0a58ca) !important;
+    }
+
+
+
+
+    /* Fix spacing for arrows */
+    .dataTables_wrapper .dataTables_paginate .paginate_button.previous {
+        margin-right: 15px !important;
+    }
+
+    .dataTables_wrapper .dataTables_paginate .paginate_button.next {
+        margin-left: 15px !important;
+    }
+
+    /* Status color refinements */
+    .bg-success {
+        background-color: #198754 !important;
+    }
+
+    .bg-warning {
+        background-color: #fd7e14 !important;
+        color: white !important;
+    }
+
+    .bg-purple {
+        background-color: #6f42c1 !important;
+        color: white !important;
+    }
+
+    /* Improved attendance record cells */
+
+
+    /* Additional hover effect for cells */
+    .attendance-cell:hover {
+        box-shadow: 0 0 5px rgba(0, 0, 150, 0.3);
+        transform: scale(1.02);
+        opacity: 0.9;
+    }
 </style>
+@endsection
 
 @push('scripts')
 <script>
@@ -221,6 +400,327 @@
     let attendanceDataTable = null;
 
     $(document).ready(function() {
+        // Initialize select2 for employee dropdown
+        if ($.fn.select2) {
+            $('.select2').select2({
+                dropdownParent: $('#attendanceModal')
+            });
+        }
+
+        // Open modal when Add Attendance button is clicked
+        $('#addAttendanceBtn').click(function() {
+            $('#attendanceModalTitle').text('Add Attendance Record');
+            $('#attendanceForm')[0].reset();
+            $('#attendanceId').val('');
+            $('#calculatedFieldsSection').hide();
+
+            // Reset employee select and enable it
+            $('#employeeSelect').prop('disabled', false).val('').trigger('change');
+
+            // Enable date input and reset styling
+            $('#attendanceDate').prop('readonly', false).val('');
+            $('#attendanceDate').css({
+                'background-color': '', // clear custom background
+                'color': '', // reset text color
+                'cursor': '' // reset cursor
+            });
+
+            // Load employees for the dropdown
+            loadEmployees();
+
+            // Set today's date as default
+            const today = new Date();
+            const formattedDate = today.toISOString().split('T')[0];
+            $('#attendanceDate').val(formattedDate);
+
+            $('#attendanceModal').modal('show');
+        });
+
+        // Calculate expected hours and status when employee or date changes
+        $('#employeeSelect, #attendanceDate').change(function() {
+            calculateExpectedHours();
+        });
+
+        // Calculate status when time fields change
+        $('#hourIn, #hourOut').change(function() {
+            calculateStatus();
+        });
+
+        // Save attendance record
+        $('#saveAttendanceBtn').click(function() {
+            saveAttendance();
+        });
+
+
+        function loadEmployees() {
+            $.ajax({
+
+                // GET all employees
+                url: '/time_management/employee_absent/employees',
+                method: 'GET',
+                success: function(data) {
+                    const select = $('#employeeSelect');
+                    select.empty().append('<option value="">Select Employee</option>');
+
+                    data.forEach(function(employee) {
+                        select.append(`<option value="${employee.id}">${employee.name} (${employee.employee_id})</option>`);
+                    });
+                },
+                error: function(error) {
+
+                    console.log('asd');
+                    console.error('Error loading employees:', error);
+                    Swal.fire('Error', 'Failed to load employees list', 'error');
+                }
+            });
+        }
+
+        function calculateExpectedHours() {
+            const employeeId = $('#employeeSelect').val();
+            const dateStr = $('#attendanceDate').val();
+
+            if (!employeeId || !dateStr) return;
+
+            $.ajax({
+                // GET expected hours
+                url: '/time_management/employee_absent/attendance/expected-hours',
+
+                method: 'GET',
+                data: {
+                    user_id: employeeId,
+                    date: dateStr
+                },
+                success: function(data) {
+                    if (data.rule_in && data.rule_out) {
+                        $('#expectedIn').text(data.rule_in);
+                        $('#expectedOut').text(data.rule_out);
+                        $('#calculatedFieldsSection').show();
+                    } else {
+                        $('#expectedIn').text('No shift defined');
+                        $('#expectedOut').text('No shift defined');
+                        $('#calculatedFieldsSection').show();
+                    }
+                },
+                error: function(error) {
+                    console.error('Error calculating expected hours:', error);
+                    $('#calculatedFieldsSection').hide();
+                }
+            });
+        }
+
+        // Calculate status based on times
+        function calculateStatus() {
+            const hourIn = $('#hourIn').val();
+            const hourOut = $('#hourOut').val();
+            const expectedIn = $('#expectedIn').text();
+            const expectedOut = $('#expectedOut').text();
+
+            if (expectedIn === 'No shift defined' || expectedIn === '-') return;
+
+            // Logic for status_in
+            if (hourIn && expectedIn) {
+                const actualIn = new Date(`2000-01-01T${hourIn}`);
+                const ruleIn = new Date(`2000-01-01T${expectedIn}`);
+
+                if (actualIn <= ruleIn) {
+                    $('#statusIn').text('early').removeClass('text-danger').addClass('text-success');
+                } else {
+                    $('#statusIn').text('late').removeClass('text-success').addClass('text-danger');
+                }
+            } else {
+                $('#statusIn').text('-').removeClass('text-success text-danger');
+            }
+
+            // Logic for status_out
+            if (hourOut && expectedOut) {
+                const actualOut = new Date(`2000-01-01T${hourOut}`);
+                const ruleOut = new Date(`2000-01-01T${expectedOut}`);
+
+                if (actualOut >= ruleOut) {
+                    $('#statusOut').text('late').removeClass('text-danger').addClass('text-success');
+                } else {
+                    $('#statusOut').text('early').removeClass('text-success').addClass('text-danger');
+                }
+            } else {
+                $('#statusOut').text('-').removeClass('text-success text-danger');
+            }
+        }
+
+        // Save attendance record
+        function saveAttendance() {
+            const formData = {
+                id: $('#attendanceId').val(),
+                user_id: $('#employeeSelect').val(),
+                date: $('#attendanceDate').val(),
+                hour_in: $('#hourIn').val() || null,
+                hour_out: $('#hourOut').val() || null,
+                absent_place: $('#absentPlace').val() || null
+            };
+
+            // Validate required fields
+            if (!formData.user_id || !formData.date) {
+                Swal.fire('Error', 'Please select an employee and date', 'error');
+                return;
+            }
+
+            // Show loading
+            Swal.fire({
+                title: 'Saving...',
+                text: 'Please wait while we save the attendance record',
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+
+            // Send to server
+            $.ajax({
+
+                url: '/time_management/employee_absent/attendance',
+
+                method: formData.id ? 'PUT' : 'POST',
+                data: JSON.stringify(formData),
+                contentType: 'application/json',
+                headers: {
+                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                },
+                success: function(response) {
+                    Swal.fire({
+                        title: 'Success',
+                        text: 'Attendance record saved successfully',
+                        icon: 'success',
+                        confirmButtonText: 'OK'
+                    }).then((result) => {
+                        $('#attendanceModal').modal('hide');
+                        loadAttendanceData(); // Reload the table
+                    });
+                },
+                error: function(xhr) {
+                    let errorMessage = 'Failed to save attendance record';
+                    if (xhr.responseJSON && xhr.responseJSON.message) {
+                        errorMessage += ': ' + xhr.responseJSON.message;
+                    }
+
+                    Swal.fire({
+                        title: 'Error',
+                        text: errorMessage,
+                        icon: 'error',
+                        confirmButtonText: 'OK'
+                    });
+                }
+            });
+        }
+
+        // Edit these parts in your script section:
+
+        // Make sure these functions are defined in the global scope
+        window.editAttendance = function(id) {
+            // Show loading
+            Swal.fire({
+                title: 'Loading...',
+                text: 'Fetching attendance record',
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+
+            // Fetch the attendance details
+            $.ajax({
+                url: `/time_management/employee_absent/attendance/${id}`,
+                method: 'GET',
+                success: function(data) {
+                    Swal.close();
+
+                    $('#attendanceModalTitle').text('Edit Attendance Record');
+                    $('#attendanceId').val(id);
+
+                    // Load employees for the dropdown
+                    loadEmployees();
+
+                    setTimeout(() => {
+                        // Set values
+                        $('#employeeSelect').val(data.user_id).trigger('change');
+                        $('#attendanceDate').val(data.date);
+                        $('#hourIn').val(data.hour_in);
+                        $('#hourOut').val(data.hour_out);
+                        $('#absentPlace').val(data.absent_place);
+
+                        // Make employee select and date readonly
+                        $('#employeeSelect').prop('disabled', true);
+                        $('#attendanceDate').prop('readonly', true)
+                            .css({
+                                'background-color': '#e9ecef',
+                                'color': '#495057',
+                                'cursor': 'not-allowed'
+                            });
+
+
+                        // Set expected hours and status
+                        $('#expectedIn').text(data.rule_in || '-');
+                        $('#expectedOut').text(data.rule_out || '-');
+                        $('#statusIn').text(data.status_in || '-');
+                        $('#statusOut').text(data.status_out || '-');
+
+                        $('#calculatedFieldsSection').show();
+                        $('#attendanceModal').modal('show');
+                    }, 300);
+
+                },
+                error: function(error) {
+                    console.error('Error loading attendance record:', error);
+                    Swal.fire('Error', 'Failed to load attendance record', 'error');
+                }
+            });
+        };
+
+        window.deleteAttendance = function(id) {
+            console.log("asd");
+            Swal.fire({
+                title: 'Are you sure?',
+                text: "You won't be able to revert this!",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#3085d6',
+                confirmButtonText: 'Yes, delete it!'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    // Delete the record
+                    $.ajax({
+                        url: `/time_management/employee_absent/attendance/${id}`,
+                        method: 'DELETE',
+                        headers: {
+                            'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                        },
+                        success: function() {
+                            Swal.fire(
+                                'Deleted!',
+                                'Attendance record has been deleted.',
+                                'success'
+                            );
+                            loadAttendanceData(); // Reload the table
+                        },
+                        error: function(xhr) {
+                            let errorMessage = 'Failed to delete attendance record';
+                            if (xhr.responseJSON && xhr.responseJSON.message) {
+                                errorMessage += ': ' + xhr.responseJSON.message;
+                            }
+
+                            Swal.fire({
+                                title: 'Error',
+                                text: errorMessage,
+                                icon: 'error',
+                                confirmButtonText: 'OK'
+                            });
+                        }
+                    });
+                }
+            });
+        };
+
+
+
         // Configure DataTables error handling
         $.fn.dataTable.ext.errMode = 'none';
         $.fn.dataTable.ext.errMode = function(settings, helpPage, message) {
@@ -533,7 +1033,7 @@
         return date.getDay() === 0; // 0 is Sunday in JavaScript
     }
 
-    // Optimized function to render attendance table
+    // Optimized function to render attendance table dengan tampilan bersih seperti Image 2
     function renderAttendanceTable(data, year, month, holidays) {
         // Clear existing table data
         $('#date-headers').empty();
@@ -648,7 +1148,6 @@
 
                         // Custom styling for different leave types
                         switch (dayData.leave_type) {
-
                             case 'sick_leave':
                                 displayText = 'Sick';
                                 bgClass = 'bg-danger text-white';
@@ -692,32 +1191,37 @@
                             if (isLate) {
                                 if (dayData.has_late_arrival_request) {
                                     inClass = 'bg-primary text-white'; // Approved late (blue)
-                                    lateIndicator = '<i class="fas fa-check-circle ml-1"></i>';
+                                    lateIndicator = '<i class="fas fa-check-circle ms-1"></i>';
                                 } else {
                                     inClass = 'bg-danger text-white'; // Unapproved late (red)
-                                    lateIndicator = '<i class="fas fa-exclamation-circle ml-1"></i>';
+                                    lateIndicator = '<i class="fas fa-exclamation-circle ms-1"></i>';
                                 }
                             } else if (isEarly) {
                                 inClass = 'bg-info text-white'; // Early arrival (different color)
-                                lateIndicator = '<i class="fas fa-arrow-down ml-1"></i>';
+                                lateIndicator = '<i class="fas fa-arrow-down ms-1"></i>';
                             }
 
-                            inCell.addClass(inClass).html(`${dayData.hour_in.split(':').slice(0, 2).join(':')}${lateIndicator}`);
+                            // Buat tampilan waktu dengan format yang lebih rapi
+                            const timeDisplay = $('<div class="time-display d-flex justify-content-center align-items-center"></div>');
+                            timeDisplay.html(`${dayData.hour_in.split(':').slice(0, 2).join(':')}${lateIndicator}`);
+
+                            inCell.addClass(inClass).html('');
+                            inCell.append(timeDisplay);
 
                             const inTooltipData = {
                                 ...dayData,
                                 isInCell: true,
                                 tooltipExtra: isLate ?
                                     `<p class="${dayData.has_late_arrival_request ? 'text-primary' : 'text-danger'}">
-                <i class="fas ${dayData.has_late_arrival_request ? 'fa-check-circle' : 'fa-exclamation-circle'}"></i>
-                <strong>${dayData.has_late_arrival_request ? 'Approved' : 'Unapproved'} Late:</strong> 
-                ${dayData.late_minutes} minutes
-            </p>` : (isEarly ?
+                                <i class="fas ${dayData.has_late_arrival_request ? 'fa-check-circle' : 'fa-exclamation-circle'}"></i>
+                                <strong>${dayData.has_late_arrival_request ? 'Approved' : 'Unapproved'} Late:</strong> 
+                                ${dayData.late_minutes} minutes
+                            </p>` : (isEarly ?
                                         `<p class="text-info">
-                <i class="fas fa-arrow-down"></i>
-                <strong>Early Arrival:</strong> 
-                ${Math.abs(dayData.late_minutes)} minutes
-            </p>` : '')
+                                    <i class="fas fa-arrow-down"></i>
+                                    <strong>Early Arrival:</strong> 
+                                    ${Math.abs(dayData.late_minutes)} minutes
+                                </p>` : '')
                             };
                             inCell.data('details', inTooltipData);
                         }
@@ -733,36 +1237,82 @@
                             if (isEarly) {
                                 if (dayData.has_early_departure_request) {
                                     outClass = 'bg-primary text-white'; // Approved early (blue)
-                                    earlyIndicator = '<i class="fas fa-check-circle ml-1"></i>';
+                                    earlyIndicator = '<i class="fas fa-check-circle ms-1"></i>';
                                 } else {
                                     outClass = dayData.early_minutes > 10 ? 'bg-danger text-white' : 'bg-warning'; // Unapproved early
-                                    earlyIndicator = '<i class="fas fa-exclamation-circle ml-1"></i>';
+                                    earlyIndicator = '<i class="fas fa-exclamation-circle ms-1"></i>';
                                 }
                             } else if (isLate) {
                                 outClass = 'bg-info text-white'; // Stayed late
-                                earlyIndicator = '<i class="fas fa-arrow-up ml-1"></i>';
+                                earlyIndicator = '<i class="fas fa-arrow-up ms-1"></i>';
                             }
 
-                            outCell.addClass(outClass).html(`${dayData.hour_out.split(':').slice(0, 2).join(':')}${earlyIndicator}`);
+                            // Buat tampilan waktu dengan format yang lebih rapi
+                            const timeDisplay = $('<div class="time-display d-flex justify-content-center align-items-center"></div>');
+                            timeDisplay.html(`${dayData.hour_out.split(':').slice(0, 2).join(':')}${earlyIndicator}`);
+
+                            outCell.addClass(outClass).html('');
+                            outCell.append(timeDisplay);
 
                             const outTooltipData = {
                                 ...dayData,
                                 isOutCell: true,
                                 tooltipExtra: isEarly ?
                                     `<p class="${dayData.has_early_departure_request ? 'text-primary' : 'text-danger'}">
-                <i class="fas ${dayData.has_early_departure_request ? 'fa-check-circle' : 'fa-exclamation-circle'}"></i>
-                <strong>${dayData.has_early_departure_request ? 'Approved' : 'Unapproved'} Early:</strong> 
-                ${dayData.early_minutes} minutes
-            </p>` : (isLate ?
+                                <i class="fas ${dayData.has_early_departure_request ? 'fa-check-circle' : 'fa-exclamation-circle'}"></i>
+                                <strong>${dayData.has_early_departure_request ? 'Approved' : 'Unapproved'} Early:</strong> 
+                                ${dayData.early_minutes} minutes
+                            </p>` : (isLate ?
                                         `<p class="text-info">
-                <i class="fas fa-arrow-up"></i>
-                <strong>Stayed Late:</strong> 
-                ${Math.abs(dayData.early_minutes)} minutes
-            </p>` : '')
+                                    <i class="fas fa-arrow-up"></i>
+                                    <strong>Stayed Late:</strong> 
+                                    ${Math.abs(dayData.early_minutes)} minutes
+                                </p>` : '')
                             };
                             outCell.data('details', outTooltipData);
                         }
+
+                        // Buat container untuk tombol-tombol dengan tampilan yang lebih rapi
+                        const buttonContainer = $('<div class="d-flex justify-content-center mt-2 button-container"></div>');
+
+                        // Tambahkan styling tombol yang lebih bagus seperti di Image 2
+                        const editBtn = $('<button class="btn btn-sm me-1" style="background: white; border: 1px solid #ccc;" title="Edit Record"><i class="fas fa-edit text-primary"></i></button>');
+                        editBtn.on('click', function(e) {
+                            e.stopPropagation();
+                            editAttendance(dayData.id); // Panggil fungsi langsung seperti kode asli
+                        });
+
+                        const deleteBtn = $('<button class="btn btn-sm" style="background: white; border: 1px solid #ccc;" title="Delete Record"><i class="fas fa-trash text-danger"></i></button>');
+                        deleteBtn.on('click', function(e) {
+                            e.stopPropagation();
+                            deleteAttendance(dayData.id); // Panggil fungsi langsung seperti kode asli
+                        });
+
+                        buttonContainer.append(editBtn).append(deleteBtn);
+
+                        // Tambahkan tombol ke cell yang sesuai
+                        if (dayData.hour_in) {
+                            inCell.append(buttonContainer);
+                        } else if (dayData.hour_out) {
+                            outCell.append(buttonContainer);
+                        }
+
+                        // Store the record ID in the cell's data
+                        inCell.data('record-id', dayData.id);
+                        outCell.data('record-id', dayData.id);
                     }
+                } else {
+                    // Tampilan "Need Action!" yang lebih bersih
+                    const needActionContent = `
+                <div class="d-flex flex-column justify-content-center align-items-center h-100">
+                    <div><i class="fas fa-exclamation-triangle text-danger"></i></div>
+                    <div class="mt-1"><small>Need Action!</small></div>
+                </div>`;
+
+                    inCell.addClass('attendance-cell bg-danger text-white need-action')
+                        .html(needActionContent);
+                    outCell.addClass('attendance-cell bg-danger text-white need-action')
+                        .html(needActionContent);
                 }
 
                 row.append(inCell);
@@ -771,13 +1321,55 @@
 
             $('#attendanceBody').append(row);
         });
+
+        // Tambahkan CSS untuk memperbaiki tampilan tombol dan cell
+        $('<style>')
+            .prop('type', 'text/css')
+            .html(`
+        .attendance-cell {
+            position: relative;
+            min-height: 70px;
+            padding: 8px 4px;
+            text-align: center;
+        }
+        .time-display {
+            font-size: 16px;
+            font-weight: bold;
+            padding: 2px;
+            height: 26px;
+        }
+        .button-container {
+            margin-top: 5px;
+        }
+        .button-container button {
+            width: 32px;
+            height: 32px;
+            padding: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .need-action {
+      
+            align-items: center;
+            justify-content: center;
+        }
+    `)
+            .appendTo('head');
     }
 
-    // Enhanced tooltip setup with additional holiday information handling
+
+    // setupTooltip function
     function setupTooltip() {
         $(document).on('mouseenter', '.attendance-cell', function(e) {
             const data = $(this).data('details');
             const holidayInfo = $(this).data('holiday-info');
+
+            // Don't show tooltip when hovering over buttons
+            if ($(e.target).closest('button').length) {
+                return;
+            }
 
             // Handle holiday tooltips
             if (holidayInfo) {
@@ -796,29 +1388,12 @@
 
                 tooltipContent += `</div>`;
 
-                // Set tooltip content and position
+                // Set tooltip content
                 $('#timeTooltip .tooltip-content').html(tooltipContent);
-                // In your setupTooltip() function, replace the tooltip positioning code with this:
-                const cellPosition = $(this).offset();
-                const tooltipWidth = $('#timeTooltip').outerWidth();
-                const windowWidth = $(window).width();
-                const cellWidth = $(this).outerWidth();
 
-                // Calculate the left position - try to keep it within view
-                let leftPos = cellPosition.left - tooltipWidth;
-
-                // If positioning to the left would push it off-screen, position it to the right
-                if (leftPos < 10) {
-                    leftPos = cellPosition.left + cellWidth;
-                }
-
-                $('#timeTooltip').css({
-                    top: cellPosition.top + 5, // Position it at the top of the cell instead of below
-                    left: leftPos,
-                    display: 'block'
-                });
-
-                return; // Exit early for holiday tooltips
+                // Improved positioning logic
+                positionTooltip(this);
+                return;
             }
 
             // If no holiday info and no details data, exit
@@ -919,31 +1494,56 @@
             // Set tooltip content
             $('#timeTooltip .tooltip-content').html(tooltipContent);
 
-            // In your setupTooltip() function, replace the tooltip positioning code with this:
-            const cellPosition = $(this).offset();
-            const tooltipWidth = $('#timeTooltip').outerWidth();
-            const windowWidth = $(window).width();
-            const cellWidth = $(this).outerWidth();
-
-            // Calculate the left position - try to keep it within view
-            let leftPos = cellPosition.left - tooltipWidth;
-
-            // If positioning to the left would push it off-screen, position it to the right
-            if (leftPos < 10) {
-                leftPos = cellPosition.left + cellWidth;
-            }
-
-            $('#timeTooltip').css({
-                top: cellPosition.top + 5, // Position it at the top of the cell instead of below
-                left: leftPos,
-                display: 'block'
-            });
+            // Position tooltip
+            positionTooltip(this);
         });
 
         $(document).on('mouseleave', '.attendance-cell', function() {
             $('#timeTooltip').hide();
         });
+
+        // Add an event handler to hide tooltip when hovering over buttons
+        $(document).on('mouseenter', '.attendance-cell button', function() {
+            $('#timeTooltip').hide();
+        });
     }
+
+    // Helper function to position tooltip better
+    function positionTooltip(element) {
+        const cellPosition = $(element).offset();
+        const tooltipWidth = $('#timeTooltip').outerWidth();
+        const windowWidth = $(window).width();
+        const cellWidth = $(element).outerWidth();
+        const cellHeight = $(element).outerHeight();
+
+        // Position tooltip near the cursor but slightly offset to the left
+        let leftPos = cellPosition.left - (tooltipWidth / 2);
+
+        // Ensure tooltip stays within screen bounds
+        if (leftPos < 10) {
+            leftPos = 10;
+        } else if (leftPos + tooltipWidth > windowWidth - 20) {
+            leftPos = windowWidth - tooltipWidth - 20;
+        }
+
+        // Position vertically below the cell
+        let topPos = cellPosition.top + cellHeight + 5;
+
+        // If tooltip would go below viewport, show it above the cell instead
+        if (topPos + $('#timeTooltip').outerHeight() > $(window).height() - 10) {
+            topPos = cellPosition.top - $('#timeTooltip').outerHeight() - 10;
+        }
+
+        $('#timeTooltip').css({
+            top: topPos,
+            left: leftPos,
+            display: 'block',
+            opacity: 0
+        }).animate({
+            opacity: 1
+        }, 200);
+    }
+
 
     // Fetch holiday data from API and custom sources
     function fetchHolidays(year) {
