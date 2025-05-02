@@ -1,5 +1,6 @@
 <?php
 
+// RequestShiftChange Model Update
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -23,7 +24,10 @@ class RequestShiftChange extends Model
         'date_change_start',
         'date_change_end',
         'declined_reason',
-        'answer_user_id'
+        'dept_approval_status',
+        'dept_approval_user_id',
+        'admin_approval_status',
+        'admin_approval_user_id',
     ];
 
     // Relationship with user who requested the change
@@ -60,5 +64,39 @@ class RequestShiftChange extends Model
     public function ruleExchangeAfter()
     {
         return $this->belongsTo(rule_shift::class, 'rule_user_exchange_id_after');
+    }
+
+    // Add these relationships to your RequestShiftChange model
+    public function deptApprovalUser()
+    {
+        return $this->belongsTo(User::class, 'dept_approval_user_id');
+    }
+
+    public function adminApprovalUser()
+    {
+        return $this->belongsTo(User::class, 'admin_approval_user_id');
+    }
+
+
+    public function isDeptDeclined()
+    {
+        return $this->dept_approval_status === 'Declined';
+    }
+
+
+    public function isAdminDeclined()
+    {
+        return $this->admin_approval_status === 'Declined';
+    }
+
+    public function getDeclinedByUser()
+    {
+        if ($this->isAdminDeclined()) {
+            return $this->adminApprovalUser;
+        } elseif ($this->isDeptDeclined()) {
+            return $this->deptApprovalUser;
+        }
+
+        return null;
     }
 }

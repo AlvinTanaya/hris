@@ -180,8 +180,18 @@ Route::middleware('auth')->group(function () {
     Route::put('/time_management/set_shift/update/{id}', [TimeManagementController::class, 'set_shift_update']);
     Route::delete('/time_management/set_shift/delete/{id}', [TimeManagementController::class, 'set_shift_destroy']);
     Route::post('/time_management/set_shift/exchange', [TimeManagementController::class, 'exchangeShifts'])->name('time.set.shift.exchange');
+
+
+
     Route::post('/time_management/set_shift/approve/{id}', [TimeManagementController::class, 'approveShiftChange'])->name('change_shift.approve');
     Route::post('/time_management/set_shift/decline/{id}', [TimeManagementController::class, 'declineShiftChange'])->name('change_shift.decline');
+
+    Route::get('/time_management/request_shift/index', [TimeManagementController::class, 'indexShiftChange'])->name('change_shift.index');
+    Route::post('/time_management/request_shift/approve/{id}', [TimeManagementController::class, 'approveShiftChange'])->name('change_shift.approve');
+    Route::post('/time_management/request_shift/decline/{id}', [TimeManagementController::class, 'declineShiftChange'])->name('change_shift.decline');
+    Route::get('/time_management/request_shift/{id}', [TimeManagementController::class, 'showShiftChange'])->name('change_shift.show');
+
+
     // Attendance
     Route::get('/time_management/employee_absent/attendance/index', [TimeManagementController::class, 'employee_absent_index'])->name('time.employee.absent.index');
     Route::get('/time_management/employee_absent/attendance/data', [TimeManagementController::class, 'getAttendanceData'])->name('attendance.data');

@@ -690,6 +690,7 @@ class PayrollController extends Controller
         // Get overtime hours for this month
         $user->overtime_hours = EmployeeOvertime::where('user_id', $user->id)
             ->where('approval_status', 'Approved')
+            ->where('overtime_type', 'Paid_Overtime')
             ->whereMonth('date', $month)
             ->whereYear('date', $year)
             ->sum('total_hours');

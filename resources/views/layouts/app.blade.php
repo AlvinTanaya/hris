@@ -22,7 +22,7 @@
     <link href="https://cdn.datatables.net/buttons/2.4.1/css/buttons.dataTables.min.css" rel="stylesheet">
     <link href="https://cdn.datatables.net/responsive/2.4.1/css/responsive.dataTables.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
+
 
     @vite(['resources/sass/app.scss'])
     <style>
@@ -694,14 +694,19 @@
                             </a>
                             <div class="shift-submenu" style="display: none; padding-left: 15px;">
                                 <a href="{{ url('/time_management/rule_shift/index') }}" class="nav-link">
-                                    <i class="fas fa-calendar-alt"></i>
+                                    <i class="fas fa-cogs"></i> {{-- Ikon untuk pengaturan aturan --}}
                                     <span>Rule</span>
                                 </a>
                                 <a href="{{ url('/time_management/set_shift/index') }}" class="nav-link">
-                                    <i class="fas fa-users-cog"></i>
+                                    <i class="fas fa-user-clock"></i> {{-- Ikon untuk penjadwalan shift --}}
                                     <span>Set Shift</span>
                                 </a>
+                                <a href="{{ route('change_shift.index')}}" class="nav-link">
+                                    <i class="fas fa-exchange-alt"></i> {{-- Ikon untuk permintaan/perubahan shift --}}
+                                    <span>Request Shift</span>
+                                </a>
                             </div>
+
 
                             <a href="#" class="nav-link dropdown-toggle attendance-dropdown">
                                 <i class="fa-solid fa-clipboard-user"></i>
@@ -1390,10 +1395,18 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
+
+    <!-- DataTables CSS & JS -->
+    <link href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css" rel="stylesheet">
+    <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+
     <!-- Chart Libraries -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
     <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+
+    <!-- SweetAlert2 -->
+    <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
 
 
 

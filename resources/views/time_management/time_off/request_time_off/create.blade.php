@@ -880,11 +880,29 @@
         // Add loading indicator
         showLoading(true);
 
-        // Convert date to get day name
-        const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+        // Create a date object from the selected date
         const selectedDate = new Date(date);
-        const dayName = dayNames[selectedDate.getDay()];
-        const dayIndex = selectedDate.getDay(); // 0 for Sunday, 1 for Monday, etc.
+
+        // Get the day in server format
+        // IMPORTANT: Based on the data structure, it appears the server uses 0-based index
+        // where 0 = Monday, 1 = Tuesday, ..., 5 = Saturday (no Sunday in array)
+        const serverDayNames = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+        const jsDayIndex = selectedDate.getDay(); // 0 for Sunday, 1 for Monday, etc.
+
+        // Convert JavaScript day index to server day index
+        // JavaScript: 0=Sunday, 1=Monday, ..., 6=Saturday
+        // Server:     0=Monday, 1=Tuesday, ..., 5=Saturday
+        let serverDayIndex;
+        if (jsDayIndex === 0) {
+            // Handle Sunday specially as it's not in the server array
+            serverDayIndex = -1; // Will be handled in data processing
+        } else {
+            // For other days, adjust the index (subtract 1 from JS day index)
+            serverDayIndex = jsDayIndex - 1;
+        }
+
+        // Get day name for display/API request
+        const dayName = jsDayIndex === 0 ? 'Sunday' : serverDayNames[serverDayIndex];
 
         $.ajax({
             url: "{{ url('time_management/time_off/request_time_off/get-employee-shift') }}",
@@ -908,14 +926,30 @@
                         // If they're JSON strings, parse them and get the value for the specific day
                         if (typeof shiftData.hour_start === 'string' && shiftData.hour_start.includes('[')) {
                             const hourStartArray = JSON.parse(shiftData.hour_start);
-                            hourStart = hourStartArray[dayIndex];
+                            // Make sure we're using the server's day index for the arrays
+                            // For Sunday (when serverDayIndex is -1), use default values
+                            if (serverDayIndex === -1) {
+                                hourStart = "08:00"; // Default for Sunday or fallback
+                                console.log("Sunday selected, using default start time");
+                            } else {
+                                hourStart = hourStartArray[serverDayIndex];
+                                console.log("Using start time for day index:", serverDayIndex, "value:", hourStart);
+                            }
                         } else {
                             hourStart = shiftData.hour_start;
                         }
 
                         if (typeof shiftData.hour_end === 'string' && shiftData.hour_end.includes('[')) {
                             const hourEndArray = JSON.parse(shiftData.hour_end);
-                            hourEnd = hourEndArray[dayIndex];
+                            // Make sure we're using the server's day index for the arrays
+                            // For Sunday (when serverDayIndex is -1), use default values
+                            if (serverDayIndex === -1) {
+                                hourEnd = "17:00"; // Default for Sunday or fallback
+                                console.log("Sunday selected, using default end time");
+                            } else {
+                                hourEnd = hourEndArray[serverDayIndex];
+                                console.log("Using end time for day index:", serverDayIndex, "value:", hourEnd);
+                            }
                         } else {
                             hourEnd = shiftData.hour_end;
                         }
@@ -944,10 +978,10 @@
                     $('#shift_hour_start').val(hourStart);
                     $('#shift_hour_end').val(hourEnd);
 
-                    // Display shift info message
+                    // Display shift info message with day information for clarity
                     const shiftInfoMessage = `<div class="alert alert-info">
-                    Jadwal shift Anda: ${hourStart} - ${hourEnd}
-                </div>`;
+                Jadwal shift Anda untuk hari ${dayName}: ${hourStart} - ${hourEnd}
+            </div>`;
 
                     // Remove existing alert if any
                     $('#shift-info-alert').remove();
@@ -956,7 +990,6 @@
                     $(shiftInfoMessage).attr('id', 'shift-info-alert')
                         .insertBefore('#time-inputs-container');
 
-                    // Auto-fill fields based on type
                     // Auto-fill fields based on type
                     if (type === 'siang') {
                         // For "masuk siang", fill hour_in with shift start time
@@ -1001,6 +1034,7 @@
             }
         });
     }
+
 
 
     // Helper function to show loading state

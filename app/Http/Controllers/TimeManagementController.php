@@ -203,70 +203,46 @@ class TimeManagementController extends Controller
 
     public function set_shift_index(Request $request)
     {
-        // Original code for employee shifts with modification to include transfer history
         $query = EmployeeShift::with(['user', 'ruleShift', 'user.position', 'user.department']);
 
-        // Filter berdasarkan tipe shift
         if ($request->has('type') && $request->type != '') {
             $query->where('rule_id', $request->type);
         }
 
-        // Filter berdasarkan employee
         if ($request->has('employee') && $request->employee != '') {
             $query->where('user_id', $request->employee);
         }
 
-        // Filter berdasarkan tanggal mulai
         if ($request->has('start_date') && $request->start_date != '') {
             $query->whereDate('start_date', $request->start_date);
         }
 
-        // For current shifts, we'll handle position/department filtering after getting results
-
         $employeeShifts = $query->whereNull('end_date')->get()->groupBy('rule_id');
 
-        // Get historical position and department data for each shift
         foreach ($employeeShifts as $ruleId => $shifts) {
             foreach ($shifts as $shift) {
-                // For active shifts (end_date is null), get the most recent transfer record's NEW position/department
                 $latestTransfer = history_transfer_employee::where('users_id', $shift->user_id)
                     ->orderBy('created_at', 'desc')
                     ->first();
 
-                if ($latestTransfer) {
-                    // For active shifts, use the most recent transfer's NEW position and department
-                    $shift->historical_position = $latestTransfer->newPosition;
-                    $shift->historical_department = $latestTransfer->newDepartment;
-                } else {
-                    // If no transfer record found, use current position/department
-                    $shift->historical_position = $shift->user->position;
-                    $shift->historical_department = $shift->user->department;
-                }
+                $shift->historical_position = $latestTransfer->newPosition ?? $shift->user->position;
+                $shift->historical_department = $latestTransfer->newDepartment ?? $shift->user->department;
             }
         }
 
-        // Post-processing filter for position and department using historical data
         if ($request->has('position') && $request->position != '') {
             $employeeShifts = $employeeShifts->map(function ($shifts) use ($request) {
-                return $shifts->filter(function ($shift) use ($request) {
-                    return $shift->historical_position == $request->position;
-                });
-            })->filter(function ($shifts) {
-                return $shifts->count() > 0;
-            });
+                return $shifts->filter(fn($shift) => $shift->historical_position == $request->position);
+            })->filter(fn($shifts) => $shifts->count() > 0);
         }
 
         if ($request->has('department') && $request->department != '') {
             $employeeShifts = $employeeShifts->map(function ($shifts) use ($request) {
-                return $shifts->filter(function ($shift) use ($request) {
-                    return $shift->historical_department == $request->department;
-                });
-            })->filter(function ($shifts) {
-                return $shifts->count() > 0;
-            });
+                return $shifts->filter(fn($shift) => $shift->historical_department == $request->department);
+            })->filter(fn($shifts) => $shifts->count() > 0);
         }
 
-        // History section - query modification
+        // History
         $query_history = EmployeeShift::with(['user', 'ruleShift', 'user.position', 'user.department']);
 
         if ($request->has('type_history') && $request->type_history != '') {
@@ -285,138 +261,36 @@ class TimeManagementController extends Controller
             $query_history->whereDate('end_date', $request->end_date_history);
         }
 
-        // Remove position/department filtering from query - will be done post-query
         $employeeShiftsHistory = $query_history->whereNotNull('end_date')->get()->groupBy('rule_id');
 
-        // Get historical position and department data for each history shift (with end date)
         foreach ($employeeShiftsHistory as $ruleId => $shifts) {
             foreach ($shifts as $shift) {
-                // For completed shifts (end_date is not null), find the transfer record at the time of start_date
                 $historicalTransfer = history_transfer_employee::where('users_id', $shift->user_id)
                     ->where('created_at', '<', $shift->start_date)
                     ->orderBy('created_at', 'desc')
                     ->first();
 
-                if ($historicalTransfer) {
-                    // Store historical position and department information
-                    $shift->historical_position = $historicalTransfer->oldPosition;
-                    $shift->historical_department = $historicalTransfer->oldDepartment;
-                } else {
-                    // If no transfer record found, use current position/department
-                    $shift->historical_position = $shift->user->position;
-                    $shift->historical_department = $shift->user->department;
-                }
+                $shift->historical_position = $historicalTransfer->oldPosition ?? $shift->user->position;
+                $shift->historical_department = $historicalTransfer->oldDepartment ?? $shift->user->department;
             }
         }
 
-        // Post-processing filter for position and department using historical data
         if ($request->has('position_history') && $request->position_history != '') {
             $employeeShiftsHistory = $employeeShiftsHistory->map(function ($shifts) use ($request) {
-                return $shifts->filter(function ($shift) use ($request) {
-                    return $shift->historical_position == $request->position_history;
-                });
-            })->filter(function ($shifts) {
-                return $shifts->count() > 0;
-            });
+                return $shifts->filter(fn($shift) => $shift->historical_position == $request->position_history);
+            })->filter(fn($shifts) => $shifts->count() > 0);
         }
 
         if ($request->has('department_history') && $request->department_history != '') {
             $employeeShiftsHistory = $employeeShiftsHistory->map(function ($shifts) use ($request) {
-                return $shifts->filter(function ($shift) use ($request) {
-                    return $shift->historical_department == $request->department_history;
-                });
-            })->filter(function ($shifts) {
-                return $shifts->count() > 0;
-            });
-        }
-
-        // Also fetch user's own pending requests for the "requests" tab
-        $pendingRequests = RequestShiftChange::where('user_id', Auth::user()->id)
-            ->where('status_change', 'Pending')
-            ->get();
-
-        // Fetch all user's requests for the "requests" tab
-        $allRequests = RequestShiftChange::where('user_id', Auth::user()->id)
-            ->orderBy('created_at', 'desc')
-            ->get();
-
-        // Shift Request filter - For admin tab
-        $requestQuery = RequestShiftChange::with([
-            'user',
-            'ruleShiftBefore',
-            'ruleShiftAfter',
-            'exchangeUser',
-            'ruleExchangeBefore',
-            'ruleExchangeAfter',
-            'user.position',
-            'user.department'
-        ]);
-
-        if ($request->has('employee_request') && $request->employee_request != '') {
-            $requestQuery->where('user_id', $request->employee_request);
-        }
-
-        if ($request->has('current_shift_request') && $request->current_shift_request != '') {
-            $requestQuery->where('rule_user_id_before', $request->current_shift_request);
-        }
-
-        if ($request->has('requested_shift_request') && $request->requested_shift_request != '') {
-            $requestQuery->where('rule_user_id_after', $request->requested_shift_request);
-        }
-
-        if ($request->has('start_date_request') && $request->start_date_request != '') {
-            $requestQuery->whereDate('date_change_start', '>=', $request->start_date_request);
-        }
-
-        if ($request->has('end_date_request') && $request->end_date_request != '') {
-            $requestQuery->whereDate('date_change_end', '<=', $request->end_date_request);
-        }
-
-        // Get all requests first, then apply position/department filtering later
-        $pendingShiftRequests = $requestQuery->orderBy('created_at', 'desc')->get();
-
-        // Add historical position/department data to shift requests
-        foreach ($pendingShiftRequests as $req) {
-            // Find the most recent transfer record before the request creation date
-            $historicalTransfer = history_transfer_employee::where('users_id', $req->user_id)
-                ->where('created_at', '<', $req->created_at)
-                ->orderBy('created_at', 'desc')
-                ->first();
-
-            if ($historicalTransfer) {
-                // Store historical position and department information
-                $req->historical_position = $historicalTransfer->oldPosition;
-                $req->historical_department = $historicalTransfer->oldDepartment;
-            } else {
-                // If no transfer record found, use current position/department
-                $req->historical_position = $req->user->position;
-                $req->historical_department = $req->user->department;
-            }
-        }
-
-        // Post-processing filter for position and department on requests
-        if ($request->has('position_request') && $request->position_request != '') {
-            $pendingShiftRequests = $pendingShiftRequests->filter(function ($req) use ($request) {
-                return $req->historical_position == $request->position_request;
-            });
-        }
-
-        if ($request->has('department_request') && $request->department_request != '') {
-            $pendingShiftRequests = $pendingShiftRequests->filter(function ($req) use ($request) {
-                return $req->historical_department == $request->department_request;
-            });
+                return $shifts->filter(fn($shift) => $shift->historical_department == $request->department_history);
+            })->filter(fn($shifts) => $shifts->count() > 0);
         }
 
         $rules = rule_shift::all();
         $employees = User::where('employee_status', '!=', 'Inactive')->get();
-
-        // Get distinct departments from EmployeeDepartment model
         $departments = EmployeeDepartment::distinct()->pluck('department');
-
-        // Get distinct positions from EmployeePosition model
         $positions = EmployeePosition::distinct()->pluck('position');
-
-        // Get active tab
         $activeTab = $request->tab ?? 'current';
 
         return view('/time_management/set_shift/index', compact(
@@ -426,12 +300,10 @@ class TimeManagementController extends Controller
             'employees',
             'positions',
             'departments',
-            'pendingShiftRequests',
-            'pendingRequests',
-            'allRequests',
             'activeTab'
         ));
     }
+
 
     public function set_shift_create()
     {
@@ -734,82 +606,6 @@ class TimeManagementController extends Controller
         ]);
     }
 
-
-
-    public function approveShiftChange($id)
-    {
-        try {
-            DB::beginTransaction();
-
-            $request = RequestShiftChange::with(['user', 'ruleShiftAfter'])->findOrFail($id);
-
-            $request->status_change = 'Approved';
-            $request->answer_user_id = Auth::id();
-            $request->save();
-
-            $startDate = Carbon::parse($request->date_change_start);
-            $endDate = Carbon::parse($request->date_change_end);
-
-            $this->processUserShiftChange($request->user_id, $request->rule_user_id_after, $startDate, $endDate);
-
-            if ($request->user_exchange_id) {
-                $this->processUserShiftChange($request->user_exchange_id, $request->rule_user_exchange_id_after, $startDate, $endDate);
-            } else if ($request->rule_user_exchange_id_after) {
-                $this->processUserShiftChange($request->user_id, $request->rule_user_exchange_id_after, $startDate, $endDate, true);
-            }
-
-
-
-            // Send email
-            Mail::to($request->user->email)->send(new ShiftChangeApprovedMail($request));
-
-            // Create notification
-            Notification::create([
-                'users_id' => $request->user_id,
-                'message' => "Your shift change request has been approved.",
-                'type' => 'shift_change_approved',
-                'maker_id' => Auth::id(),
-                'status' => 'Unread'
-            ]);
-
-            DB::commit();
-
-            return response()->json(['success' => true]);
-        } catch (\Exception $e) {
-            DB::rollBack();
-            return response()->json(['success' => false, 'message' => $e->getMessage()]);
-        }
-    }
-
-    public function declineShiftChange(Request $request, $id)
-    {
-        try {
-            $shiftChangeRequest = RequestShiftChange::with('user')->findOrFail($id);
-
-            $shiftChangeRequest->status_change = 'Declined';
-            $shiftChangeRequest->declined_reason = $request->decline_reason;
-            $shiftChangeRequest->answer_user_id = Auth::id();
-            $shiftChangeRequest->save();
-
-            // Send email
-            Mail::to($shiftChangeRequest->user->email)->send(new ShiftChangeDeclinedMail($shiftChangeRequest));
-
-            // Create notification
-            Notification::create([
-                'users_id' => $shiftChangeRequest->user_id,
-                'message' => "Your shift change request has been declined.",
-                'type' => 'shift_change_declined',
-                'maker_id' => Auth::id(),
-                'status' => 'Unread'
-            ]);
-
-            return response()->json(['success' => true]);
-        } catch (\Exception $e) {
-            return response()->json(['success' => false, 'message' => $e->getMessage()]);
-        }
-    }
-
-
     // Helper function to get the next non-Sunday date (for start dates)
     private function getNextNonSundayDate($date)
     {
@@ -830,6 +626,244 @@ class TimeManagementController extends Controller
         return $date->format('Y-m-d');
     }
 
+
+
+    public function indexShiftChange(Request $request)
+    {
+        $currentUser = Auth::user();
+
+        // Only allow Manager and above (position_id <= 3)
+        if ($currentUser->position_id > 3) { // Supervisor (4) or Staff (5)
+            abort(403, 'Access denied. Only managers and above can access this page.');
+        }
+
+        $query = RequestShiftChange::with([
+            'user',
+            'user.department',
+            'user.position',
+            'exchangeUser',
+            'ruleShiftBefore',
+            'ruleShiftAfter',
+            'ruleExchangeBefore',
+            'ruleExchangeAfter'
+        ]);
+
+        // Apply filters
+        if ($request->filled('status')) {
+            $query->where('status_change', $request->status);
+        }
+
+        if ($request->filled('department_id')) {
+            $query->whereHas('user', fn($q) => $q->where('department_id', $request->department_id));
+        }
+
+        if ($request->filled('user_id')) {
+            $query->where('user_id', $request->user_id);
+        }
+
+        if ($request->filled('date_from')) {
+            $query->whereDate('date_change_start', '>=', $request->date_from);
+        }
+
+        if ($request->filled('date_to')) {
+            $query->whereDate('date_change_end', '<=', $request->date_to);
+        }
+
+        // No user should see their own requests on this page
+        $query->where('user_id', '!=', $currentUser->id);
+
+        // Permission-based filtering
+        if ($this->isDepartmentManager($currentUser)) {
+            // Department Manager can only see requests from their own department's staff/supervisors
+            $query->whereHas('user', function ($q) use ($currentUser) {
+                $q->where('department_id', $currentUser->department_id)
+                    ->where('position_id', '>', 3); // Only Staff (5) or Supervisor (4)
+            });
+        } elseif (!$this->isAdminUser($currentUser)) {
+            // If not admin and not department manager, they shouldn't see any requests
+            // (this is a safety check as we already have the position check at the top)
+            abort(403, 'Access denied.');
+        }
+        // Admin can see all requests except their own (already filtered above)
+
+        $perPage = $request->input('per_page', 15);
+        $shiftChanges = $query->orderBy('created_at', 'desc')->paginate($perPage);
+
+        // Add approval permissions
+        $shiftChanges->getCollection()->transform(function ($item) use ($currentUser) {
+            $item->can_approve_dept = $this->canApproveDept($currentUser, $item);
+            $item->can_approve_admin = $this->canApproveAdmin($currentUser, $item);
+            $item->can_decline = $this->canDecline($currentUser, $item);
+            return $item;
+        });
+
+        return view('time_management.request_shift.index', [
+            'shiftChanges' => $shiftChanges,
+            'isManager' => $this->isDepartmentManager($currentUser),
+            'isAdmin' => $this->isAdminUser($currentUser)
+        ]);
+    }
+
+    // Helper methods
+    private function isAdminUser($user)
+    {
+        return in_array($user->position_id, [1, 2]) || // Director or GM
+            ($user->position_id == 3 && $user->department_id == 3); // HR Manager
+    }
+
+    private function isDepartmentManager($user)
+    {
+        return $user->position_id == 3 && $user->department_id != 3; // Manager non-HR
+    }
+
+    private function canApproveDept($currentUser, $request)
+    {
+        // Always check if not already approved or declined
+        if ($request->dept_approval_status !== 'Pending') return false;
+
+        // Can't approve own request
+        if ($currentUser->id == $request->user_id) return false;
+
+        // Only department manager can approve
+        if (!$this->isDepartmentManager($currentUser)) return false;
+
+        // Must be same department
+        if ($currentUser->department_id != $request->user->department_id) return false;
+
+        // Only for staff/supervisor requests (position_id 4 or 5)
+        return $request->user->position_id > 3;
+    }
+
+    private function canApproveAdmin($currentUser, $request)
+    {
+        // Always check if not already approved or declined
+        if ($request->admin_approval_status !== 'Pending') return false;
+
+        // Can't approve own request
+        if ($currentUser->id == $request->user_id) return false;
+
+        // Only admin can approve
+        if (!$this->isAdminUser($currentUser)) return false;
+
+        // For manager requests or admin requests, only need to check admin approval status
+        // (dept approval will be auto-approved)
+        if ($request->user->position_id <= 3) {
+            return $request->admin_approval_status === 'Pending';
+        }
+
+        // For staff/supervisor requests, must have department approval first
+        return $request->dept_approval_status === 'Approved';
+    }
+
+    private function canDecline($currentUser, $request)
+    {
+        // Can't decline own request
+        if ($currentUser->id == $request->user_id) return false;
+
+        // If current user is department manager
+        if ($this->isDepartmentManager($currentUser)) {
+            // Can only decline requests from staff/supervisors in their department
+            return $request->user->position_id > 3 &&
+                $request->user->department_id == $currentUser->department_id &&
+                $request->status_change === 'Pending';
+        }
+
+        // If current user is admin
+        if ($this->isAdminUser($currentUser)) {
+            // Can decline any pending request that's not their own
+            return $request->status_change === 'Pending';
+        }
+
+        return false;
+    }
+
+
+
+    public function approveShiftChange($id)
+    {
+
+        $shiftChangeRequest = RequestShiftChange::with('user')->findOrFail($id);
+        $currentUser = Auth::user();
+        $approvalType = request('approval_type');
+
+        // Validate approval type
+        if (!in_array($approvalType, ['dept', 'admin'])) {
+            return response()->json(['success' => false, 'message' => 'Invalid approval type']);
+        }
+
+        // Check permissions based on approval type
+        if ($approvalType === 'dept' && !$this->canApproveDept($currentUser, $shiftChangeRequest)) {
+            return response()->json(['success' => false, 'message' => 'You do not get permission to department approval']);
+        }
+
+        if ($approvalType === 'admin' && !$this->canApproveAdmin($currentUser, $shiftChangeRequest)) {
+            return response()->json(['success' => false, 'message' => 'You do not get permission to admin approval']);
+        }
+
+        // Process approval
+        if ($approvalType === 'dept') {
+            $shiftChangeRequest->dept_approval_status = 'Approved';
+            $shiftChangeRequest->dept_approval_user_id = $currentUser->id;
+        } else {
+            $shiftChangeRequest->admin_approval_status = 'Approved';
+            $shiftChangeRequest->admin_approval_user_id = $currentUser->id;
+
+            // Auto-approve dept level if requester is manager or admin
+            if ($shiftChangeRequest->user->position_id <= 3) { // Manager or above
+                $shiftChangeRequest->dept_approval_status = 'Approved';
+            }
+        }
+
+
+        $shiftChangeRequest->save();
+        $this->checkShiftChangeApprovalStatus($shiftChangeRequest);
+
+        return response()->json(['success' => true, 'message' => 'Request approved successfully']);
+    }
+
+
+    private function checkShiftChangeApprovalStatus(RequestShiftChange $request)
+    {
+
+        // If both levels approved, update the main approval status and process the change
+        if ($request->dept_approval_status === 'Approved' && $request->admin_approval_status === 'Approved') {
+            DB::beginTransaction();
+            try {
+                $request->status_change = 'Approved';
+                $request->save();
+
+
+
+                $startDate = Carbon::parse($request->date_change_start);
+                $endDate = Carbon::parse($request->date_change_end);
+
+                // $this->processUserShiftChange($request->user_id, $request->rule_user_id_after, $startDate, $endDate);
+
+                // if ($request->user_exchange_id) {
+                //     $this->processUserShiftChange($request->user_exchange_id, $request->rule_user_exchange_id_after, $startDate, $endDate);
+                // } else if ($request->rule_user_exchange_id_after) {
+                //     $this->processUserShiftChange($request->user_id, $request->rule_user_exchange_id_after, $startDate, $endDate, true);
+                // }
+
+                // Send email
+                Mail::to($request->user->email)->send(new ShiftChangeApprovedMail($request));
+
+                // Create notification
+                Notification::create([
+                    'users_id' => $request->user_id,
+                    'message' => "Your shift change request has been fully approved.",
+                    'type' => 'shift_change_approved',
+                    'maker_id' => Auth::id(),
+                    'status' => 'Unread'
+                ]);
+
+                DB::commit();
+            } catch (\Exception $e) {
+                DB::rollBack();
+                throw $e;
+            }
+        }
+    }
 
     private function processUserShiftChange($userId, $newRuleId, $startDate, $endDate, $isSecondaryShift = false)
     {
@@ -906,6 +940,163 @@ class TimeManagementController extends Controller
             'updated_at' => now()
         ]);
     }
+
+
+
+    public function declineShiftChange(Request $request, $id)
+    {
+        // Validate request
+        $validator = Validator::make($request->all(), [
+            'declined_reason' => 'required|string|max:500',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation failed',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        try {
+            DB::beginTransaction();
+
+            $shiftChangeRequest = RequestShiftChange::with('user', 'user.department', 'user.position')
+                ->findOrFail($id);
+            $currentUser = Auth::user();
+
+            // Check decline permission
+            if (!$this->canDecline($currentUser, $shiftChangeRequest)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'You do not have permission to decline this request.'
+                ], 403);
+            }
+
+            // Determine which level is declining
+            $isDeptDecline = $this->isDepartmentManager($currentUser) &&
+                $currentUser->department_id == $shiftChangeRequest->user->department_id;
+            $isAdminDecline = $this->isAdminUser($currentUser);
+
+            // Update appropriate approval statuses
+            if ($isDeptDecline) {
+                $shiftChangeRequest->dept_approval_status = 'Declined';
+                $shiftChangeRequest->dept_approval_user_id = $currentUser->id;
+            }
+
+            if ($isAdminDecline) {
+                $shiftChangeRequest->admin_approval_status = 'Declined';
+                $shiftChangeRequest->admin_approval_user_id = $currentUser->id;
+
+
+                // Auto set dept approval for manager/admin requests
+                if (
+                    $shiftChangeRequest->user->position_id <= 3 &&
+                    $shiftChangeRequest->dept_approval_status === 'Pending'
+                ) {
+                    $shiftChangeRequest->dept_approval_status = 'Approved';
+                    $shiftChangeRequest->dept_approval_user_id = $currentUser->id;
+                }
+            }
+
+            // Update main status
+            $shiftChangeRequest->status_change = 'Declined';
+            $shiftChangeRequest->declined_reason = $request->declined_reason;
+            $shiftChangeRequest->updated_at = now();
+            $shiftChangeRequest->save();
+
+            // Send notification (move to queue for better performance)
+            $this->sendDeclineNotification($shiftChangeRequest, $currentUser);
+
+            DB::commit();
+
+
+
+            return response()->json(['success' => true]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+
+            // Log error
+            Log::error('Error declining shift change request: ' . $e->getMessage(), [
+                'request_id' => $id,
+                'user_id' => Auth::id(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Error: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+    private function sendDeclineNotification($shiftChangeRequest, $decliner)
+    {
+        Mail::to($shiftChangeRequest->user->email)->send(new ShiftChangeDeclinedMail($shiftChangeRequest));
+
+        Notification::create([
+            'users_id' => $shiftChangeRequest->user_id,
+            'message' => "Your shift change request has been declined by " . $decliner->name,
+            'type' => 'shift_change_declined',
+            'maker_id' => $decliner->id,
+            'status' => 'Unread'
+        ]);
+    }
+
+
+
+
+
+
+    public function showShiftChange($id)
+    {
+        $shiftChange = RequestShiftChange::with([
+            'user',
+            'exchangeUser',
+            'ruleShiftBefore',
+            'ruleShiftAfter',
+            'ruleExchangeBefore',
+            'ruleExchangeAfter',
+            'deptApprovalUser',
+            'adminApprovalUser'
+        ])->findOrFail($id);
+
+        return response()->json([
+            'user' => [
+                'name' => $shiftChange->user->name,
+                'department' => $shiftChange->user->department->department ?? 'N/A',
+                'position' => $shiftChange->user->position->position ?? 'N/A'
+            ],
+            'created_at' => $shiftChange->created_at,
+            'date_change_start' => $shiftChange->date_change_start,
+            'date_change_end' => $shiftChange->date_change_end,
+            'exchange_user_id' => $shiftChange->exchange_user_id,
+            'exchangeUser' => $shiftChange->exchangeUser ? ['name' => $shiftChange->exchangeUser->name] : null,
+            'reason' => $shiftChange->reason_change,
+            'ruleShiftBefore' => $this->formatShiftData($shiftChange->ruleShiftBefore),
+            'ruleShiftAfter' => $this->formatShiftData($shiftChange->ruleShiftAfter),
+            'dept_approval_status' => $shiftChange->dept_approval_status,
+            'admin_approval_status' => $shiftChange->admin_approval_status,
+            'deptApprovalUser' => $shiftChange->deptApprovalUser ? ['name' => $shiftChange->deptApprovalUser->name] : null,
+            'adminApprovalUser' => $shiftChange->adminApprovalUser ? ['name' => $shiftChange->adminApprovalUser->name] : null
+        ]);
+    }
+
+    private function formatShiftData($shift)
+    {
+        if (!$shift) return null;
+
+        return [
+            'type' => $shift->type,
+            'days' => json_decode($shift->days),
+            'hour_start' => json_decode($shift->hour_start),
+            'hour_end' => json_decode($shift->hour_end)
+        ];
+    }
+
+
+
+
+
 
 
     /**
@@ -3483,36 +3674,81 @@ class TimeManagementController extends Controller
     }
 
     // Approve an overtime request
+    // Updated Overtime Approval Function with Two-level Approval
     public function overtime_approve(Request $request, $id)
     {
         $overtime = EmployeeOvertime::findOrFail($id);
-        $overtime->update([
-            'approval_status' => 'Approved',
-            'answer_user_id' => Auth::id(),
-            'updated_at' => now(),
-        ]);
+        $currentUser = Auth::user();
 
-        // Get the employee who submitted the request
-        $employee = User::find($overtime->user_id);
+        // Check if current user is a department head or super admin
+        $isDeptHead = User::whereHas('position', function ($query) {
+            $query->where('position', 'like', '%Manager%')->where('position', 'not like', '%HR Manager%')
+                ->where('position', 'not like', '%General Manager%');
+        })->where('id', $currentUser->id)->exists();
 
-        // Create notification for the employee
-        Notification::create([
-            'users_id' => $overtime->user_id,
-            'message' => "Your overtime request for {$overtime->date} has been approved.",
-            'type' => 'overtime_approved',
-            'maker_id' => Auth::id(),
-            'status' => 'Unread'
-        ]);
+        $isSuperAdmin = User::whereHas('position', function ($query) {
+            $query->where('position', 'like', '%HR Manager%')
+                ->orWhere('position', 'like', '%General Manager%')
+                ->orWhere('position', 'like', '%Director%');
+        })->where('id', $currentUser->id)->exists();
 
-        // dd("coba");
+        // Process approval based on user role
+        if ($isDeptHead && $overtime->dept_approval_status === 'Pending') {
+            // Department head approval
+            $overtime->dept_approval_status = 'Approved';
+            $overtime->dept_approval_user_id = $currentUser->id;
+            $overtime->approval_level = 1;
+            $overtime->save();
 
-        // Send email notification to employee
-        Mail::to($employee->email)->send(new OvertimeApprovedMail($overtime, $employee));
+            // Check if request is now fully approved (both levels approved)
+            $this->checkOvertimeApprovalStatus($overtime);
 
-        return redirect()->back()->with('success', 'Overtime request approved successfully');
+            return redirect()->back()->with('success', 'First level approval completed. Waiting for final approval.');
+        } elseif ($isSuperAdmin && $overtime->admin_approval_status === 'Pending') {
+            // Super admin approval
+            $overtime->admin_approval_status = 'Approved';
+            $overtime->admin_approval_user_id = $currentUser->id;
+            $overtime->approval_level = max(1, $overtime->approval_level);
+            $overtime->save();
+
+            // Check if request is now fully approved (both levels approved)
+            $this->checkOvertimeApprovalStatus($overtime);
+
+            return redirect()->back()->with('success', 'Admin approval completed. ' .
+                ($overtime->dept_approval_status === 'Approved' ? 'Request is now fully approved.' : 'Waiting for department approval.'));
+        } else {
+            return redirect()->back()->with('error', 'You do not have permission to approve this request or it was already approved by your level.');
+        }
     }
 
-    // Decline an overtime request
+    // Helper function to check overall approval status
+    private function checkOvertimeApprovalStatus(EmployeeOvertime $overtime)
+    {
+        // If both levels approved, update the main approval status
+        if ($overtime->dept_approval_status === 'Approved' && $overtime->admin_approval_status === 'Approved') {
+            $overtime->approval_status = 'Approved';
+            $overtime->answer_user_id = $overtime->admin_approval_user_id; // Use admin as final approver
+            $overtime->updated_at = now();
+            $overtime->save();
+
+            // Get the employee who submitted the request
+            $employee = User::find($overtime->user_id);
+
+            // Create notification for the employee
+            Notification::create([
+                'users_id' => $overtime->user_id,
+                'message' => "Your overtime request for {$overtime->date} has been fully approved.",
+                'type' => 'overtime_approved',
+                'maker_id' => Auth::id(),
+                'status' => 'Unread'
+            ]);
+
+            // Send email notification to employee
+            Mail::to($employee->email)->send(new OvertimeApprovedMail($overtime, $employee));
+        }
+    }
+
+    // Updated Overtime Decline Function (either level can decline)
     public function overtime_decline(Request $request, $id)
     {
         $request->validate([
@@ -3520,30 +3756,61 @@ class TimeManagementController extends Controller
         ]);
 
         $overtime = EmployeeOvertime::findOrFail($id);
-        $overtime->update([
-            'approval_status' => 'Declined',
-            'declined_reason' => $request->declined_reason,
-            'answer_user_id' => Auth::id(),
-            'updated_at' => now(),
-        ]);
+        $currentUser = Auth::user();
 
-        // Get the employee who submitted the request
-        $employee = User::find($overtime->user_id);
+        // Check if current user is a department head or super admin
+        $isDeptHead = User::whereHas('position', function ($query) {
+            $query->where('position', 'like', '%Manager%')->where('position', 'not like', '%HR Manager%')
+                ->where('position', 'not like', '%General Manager%');
+        })->where('id', $currentUser->id)->exists();
 
-        // Create notification for the employee
-        Notification::create([
-            'users_id' => $overtime->user_id,
-            'message' => "Your overtime request for {$overtime->date} has been declined.",
-            'type' => 'overtime_declined',
-            'maker_id' => Auth::id(),
-            'status' => 'Unread'
-        ]);
+        $isSuperAdmin = User::whereHas('position', function ($query) {
+            $query->where('position', 'like', '%HR Manager%')
+                ->orWhere('position', 'like', '%General Manager%')
+                ->orWhere('position', 'like', '%Director%');
+        })->where('id', $currentUser->id)->exists();
 
-        // Send email notification to employee
-        Mail::to($employee->email)->send(new OvertimeDeclinedMail($overtime,     $employee));
+        // Only department heads or super admins can decline
+        if ($isDeptHead || $isSuperAdmin) {
+            $overtime->approval_status = 'Declined';
+            $overtime->declined_reason = $request->declined_reason;
+            $overtime->answer_user_id = Auth::id();
+            $overtime->updated_at = now();
 
-        return redirect()->back()->with('success', 'Overtime request declined successfully');
+            // Also update the specific level that did the declining
+            if ($isDeptHead) {
+                $overtime->dept_approval_status = 'Declined';
+                $overtime->dept_approval_user_id = $currentUser->id;
+            } else {
+                $overtime->admin_approval_status = 'Declined';
+                $overtime->admin_approval_user_id = $currentUser->id;
+            }
+
+            $overtime->save();
+
+            // Get the employee who submitted the request
+            $employee = User::find($overtime->user_id);
+
+            // Create notification for the employee
+            Notification::create([
+                'users_id' => $overtime->user_id,
+                'message' => "Your overtime request for {$overtime->date} has been declined.",
+                'type' => 'overtime_declined',
+                'maker_id' => Auth::id(),
+                'status' => 'Unread'
+            ]);
+
+            // Send email notification to employee
+            Mail::to($employee->email)->send(new OvertimeDeclinedMail($overtime, $employee));
+
+            return redirect()->back()->with('success', 'Overtime request declined successfully');
+        }
+
+        return redirect()->back()->with('error', 'You do not have permission to decline this request.');
     }
+
+
+
 
     // Delete an overtime request
     public function overtime_destroy($id)
@@ -3991,8 +4258,107 @@ class TimeManagementController extends Controller
 
 
 
+
+
+
+
+
+
+    public function request_time_off_index2($id)
+    {
+        $employee = User::findOrFail($id);
+
+        // Get time off requests for this employee
+        $timeOffRequests = RequestTimeOff::with(['deptApprovalUser', 'adminApprovalUser'])
+            ->where('user_id', $id)
+            ->get();
+
+        // Process each record to find historical position and department
+        foreach ($timeOffRequests as $record) {
+            // Find the closest historical transfer record before the time off request
+            $historyRecord = history_transfer_employee::where('users_id', $record->user_id)
+                ->where('created_at', '<', $record->created_at)
+                ->orderBy('created_at', 'desc')
+                ->first();
+
+            if ($historyRecord) {
+                // Use the historical position and department
+                $position = EmployeePosition::find($historyRecord->new_position_id);
+                $department = EmployeeDepartment::find($historyRecord->new_department_id);
+
+                $record->historical_position = $position ? $position->position : null;
+                $record->historical_department = $department ? $department->department : null;
+            } else {
+                // No history record found, use current position and department
+                $record->historical_position = $employee->position->position ?? null;
+                $record->historical_department = $employee->department->department ?? null;
+            }
+
+            // Store approver names
+            if ($record->deptApprovalUser) {
+                $record->dept_approver_name = $record->deptApprovalUser->name;
+            }
+
+            if ($record->adminApprovalUser) {
+                $record->admin_approver_name = $record->adminApprovalUser->name;
+            }
+        }
+
+        // Split requests by status and format them
+        $pendingRequests = $timeOffRequests->where('status', 'Pending')
+            ->sortByDesc('created_at')
+            ->values()
+            ->map(function ($item) {
+                return $this->formatTimeOffRequest($item);
+            });
+
+        $approvedRequests = $timeOffRequests->where('status', 'Approved')
+            ->sortByDesc('created_at')
+            ->values()
+            ->map(function ($item) {
+                return $this->formatTimeOffRequest($item);
+            });
+
+        $declinedRequests = $timeOffRequests->where('status', 'Declined')
+            ->sortByDesc('created_at')
+            ->values()
+            ->map(function ($item) {
+                return $this->formatTimeOffRequest($item);
+            });
+
+        // Get time off assignments with policy information
+        $timeOffAssignments = DB::table('time_off_assign')
+            ->join('time_off_policy', 'time_off_assign.time_off_id', '=', 'time_off_policy.id')
+            ->where('time_off_assign.user_id', $id)
+            ->select(
+                'time_off_assign.id',
+                'time_off_assign.time_off_id',
+                'time_off_assign.balance',
+                'time_off_policy.time_off_name',
+                'time_off_policy.time_off_description',
+                'time_off_policy.quota'
+            )
+            ->get();
+
+        return view('time_management.time_off.request_time_off.index2', compact(
+            'employee',
+            'pendingRequests',
+            'approvedRequests',
+            'declinedRequests',
+            'timeOffAssignments'
+        ));
+    }
+
+
     public function request_time_off_index(Request $request)
     {
+        $currentUser = Auth::user();
+
+        // Only allow Manager and above (position_id <= 3)
+        if ($currentUser->position_id > 3) { // Supervisor (4) or Staff (5)
+            abort(403, 'Access denied. Only managers and above can access this page.');
+        }
+
         // Get all users with their relationships
         $users = User::with(['department', 'position'])
             ->orderBy('name')
@@ -4012,7 +4378,8 @@ class TimeManagementController extends Controller
         // Build the query with proper joins
         $query = RequestTimeOff::query()
             ->join('users as u1', 'request_time_off.user_id', '=', 'u1.id')
-            ->leftJoin('users as u2', 'request_time_off.answered_by', '=', 'u2.id')
+            ->leftJoin('users as dept_approver', 'request_time_off.dept_approval_user_id', '=', 'dept_approver.id')
+            ->leftJoin('users as admin_approver', 'request_time_off.admin_approval_user_id', '=', 'admin_approver.id')
             ->join('time_off_policy', 'request_time_off.time_off_id', '=', 'time_off_policy.id')
             ->leftJoin('time_off_assign', function ($join) {
                 $join->on('request_time_off.user_id', '=', 'time_off_assign.user_id')
@@ -4024,8 +4391,26 @@ class TimeManagementController extends Controller
                 'time_off_policy.time_off_name as time_off_name',
                 DB::raw('NULL as department'), // Will be filled later
                 DB::raw('NULL as position'), // Will be filled later
-                'u2.name as answered_by_name'
+                'dept_approver.name as dept_approver_name',
+                'admin_approver.name as admin_approver_name'
             );
+
+        // No user should see their own requests
+        $query->where('request_time_off.user_id', '!=', $currentUser->id);
+
+        // Permission-based filtering
+        if ($this->timeOffIsDepartmentManager($currentUser)) {
+            // Department Manager can only see requests from their own department's staff/supervisors
+            $query->whereHas('user', function ($q) use ($currentUser) {
+                $q->where('department_id', $currentUser->department_id)
+                    ->where('position_id', '>', 3); // Only Staff (5) or Supervisor (4)
+            });
+        } elseif (!$this->timeOffIsAdminUser($currentUser)) {
+            // If not admin and not department manager, they shouldn't see any requests
+            // (this is a safety check as we already have the position check at the top)
+            abort(403, 'Access denied.');
+        }
+        // Admin can see all requests except their own (already filtered above)
 
         // Apply employee filter
         if ($request->filled('employee')) {
@@ -4070,6 +4455,11 @@ class TimeManagementController extends Controller
                 $record->position = $user->position->position ?? null;
                 $record->department = $user->department->department ?? null;
             }
+
+            // Add approval permissions
+            $record->can_approve_dept = $this->timeOffCanApproveDept($currentUser, $record);
+            $record->can_approve_admin = $this->timeOffCanApproveAdmin($currentUser, $record);
+            $record->can_decline = $this->timeOffCanDecline($currentUser, $record);
         }
 
         // Apply position and department filters after historical data is determined
@@ -4126,79 +4516,9 @@ class TimeManagementController extends Controller
         ));
     }
 
-    public function request_time_off_index2($id)
-    {
-        $employee = User::findOrFail($id);
 
-        // Get time off requests for this employee
-        $timeOffRequests = RequestTimeOff::where('user_id', $id)->get();
 
-        // Process each record to find historical position and department
-        foreach ($timeOffRequests as $record) {
-            // Find the closest historical transfer record before the time off request
-            $historyRecord = history_transfer_employee::where('users_id', $record->user_id)
-                ->where('created_at', '<', $record->created_at)
-                ->orderBy('created_at', 'desc')
-                ->first();
 
-            if ($historyRecord) {
-                // Use the historical position and department
-                $position = EmployeePosition::find($historyRecord->new_position_id);
-                $department = EmployeeDepartment::find($historyRecord->new_department_id);
-
-                $record->historical_position = $position ? $position->position : null;
-                $record->historical_department = $department ? $department->department : null;
-            } else {
-                // No history record found, use current position and department
-                $record->historical_position = $employee->position->position ?? null;
-                $record->historical_department = $employee->department->department ?? null;
-            }
-        }
-
-        // Split requests by status and format them
-        $pendingRequests = $timeOffRequests->where('status', 'pending')
-            ->sortByDesc('created_at')
-            ->values()
-            ->map(function ($item) {
-                return $this->formatTimeOffRequest($item);
-            });
-
-        $approvedRequests = $timeOffRequests->where('status', 'approved')
-            ->sortByDesc('created_at')
-            ->values()
-            ->map(function ($item) {
-                return $this->formatTimeOffRequest($item);
-            });
-
-        $declinedRequests = $timeOffRequests->where('status', 'declined')
-            ->sortByDesc('created_at')
-            ->values()
-            ->map(function ($item) {
-                return $this->formatTimeOffRequest($item);
-            });
-
-        // Get time off assignments with policy information
-        $timeOffAssignments = DB::table('time_off_assign')
-            ->join('time_off_policy', 'time_off_assign.time_off_id', '=', 'time_off_policy.id')
-            ->where('time_off_assign.user_id', $id)
-            ->select(
-                'time_off_assign.id',
-                'time_off_assign.time_off_id',
-                'time_off_assign.balance',
-                'time_off_policy.time_off_name',
-                'time_off_policy.time_off_description',
-                'time_off_policy.quota'
-            )
-            ->get();
-
-        return view('time_management.time_off.request_time_off.index2', compact(
-            'employee',
-            'pendingRequests',
-            'approvedRequests',
-            'declinedRequests',
-            'timeOffAssignments'
-        ));
-    }
     protected function formatTimeOffRequest($request)
     {
         // First, process the historical department and position if not already set
@@ -4208,12 +4528,12 @@ class TimeManagementController extends Controller
                 ->where('created_at', '<', $request->created_at)
                 ->orderBy('created_at', 'desc')
                 ->first();
-
+    
             if ($historyRecord) {
                 // Use historical position and department
                 $position = EmployeePosition::find($historyRecord->new_position_id);
                 $department = EmployeeDepartment::find($historyRecord->new_department_id);
-
+    
                 $request->historical_position = $position ? $position->position : null;
                 $request->historical_department = $department ? $department->department : null;
             } else {
@@ -4223,44 +4543,55 @@ class TimeManagementController extends Controller
                 $request->historical_department = null;
             }
         }
-
+    
         // Your original time formatting logic
         $start = Carbon::parse($request->start_date);
         $end = Carbon::parse($request->end_date);
-
-        // Format dates
-        $isFullDay = ($start->format('H:i:s') === '00:00:00' && $end->format('H:i:s') === '23:59:59');
-
+    
+        // Check if this is a full day request using requires_time_input
+        $timeOffPolicy = null;
+        if (isset($request->time_off_id)) {
+            $timeOffPolicy = TimeOffPolicy::find($request->time_off_id);
+        }
+        $isFullDay = $timeOffPolicy ? $timeOffPolicy->requires_time_input == 0 : false;
+    
         $request->formatted_start_date = $isFullDay
             ? $start->format('d-m-Y')
             : $start->format('d-m-Y H:i');
-
+    
         $request->formatted_end_date = $isFullDay
             ? $end->format('d-m-Y')
             : $end->format('d-m-Y H:i');
-
+    
         // Calculate duration
         if ($isFullDay) {
-            $days = $start->diffInDays($end) + 1;
+            // Untuk memastikan hasil bulat, kita gunakan startOfDay dan endOfDay
+            $startDay = $start->copy()->startOfDay();
+            $endDay = $end->copy()->endOfDay();
+            
+            // Hitung selisih hari dan bulatkan ke bilangan bulat
+            $days = $startDay->diffInDays($endDay->startOfDay()) + 1;
             $request->duration = $days . ' day' . ($days > 1 ? 's' : '');
         } else {
             $diff = $start->diff($end);
-
+    
             $parts = [];
             if ($diff->d > 0) $parts[] = $diff->d . ' day' . ($diff->d > 1 ? 's' : '');
             if ($diff->h > 0) $parts[] = $diff->h . ' hour' . ($diff->h > 1 ? 's' : '');
             if ($diff->i > 0) $parts[] = $diff->i . ' minute' . ($diff->i > 1 ? 's' : '');
-
+    
             $request->duration = implode(' ', $parts) ?: 'Less than 1 minute';
         }
-
-        // For date range display
-        if ($start->format('Y-m-d') === $end->format('Y-m-d')) {
-            $request->formatted_date = $start->format('d M Y');
-        } else {
+    
+        // For date range display with updated logic based on full day status
+        if ($isFullDay) {
+            // For full day requests, always show date range format
             $request->formatted_date = $start->format('d M Y') . ' - ' . $end->format('d M Y');
+        } else {
+            // For non-full day requests, include time in the format
+            $request->formatted_date = $start->format('d M Y H:i') . ' - ' . $end->format('d M Y H:i');
         }
-
+    
         // Set the department and position properties for display in views
         // Use historical values if available, otherwise use current values
         if (!isset($request->department)) {
@@ -4269,16 +4600,316 @@ class TimeManagementController extends Controller
                     (isset($request->user) && isset($request->user->department) ?
                         $request->user->department->department : null));
         }
-
+    
         if (!isset($request->position)) {
             $request->position = $request->historical_position ??
                 ($request->employee_position ??
                     (isset($request->user) && isset($request->user->position) ?
                         $request->user->position->position : null));
         }
-
+    
+        // Add information about declined/approved by
+        if ($request->status === 'Declined') {
+            // Determine who declined the request
+            if ($request->admin_approval_status === 'Declined') {
+                $request->declined_by = $request->admin_approver_name ?? 'Admin Approver';
+            } elseif ($request->dept_approval_status === 'Declined') {
+                $request->declined_by = $request->dept_approver_name ?? 'Department Manager';
+            } else {
+                $request->declined_by = 'Unknown';
+            }
+        }
+    
+        // Add formatted approval information
+        if ($request->dept_approval_status === 'Approved') {
+            $request->dept_approved_by = $request->dept_approver_name ?? 'Department Manager';
+        }
+    
+        if ($request->admin_approval_status === 'Approved') {
+            $request->admin_approved_by = $request->admin_approver_name ?? 'Admin';
+        }
+    
         return $request;
     }
+
+    public function request_time_off_approve(Request $request, $id)
+    {
+        $timeOffRequest = RequestTimeOff::findOrFail($id);
+        $currentUser = Auth::user();
+        $approvalType = $request->approval_type ?? 'auto'; // Default to auto detection
+
+        // Determine approval type based on permissions if not specified
+        if ($approvalType === 'auto') {
+            if ($this->timeOffCanApproveDept($currentUser, $timeOffRequest)) {
+                $approvalType = 'dept';
+            } elseif ($this->timeOffCanApproveAdmin($currentUser, $timeOffRequest)) {
+                $approvalType = 'admin';
+            } else {
+                return redirect()->back()->with('error', 'You do not have permission to approve this request.');
+            }
+        } else {
+            // Validate approval type if specified
+            if (!in_array($approvalType, ['dept', 'admin'])) {
+                return redirect()->back()->with('error', 'Invalid approval type.');
+            }
+
+            // Check permissions based on approval type
+            if ($approvalType === 'dept' && !$this->timeOffCanApproveDept($currentUser, $timeOffRequest)) {
+                return redirect()->back()->with('error', 'You do not have permission to department approval.');
+            }
+
+            if ($approvalType === 'admin' && !$this->timeOffCanApproveAdmin($currentUser, $timeOffRequest)) {
+                return redirect()->back()->with('error', 'You do not have permission to admin approval.');
+            }
+        }
+
+        // Process approval
+        if ($approvalType === 'dept') {
+            $timeOffRequest->dept_approval_status = 'Approved';
+            $timeOffRequest->dept_approval_user_id = $currentUser->id;
+            $message = 'First level approval completed. Waiting for final approval.';
+        } else {
+            $timeOffRequest->admin_approval_status = 'Approved';
+            $timeOffRequest->admin_approval_user_id = $currentUser->id;
+
+            // Auto-approve dept level if requester is manager or admin
+            $user = User::find($timeOffRequest->user_id);
+            if ($user && $user->position_id <= 3) { // Manager or above
+                $timeOffRequest->dept_approval_status = 'Approved';
+                $timeOffRequest->dept_approval_user_id = $timeOffRequest->admin_approval_user_id;
+            }
+
+            $deptStatus = $timeOffRequest->dept_approval_status === 'Approved'
+                ? 'Request is now fully approved.'
+                : 'Waiting for department approval.';
+
+            $message = 'Admin approval completed. ' . $deptStatus;
+        }
+
+        $timeOffRequest->save();
+        $this->checkTimeOffApprovalStatus($timeOffRequest);
+
+        return redirect()->back()->with('success', $message);
+    }
+
+    // Helper function to check overall time off approval status
+    private function checkTimeOffApprovalStatus(RequestTimeOff $request)
+    {
+        // If both levels approved, update the main approval status
+        if ($request->dept_approval_status === 'Approved' && $request->admin_approval_status === 'Approved') {
+            DB::beginTransaction();
+            try {
+                // Calculate the number of days requested
+                $startDate = new DateTime($request->start_date);
+                $endDate = new DateTime($request->end_date);
+                $interval = $startDate->diff($endDate);
+                $daysRequested = $interval->days + 1; // Including both start and end days
+
+                // Find the time off assignment record for this user and time off type
+                $timeOffAssignment = DB::table('time_off_assign')
+                    ->where('user_id', $request->user_id)
+                    ->where('time_off_id', $request->time_off_id)
+                    ->first();
+
+                // Make sure there's enough balance
+                if (!$timeOffAssignment || $timeOffAssignment->balance < $daysRequested) {
+                    DB::rollBack();
+                    return;  // We'll let the UI show an error if needed
+                }
+
+                // Deduct balance
+                DB::table('time_off_assign')
+                    ->where('user_id', $request->user_id)
+                    ->where('time_off_id', $request->time_off_id)
+                    ->update([
+                        'balance' => $timeOffAssignment->balance - $daysRequested,
+                        'updated_at' => now()
+                    ]);
+
+                // Update the request status
+                $request->status = 'Approved';
+                $request->updated_at = now();
+                $request->save();
+
+                // Get the user who made the request
+                $user = User::find($request->user_id);
+
+                // Create notification for the user
+                Notification::create([
+                    'users_id' => $request->user_id,
+                    'message' => "Your time off request has been fully approved.",
+                    'type' => 'time_off_approved',
+                    'maker_id' => Auth::user()->id,
+                    'status' => 'Unread'
+                ]);
+
+                $timeOffPolicy = TimeOffPolicy::where('id', $request->time_off_id)->first();
+
+                // Send email notification to the user
+                if ($user) {
+                    Mail::to($user->email)->send(new TimeOffRequestApproved($request, $user, $timeOffPolicy));
+                }
+
+                DB::commit();
+            } catch (\Exception $e) {
+                DB::rollBack();
+                throw $e;
+            }
+        }
+    }
+
+    // Updated Time Off Decline Function (either level can decline)
+    public function request_time_off_decline(Request $httpRequest, $id)
+    {
+        $timeOffRequest = RequestTimeOff::findOrFail($id);
+        $currentUser = Auth::user();
+        if (!$this->timeOffCanDecline($currentUser, $timeOffRequest)) {
+            return redirect()->back()->with('error', 'You do not have permission to decline this request.');
+        }
+
+        DB::beginTransaction();
+        try {
+            $timeOffRequest->status = 'Declined';
+            $timeOffRequest->declined_reason = $httpRequest->declined_reason;
+
+            // Also update the specific level that did the declining
+            if ($this->timeOffIsDepartmentManager($currentUser)) {
+                $timeOffRequest->dept_approval_status = 'Declined';
+                $timeOffRequest->dept_approval_user_id = $currentUser->id;
+            } else { // Admin user
+                $timeOffRequest->admin_approval_status = 'Declined';
+                $timeOffRequest->admin_approval_user_id = $currentUser->id;
+            }
+
+            $timeOffRequest->updated_at = now();
+            $timeOffRequest->save();
+
+            // Get the user who made the request
+            $user = User::find($timeOffRequest->user_id);
+
+            // Create notification for the user
+            Notification::create([
+                'users_id' => $timeOffRequest->user_id,
+                'message' => "Your time off request has been declined.",
+                'type' => 'time_off_declined',
+                'maker_id' => Auth::user()->id,
+                'status' => 'Unread'
+            ]);
+
+            $timeOffPolicy = TimeOffPolicy::where('id', $timeOffRequest->time_off_id)->first();
+
+            // Send email notification to the user
+            if ($user) {
+                Mail::to($user->email)->send(new TimeOffRequestDeclined($timeOffRequest, $user, $timeOffPolicy));
+            }
+
+            DB::commit();
+            return redirect()->back()->with('success', 'Time off request declined successfully.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            throw $e;
+        }
+    }
+
+
+    // Helper methods (reused from ShiftChange functionality)
+    private function timeOffIsAdminUser($user)
+    {
+        return in_array($user->position_id, [1, 2]) || // Director or GM
+            ($user->position_id == 3 && $user->department_id == 3); // HR Manager
+    }
+
+    private function timeOffIsDepartmentManager($user)
+    {
+        return $user->position_id == 3 && $user->department_id != 3; // Manager non-HR
+    }
+
+    private function timeOffCanApproveDept($currentUser, $request)
+    {
+        // Always check if not already approved or declined
+        if ($request->dept_approval_status !== 'Pending') return false;
+
+        // Can't approve own request
+        if ($currentUser->id == $request->user_id) return false;
+
+        // Only department manager can approve
+        if (!$this->timeOffIsDepartmentManager($currentUser)) return false;
+
+        // Must be same department
+        $userDepartment = $request->user->department_id ?? null;
+        if ($currentUser->department_id != $userDepartment) return false;
+
+        // Only for staff/supervisor requests (position_id 4 or 5)
+        $userPosition = $request->user->position_id ?? null;
+        return $userPosition > 3;
+    }
+
+    private function timeOffCanApproveAdmin($currentUser, $request)
+    {
+        // Always check if not already approved or declined
+        if ($request->admin_approval_status !== 'Pending') return false;
+
+        // Can't approve own request
+        if ($currentUser->id == $request->user_id) return false;
+
+        // Only admin can approve
+        if (!$this->timeOffIsAdminUser($currentUser)) return false;
+        // Get user information
+        $user = User::find($request->user_id);
+
+        if (!$user) return false;
+
+        // For manager requests or admin requests, only need to check admin approval status
+        // (dept approval will be auto-approved)
+        if ($user->position_id <= 3) {
+            return $request->admin_approval_status === 'Pending';
+        }
+
+        // For staff/supervisor requests, must have department approval first
+        return $request->dept_approval_status === 'Approved';
+    }
+
+    private function timeOffCanDecline($currentUser, $request)
+    {
+        // Can't decline own request
+        if ($currentUser->id == $request->user_id) return false;
+
+        // Get user information
+        $user = User::find($request->user_id);
+
+        if (!$user) return false;
+
+        // If current user is department manager
+        if ($this->timeOffIsDepartmentManager($currentUser)) {
+            // Can only decline requests from staff/supervisors in their department
+            return $user->position_id > 3 &&
+                $user->department_id == $currentUser->department_id &&
+                $request->status === 'Pending';
+        }
+
+        // If current user is admin
+        if ($this->timeOffIsAdminUser($currentUser)) {
+            // Can decline any pending request that's not their own
+            return $request->status === 'Pending';
+        }
+
+        return false;
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     public function request_time_off_create($id)
     {
         $employee = User::findOrFail($id);
@@ -4290,8 +4921,6 @@ class TimeManagementController extends Controller
 
         return view('time_management.time_off.request_time_off.create', compact('employee', 'timeOffTypes'));
     }
-
-
 
     public function checkRequiresTimeInput(Request $request)
     {
@@ -4305,7 +4934,6 @@ class TimeManagementController extends Controller
             'requires_time_input' => $policy ? (bool) $policy->requires_time_input : false
         ]);
     }
-
 
     public function getEmployeeShift(Request $request)
     {
@@ -4351,6 +4979,8 @@ class TimeManagementController extends Controller
 
         // Parse days from JSON
         $days = json_decode($ruleShift->days, true);
+
+   
 
         // Check if the requested day is included in the rule
         if (!in_array($dayName, $days)) {
@@ -4484,56 +5114,6 @@ class TimeManagementController extends Controller
         }
     }
 
-
-
-    public function request_time_off_destroy($id)
-    {
-        try {
-            $request = RequestTimeOff::findOrFail($id);
-            $userId = $request->user_id;
-            $user = User::find($userId);
-
-            // Store request details before deletion for notifications
-            $requestDetails = [
-                'start_date' => $request->start_date,
-                'end_date' => $request->end_date,
-                'time_off_type' => $request->timeOffType->name ?? 'Time Off',
-            ];
-
-            // Get HR personnel
-            $hr_personnel = User::where('department', 'Human Resources')
-                ->where('employee_status', '!=', 'Inactive')
-                ->get();
-
-            // Create notifications for HR personnel about the cancelled request
-            foreach ($hr_personnel as $hr) {
-                Notification::create([
-                    'users_id' => $hr->id,
-                    'message' => "Time off request cancelled by {$user->name}.",
-                    'type' => 'time_off_cancelled',
-                    'maker_id' => Auth::user()->id,
-                    'status' => 'Unread'
-                ]);
-
-                $timeOffPolicy = TimeOffPolicy::where('id',  $request->time_off_id)->first();
-
-                // Send email notification to HR personnel
-                Mail::to($hr->email)->send(new TimeOffRequestCancelled($request, $user,     $timeOffPolicy));
-            }
-
-
-
-            $request->delete();
-            return response()->json(['success' => 'Time off request deleted successfully.']);
-        } catch (\Exception $e) {
-            return response()->json(['error' => $e->getMessage()], 500);
-        }
-    }
-
-
-
-
-
     public function request_time_off_store(Request $request)
     {
         //dd($request->all());
@@ -4557,6 +5137,7 @@ class TimeManagementController extends Controller
         $startDateTime = $request->start_date;
         $endDateTime = $request->end_date;
 
+
         // Check if we have time inputs and if the time off type requires them
         if ($timeOffType->requires_time_input) {
             // Use hour_in and hour_out if provided, otherwise use default times
@@ -4570,6 +5151,8 @@ class TimeManagementController extends Controller
             $startDateTime = $request->start_date . ' 00:00:00';
             $endDateTime = $request->end_date . ' 23:59:59';
         }
+
+        // dd($startDateTime, $endDateTime);
 
         // Create the time off request
         $timeOffRequest = new RequestTimeOff();
@@ -4631,89 +5214,47 @@ class TimeManagementController extends Controller
             ->with('success', 'Time off request submitted successfully.');
     }
 
-    public function request_time_off_approve($id)
+    public function request_time_off_destroy($id)
     {
-        $request = RequestTimeOff::findOrFail($id);
+        try {
+            $request = RequestTimeOff::findOrFail($id);
+            $userId = $request->user_id;
+            $user = User::find($userId);
 
-        // Calculate the number of days requested
-        $startDate = new DateTime($request->start_date);
-        $endDate = new DateTime($request->end_date);
-        $interval = $startDate->diff($endDate);
-        $daysRequested = $interval->days + 1; // Including both start and end days
+            // Store request details before deletion for notifications
+            $requestDetails = [
+                'start_date' => $request->start_date,
+                'end_date' => $request->end_date,
+                'time_off_type' => $request->timeOffType->name ?? 'Time Off',
+            ];
 
-        // Find the time off assignment record for this user and time off type
-        $timeOffAssignment = DB::table('time_off_assign')
-            ->where('user_id', $request->user_id)
-            ->where('time_off_id', $request->time_off_id)
-            ->first();
+            // Get HR personnel
+            $hr_personnel = User::where('department', 'Human Resources')
+                ->where('employee_status', '!=', 'Inactive')
+                ->get();
 
-        // Check if user has enough balance
-        if ($timeOffAssignment && $timeOffAssignment->balance >= $daysRequested) {
-            // Update the balance by subtracting the days requested
-            DB::table('time_off_assign')
-                ->where('user_id', $request->user_id)
-                ->where('time_off_id', $request->time_off_id)
-                ->update([
-                    'balance' => $timeOffAssignment->balance - $daysRequested,
-                    'updated_at' => now()
+            // Create notifications for HR personnel about the cancelled request
+            foreach ($hr_personnel as $hr) {
+                Notification::create([
+                    'users_id' => $hr->id,
+                    'message' => "Time off request cancelled by {$user->name}.",
+                    'type' => 'time_off_cancelled',
+                    'maker_id' => Auth::user()->id,
+                    'status' => 'Unread'
                 ]);
 
-            // Update the request status
-            $request->status = 'approved';
-            $request->answered_by = Auth::id();
-            $request->updated_at = now();
-            $request->save();
+                $timeOffPolicy = TimeOffPolicy::where('id',  $request->time_off_id)->first();
 
-            // Get the user who made the request
-            $user = User::find($request->user_id);
-
-            // Create notification for the user
-            Notification::create([
-                'users_id' => $request->user_id,
-                'message' => "Your time off request has been approved.",
-                'type' => 'time_off_approved',
-                'maker_id' => Auth::user()->id,
-                'status' => 'Unread'
-            ]);
+                // Send email notification to HR personnel
+                Mail::to($hr->email)->send(new TimeOffRequestCancelled($request, $user,     $timeOffPolicy));
+            }
 
 
-            $timeOffPolicy = TimeOffPolicy::where('id',  $request->time_off_id)->first();
-            // Send email notification to the user
-            Mail::to($user->email)->send(new TimeOffRequestApproved($request, $user, $timeOffPolicy));
 
-            return redirect()->back()->with('success', 'Time off request approved successfully.');
-        } else {
-            // User doesn't have enough balance
-            return redirect()->back()->with('error', 'Cannot approve request. User does not have enough time off balance.');
+            $request->delete();
+            return response()->json(['success' => 'Time off request deleted successfully.']);
+        } catch (\Exception $e) {
+            return response()->json(['error' => $e->getMessage()], 500);
         }
-    }
-
-    public function request_time_off_decline(Request $httpRequest, $id)
-    {
-        $timeOffRequest = RequestTimeOff::findOrFail($id);
-        $timeOffRequest->status = 'Declined';
-        $timeOffRequest->answered_by = Auth::id();
-        $timeOffRequest->declined_reason = $httpRequest->declined_reason;
-        $timeOffRequest->updated_at = now();
-        $timeOffRequest->save();
-
-        // Get the user who made the request
-        $user = User::find($timeOffRequest->user_id);
-
-        // Create notification for the user
-        Notification::create([
-            'users_id' => $timeOffRequest->user_id,
-            'message' => "Your time off request has been declined.",
-            'type' => 'time_off_declined',
-            'maker_id' => Auth::user()->id,
-            'status' => 'Unread'
-        ]);
-
-        $timeOffPolicy = TimeOffPolicy::where('id',  $timeOffRequest->time_off_id)->first();
-
-        // Send email notification to the user
-        Mail::to($user->email)->send(new TimeOffRequestDeclined($timeOffRequest, $user, $timeOffPolicy));
-
-        return redirect()->back()->with('success', 'Time off request declined successfully.');
     }
 }

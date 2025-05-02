@@ -15,8 +15,6 @@ class ShiftChangeApprovedMail extends Mailable
     public function __construct($request)
     {
         $this->request = $request;
-
-        dd($this->request->ruleShiftAfter);
     }
 
     public function build()

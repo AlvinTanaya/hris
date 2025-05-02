@@ -1,108 +1,3 @@
-public function set_shift_index(Request $request)
-    {
-        // Also fetch user's own pending requests for the "requests" tab
-        $pendingRequests = RequestShiftChange::where('user_id', Auth::user()->id)
-            ->where('status_change', 'Pending')
-            ->get();
-
-        // Fetch all user's requests for the "requests" tab
-        $allRequests = RequestShiftChange::where('user_id', Auth::user()->id)
-            ->orderBy('created_at', 'desc')
-            ->get();
-
-        // Shift Request filter - For admin tab
-        $requestQuery = RequestShiftChange::with([
-            'user',
-            'ruleShiftBefore',
-            'ruleShiftAfter',
-            'exchangeUser',
-            'ruleExchangeBefore',
-            'ruleExchangeAfter',
-            'user.position',
-            'user.department'
-        ]);
-
-        if ($request->has('employee_request') && $request->employee_request != '') {
-            $requestQuery->where('user_id', $request->employee_request);
-        }
-
-        if ($request->has('current_shift_request') && $request->current_shift_request != '') {
-            $requestQuery->where('rule_user_id_before', $request->current_shift_request);
-        }
-
-        if ($request->has('requested_shift_request') && $request->requested_shift_request != '') {
-            $requestQuery->where('rule_user_id_after', $request->requested_shift_request);
-        }
-
-        if ($request->has('start_date_request') && $request->start_date_request != '') {
-            $requestQuery->whereDate('date_change_start', '>=', $request->start_date_request);
-        }
-
-        if ($request->has('end_date_request') && $request->end_date_request != '') {
-            $requestQuery->whereDate('date_change_end', '<=', $request->end_date_request);
-        }
-
-        // Get all requests first, then apply position/department filtering later
-        $pendingShiftRequests = $requestQuery->orderBy('created_at', 'desc')->get();
-
-        // Add historical position/department data to shift requests
-        foreach ($pendingShiftRequests as $req) {
-            // Find the most recent transfer record before the request creation date
-            $historicalTransfer = history_transfer_employee::where('users_id', $req->user_id)
-                ->where('created_at', '<', $req->created_at)
-                ->orderBy('created_at', 'desc')
-                ->first();
-
-            if ($historicalTransfer) {
-                // Store historical position and department information
-                $req->historical_position = $historicalTransfer->oldPosition;
-                $req->historical_department = $historicalTransfer->oldDepartment;
-            } else {
-                // If no transfer record found, use current position/department
-                $req->historical_position = $req->user->position;
-                $req->historical_department = $req->user->department;
-            }
-        }
-
-        // Post-processing filter for position and department on requests
-        if ($request->has('position_request') && $request->position_request != '') {
-            $pendingShiftRequests = $pendingShiftRequests->filter(function ($req) use ($request) {
-                return $req->historical_position == $request->position_request;
-            });
-        }
-
-        if ($request->has('department_request') && $request->department_request != '') {
-            $pendingShiftRequests = $pendingShiftRequests->filter(function ($req) use ($request) {
-                return $req->historical_department == $request->department_request;
-            });
-        }
-
-        $rules = rule_shift::all();
-        $employees = User::where('employee_status', '!=', 'Inactive')->get();
-
-        // Get distinct departments from EmployeeDepartment model
-        $departments = EmployeeDepartment::distinct()->pluck('department');
-
-        // Get distinct positions from EmployeePosition model
-        $positions = EmployeePosition::distinct()->pluck('position');
-
-        // Get active tab
-        $activeTab = $request->tab ?? 'current';
-
-        return view('/time_management/set_shift/index', compact(
-            'employeeShifts',
-            'employeeShiftsHistory',
-            'rules',
-            'employees',
-            'positions',
-            'departments',
-            'pendingShiftRequests',
-            'pendingRequests',
-            'allRequests',
-            'activeTab'
-        ));
-    }
-
 @extends('layouts.app')
 
 @section('content')
@@ -140,6 +35,17 @@ public function set_shift_index(Request $request)
 <div class="container mt-4 mx-auto">
     <ul class="nav nav-tabs d-flex w-100" id="shiftTab" role="tablist">
         <li class="nav-item flex-grow-1 text-center" role="presentation">
+            <a class="nav-link active" id="currentTab" data-bs-toggle="tab" href="#current" role="tab" aria-controls="current" aria-selected="true">
+                <i class="fas fa-calendar-day"></i> Current Shifts
+            </a>
+        </li>
+        <li class="nav-item flex-grow-1 text-center" role="presentation">
+            <a class="nav-link" id="historyTab" data-bs-toggle="tab" href="#history" role="tab" aria-controls="history" aria-selected="false">
+                <i class="fas fa-history"></i> Shift History
+            </a>
+        </li>
+
+        <li class="nav-item flex-grow-1 text-center" role="presentation">
             <a class="nav-link" id="requestTab" data-bs-toggle="tab" href="#request" role="tab" aria-controls="request" aria-selected="false">
                 <i class="fa-solid fa-hand-point-up"></i> Shift Request
             </a>
@@ -147,6 +53,259 @@ public function set_shift_index(Request $request)
     </ul>
 
     <div class="tab-content mt-4">
+        <!-- Current Shifts Section -->
+        <div class="tab-pane fade show active" id="current" role="tabpanel">
+            <div id="currentFilter" class="card shadow-sm mb-4">
+                
+
+                <div class="card-header">
+                    <h5 class="text-primary mt-2"><i class="fas fa-filter"></i> Filter Current Shifts</h5>
+                </div>
+                <div class="card-body">
+                    <form action="{{ route('time.set.shift.index') }}" method="GET" class="row g-3">
+                        <input type="hidden" name="tab" value="current">
+                        <div class="col-md-4">
+                            <label class="form-label">Employee</label>
+                            <select class="form-select" name="employee">
+                                <option value="">All Employees</option>
+                                @foreach($employees as $employee)
+                                <option value="{{ $employee->id }}" {{ request('employee') == $employee->id ? 'selected' : '' }}>{{ $employee->name }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Position</label>
+                            <select class="form-select" name="position">
+                                <option value="">All Positions</option>
+                                @foreach($positions as $position)
+                                <option value="{{ $position }}" {{ request('position') == $position ? 'selected' : '' }}>{{ $position }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Department</label>
+                            <select class="form-select" name="department">
+                                <option value="">All Departments</option>
+                                @foreach($departments as $department)
+                                <option value="{{ $department }}" {{ request('department') == $department ? 'selected' : '' }}>{{ $department }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Rule</label>
+                            <select class="form-select" name="type">
+                                <option value="">All Rules</option>
+                                @foreach($rules as $rule)
+                                <option value="{{ $rule->id}}" {{ request('type') == $rule->id ? 'selected' : '' }}>{{ $rule->type }}</option>
+                                @endforeach
+
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Start Date</label>
+                            <input type="date" class="form-control" name="start_date" value="{{ request('start_date') }}">
+                        </div>
+                        <div class="col-12">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-search me-2"></i>Apply Filters
+                            </button>
+                            <a href="{{ route('time.set.shift.index') }}?tab=current" class="btn btn-secondary">
+                                <i class="fas fa-undo me-2"></i>Reset
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="text-primary mt-2"><i class="fas fa-calendar-check"></i> Current Employee Shifts</h5>
+
+                    <div>
+
+                        <!-- Exchange Shift Button -->
+                        <button class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#exchangeShiftModal">
+                            <i class="fas fa-exchange-alt me-2"></i> Exchange Shifts
+                        </button>
+                        <a href="{{ route('time.set.shift.create') }}" class="btn btn-primary">
+                            <i class="fas fa-plus-circle me-2"></i>Add Employee Shift
+                        </a>
+
+
+                    </div>
+
+                </div>
+            </div>
+
+
+            @foreach($employeeShifts as $ruleId => $shifts)
+            <div class="card shadow-sm mb-4">
+                <div class="card-body">
+                    <div class="table-responsive">
+
+                        <h3 class="text-primary">{{ $shifts->first()->ruleShift->type }}</h3>
+
+                        <table id="currentShiftTable" class="table table-bordered table-hover mb-3 pt-3">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th style="width: 5%">No</th>
+                                    <th>Employee</th>
+                                    <th>Position</th> <!-- Added column -->
+                                    <th>Department</th> <!-- Added column -->
+                                    <th style="width: 20%">Rule</th>
+                                    <th style="width: 10%">Start Date</th>
+                                    <th style="width: 10%">End Date</th>
+                                    <th style="width: 20%">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach($shifts as $index => $shift)
+                                <tr>
+                                    <td>{{ $index + 1 }}</td>
+                                    <td>{{ $shift->user->name }}</td>
+                                    <td>{{ $shift->historical_position ? $shift->historical_position->position : 'N/A' }}</td>
+                                    <td>{{ $shift->historical_department ? $shift->historical_department->department : 'N/A' }}</td>
+                                    <td>{{ $shift->ruleShift->type }}</td>
+                                    <td>{{ $shift->start_date }}</td>
+                                    <td>n/d</td>
+                                    <td>
+                                        <button class="btn btn-warning btn-sm editShiftBtn"
+                                            data-id="{{ $shift->id }}"
+                                            data-user="{{ $shift->user_id }}"
+                                            data-rule="{{ $shift->rule_id }}"
+                                            data-start="{{ $shift->start_date }}">
+                                            <i class="fas fa-edit"></i> Edit
+                                        </button>
+
+                                        <button class="btn btn-danger btn-sm deleteShiftBtn"
+                                            data-id="{{ $shift->id }}">
+                                            <i class="fas fa-trash"></i> Delete
+                                        </button>
+                                    </td>
+                                </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+
+
+                    </div>
+                </div>
+            </div>
+            @endforeach
+
+
+
+        </div>
+
+        <!-- History Section -->
+        <div class="tab-pane fade" id="history" role="tabpanel">
+            <div id="historyFilter" class="card shadow-sm mb-4 d-none">
+                <div class="card-header">
+                    <h5 class="text-primary mt-2"><i class="fas fa-filter"></i> Filter Shift History</h5>
+                </div>
+                <div class="card-body">
+                    <form action="{{ route('time.set.shift.index') }}" method="GET" class="row g-3">
+                        <input type="hidden" name="tab" value="history">
+                        <div class="col-md-4">
+                            <label class="form-label">Employee</label>
+                            <select class="form-select" name="employee_history">
+                                <option value="">All Employees</option>
+                                @foreach($employees as $employee)
+                                <option value="{{ $employee->id }}" {{ request('employee') == $employee->id ? 'selected' : '' }}>{{ $employee->name }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Position</label>
+                            <select class="form-select" name="position_history">
+                                <option value="">All Positions</option>
+                                @foreach($positions as $position)
+                                <option value="{{ $position }}" {{ request('position') == $position ? 'selected' : '' }}>{{ $position }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Department</label>
+                            <select class="form-select" name="department_history">
+                                <option value="">All Departments</option>
+                                @foreach($departments as $department)
+                                <option value="{{ $department }}" {{ request('department') == $department ? 'selected' : '' }}>{{ $department }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Rule</label>
+                            <select class="form-select" name="type_history">
+                                <option value="">All Rules</option>
+                                @foreach($rules as $rule)
+                                <option value="{{ $rule->id}}" {{ request('type') == $rule->id ? 'selected' : '' }}>{{ $rule->type }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Start Date</label>
+                            <input type="date" class="form-control" name="start_date_history" value="{{ request('start_date') }}">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">End Date</label>
+                            <input type="date" class="form-control" name="end_date_history" value="{{ request('end_date') }}">
+                        </div>
+                        <div class="col-12">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-search me-2"></i>Apply Filters
+                            </button>
+                            <a href="{{ route('time.set.shift.index') }}?tab=history" class="btn btn-secondary">
+                                <i class="fas fa-undo me-2"></i>Reset
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <div class="card shadow-sm mb-4">
+                <div class="card-header">
+                    <h5 class="text-primary mt-2"><i class="fas fa-history"></i> Employee Shift History</h5>
+                </div>
+            </div>
+            @foreach($employeeShiftsHistory as $ruleId => $shifts)
+            <div class="card shadow-sm mb-4">
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <h3 class="text-primary">{{ $shifts->first()->ruleShift->type }}</h3>
+                        <table id="historyShiftTable" class="table table-bordered table-hover mb-3 pt-3">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th style="width: 5%">No</th>
+                                    <th>Employee</th>
+                                    <th>Position</th> <!-- Added column -->
+                                    <th>Department</th>
+                                    <th style="width: 20%">Rule</th>
+                                    <th style="width: 20%">Start Date</th>
+                                    <th style="width: 20%">End Date</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach($shifts as $index => $shift)
+                                <tr>
+                                    <td>{{ $index + 1 }}</td>
+                                    <td>{{ $shift->user->name }}</td>
+                                    <td>{{ $shift->historical_position ? $shift->historical_position->position : 'N/A' }}</td>
+                                    <td>{{ $shift->historical_department ? $shift->historical_department->department : 'N/A' }}</td>
+                                    <td>{{ $shift->ruleShift->type }}</td>
+                                    <td>{{ $shift->start_date }}</td>
+                                    <td>{{ $shift->end_date }}</td>
+                                </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+
+
+                    </div>
+                </div>
+            </div>
+            @endforeach
+        </div>
 
 
         <!-- request Section -->
@@ -603,6 +762,64 @@ public function set_shift_index(Request $request)
 
 
 
+<!-- Edit Shift Modal -->
+<div class="modal fade" id="editShiftModal" tabindex="-1" aria-labelledby="editShiftModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editShiftModalLabel">Edit Employee Shift</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="editShiftForm">
+                    <input type="hidden" id="editShiftId">
+                    <input type="hidden" id="editUserId">
+
+
+
+                    <div class="mb-3">
+                        <label class="form-label">Rule</label>
+                        <select class="form-select" id="editRule">
+                            @foreach($rules as $rule)
+                            <option value="{{ $rule->id }}">{{ $rule->type }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Start Date</label>
+                        <input type="date" class="form-control" id="editStartDate">
+                    </div>
+                    <button type="submit" class="btn btn-primary">Update Shift</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<!-- Exchange Shift Modal -->
+<div class="modal fade" id="exchangeShiftModal" tabindex="-1" aria-labelledby="exchangeShiftModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Exchange Employee Shifts</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="exchangeShiftForm">
+                    @csrf
+                    <div class="mb-3">
+                        <label for="start_date" class="form-label">New Start Date</label>
+                        <input type="date" class="form-control" id="start_date" name="start_date" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Exchange Shifts</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+
 <!-- Decline Reason Modal -->
 <div class="modal fade" id="declineReasonModal" tabindex="-1" aria-labelledby="declineReasonModalLabel" aria-hidden="true">
     <div class="modal-dialog">
@@ -681,7 +898,15 @@ public function set_shift_index(Request $request)
             }
         });
 
-
+        // Edit shift functionality
+        $('.editShiftBtn').on('click', function() {
+            let data = $(this).data();
+            $('#editShiftId').val(data.id);
+            $('#editUserId').val(data.user);
+            $('#editRule').val(data.rule);
+            $('#editStartDate').val(data.start);
+            $('#editShiftModal').modal('show');
+        });
 
         // Common AJAX response handler
         function handleAjaxResponse(response, successTitle, successMessage) {
@@ -737,6 +962,88 @@ public function set_shift_index(Request $request)
             });
         });
 
+        // Delete Shift with Confirmation
+        $('.deleteShiftBtn').on('click', function() {
+            let shiftId = $(this).data('id');
+
+            // Store the delete button reference
+            const deleteButton = $(this);
+            const originalButtonText = deleteButton.html();
+
+            Swal.fire({
+                title: "Are you sure?",
+                text: "You won't be able to revert this!",
+                icon: "warning",
+                showCancelButton: true,
+                confirmButtonColor: "#d33",
+                cancelButtonColor: "#3085d6",
+                confirmButtonText: "Yes, delete it!"
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    // Show processing state
+                    deleteButton.prop('disabled', true);
+                    deleteButton.html('<i class="fas fa-spinner fa-spin"></i> Deleting...');
+
+                    $.ajax({
+                        url: `/time_management/set_shift/delete/${shiftId}`,
+                        type: 'DELETE',
+                        data: {
+                            _token: '{{ csrf_token() }}'
+                        },
+                        success: function(response) {
+                            // Reset button state
+                            deleteButton.html(originalButtonText);
+                            deleteButton.prop('disabled', false);
+
+                            handleAjaxResponse(response, 'Deleted!', 'Employee shift has been deleted.');
+                        },
+                        error: function() {
+                            // Reset button state
+                            deleteButton.html(originalButtonText);
+                            deleteButton.prop('disabled', false);
+
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Error',
+                                text: 'Something went wrong while deleting the shift.'
+                            });
+                        }
+                    });
+                }
+            });
+        });
+        // Exchange Shift Form Submission
+        $("#exchangeShiftForm").submit(function(event) {
+            event.preventDefault();
+
+            // Show processing state
+            const submitButton = $(this).find('button[type="submit"]');
+            const originalButtonText = submitButton.html();
+            submitButton.prop('disabled', true);
+            submitButton.html('<i class="fas fa-spinner fa-spin"></i> Processing...');
+
+            $.ajax({
+                url: "{{ route('time.set.shift.exchange') }}",
+                type: "POST",
+                data: $(this).serialize(),
+                success: function(response) {
+                    // Reset button state
+                    submitButton.html(originalButtonText);
+                    submitButton.prop('disabled', false);
+
+                    // Handle success response
+                    handleAjaxResponse(response, 'Success!', response.message);
+                },
+                error: function(xhr, status, error) {
+                    // Reset button state
+                    submitButton.html(originalButtonText);
+                    submitButton.prop('disabled', false);
+
+                    // Handle error
+                    handleAjaxError(xhr, status, error);
+                }
+            });
+        });
 
         // Handle approve request
         $('.approve-request').on('click', function() {
@@ -843,129 +1150,3 @@ public function set_shift_index(Request $request)
     });
 </script>
 @endpush
-
-
-
-YANG ATAS ini DALAH TAMPILAN LAMA DARI REQUEEEST KU DIA ITU MInusNYA CUMA ADA 1 YANG JAWAB YAITU SI HRD, NAH CUMA AKU KAN ingin perubahan dia  tiu ada 2 approval maka jadinya yang bawah ini aku buat indexnya ya mungkin juga kurang benar nah kamu tolong benarkan serta buatkan indenya paaki bootratp terbaru dan jquery laaravel php dan datatabel
-
-
-
-    public function indexShiftChange(Request $request)
-    {
-
-
-        $query = RequestShiftChange::with([
-            'user',
-            'exchangeUser',
-            'ruleShiftBefore',
-            'ruleShiftAfter',
-            'ruleExchangeBefore',
-            'ruleExchangeAfter'
-        ]);
-
-        // Filters
-        if ($request->has('status') && !empty($request->status)) {
-            $query->where('status_change', $request->status);
-        }
-
-        if ($request->has('department_id') && !empty($request->department_id)) {
-            $query->whereHas('user', function ($q) use ($request) {
-                $q->where('department_id', $request->department_id);
-            });
-        }
-
-        if ($request->has('user_id') && !empty($request->user_id)) {
-            $query->where('user_id', $request->user_id);
-        }
-
-        if ($request->has('date_from') && !empty($request->date_from)) {
-            $query->whereDate('date_change_start', '>=', $request->date_from);
-        }
-
-        if ($request->has('date_to') && !empty($request->date_to)) {
-            $query->whereDate('date_change_end', '<=', $request->date_to);
-        }
-
-        // Check user's position to determine which requests to show
-        $currentUser = Auth::user();
-        $userDepartment = $currentUser->department_id;
-        $userPosition = $currentUser->position;
-
-        // Filter for department managers (only see their department's requests)
-        $isManager = User::where('id', $currentUser->id)
-            ->where('position_id', 3) // Position ID for 'Manager'
-            ->where('department_id', '!=', 3) // Not HR department
-            ->where('department_id', '!=', 2) // Not General Manager department
-            ->where('department_id', '!=', 1) // Not Director department
-            ->exists();
-
-        // Check if super admin (HR Manager, GM, Director)
-        $isSuperAdmin = User::where('id', $currentUser->id)
-            ->where(function ($query) {
-                $query->where(function ($q) {
-                    // Manager in HR department
-                    $q->where('position_id', 3)
-                        ->where('department_id', 3);
-                })->orWhere(function ($q) {
-                    // General Manager
-                    $q->where('position_id', 2)
-                        ->orWhere('department_id', 2);
-                })->orWhere(function ($q) {
-                    // Director
-                    $q->where('position_id', 1)
-                        ->orWhere('department_id', 1);
-                });
-            })->exists();
-
-        // If manager, show only department requests
-        if ($isManager && !$isSuperAdmin) {
-            $query->whereHas('user', function ($q) use ($userDepartment) {
-                $q->where('department_id', $userDepartment);
-            });
-        }
-
-        // If not admin or manager, show only own requests
-        if (!$isManager && !$isSuperAdmin) {
-            $query->where('user_id', $currentUser->id);
-        }
-
-        // Pagination
-        $perPage = $request->has('per_page') ? (int)$request->per_page : 15;
-        $shiftChanges = $query->orderBy('created_at', 'desc')->paginate($perPage);
-
-        // Check if current user can approve each request
-        $shiftChanges->getCollection()->transform(function ($item) use ($currentUser, $isManager, $isSuperAdmin) {
-            // User can't approve their own request
-            $isOwnRequest = $item->user_id == $currentUser->id;
-
-            // Check if requester is a manager (skips dept approval)
-            $requesterIsManager = User::where('id', $item->user_id)
-                ->whereHas('position', function ($query) {
-                    $query->where('position', 'like', '%Manager%');
-                })->exists();
-
-            // Department head approval logic - must be same department
-            $canApproveDept = $isManager &&
-                !$isOwnRequest &&
-                !$requesterIsManager &&
-                $item->dept_approval_status === 'Pending' &&
-                $currentUser->department_id === $item->user->department_id;
-
-            // Admin approval logic
-            $canApproveAdmin = $isSuperAdmin &&
-                !$isOwnRequest &&
-                $item->admin_approval_status === 'Pending';
-
-            $item->can_approve_dept = $canApproveDept;
-            $item->can_approve_admin = $canApproveAdmin;
-
-            return $item;
-        });
-
-        // Return view instead of JSON
-        return view('time_management/request_shift/index', [
-            'shiftChanges' => $shiftChanges,
-            'isManager' => $isManager,
-            'isSuperAdmin' => $isSuperAdmin
-        ]);
-    }
