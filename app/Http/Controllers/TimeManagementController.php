@@ -38,6 +38,9 @@ use App\Models\RequestTimeOff;
 use App\Models\EmployeeDepartment;
 use App\Models\EmployeePosition;
 use App\Models\CustomHoliday;
+use App\Models\EmployeeSalary;
+use App\Models\SalaryHistory;
+
 
 use App\Mail\WarningLetterMail;
 use App\Mail\EmployeeShiftAssigned;
@@ -3277,9 +3280,11 @@ class TimeManagementController extends Controller
     // Overtime Index - Main view with filters and tabs
     public function overtime_index(Request $request)
     {
+        // Get current logged in user ID
+        $currentUserId = Auth::id();
+
         // Get filter parameters
         $employee = $request->input('employee', 'all');
-        $overtimeType = $request->input('overtime_type', 'all');
         $date = $request->input('date');
         $department = $request->input('department_request');
         $position = $request->input('position_request');
@@ -3293,23 +3298,26 @@ class TimeManagementController extends Controller
             ->leftJoin('employee_positions as ep', function ($join) {
                 $join->on('users.position_id', '=', 'ep.id');
             })
-            ->leftJoin('users as responder', 'employee_overtime.answer_user_id', '=', 'responder.id')
+            ->leftJoin('users as dept_approver', 'employee_overtime.dept_approval_user_id', '=', 'dept_approver.id')
+            ->leftJoin('users as admin_approver', 'employee_overtime.admin_approval_user_id', '=', 'admin_approver.id')
             ->select(
                 'employee_overtime.*',
                 'users.name as employee_name',
                 'ep.position as current_position',
                 'ed.department as current_department',
-                'responder.name as response_name'
-            );
+                'dept_approver.name as dept_approver_name',
+                'admin_approver.name as admin_approver_name'
+            )
+            // Filter out records belonging to the currently logged in user
+            // ->where('employee_overtime.user_id', '!=', $currentUserId)
+        ;
 
         // Apply filters
         if ($employee !== 'all' && is_numeric($employee)) {
             $query->where('employee_overtime.user_id', $employee);
         }
 
-        if ($overtimeType !== 'all') {
-            $query->where('employee_overtime.overtime_type', $overtimeType);
-        }
+
 
         if ($date) {
             $query->whereDate('employee_overtime.date', $date);
@@ -3349,6 +3357,11 @@ class TimeManagementController extends Controller
                 $record->employee_position = $record->current_position;
                 $record->employee_department = $record->current_department;
             }
+
+            // Add approval permissions for UI
+            $record->can_approve_dept = $this->overtimeCanApproveDept(Auth::user(), $record);
+            $record->can_approve_admin = $this->overtimeCanApproveAdmin(Auth::user(), $record);
+            $record->can_decline = $this->overtimeCanDecline(Auth::user(), $record);
         }
 
         // Apply position and department filters
@@ -3380,6 +3393,19 @@ class TimeManagementController extends Controller
             })->values();
         }
 
+        // Format requests with additional info
+        $pendingRequests = $pendingRequests->map(function ($item) {
+            return $this->formatOvertimeRequest($item);
+        });
+
+        $approvedRequests = $approvedRequests->map(function ($item) {
+            return $this->formatOvertimeRequest($item);
+        });
+
+        $declinedRequests = $declinedRequests->map(function ($item) {
+            return $this->formatOvertimeRequest($item);
+        });
+
         // Get all employees for filter dropdown
         $employees = User::where('employee_status', '!=', 'Inactive')->get();
 
@@ -3387,7 +3413,7 @@ class TimeManagementController extends Controller
         $departments = EmployeeDepartment::distinct()->pluck('department');
         $positions = EmployeePosition::distinct()->pluck('position');
 
-        return view('time_management.overtime.index', compact(
+        return view('time_management.overtime.management.index', compact(
             'pendingRequests',
             'approvedRequests',
             'declinedRequests',
@@ -3395,39 +3421,359 @@ class TimeManagementController extends Controller
             'departments',
             'positions',
             'employee',
-            'overtimeType',
             'date'
         ));
     }
 
+    // Helper method for formatting overtime requests
+    protected function formatOvertimeRequest($request)
+    {
+        // Tambahkan informasi rate lembur dan total pembayaran
+        $overtimeRate = $this->getOvertimeRateForDate($request->user_id, $request->date);
+        $request->overtime_rate = $overtimeRate;
+        $request->overtime_payment = $request->total_hours * $overtimeRate;
+
+
+        // Process the historical department and position if not already set
+        if (!isset($request->historical_department) && !isset($request->historical_position)) {
+            // Find historical position and department at the time of request creation
+            $historyRecord = history_transfer_employee::where('users_id', $request->user_id)
+                ->where('created_at', '<', $request->created_at)
+                ->orderBy('created_at', 'desc')
+                ->first();
+
+            if ($historyRecord) {
+                // Use historical position and department
+                $position = EmployeePosition::find($historyRecord->new_position_id);
+                $department = EmployeeDepartment::find($historyRecord->new_department_id);
+
+                $request->historical_position = $position ? $position->position : null;
+                $request->historical_department = $department ? $department->department : null;
+            } else {
+                // No history found, so current values will be used
+                $request->historical_position = null;
+                $request->historical_department = null;
+            }
+        }
+
+        // Set the department and position properties for display in views
+        // Use historical values if available, otherwise use current values
+        if (!isset($request->department)) {
+            $request->department = $request->historical_department ??
+                ($request->employee_department ??
+                    (isset($request->user) && isset($request->user->department) ?
+                        $request->user->department->department : null));
+        }
+
+        if (!isset($request->position)) {
+            $request->position = $request->historical_position ??
+                ($request->employee_position ??
+                    (isset($request->user) && isset($request->user->position) ?
+                        $request->user->position->position : null));
+        }
+
+        // Add information about declined/approved by
+        if ($request->approval_status === 'Declined') {
+            // Determine who declined the request
+            if ($request->admin_approval_status === 'Declined') {
+                $request->declined_by = $request->admin_approver_name ?? 'Admin Approver';
+            } elseif ($request->dept_approval_status === 'Declined') {
+                $request->declined_by = $request->dept_approver_name ?? 'Department Manager';
+            } else {
+                $request->declined_by = 'Unknown';
+            }
+        }
+
+        // Add formatted approval information
+        if ($request->dept_approval_status === 'Approved') {
+            $request->dept_approved_by = $request->dept_approver_name ?? 'Department Manager';
+        }
+
+        if ($request->admin_approval_status === 'Approved') {
+            $request->admin_approved_by = $request->admin_approver_name ?? 'Admin';
+        }
+
+        return $request;
+    }
+
+    protected function getOvertimeRateForDate($userId, $date)
+    {
+        // Ensure we have a Carbon instance for comparison
+        $overtimeDate = $date instanceof Carbon ? $date : Carbon::parse($date);
+
+
+        $salaryHistory = SalaryHistory::where('users_id', $userId)
+            ->latest('created_at')
+            ->first();
+
+
+
+        // If we found a relevant history record, use its rate
+        if ($salaryHistory) {
+            // Log::info("Found salary history record from: " . $salaryHistory->created_at);
+
+            // Check if the overtime date is before the created_at date
+            if ($overtimeDate->startOfDay()->lt(Carbon::parse($salaryHistory->created_at)->startOfDay())) {
+                // If overtime date is BEFORE the salary history date, use old rate
+                // Log::info("Overtime date is before salary change. Using old rate: " . $salaryHistory->old_overtime_rate_per_hour);
+                return $salaryHistory->old_overtime_rate_per_hour;
+            } else {
+                // If overtime date is AFTER OR EQUAL TO the salary history date, use new rate
+                // Log::info("Overtime date is on/after salary change. Using new rate: " . $salaryHistory->new_overtime_rate_per_hour);
+                return $salaryHistory->new_overtime_rate_per_hour;
+            }
+        }
+
+
+
+        // If no history found for this user at all, use current salary settings
+        $employeeSalary = EmployeeSalary::where('users_id', $userId)->first();
+        $rate = $employeeSalary ? $employeeSalary->overtime_rate_per_hour : 0;
+        // Log::info("No history found. Using current rate: " . $rate);
+
+        return $rate;
+    }
+
+
+
+
+    // Approve an overtime request
+    public function overtime_approve(Request $request, $id)
+    {
+        $overtime = EmployeeOvertime::findOrFail($id);
+        $currentUser = Auth::user();
+        $approvalType = $request->approval_type ?? 'auto'; // Default to auto detection
+
+        // Determine approval type based on permissions if not specified
+        if ($approvalType === 'auto') {
+            if ($this->overtimeCanApproveDept($currentUser, $overtime)) {
+                $approvalType = 'dept';
+            } elseif ($this->overtimeCanApproveAdmin($currentUser, $overtime)) {
+                $approvalType = 'admin';
+            } else {
+                return redirect()->back()->with('error', 'You do not have permission to approve this request.');
+            }
+        } else {
+            // Validate approval type if specified
+            if (!in_array($approvalType, ['dept', 'admin'])) {
+                return redirect()->back()->with('error', 'Invalid approval type.');
+            }
+
+            // Check permissions based on approval type
+            if ($approvalType === 'dept' && !$this->overtimeCanApproveDept($currentUser, $overtime)) {
+                return redirect()->back()->with('error', 'You do not have permission to department approval.');
+            }
+
+            if ($approvalType === 'admin' && !$this->overtimeCanApproveAdmin($currentUser, $overtime)) {
+                return redirect()->back()->with('error', 'You do not have permission to admin approval.');
+            }
+        }
+
+        // Process approval
+        if ($approvalType === 'dept') {
+            $overtime->dept_approval_status = 'Approved';
+            $overtime->dept_approval_user_id = $currentUser->id;
+            $message = 'First level approval completed. Waiting for final approval.';
+        } else {
+            $overtime->admin_approval_status = 'Approved';
+            $overtime->admin_approval_user_id = $currentUser->id;
+
+            // Auto-approve dept level if requester is manager or admin
+            $user = User::find($overtime->user_id);
+            if ($user && $user->position_id <= 3) { // Manager or above
+                $overtime->dept_approval_status = 'Approved';
+                $overtime->dept_approval_user_id = $overtime->admin_approval_user_id;
+            }
+
+            $deptStatus = $overtime->dept_approval_status === 'Approved'
+                ? 'Request is now fully approved.'
+                : 'Waiting for department approval.';
+
+            $message = 'Admin approval completed. ' . $deptStatus;
+        }
+
+        $overtime->save();
+        $this->checkOvertimeApprovalStatus($overtime);
+
+        return redirect()->back()->with('success', $message);
+    }
+
+
+    // Helper function to check overall approval status
+    private function checkOvertimeApprovalStatus(EmployeeOvertime $overtime)
+    {
+        // If both levels approved, update the main approval status
+        if ($overtime->dept_approval_status === 'Approved' && $overtime->admin_approval_status === 'Approved') {
+            $overtime->approval_status = 'Approved';
+            $overtime->answer_user_id = $overtime->admin_approval_user_id; // Use admin as final approver
+            $overtime->updated_at = now();
+            $overtime->save();
+
+            // Get the employee who submitted the request
+            $employee = User::find($overtime->user_id);
+
+            // Create notification for the employee
+            Notification::create([
+                'users_id' => $overtime->user_id,
+                'message' => "Your overtime request for {$overtime->date} has been fully approved.",
+                'type' => 'overtime_approved',
+                'maker_id' => Auth::id(),
+                'status' => 'Unread'
+            ]);
+
+            // Send email notification to employee
+            Mail::to($employee->email)->send(new OvertimeApprovedMail($overtime, $employee));
+        }
+    }
+
+    // Updated Overtime Decline Function (either level can decline)
+    public function overtime_decline(Request $request, $id)
+    {
+        $request->validate([
+            'declined_reason' => 'required|string',
+        ]);
+
+        $overtime = EmployeeOvertime::findOrFail($id);
+        $currentUser = Auth::user();
+
+        // Check if user can decline this request
+        if (!$this->overtimeCanDecline($currentUser, $overtime)) {
+            return redirect()->back()->with('error', 'You do not have permission to decline this request.');
+        }
+
+        // Update the overall status
+        $overtime->approval_status = 'Declined';
+        $overtime->declined_reason = $request->declined_reason;
+        $overtime->answer_user_id = $currentUser->id;
+        $overtime->updated_at = now();
+
+        // Also update the specific level that did the declining
+        if ($this->overtimeIsDepartmentManager($currentUser)) {
+            $overtime->dept_approval_status = 'Declined';
+            $overtime->dept_approval_user_id = $currentUser->id;
+        } else { // Admin user
+            $overtime->admin_approval_status = 'Declined';
+            $overtime->admin_approval_user_id = $currentUser->id;
+        }
+
+        $overtime->save();
+
+        // Get the employee who submitted the request
+        $employee = User::find($overtime->user_id);
+
+        // Create notification for the employee
+        Notification::create([
+            'users_id' => $overtime->user_id,
+            'message' => "Your overtime request for {$overtime->date} has been declined.",
+            'type' => 'overtime_declined',
+            'maker_id' => Auth::id(),
+            'status' => 'Unread'
+        ]);
+
+        // Send email notification to employee
+        Mail::to($employee->email)->send(new OvertimeDeclinedMail($overtime, $employee));
+
+        return redirect()->back()->with('success', 'Overtime request declined successfully');
+    }
+
+    // Helper methods (adapted from TimeOff controller)
+    private function overtimeIsAdminUser($user)
+    {
+        return in_array($user->position_id, [1, 2]) || // Director or GM
+            ($user->position_id == 3 && $user->department_id == 3); // HR Manager
+    }
+
+    private function overtimeIsDepartmentManager($user)
+    {
+        return $user->position_id == 3 && $user->department_id != 3; // Manager non-HR
+    }
+
+    private function overtimeCanApproveDept($currentUser, $request)
+    {
+        // Always check if not already approved or declined
+        if ($request->dept_approval_status !== 'Pending') return false;
+
+        // Can't approve own request
+        if ($currentUser->id == $request->user_id) return false;
+
+        // Only department manager can approve
+        if (!$this->overtimeIsDepartmentManager($currentUser)) return false;
+
+        // Get the employee's information to check department
+        $user = User::find($request->user_id);
+        if (!$user) return false;
+
+        // Must be same department
+        if ($currentUser->department_id != $user->department_id) return false;
+
+        // Only for staff/supervisor requests (position_id 4 or 5)
+        return $user->position_id > 3;
+    }
+
+    private function overtimeCanApproveAdmin($currentUser, $request)
+    {
+        // Always check if not already approved or declined
+        if ($request->admin_approval_status !== 'Pending') return false;
+
+        // Can't approve own request
+        if ($currentUser->id == $request->user_id) return false;
+
+        // Only admin can approve
+        if (!$this->overtimeIsAdminUser($currentUser)) return false;
+
+        // Get user information
+        $user = User::find($request->user_id);
+        if (!$user) return false;
+
+        // For manager requests or admin requests, only need to check admin approval status
+        // (dept approval will be auto-approved)
+        if ($user->position_id <= 3) {
+            return $request->admin_approval_status === 'Pending';
+        }
+
+        // For staff/supervisor requests, must have department approval first
+        return $request->dept_approval_status === 'Approved';
+    }
+
+    private function overtimeCanDecline($currentUser, $request)
+    {
+        // Can't decline own request
+        if ($currentUser->id == $request->user_id) return false;
+
+        // Get user information
+        $user = User::find($request->user_id);
+        if (!$user) return false;
+
+        // If current user is department manager
+        if ($this->overtimeIsDepartmentManager($currentUser)) {
+            // Can only decline requests from staff/supervisors in their department
+            return $user->position_id > 3 &&
+                $user->department_id == $currentUser->department_id &&
+                $request->approval_status === 'Pending';
+        }
+
+        // If current user is admin
+        if ($this->overtimeIsAdminUser($currentUser)) {
+            // Can decline any pending request that's not their own
+            return $request->approval_status === 'Pending';
+        }
+
+        return false;
+    }
+
+
+
     public function overtime_index2($id)
     {
-        $query = EmployeeOvertime::query()
-            ->join('users', 'employee_overtime.user_id', '=', 'users.id')
-            ->leftJoin('employee_departments as ed', 'users.department_id', '=', 'ed.id')
-            ->leftJoin('employee_positions as ep', 'users.position_id', '=', 'ep.id')
-            ->leftJoin('users as responder', 'employee_overtime.answer_user_id', '=', 'responder.id')
-            ->select(
-                'employee_overtime.*',
-                'users.name as employee_name',
-                'ep.position as current_position',
-                'ed.department as current_department',
-                'responder.name as response_name'
-            )
-            ->where('employee_overtime.user_id', $id);
+        $employee = User::with(['department', 'position'])->findOrFail($id);
 
-        // Get the results separately for each status
-        $pendingRequests = (clone $query)->where('employee_overtime.approval_status', 'Pending')->get();
-        $approvedRequests = (clone $query)->where('employee_overtime.approval_status', 'Approved')->get();
-        $declinedRequests = (clone $query)->where('employee_overtime.approval_status', 'Declined')->get();
-
-        // All requests combined for processing
-        $allRequests = collect()->merge($pendingRequests)
-            ->merge($approvedRequests)
-            ->merge($declinedRequests);
+        // Get overtime requests for this employee with approver relationships
+        $overtimeRequests = EmployeeOvertime::with(['deptApprovalUser', 'adminApprovalUser'])
+            ->where('user_id', $id)
+            ->get();
 
         // Process each record to find historical position and department
-        foreach ($allRequests as $record) {
+        foreach ($overtimeRequests as $record) {
             // Find the closest historical transfer record before the overtime request
             $historyRecord = history_transfer_employee::where('users_id', $record->user_id)
                 ->where('created_at', '<', $record->created_at)
@@ -3436,34 +3782,110 @@ class TimeManagementController extends Controller
 
             if ($historyRecord) {
                 // Use the historical position and department
-                $histPosition = EmployeePosition::find($historyRecord->new_position_id);
-                $histDepartment = EmployeeDepartment::find($historyRecord->new_department_id);
+                $position = EmployeePosition::find($historyRecord->new_position_id);
+                $department = EmployeeDepartment::find($historyRecord->new_department_id);
 
-                $record->employee_position = $histPosition ? $histPosition->position : $record->current_position;
-                $record->employee_department = $histDepartment ? $histDepartment->department : $record->current_department;
+                $record->historical_position = $position ? $position->position : null;
+                $record->historical_department = $department ? $department->department : null;
             } else {
                 // No history record found, use current position and department
-                $record->employee_position = $record->current_position;
-                $record->employee_department = $record->current_department;
+                $record->historical_position = $employee->position->position ?? null;
+                $record->historical_department = $employee->department->department ?? null;
+            }
+
+            // Add overtime rate and payment calculation based on date
+            $overtimeRate = $this->getOvertimeRateForDate($record->user_id, $record->date);
+            $record->overtime_rate = $overtimeRate;
+            $record->overtime_payment = $record->total_hours * $overtimeRate;
+
+            // Store approver names
+            if ($record->deptApprovalUser) {
+                $record->dept_approver_name = $record->deptApprovalUser->name;
+            }
+
+            if ($record->adminApprovalUser) {
+                $record->admin_approver_name = $record->adminApprovalUser->name;
+            }
+
+            // Determine who declined if applicable
+            if ($record->approval_status === 'Declined') {
+                if ($record->admin_approval_status === 'Declined') {
+                    $record->declined_by = $record->adminApprovalUser ? $record->adminApprovalUser->name : 'Admin';
+                } elseif ($record->dept_approval_status === 'Declined') {
+                    $record->declined_by = $record->deptApprovalUser ? $record->deptApprovalUser->name : 'Department Manager';
+                } else {
+                    $record->declined_by = 'System';
+                }
             }
         }
 
-        $employee = User::with(['department', 'position'])->find($id);
+        // Split requests by status and format them
+        $pendingRequests = $overtimeRequests->where('approval_status', 'Pending')
+            ->sortByDesc('created_at')
+            ->values()
+            ->map(function ($item) {
+                return $this->formatOvertime2Request($item);
+            });
 
-        return view('time_management.overtime.index2', compact(
+        $approvedRequests = $overtimeRequests->where('approval_status', 'Approved')
+            ->sortByDesc('created_at')
+            ->values()
+            ->map(function ($item) {
+                return $this->formatOvertime2Request($item);
+            });
+
+        $declinedRequests = $overtimeRequests->where('approval_status', 'Declined')
+            ->sortByDesc('created_at')
+            ->values()
+            ->map(function ($item) {
+                return $this->formatOvertime2Request($item);
+            });
+
+        return view('time_management.overtime.management.index2', compact(
+            'employee',
             'pendingRequests',
             'approvedRequests',
-            'declinedRequests',
-            'employee'
+            'declinedRequests'
         ));
     }
+
+    protected function formatOvertime2Request($request)
+    {
+        // Format the request with all necessary data for display
+        return [
+            'id' => $request->id,
+            'employee_name' => $request->user->name,
+            'date' => $request->date,
+            'start_time' => $request->start_time,
+            'end_time' => $request->end_time,
+            'total_hours' => $request->total_hours,
+            'overtime_rate' => $request->overtime_rate,
+            'overtime_payment' => $request->overtime_payment,
+            'reason' => $request->reason,
+            'approval_status' => $request->approval_status,
+            'department' => $request->historical_department ?? $request->current_department,
+            'position' => $request->historical_position ?? $request->current_position,
+            'dept_approval_status' => $request->dept_approval_status,
+            'admin_approval_status' => $request->admin_approval_status,
+            'dept_approver_name' => $request->dept_approver_name ?? null,
+            'admin_approver_name' => $request->admin_approver_name ?? null,
+            'declined_by' => $request->declined_by ?? null,
+            'declined_reason' => $request->declined_reason,
+            'created_at' => $request->created_at,
+            'can_approve_dept' => $this->overtimeCanApproveDept(Auth::user(), $request),
+            'can_approve_admin' => $this->overtimeCanApproveAdmin(Auth::user(), $request),
+            'can_decline' => $this->overtimeCanDecline(Auth::user(), $request),
+        ];
+    }
+
+
 
 
     // Show overtime request creation form
     public function overtime_create($id)
     {
         $employee = User::findOrFail($id);
-        return view('time_management.overtime.create', compact('employee'));
+        return view('time_management.overtime.management.create', compact('employee'));
     }
 
     public function checkEligibility(Request $request)
@@ -3630,7 +4052,6 @@ class TimeManagementController extends Controller
             'end_time' => 'required',
             'total_hours' => 'required|numeric',
             'reason' => 'required|string',
-            'overtime_type' => 'required|in:Paid_Overtime,Overtime_Leave',
         ]);
 
         // Create overtime request
@@ -3641,7 +4062,6 @@ class TimeManagementController extends Controller
             'end_time' => $request->end_time,
             'total_hours' => $request->total_hours,
             'reason' => $request->reason,
-            'overtime_type' => $request->overtime_type,
             'approval_status' => 'Pending',
         ]);
 
@@ -3673,140 +4093,18 @@ class TimeManagementController extends Controller
             ->with('success', 'Overtime request submitted successfully');
     }
 
-    // Approve an overtime request
-    // Updated Overtime Approval Function with Two-level Approval
-    public function overtime_approve(Request $request, $id)
+    // Add this new method to your existing OvertimeController
+    public function getOvertimeRate(Request $request)
     {
-        $overtime = EmployeeOvertime::findOrFail($id);
-        $currentUser = Auth::user();
+        $userId = $request->user_id;
+        $date = $request->date;
 
-        // Check if current user is a department head or super admin
-        $isDeptHead = User::whereHas('position', function ($query) {
-            $query->where('position', 'like', '%Manager%')->where('position', 'not like', '%HR Manager%')
-                ->where('position', 'not like', '%General Manager%');
-        })->where('id', $currentUser->id)->exists();
+        // Get the appropriate rate based on the date
+        $overtimeRate = $this->getOvertimeRateForDate($userId, $date);
 
-        $isSuperAdmin = User::whereHas('position', function ($query) {
-            $query->where('position', 'like', '%HR Manager%')
-                ->orWhere('position', 'like', '%General Manager%')
-                ->orWhere('position', 'like', '%Director%');
-        })->where('id', $currentUser->id)->exists();
-
-        // Process approval based on user role
-        if ($isDeptHead && $overtime->dept_approval_status === 'Pending') {
-            // Department head approval
-            $overtime->dept_approval_status = 'Approved';
-            $overtime->dept_approval_user_id = $currentUser->id;
-            $overtime->approval_level = 1;
-            $overtime->save();
-
-            // Check if request is now fully approved (both levels approved)
-            $this->checkOvertimeApprovalStatus($overtime);
-
-            return redirect()->back()->with('success', 'First level approval completed. Waiting for final approval.');
-        } elseif ($isSuperAdmin && $overtime->admin_approval_status === 'Pending') {
-            // Super admin approval
-            $overtime->admin_approval_status = 'Approved';
-            $overtime->admin_approval_user_id = $currentUser->id;
-            $overtime->approval_level = max(1, $overtime->approval_level);
-            $overtime->save();
-
-            // Check if request is now fully approved (both levels approved)
-            $this->checkOvertimeApprovalStatus($overtime);
-
-            return redirect()->back()->with('success', 'Admin approval completed. ' .
-                ($overtime->dept_approval_status === 'Approved' ? 'Request is now fully approved.' : 'Waiting for department approval.'));
-        } else {
-            return redirect()->back()->with('error', 'You do not have permission to approve this request or it was already approved by your level.');
-        }
-    }
-
-    // Helper function to check overall approval status
-    private function checkOvertimeApprovalStatus(EmployeeOvertime $overtime)
-    {
-        // If both levels approved, update the main approval status
-        if ($overtime->dept_approval_status === 'Approved' && $overtime->admin_approval_status === 'Approved') {
-            $overtime->approval_status = 'Approved';
-            $overtime->answer_user_id = $overtime->admin_approval_user_id; // Use admin as final approver
-            $overtime->updated_at = now();
-            $overtime->save();
-
-            // Get the employee who submitted the request
-            $employee = User::find($overtime->user_id);
-
-            // Create notification for the employee
-            Notification::create([
-                'users_id' => $overtime->user_id,
-                'message' => "Your overtime request for {$overtime->date} has been fully approved.",
-                'type' => 'overtime_approved',
-                'maker_id' => Auth::id(),
-                'status' => 'Unread'
-            ]);
-
-            // Send email notification to employee
-            Mail::to($employee->email)->send(new OvertimeApprovedMail($overtime, $employee));
-        }
-    }
-
-    // Updated Overtime Decline Function (either level can decline)
-    public function overtime_decline(Request $request, $id)
-    {
-        $request->validate([
-            'declined_reason' => 'required|string',
+        return response()->json([
+            'overtime_rate' => $overtimeRate
         ]);
-
-        $overtime = EmployeeOvertime::findOrFail($id);
-        $currentUser = Auth::user();
-
-        // Check if current user is a department head or super admin
-        $isDeptHead = User::whereHas('position', function ($query) {
-            $query->where('position', 'like', '%Manager%')->where('position', 'not like', '%HR Manager%')
-                ->where('position', 'not like', '%General Manager%');
-        })->where('id', $currentUser->id)->exists();
-
-        $isSuperAdmin = User::whereHas('position', function ($query) {
-            $query->where('position', 'like', '%HR Manager%')
-                ->orWhere('position', 'like', '%General Manager%')
-                ->orWhere('position', 'like', '%Director%');
-        })->where('id', $currentUser->id)->exists();
-
-        // Only department heads or super admins can decline
-        if ($isDeptHead || $isSuperAdmin) {
-            $overtime->approval_status = 'Declined';
-            $overtime->declined_reason = $request->declined_reason;
-            $overtime->answer_user_id = Auth::id();
-            $overtime->updated_at = now();
-
-            // Also update the specific level that did the declining
-            if ($isDeptHead) {
-                $overtime->dept_approval_status = 'Declined';
-                $overtime->dept_approval_user_id = $currentUser->id;
-            } else {
-                $overtime->admin_approval_status = 'Declined';
-                $overtime->admin_approval_user_id = $currentUser->id;
-            }
-
-            $overtime->save();
-
-            // Get the employee who submitted the request
-            $employee = User::find($overtime->user_id);
-
-            // Create notification for the employee
-            Notification::create([
-                'users_id' => $overtime->user_id,
-                'message' => "Your overtime request for {$overtime->date} has been declined.",
-                'type' => 'overtime_declined',
-                'maker_id' => Auth::id(),
-                'status' => 'Unread'
-            ]);
-
-            // Send email notification to employee
-            Mail::to($employee->email)->send(new OvertimeDeclinedMail($overtime, $employee));
-
-            return redirect()->back()->with('success', 'Overtime request declined successfully');
-        }
-
-        return redirect()->back()->with('error', 'You do not have permission to decline this request.');
     }
 
 
@@ -3849,6 +4147,164 @@ class TimeManagementController extends Controller
         $overtime->delete();
         return redirect()->back()->with('success', 'Overtime request deleted successfully');
     }
+
+
+    public function overtime_report_index(Request $request)
+    {
+        // Get filter parameters
+        $employee = $request->input('employee', 'all');
+        $dateStart = $request->input('date_start');
+        $dateEnd = $request->input('date_end');
+        $department = $request->input('department_request');
+        $position = $request->input('position_request');
+
+        // Base query with proper joins - only get approved overtime
+        $query = EmployeeOvertime::query()
+            ->join('users', 'employee_overtime.user_id', '=', 'users.id')
+            ->leftJoin('employee_departments as ed', function ($join) {
+                $join->on('users.department_id', '=', 'ed.id');
+            })
+            ->leftJoin('employee_positions as ep', function ($join) {
+                $join->on('users.position_id', '=', 'ep.id');
+            })
+            ->leftJoin('users as dept_approver', 'employee_overtime.dept_approval_user_id', '=', 'dept_approver.id')
+            ->leftJoin('users as admin_approver', 'employee_overtime.admin_approval_user_id', '=', 'admin_approver.id')
+            ->select(
+                'employee_overtime.*',
+                'users.name as employee_name',
+                'ep.position as current_position',
+                'ed.department as current_department',
+                'dept_approver.name as dept_approver_name',
+                'admin_approver.name as admin_approver_name'
+            )
+            ->where('employee_overtime.approval_status', 'Approved');
+
+        // Apply filters
+        if ($employee !== 'all' && is_numeric($employee)) {
+            $query->where('employee_overtime.user_id', $employee);
+        }
+
+        // Date range filter
+        if ($dateStart && $dateEnd) {
+            $query->whereBetween('employee_overtime.date', [$dateStart, $dateEnd]);
+        } elseif ($dateStart) {
+            $query->whereDate('employee_overtime.date', '>=', $dateStart);
+        } elseif ($dateEnd) {
+            $query->whereDate('employee_overtime.date', '<=', $dateEnd);
+        }
+
+        // Get approved requests
+        $approvedRequests = $query->get();
+
+        // Process each record to find historical position and department
+        foreach ($approvedRequests as $record) {
+            // Find the closest historical transfer record before the overtime request
+            $historyRecord = history_transfer_employee::where('users_id', $record->user_id)
+                ->where('created_at', '<', $record->created_at)
+                ->orderBy('created_at', 'desc')
+                ->first();
+
+            if ($historyRecord) {
+                // Use the historical position and department
+                $histPosition = EmployeePosition::find($historyRecord->new_position_id);
+                $histDepartment = EmployeeDepartment::find($historyRecord->new_department_id);
+
+                $record->employee_position = $histPosition ? $histPosition->position : $record->current_position;
+                $record->employee_department = $histDepartment ? $histDepartment->department : $record->current_department;
+            } else {
+                // No history record found, use current position and department
+                $record->employee_position = $record->current_position;
+                $record->employee_department = $record->current_department;
+            }
+        }
+
+        // Apply position and department filters after historical data retrieval
+        if ($position) {
+            $approvedRequests = $approvedRequests->filter(function ($record) use ($position) {
+                return $record->employee_position == $position;
+            })->values();
+        }
+
+        if ($department) {
+            $approvedRequests = $approvedRequests->filter(function ($record) use ($department) {
+                return $record->employee_department == $department;
+            })->values();
+        }
+
+        // Format requests with additional info
+        $approvedRequests = $approvedRequests->map(function ($item) {
+            return $this->formatOvertimeRequest($item);
+        });
+
+        // Calculate summary statistics
+        $totalHours = $approvedRequests->sum('total_hours');
+        $totalPayment = $approvedRequests->sum('overtime_payment');
+        $requestCount = $approvedRequests->count();
+        $avgPaymentPerRequest = $requestCount > 0 ? $totalPayment / $requestCount : 0;
+
+        // Department breakdown
+        $departmentSummary = $approvedRequests->groupBy('employee_department')->map(function ($items) {
+            return [
+                'count' => $items->count(),
+                'total_hours' => $items->sum('total_hours'),
+                'total_payment' => $items->sum('overtime_payment')
+            ];
+        });
+
+        // Employee breakdown (top 5)
+        $employeeSummary = $approvedRequests->groupBy('employee_name')->map(function ($items) {
+            return [
+                'count' => $items->count(),
+                'total_hours' => $items->sum('total_hours'),
+                'total_payment' => $items->sum('overtime_payment')
+            ];
+        })->sortByDesc(function ($value) {
+            return $value['total_payment'];
+        })->take(5);
+
+        // Monthly breakdown (for the current year)
+        $currentYear = date('Y');
+        $monthlyData = [];
+        for ($month = 1; $month <= 12; $month++) {
+            $monthlyRequests = $approvedRequests->filter(function ($item) use ($month, $currentYear) {
+                return date('n', strtotime($item->date)) == $month &&
+                    date('Y', strtotime($item->date)) == $currentYear;
+            });
+
+            $monthlyData[$month] = [
+                'count' => $monthlyRequests->count(),
+                'total_hours' => $monthlyRequests->sum('total_hours'),
+                'total_payment' => $monthlyRequests->sum('overtime_payment')
+            ];
+        }
+
+        // Get all employees for filter dropdown
+        $employees = User::where('employee_status', '!=', 'Inactive')->get();
+
+        // Get unique departments and positions from their tables
+        $departments = EmployeeDepartment::distinct()->pluck('department');
+        $positions = EmployeePosition::distinct()->pluck('position');
+
+        return view('time_management.overtime.report.index', compact(
+            'approvedRequests',
+            'employees',
+            'departments',
+            'positions',
+            'employee',
+            'dateStart',
+            'dateEnd',
+            'department',
+            'position',
+            'totalHours',
+            'totalPayment',
+            'avgPaymentPerRequest',
+            'departmentSummary',
+            'employeeSummary',
+            'monthlyData'
+        ));
+    }
+
+
     /**
      * Time Off
      */
@@ -4516,9 +4972,6 @@ class TimeManagementController extends Controller
         ));
     }
 
-
-
-
     protected function formatTimeOffRequest($request)
     {
         // First, process the historical department and position if not already set
@@ -4528,12 +4981,12 @@ class TimeManagementController extends Controller
                 ->where('created_at', '<', $request->created_at)
                 ->orderBy('created_at', 'desc')
                 ->first();
-    
+
             if ($historyRecord) {
                 // Use historical position and department
                 $position = EmployeePosition::find($historyRecord->new_position_id);
                 $department = EmployeeDepartment::find($historyRecord->new_department_id);
-    
+
                 $request->historical_position = $position ? $position->position : null;
                 $request->historical_department = $department ? $department->department : null;
             } else {
@@ -4543,46 +4996,46 @@ class TimeManagementController extends Controller
                 $request->historical_department = null;
             }
         }
-    
+
         // Your original time formatting logic
         $start = Carbon::parse($request->start_date);
         $end = Carbon::parse($request->end_date);
-    
+
         // Check if this is a full day request using requires_time_input
         $timeOffPolicy = null;
         if (isset($request->time_off_id)) {
             $timeOffPolicy = TimeOffPolicy::find($request->time_off_id);
         }
         $isFullDay = $timeOffPolicy ? $timeOffPolicy->requires_time_input == 0 : false;
-    
+
         $request->formatted_start_date = $isFullDay
             ? $start->format('d-m-Y')
             : $start->format('d-m-Y H:i');
-    
+
         $request->formatted_end_date = $isFullDay
             ? $end->format('d-m-Y')
             : $end->format('d-m-Y H:i');
-    
+
         // Calculate duration
         if ($isFullDay) {
             // Untuk memastikan hasil bulat, kita gunakan startOfDay dan endOfDay
             $startDay = $start->copy()->startOfDay();
             $endDay = $end->copy()->endOfDay();
-            
+
             // Hitung selisih hari dan bulatkan ke bilangan bulat
             $days = $startDay->diffInDays($endDay->startOfDay()) + 1;
             $request->duration = $days . ' day' . ($days > 1 ? 's' : '');
         } else {
             $diff = $start->diff($end);
-    
+
             $parts = [];
             if ($diff->d > 0) $parts[] = $diff->d . ' day' . ($diff->d > 1 ? 's' : '');
             if ($diff->h > 0) $parts[] = $diff->h . ' hour' . ($diff->h > 1 ? 's' : '');
             if ($diff->i > 0) $parts[] = $diff->i . ' minute' . ($diff->i > 1 ? 's' : '');
-    
+
             $request->duration = implode(' ', $parts) ?: 'Less than 1 minute';
         }
-    
+
         // For date range display with updated logic based on full day status
         if ($isFullDay) {
             // For full day requests, always show date range format
@@ -4591,7 +5044,7 @@ class TimeManagementController extends Controller
             // For non-full day requests, include time in the format
             $request->formatted_date = $start->format('d M Y H:i') . ' - ' . $end->format('d M Y H:i');
         }
-    
+
         // Set the department and position properties for display in views
         // Use historical values if available, otherwise use current values
         if (!isset($request->department)) {
@@ -4600,14 +5053,14 @@ class TimeManagementController extends Controller
                     (isset($request->user) && isset($request->user->department) ?
                         $request->user->department->department : null));
         }
-    
+
         if (!isset($request->position)) {
             $request->position = $request->historical_position ??
                 ($request->employee_position ??
                     (isset($request->user) && isset($request->user->position) ?
                         $request->user->position->position : null));
         }
-    
+
         // Add information about declined/approved by
         if ($request->status === 'Declined') {
             // Determine who declined the request
@@ -4619,16 +5072,16 @@ class TimeManagementController extends Controller
                 $request->declined_by = 'Unknown';
             }
         }
-    
+
         // Add formatted approval information
         if ($request->dept_approval_status === 'Approved') {
             $request->dept_approved_by = $request->dept_approver_name ?? 'Department Manager';
         }
-    
+
         if ($request->admin_approval_status === 'Approved') {
             $request->admin_approved_by = $request->admin_approver_name ?? 'Admin';
         }
-    
+
         return $request;
     }
 
@@ -4980,7 +5433,7 @@ class TimeManagementController extends Controller
         // Parse days from JSON
         $days = json_decode($ruleShift->days, true);
 
-   
+
 
         // Check if the requested day is included in the rule
         if (!in_array($dayName, $days)) {

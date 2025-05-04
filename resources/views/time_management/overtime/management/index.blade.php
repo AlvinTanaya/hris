@@ -1,19 +1,17 @@
 @extends('layouts.app')
 
 @section('content')
-
-
-<div class="container-fluid py-4 time-off-container">
+<div class="container-fluid py-4 overtime-container">
     <!-- Page Header -->
     <div class="row mb-4">
         <div class="col-12">
             <div class="page-header d-flex align-items-center justify-content-between text-warning">
                 <h1 class="mb-0">
-                    <i class="fas fa-calendar-alt me-2 "></i> Time Off Management
+                    <i class="fas fa-clock me-2"></i> Overtime Management
                 </h1>
                 <div class="d-flex align-items-center">
-                    <span class="badge bg-light text-warning me-2" style="font-size: 1.2rem;">
-                        <i class="fas fa-user-clock me-1"></i> Total Requests: {{ $pendingCount + $approvedCount + $declinedCount }}
+                    <span class="badge bg-light text-white me-2" style="font-size: 1.2rem;">
+                        <i class="fas fa-user-clock me-1"></i> Total Requests: {{ $pendingRequests->count() + $approvedRequests->count() + $declinedRequests->count() }}
                     </span>
                 </div>
             </div>
@@ -25,67 +23,56 @@
     <div class="card filter-card mb-4">
         <div class="card-header">
             <h5 class="mb-0 d-flex align-items-center">
-                <i class="fas fa-sliders-h me-2"></i> Filter Time Off Requests
+                <i class="fas fa-sliders-h me-2"></i> Filter Overtime Requests
             </h5>
         </div>
         <div class="card-body">
-            <form action="{{ route('request.time.off.index') }}" method="GET" id="filterForm">
+            <form action="{{ route('overtime.index') }}" method="GET" id="filterForm" class="m-0">
                 <div class="row g-3">
-                    <div class="col-md-4">
+                    <div class="col-md-3">
                         <label for="employee" class="form-label">Employee</label>
                         <select class="form-select" name="employee" id="employee">
-                            <option value="">All Employees</option>
-                            @foreach($users as $user)
-                            <option value="{{ $user->id }}" {{ request('employee') == $user->id ? 'selected' : '' }}>
-                                {{ $user->name }}
+                            <option value="all">All Employees</option>
+                            @foreach($employees as $emp)
+                            <option value="{{ $emp->id }}" {{ request('employee') == $emp->id ? 'selected' : '' }}>
+                                {{ $emp->name }}
                             </option>
                             @endforeach
                         </select>
                     </div>
-                    <div class="col-md-4">
-                        <label for="position_request" class="form-label">Position</label>
-                        <select class="form-select" name="position_request" id="position_request">
-                            <option value="">All Positions</option>
-                            @foreach($positions as $position)
-                            <option value="{{ $position }}" {{ request('position_request') == $position ? 'selected' : '' }}>
-                                {{ $position }}
-                            </option>
-                            @endforeach
-                        </select>
-                    </div>
-                    <div class="col-md-4">
-                        <label for="department_request" class="form-label">Department</label>
-                        <select class="form-select" name="department_request" id="department_request">
-                            <option value="">All Departments</option>
-                            @foreach($departments as $department)
-                            <option value="{{ $department }}" {{ request('department_request') == $department ? 'selected' : '' }}>
-                                {{ $department }}
-                            </option>
-                            @endforeach
-                        </select>
-                    </div>
-
-                    <div class="col-md-4">
-                        <label for="time_off_type" class="form-label">Time Off Type</label>
-                        <select class="form-select" name="time_off_type" id="time_off_type">
-                            <option value="">All Types</option>
-                            @foreach($timeOffPolicies as $policy)
-                            <option value="{{ $policy->id }}" {{ request('time_off_type') == $policy->id ? 'selected' : '' }}>
-                                {{ $policy->time_off_name }}
-                            </option>
-                            @endforeach
-                        </select>
-                    </div>
-                    <div class="col-md-4">
+                    <div class="col-md-3">
                         <label for="date" class="form-label">Date</label>
                         <input type="date" class="form-control" name="date" id="date" value="{{ request('date') }}">
                     </div>
-                    <div class="col-md-4 d-flex align-items-end">
+
+                    <div class="col-md-3">
+                        <label for="department_request" class="form-label">Department</label>
+                        <select class="form-select" name="department_request" id="department_request">
+                            <option value="">All Departments</option>
+                            @foreach($departments as $dept)
+                            <option value="{{ $dept }}" {{ request('department_request') == $dept ? 'selected' : '' }}>
+                                {{ $dept }}
+                            </option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="position_request" class="form-label">Position</label>
+                        <select class="form-select" name="position_request" id="position_request">
+                            <option value="">All Positions</option>
+                            @foreach($positions as $pos)
+                            <option value="{{ $pos }}" {{ request('position_request') == $pos ? 'selected' : '' }}>
+                                {{ $pos }}
+                            </option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="col-md-12 d-flex align-items-end">
                         <div class="d-flex w-100 justify-content-end">
                             <button type="submit" class="btn btn-primary me-2">
                                 <i class="fas fa-filter me-1"></i> Apply Filters
                             </button>
-                            <a href="{{ route('request.time.off.index') }}" class="btn btn-outline-secondary">
+                            <a href="{{ route('overtime.index') }}" class="btn btn-outline-secondary">
                                 <i class="fas fa-redo me-1"></i> Reset
                             </a>
                         </div>
@@ -96,51 +83,51 @@
     </div>
 
     <!-- Tabs Navigation -->
-    <ul class="nav nav-tabs mb-4" id="timeOffTabs" role="tablist">
+    <ul class="nav nav-tabs mb-4 p-0" id="overtimeTabs" role="tablist">
         <li class="nav-item flex-grow-1 text-center" role="presentation">
             <a class="nav-link active" id="pending-tab" data-bs-toggle="tab" href="#pending" role="tab" aria-controls="pending" aria-selected="true">
-                <i class="fas fa-hourglass-half"></i>
-                <span class="badge bg-warning">{{ $pendingCount }}</span> Pending
+                <i class="fas fa-hourglass-half"></i><span class="badge bg-warning">{{ $pendingRequests->count() }}</span>&nbsp;&nbsp;Pending
             </a>
         </li>
         <li class="nav-item flex-grow-1 text-center" role="presentation">
             <a class="nav-link" id="approved-tab" data-bs-toggle="tab" href="#approved" role="tab" aria-controls="approved" aria-selected="false">
-                <i class="fas fa-check-circle"></i>
-                <span class="badge bg-success">{{ $approvedCount }}</span> Approved
+                <i class="fas fa-check-circle"></i><span class="badge bg-success">{{ $approvedRequests->count() }}</span>&nbsp;&nbsp;Approved
             </a>
         </li>
         <li class="nav-item flex-grow-1 text-center" role="presentation">
             <a class="nav-link" id="declined-tab" data-bs-toggle="tab" href="#declined" role="tab" aria-controls="declined" aria-selected="false">
-                <i class="fas fa-times-circle"></i>
-                <span class="badge bg-danger">{{ $declinedCount }}</span> Declined
+                <i class="fas fa-times-circle"></i><span class="badge bg-danger">{{ $declinedRequests->count() }}</span>&nbsp;&nbsp;Declined
             </a>
         </li>
     </ul>
 
     <!-- Tab Content -->
-    <div class="tab-content" id="timeOffTabsContent">
+    <div class="tab-content" id="overtimeTabsContent">
         <!-- Pending Requests Tab -->
         <div class="tab-pane fade show active" id="pending" role="tabpanel" aria-labelledby="pending-tab">
             <div class="card">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h5 class="mb-0 d-flex align-items-center">
-                        <i class="fas fa-hourglass-half text-warning me-2"></i> Pending Time Off Requests
+                        <i class="fas fa-hourglass-half text-warning me-2"></i> Pending Overtime Requests
                     </h5>
                     <span class="badge bg-light text-dark">
-                        Showing {{ $pendingRequests->count() }} of {{ $pendingCount }} requests
+                        Showing {{ $pendingRequests->count() }} requests
                     </span>
                 </div>
                 <div class="card-body">
                     <div class="table-responsive">
+                        <!-- Perubahan untuk tabel Pending Requests - tambah kolom baru -->
                         <table id="pendingTable" class="table table-hover w-100">
                             <thead>
                                 <tr>
                                     <th>Employee</th>
                                     <th>Department</th>
                                     <th>Position</th>
-                                    <th>Time Off Type</th>
-                                    <th>Date Range</th>
-                                    <th>Duration</th>
+                                    <th>Date</th>
+                                    <th>Hours</th>
+                                    <th>Rate/Hour</th>
+                                    <th>Total Payment</th>
+                                    <th>Reason</th>
                                     <th>Approval Status</th>
                                     <th>Actions</th>
                                 </tr>
@@ -160,15 +147,13 @@
                                             <div>{{ $request->employee_name }}</div>
                                         </div>
                                     </td>
-                                    <td>{{ $request->department }}</td>
-                                    <td>{{ $request->position }}</td>
-                                    <td>
-                                        <span class="badge bg-info">
-                                            {{ $request->time_off_name }}
-                                        </span>
-                                    </td>
-                                    <td>{{ $request->formatted_date }}</td>
-                                    <td>{{ $request->duration }}</td>
+                                    <td>{{ $request->employee_department }}</td>
+                                    <td>{{ $request->employee_position }}</td>
+                                    <td>{{ \Carbon\Carbon::parse($request->date)->format('d M Y') }}</td>
+                                    <td>{{ $request->total_hours }} hours</td>
+                                    <td>{{ number_format($request->overtime_rate, 0, ',', '.') }}</td>
+                                    <td>{{ number_format($request->overtime_payment, 0, ',', '.') }}</td>
+                                    <td>{{ Str::limit($request->reason, 30) }}</td>
                                     <td>
                                         <div class="d-flex flex-column gap-2">
                                             <span class="badge bg-{{ $request->dept_approval_status === 'Approved' ? 'success' : ($request->dept_approval_status === 'Declined' ? 'danger' : 'warning') }}">
@@ -182,20 +167,13 @@
                                         </div>
                                     </td>
                                     <td>
+                                        <!-- Actions tetap seperti sebelumnya -->
                                         <div class="btn-group" role="group">
-                                            @if(isset($request->file_reason_path) && !empty($request->file_reason_path))
-                                            <button type="button" class="btn btn-info btn-sm view-file-btn"
-                                                data-bs-toggle="tooltip" title="View File"
-                                                data-file="{{ $request->file_reason_path }}">
-                                                <i class="fas fa-file-alt"></i>
-                                            </button>
-                                            @endif
-
                                             @if($request->can_approve_dept)
                                             <button type="button" class="btn btn-success btn-sm approve-btn"
                                                 data-bs-toggle="tooltip" title="Approve (Department)"
                                                 data-id="{{ $request->id }}"
-                                                data-employee="{{ $request->user_name }}"
+                                                data-employee="{{ $request->employee_name }}"
                                                 data-approval-type="dept">
                                                 <i class="fas fa-check"></i>
                                             </button>
@@ -205,7 +183,7 @@
                                             <button type="button" class="btn btn-primary btn-sm approve-btn"
                                                 data-bs-toggle="tooltip" title="Approve (Admin)"
                                                 data-id="{{ $request->id }}"
-                                                data-employee="{{ $request->user_name }}"
+                                                data-employee="{{ $request->employee_name }}"
                                                 data-approval-type="admin">
                                                 <i class="fas fa-check-double"></i>
                                             </button>
@@ -215,7 +193,7 @@
                                             <button type="button" class="btn btn-danger btn-sm decline-btn"
                                                 data-bs-toggle="tooltip" title="Decline Request"
                                                 data-id="{{ $request->id }}"
-                                                data-employee="{{ $request->user_name }}"
+                                                data-employee="{{ $request->employee_name }}"
                                                 data-bs-target="#declineModal"
                                                 data-bs-toggle="modal">
                                                 <i class="fas fa-times"></i>
@@ -237,31 +215,34 @@
             <div class="card">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h5 class="mb-0 d-flex align-items-center">
-                        <i class="fas fa-check-circle text-success me-2"></i> Approved Time Off Requests
+                        <i class="fas fa-check-circle text-success me-2"></i> Approved Overtime Requests
                     </h5>
                     <span class="badge bg-light text-dark">
-                        Showing {{ $approvedRequests->count() }} of {{ $approvedCount }} requests
+                        Showing {{ $approvedRequests->count() }} requests
                     </span>
                 </div>
                 <div class="card-body">
                     <div class="table-responsive">
+                        <!-- Perubahan untuk tabel Approved Requests - tambah kolom baru -->
                         <table id="approvedTable" class="table table-hover w-100">
                             <thead>
                                 <tr>
                                     <th>Employee</th>
                                     <th>Department</th>
                                     <th>Position</th>
-                                    <th>Time Off Type</th>
-                                    <th>Date Range</th>
-                                    <th>Duration</th>
+
+                                    <th>Date</th>
+                                    <th>Hours</th>
+                                    <th>Rate/Hour</th>
+                                    <th>Total Payment</th>
                                     <th>Approved By</th>
-                                    <th>Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 @foreach($approvedRequests as $request)
                                 <tr>
                                     <td>
+                                        <!-- For the Approved section (success border) -->
                                         <div class="d-flex align-items-center">
                                             <div class="avatar me-2">
                                                 <img src="{{ $request->user->photo_profile_path ? asset('storage/' . $request->user->photo_profile_path) : asset('storage/default_profile.png') }}"
@@ -272,35 +253,28 @@
                                             <div>{{ $request->employee_name }}</div>
                                         </div>
                                     </td>
-                                    <td>{{ $request->department }}</td>
-                                    <td>{{ $request->position }}</td>
-                                    <td>
-                                        <span class="badge bg-info">
-                                            {{ $request->time_off_name }}
-                                        </span>
-                                    </td>
-                                    <td>{{ $request->formatted_date }}</td>
-                                    <td>{{ $request->duration }}</td>
+                                    <td>{{ $request->employee_department }}</td>
+                                    <td>{{ $request->employee_position }}</td>
+
+                                    <td>{{ \Carbon\Carbon::parse($request->date)->format('d M Y') }}</td>
+                                    <td>{{ $request->total_hours }} hours</td>
+                                    <td>{{ number_format($request->overtime_rate, 0, ',', '.') }}</td>
+                                    <td>{{ number_format($request->overtime_payment, 0, ',', '.') }}</td>
                                     <td>
                                         <div class="d-flex flex-column gap-2">
+                                            @if($request->dept_approved_by)
                                             <span class="badge bg-light text-dark">
                                                 <i class="fas fa-user-tie me-1"></i>
-                                                Dept: {{ $request->dept_approver_name ?? 'N/A' }}
+                                                Dept: {{ $request->dept_approved_by }}
                                             </span>
+                                            @endif
+                                            @if($request->admin_approved_by)
                                             <span class="badge bg-light text-dark">
                                                 <i class="fas fa-user-shield me-1"></i>
-                                                Admin: {{ $request->admin_approver_name ?? 'N/A' }}
+                                                Admin: {{ $request->admin_approved_by }}
                                             </span>
+                                            @endif
                                         </div>
-                                    </td>
-                                    <td>
-                                        @if(isset($request->file_reason_path) && !empty($request->file_reason_path))
-                                        <button type="button" class="btn btn-info btn-sm view-file-btn"
-                                            data-bs-toggle="tooltip" title="View File"
-                                            data-file="{{ $request->file_reason_path }}">
-                                            <i class="fas fa-file-alt"></i>
-                                        </button>
-                                        @endif
                                     </td>
                                 </tr>
                                 @endforeach
@@ -316,10 +290,10 @@
             <div class="card">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h5 class="mb-0 d-flex align-items-center">
-                        <i class="fas fa-times-circle text-danger me-2"></i> Declined Time Off Requests
+                        <i class="fas fa-times-circle text-danger me-2"></i> Declined Overtime Requests
                     </h5>
                     <span class="badge bg-light text-dark">
-                        Showing {{ $declinedRequests->count() }} of {{ $declinedCount }} requests
+                        Showing {{ $declinedRequests->count() }} requests
                     </span>
                 </div>
                 <div class="card-body">
@@ -330,18 +304,17 @@
                                     <th>Employee</th>
                                     <th>Department</th>
                                     <th>Position</th>
-                                    <th>Time Off Type</th>
-                                    <th>Date Range</th>
-                                    <th>Duration</th>
+                                    <th>Date</th>
+                                    <th>Hours</th>
                                     <th>Declined By</th>
                                     <th>Reason</th>
-                                    <th>Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 @foreach($declinedRequests as $request)
                                 <tr>
                                     <td>
+                                        <!-- For the Declined section (danger border) -->
                                         <div class="d-flex align-items-center">
                                             <div class="avatar me-2">
                                                 <img src="{{ $request->user->photo_profile_path ? asset('storage/' . $request->user->photo_profile_path) : asset('storage/default_profile.png') }}"
@@ -352,29 +325,15 @@
                                             <div>{{ $request->employee_name }}</div>
                                         </div>
                                     </td>
-                                    <td>{{ $request->department }}</td>
-                                    <td>{{ $request->position }}</td>
-                                    <td>
-                                        <span class="badge bg-info">
-                                            {{ $request->time_off_name }}
-                                        </span>
-                                    </td>
-                                    <td>{{ $request->formatted_date }}</td>
-                                    <td>{{ $request->duration }}</td>
+                                    <td>{{ $request->employee_department }}</td>
+                                    <td>{{ $request->employee_position }}</td>
+                                    <td>{{ \Carbon\Carbon::parse($request->date)->format('d M Y') }}</td>
+                                    <td>{{ $request->total_hours }} hours</td>
                                     <td>{{ $request->declined_by ?? 'Unknown' }}</td>
                                     <td>
                                         <span class="text-danger">
                                             {{ Str::limit($request->declined_reason, 50) }}
                                         </span>
-                                    </td>
-                                    <td>
-                                        @if(isset($request->file_reason_path) && !empty($request->file_reason_path))
-                                        <button type="button" class="btn btn-info btn-sm view-file-btn"
-                                            data-bs-toggle="tooltip" title="View File"
-                                            data-file="{{ $request->file_reason_path }}">
-                                            <i class="fas fa-file-alt"></i>
-                                        </button>
-                                        @endif
                                     </td>
                                 </tr>
                                 @endforeach
@@ -386,14 +345,13 @@
         </div>
     </div>
 
-
     <!-- Decline Modal -->
     <div class="modal fade" id="declineModal" tabindex="-1" aria-labelledby="declineModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header bg-danger text-white">
                     <h5 class="modal-title" id="declineModalLabel">
-                        <i class="fas fa-times-circle me-2"></i> Decline Time Off Request
+                        <i class="fas fa-times-circle me-2"></i> Decline Overtime Request
                     </h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
@@ -417,38 +375,12 @@
             </div>
         </div>
     </div>
-
-    <!-- Proof File Modal -->
-    <div class="modal fade" id="proofFileModal" tabindex="-1" aria-labelledby="proofFileModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-lg modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header bg-info text-white">
-                    <h5 class="modal-title" id="proofFileModalLabel">
-                        <i class="fas fa-file-alt me-2"></i> Proof Document
-                    </h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body text-center p-0">
-                    <div class="ratio ratio-16x9">
-                        <iframe id="proofFileIframe" src="" frameborder="0" class="w-100 h-100"></iframe>
-                        <img id="proofFileImage" src="" alt="Proof Document" class="img-fluid w-100 h-100 object-fit-contain d-none">
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                    <a id="downloadProofBtn" href="#" class="btn btn-primary" download>
-                        <i class="fas fa-download me-1"></i> Download
-                    </a>
-                </div>
-            </div>
-        </div>
-    </div>
 </div>
 @endsection
 
 <style>
-    /* Modern UI Improvements - Scoped to time-off page */
-    .time-off-container {
+    /* Modern UI Improvements - Scoped to overtime page */
+    .overtime-container {
         /* Color Variables */
         --primary-color: #4361ee;
         --secondary-color: #3f37c9;
@@ -462,13 +394,13 @@
     }
 
     /* Enhanced Tab Styling */
-    #timeOffTabs {
+    #overtimeTabs {
         border-bottom: none;
         gap: 8px;
         padding: 0 8px;
     }
 
-    #timeOffTabs .nav-link {
+    #overtimeTabs .nav-link {
         color: #495057;
         font-weight: 600;
         padding: 12px 20px;
@@ -485,24 +417,24 @@
         box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
     }
 
-    #timeOffTabs .nav-link:hover {
+    #overtimeTabs .nav-link:hover {
         background-color: #e9ecef;
         transform: translateY(-2px);
         box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
     }
 
-    #timeOffTabs .nav-link.active {
+    #overtimeTabs .nav-link.active {
         color: white;
         background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
         box-shadow: 0 4px 12px rgba(67, 97, 238, 0.3);
     }
 
-    #timeOffTabs .nav-link.active .badge {
+    #overtimeTabs .nav-link.active .badge {
         background-color: rgba(255, 255, 255, 0.2);
         color: white;
     }
 
-    #timeOffTabs .nav-link i {
+    #overtimeTabs .nav-link i {
         margin-right: 8px;
         font-size: 1.1rem;
     }
@@ -710,7 +642,7 @@
 
     /* Responsive Improvements */
     @media (max-width: 992px) {
-        #timeOffTabs .nav-link {
+        #overtimeTabs .nav-link {
             padding: 0.75rem 0.5rem;
             font-size: 0.9rem;
         }
@@ -805,31 +737,6 @@
         // Add tooltips to action buttons
         $('[data-bs-toggle="tooltip"]').tooltip();
 
-        // "View File" button handler with support for PDF and images
-        $(document).on('click', '.view-file-btn', function() {
-            const filePath = $(this).data('file');
-            const fileUrl = `{{ asset('storage/') }}/${filePath}`;
-            const fileExtension = filePath.split('.').pop().toLowerCase();
-
-            // Set the download link
-            $('#downloadProofBtn').attr('href', fileUrl);
-
-            // Hide both iframe and image initially
-            $('#proofFileIframe').addClass('d-none');
-            $('#proofFileImage').addClass('d-none');
-
-            if (fileExtension === 'pdf') {
-                // Show PDF in iframe
-                $('#proofFileIframe').attr('src', fileUrl).removeClass('d-none');
-            } else {
-                // Show image
-                $('#proofFileImage').attr('src', fileUrl).removeClass('d-none');
-            }
-
-            // Show the modal
-            $('#proofFileModal').modal('show');
-        });
-
         // "Approve" button handler with enhanced UI
         $(document).on('click', '.approve-btn', function() {
             const id = $(this).data('id');
@@ -839,9 +746,9 @@
                 (approvalType === 'admin' ? 'Admin' : 'Department and Admin');
 
             Swal.fire({
-                title: `Approve Time Off Request`,
+                title: `Approve Overtime Request`,
                 html: `<div class="text-start">
-                         <p>Are you sure you want to approve <strong>${employee}'s</strong> time off request?</p>
+                         <p>Are you sure you want to approve <strong>${employee}'s</strong> overtime request?</p>
                          <div class="alert alert-info mt-3">
                              <i class="fas fa-info-circle me-2"></i>
                              <strong>Approving as:</strong> ${approvalTypeText}
@@ -876,7 +783,7 @@
 
                     // Send AJAX request
                     $.ajax({
-                        url: `{{ url('time_management/time_off/request_time_off/approve') }}/${id}`,
+                        url: `{{ route('overtime.approve', ['id' => '__ID__']) }}`.replace('__ID__', id),
                         type: 'POST',
                         data: {
                             _token: '{{ csrf_token() }}',
@@ -887,7 +794,7 @@
                                 title: 'Success!',
                                 html: `<div class="text-center text-success">
                                          <i class="fas fa-check-circle fa-4x mb-3"></i>
-                                         <p>Time off request for <strong>${employee}</strong> has been approved successfully.</p>
+                                         <p>Overtime request for <strong>${employee}</strong> has been approved successfully.</p>
                                        </div>`,
                                 confirmButtonColor: '#28a745',
                                 confirmButtonText: '<i class="fas fa-sync me-1"></i> Refresh Page',
@@ -954,7 +861,7 @@
             // Show SweetAlert2 confirmation
             Swal.fire({
                 title: 'Confirm Decline',
-                html: `Are you sure you want to decline <strong>${employee}'s</strong> time off request?`,
+                html: `Are you sure you want to decline <strong>${employee}'s</strong> overtime request?`,
                 icon: 'warning',
                 showCancelButton: true,
                 confirmButtonColor: '#dc3545',
@@ -977,7 +884,7 @@
 
                     // Send AJAX request
                     $.ajax({
-                        url: `{{ url('time_management/time_off/request_time_off/decline') }}/${id}`,
+                        url: `{{ route('overtime.decline', ['id' => '__ID__']) }}`.replace('__ID__', id),
                         type: 'POST',
                         data: {
                             _token: '{{ csrf_token() }}',
@@ -986,7 +893,7 @@
                         success: function(response) {
                             Swal.fire({
                                 title: 'Declined!',
-                                text: 'Time off request has been declined successfully.',
+                                text: 'Overtime request has been declined successfully.',
                                 icon: 'success',
                                 confirmButtonColor: '#28a745'
                             }).then(() => {

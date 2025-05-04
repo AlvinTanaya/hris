@@ -251,14 +251,18 @@ Route::middleware('auth')->group(function () {
     Route::delete('/time_management/change_shift/delete/{id}', [TimeManagementController::class, 'destroy_request'])->name('change.shift.destroy');
     Route::get('/time_management/change_shift/existing-requests', [TimeManagementController::class, 'getExistingRequests'])->name('change.shift.get-existing-requests');
     //Overtime
-    Route::get('time_management/overtime/index', [TimeManagementController::class, 'overtime_index'])->name('overtime.index');
-    Route::get('time_management/overtime/index2/{id}', [TimeManagementController::class, 'overtime_index2'])->name('overtime.index2');
-    Route::get('time_management/overtime/create/{id}', [TimeManagementController::class, 'overtime_create'])->name('overtime.create');
-    Route::post('time_management/overtime/store', [TimeManagementController::class, 'overtime_store'])->name('overtime.store');
-    Route::post('time_management/overtime/check-overtime-eligibility', [TimeManagementController::class, 'checkEligibility']);
-    Route::post('time_management/overtime/approve/{id}', [TimeManagementController::class, 'overtime_approve'])->name('overtime.approve');
-    Route::post('time_management/overtime/decline/{id}', [TimeManagementController::class, 'overtime_decline'])->name('overtime.decline');
-    Route::delete('time_management/overtime/{id}', [TimeManagementController::class, 'overtime_destroy'])->name('overtime.destroy');
+    Route::get('time_management/overtime/management/index', [TimeManagementController::class, 'overtime_index'])->name('overtime.index');
+    Route::get('time_management/overtime/management/index2/{id}', [TimeManagementController::class, 'overtime_index2'])->name('overtime.index2');
+    Route::get('time_management/overtime/management/create/{id}', [TimeManagementController::class, 'overtime_create'])->name('overtime.create');
+    Route::post('time_management/overtime/management/store', [TimeManagementController::class, 'overtime_store'])->name('overtime.store');
+    Route::post('time_management/overtime/management/check-overtime-eligibility', [TimeManagementController::class, 'checkEligibility']);
+    Route::post('time_management/overtime/management/approve/{id}', [TimeManagementController::class, 'overtime_approve'])->name('overtime.approve');
+    Route::post('time_management/overtime/management/decline/{id}', [TimeManagementController::class, 'overtime_decline'])->name('overtime.decline');
+    Route::delete('time_management/overtime/management/{id}', [TimeManagementController::class, 'overtime_destroy'])->name('overtime.destroy');
+    Route::post('/time_management/overtime/management/get-overtime-rate', [TimeManagementController::class, 'getOvertimeRate']);
+
+
+    Route::get('time_management/overtime/report/index', [TimeManagementController::class, 'overtime_report_index'])->name('overtime.report.index');
 
     // Time Off Policy Routes
     Route::get('time_management/time_off/policy/index', [TimeManagementController::class, 'time_off_policy_index'])->name('time.off.policy.index');

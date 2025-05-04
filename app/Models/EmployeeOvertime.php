@@ -28,6 +28,44 @@ class EmployeeOvertime extends Model
         'dept_approval_user_id',
         'admin_approval_status',
         'admin_approval_user_id',
-  
     ];
+
+    // Relationship to the User who created the overtime request
+    public function user()
+    {
+        return $this->belongsTo(User::class, 'user_id');
+    }
+
+    // Relationship to the Department Approver user
+    public function deptApprovalUser()
+    {
+        return $this->belongsTo(User::class, 'dept_approval_user_id');
+    }
+
+    // Relationship to the Admin Approver user
+    public function adminApprovalUser()
+    {
+        return $this->belongsTo(User::class, 'admin_approval_user_id');
+    }
+
+    public function isDeptDeclined()
+    {
+        return $this->dept_approval_status === 'Declined';
+    }
+
+    public function isAdminDeclined()
+    {
+        return $this->admin_approval_status === 'Declined';
+    }
+
+    public function getDeclinedByUser()
+    {
+        if ($this->isAdminDeclined()) {
+            return $this->adminApprovalUser;
+        } elseif ($this->isDeptDeclined()) {
+            return $this->deptApprovalUser;
+        }
+
+        return null;
+    }
 }

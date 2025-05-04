@@ -38,6 +38,11 @@ class RequestTimeOff extends Model
     }
 
 
+    public function user()
+    {
+        return $this->belongsTo(User::class, 'user_id');
+    }
+
 
     // Add these relationships to your RequestShiftChange model
     public function deptApprovalUser()

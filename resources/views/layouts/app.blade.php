@@ -744,10 +744,23 @@
                                     <span>Request Time Off</span>
                                 </a>
                             </div>
-                            <a href="{{ url('/time_management/overtime/index') }}" class="nav-link">
-                                <i class="fas fa-business-time"></i>
-                                <span>Overtime</span>
+
+                            <a href="#" class="nav-link dropdown-toggle overtime-dropdown">
+                                <i class="fas fa-calendar-alt"></i>
+                                <span>Ovetime</span>
+                                <!-- <i class="dropdown-icon fas fa-chevron-right ms-auto"></i> -->
                             </a>
+                            <div class="overtime-submenu" style="display: none; padding-left: 15px;">
+                                <a href="{{ url('/time_management/overtime/management/index') }}" class="nav-link">
+                                    <i class="fas fa-business-time"></i>
+                                    <span>Management</span>
+                                </a>
+                                <a href="{{ url('/time_management/overtime/report/index') }}" class="nav-link">
+                                    <i class="fa-solid fa-user-tie"></i>
+                                    <span>Report</span>
+                                </a>
+                            </div>
+
                             <a href="{{ url('/time_management/request_resign/index') }}" class="nav-link">
                                 <i class="fas fa-door-open"></i>
                                 <span>Resign</span>
@@ -1456,6 +1469,20 @@
                 return false;
             });
 
+
+            $('.overtime-dropdown').on('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+
+                // Toggle active class for arrow rotation
+                $(this).toggleClass('active');
+
+                // Toggle the overtime submenu with animation
+                $('.overtime-submenu').slideToggle(300);
+
+                return false;
+            });
+
             $('.attendance-dropdown').on('click', function(e) {
                 e.preventDefault();
                 e.stopPropagation();
@@ -1654,6 +1681,17 @@
                 }
             });
 
+
+            $('.nav-link.dropdown-toggle').not('.overtime-dropdown').on('click', function(e) {
+                e.preventDefault();
+
+                // Ensure the shift submenu is closed when another main dropdown is clicked
+                if (!$(this).hasClass('shift-dropdown') && !$(this).closest('.overtime-submenu').length) {
+                    $('.overtime-dropdown').removeClass('active');
+                    $('.overtime-submenu').slideUp(300);
+                }
+            });
+
             $('.nav-link.dropdown-toggle').not('.attendance-dropdown').on('click', function(e) {
                 e.preventDefault();
 
@@ -1728,6 +1766,12 @@
                 if (!$(e.target).closest('.timeOff-dropdown, .timeOff-submenu').length) {
                     $('.timeOff-dropdown').removeClass('active');
                     $('.timeOff-submenu').slideUp(300);
+                }
+
+                // overtime Submenu
+                if (!$(e.target).closest('.overtime-dropdown, .overtime-submenu').length) {
+                    $('.overtime-dropdown').removeClass('active');
+                    $('.overtime-submenu').slideUp(300);
                 }
 
                 // TimeOff Submenu
@@ -1805,7 +1849,7 @@
             });
 
             // Prevent parent dropdown from closing when clicking on submenu
-            $('.hr-submenu, .shift-submenu, .timeOff-submenu,.evaluation-elearning-submenu, .evaluation-final-submenu, .final-submenu, .attendance-submenu, rule-discipline-submenu, .warningLetter-submenu, .employee-submenu, .rule-submenu, .user-submenu, .evaluation-assignment-submenu, .evaluation-report-submenu, .performance-submenu').on('click', function(e) {
+            $('.hr-submenu, .shift-submenu, .timeOff-submenu, .overtime-submenu,.evaluation-elearning-submenu, .evaluation-final-submenu, .final-submenu, .attendance-submenu, rule-discipline-submenu, .warningLetter-submenu, .employee-submenu, .rule-submenu, .user-submenu, .evaluation-assignment-submenu, .evaluation-report-submenu, .performance-submenu').on('click', function(e) {
                 e.stopPropagation();
             });
 
