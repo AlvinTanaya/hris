@@ -671,22 +671,45 @@ class PayrollController extends Controller
     // Helper method to add salary and overtime info to user
     private function addSalaryAndOvertimeInfo($user, $date, $month, $year)
     {
-        // Get latest salary history for this user before the month's end
+        // Ensure we have a Carbon instance for comparison
+        $endOfMonth = Carbon::createFromDate($year, $month)->endOfMonth();
+        
+        // Get salary history for this user
         $salaryHistory = SalaryHistory::where('users_id', $user->id)
-            ->whereDate('created_at', '<=', $date)
+ 
             ->latest('created_at')
             ->first();
-
+        
         // Get regular salary information if no history exists
         $employeeSalary = EmployeeSalary::where('users_id', $user->id)->first();
-
+        
         // Set salary information based on history or regular salary
-        $user->salary = [
-            'basic_salary' => $salaryHistory ? $salaryHistory->new_basic_salary : ($employeeSalary ? $employeeSalary->basic_salary : 0),
-            'allowance' => $salaryHistory ? $salaryHistory->new_allowance : ($employeeSalary ? $employeeSalary->allowance : 0),
-            'overtime_rate_per_hour' => $salaryHistory ? $salaryHistory->new_overtime_rate_per_hour : ($employeeSalary ? $employeeSalary->overtime_rate_per_hour : 0),
-        ];
-
+        if ($salaryHistory) {
+            // Check if the date is before the salary history created_at date
+            if ($endOfMonth->lt(Carbon::parse($salaryHistory->created_at))) {
+                // If the date is before the salary history, use old values
+                $user->salary = [
+                    'basic_salary' => $salaryHistory->old_basic_salary,
+                    'allowance' => $salaryHistory->old_allowance,
+                    'overtime_rate_per_hour' => $salaryHistory->old_overtime_rate_per_hour,
+                ];
+            } else {
+                // If the date is on or after the salary history, use new values
+                $user->salary = [
+                    'basic_salary' => $salaryHistory->new_basic_salary,
+                    'allowance' => $salaryHistory->new_allowance,
+                    'overtime_rate_per_hour' => $salaryHistory->new_overtime_rate_per_hour,
+                ];
+            }
+        } else {
+            // If no history found, use current salary settings
+            $user->salary = [
+                'basic_salary' => $employeeSalary ? $employeeSalary->basic_salary : 0,
+                'allowance' => $employeeSalary ? $employeeSalary->allowance : 0,
+                'overtime_rate_per_hour' => $employeeSalary ? $employeeSalary->overtime_rate_per_hour : 0,
+            ];
+        }
+        
         // Get overtime hours for this month
         $user->overtime_hours = EmployeeOvertime::where('user_id', $user->id)
             ->where('approval_status', 'Approved')
@@ -694,7 +717,6 @@ class PayrollController extends Controller
             ->whereYear('date', $year)
             ->sum('total_hours');
     }
-
     private function getEmployeeShiftForDate($userId, $date)
     {
         $shift = EmployeeShift::where('user_id', $userId)

@@ -1,66 +1,19 @@
 @extends('layouts.app')
 
 @section('content')
-<style>
-    #employeeTab .nav-link {
-        color: white;
-        font-weight: 500;
-        padding: 1rem;
-        transition: all 0.3s ease;
-    }
 
-    #employeeTab .nav-link.active {
-        color: #0d6efd;
-        border-bottom: 3px solid #0d6efd;
-    }
-
-    #employeeTab .nav-item {
-        flex: 1;
-        text-align: center;
-        max-width: 20%;
-    }
-
-    .delete-bank-row {
-        height: 38px;
-        /* Match height with other buttons */
-        margin-bottom: 0;
-        /* Remove bottom margin */
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
-
-    /* Remove extra space */
-    .bank-row {
-        display: flex;
-        align-items: flex-end;
-        /* Align all elements to bottom */
-        margin-bottom: 1rem;
-    }
-
-    /* Ensure consistent sizing */
-    .bank-row .col-md-2 {
-        display: flex;
-        align-items: flex-end;
-    }
-
-    /* Make sure button fills available space */
-    .delete-bank-row {
-        width: 100%;
-    }
-</style>
 <a href="{{ route('user.employees.index') }}" class="btn btn-danger px-5 mb-3">
     <i class="fas fa-arrow-left me-2"></i>Back
 </a>
 @if ($user->id == Auth::user()->id)
-<h1 class="mb-5 text-center text-warning">
+<h1 class="add-employee-heading">
     <i class="fas fa-user"></i> Profile
 </h1>
 @else
-<h1 class="mb-5 text-center text-warning"><i class="far fa-user"></i> Employee Profile Information</h1>
+<h1 class="add-employee-heading"><i class="far fa-user"></i> Employee Profile Information</h1>
 @endif
 
-<div class="container mt-1">
+<div class="container mt-1 test">
     <!-- Tab Navigation -->
     <ul class="nav nav-tabs" id="employeeTab" role="tablist">
         <li class="nav-item" role="presentation">
@@ -95,7 +48,7 @@
 
         <div class="card shadow-lg border-0 rounded mt-4">
 
-            <div class="card-body pt-1">
+            <div class="card-body pt-1 pb-1">
                 <!-- Display validation errors -->
                 @if ($errors->any())
                 <div class="alert alert-danger">
@@ -107,7 +60,7 @@
                 </div>
                 @endif
 
-                <div class="tab-content mt-4" id="employeeTabContent">
+                <div class="tab-content" id="employeeTabContent">
                     <!-- Data user -->
                     <div class="tab-pane fade show active" id="userData" role="tabpanel" aria-labelledby="userDataTab">
 
@@ -142,8 +95,6 @@
                                     class="form-control"
                                     name="photo"
                                     accept="image/jpeg, image/png, image/jpg">
-                                <small class="text-muted">Only file JPG, JPEG, atau PNG</small>
-
                                 <small class="text-muted">Only file JPG, JPEG, atau PNG</small>
                             </div>
 
@@ -815,7 +766,6 @@
 
                         <div id="educationContainer" class="mt-4">
                             @if(!empty($userEducation))
-
                             @foreach($userEducation as $index => $education)
                             <div class="card mb-3 education-card">
                                 <div class="card-header bg-primary text-white">
@@ -823,57 +773,60 @@
                                 </div>
                                 <div class="card-body">
                                     <div class="row g-3">
-                                        <input type="text" class="form-control" name="id_education[]" value="{{ old('id_education', $education->id) }}" hidden>
+                                        <input type="text" class="form-control" name="id_education[]" value="{{ old('id_education.'.$index, $education->id) }}" hidden>
                                         <div class="col-md-6">
                                             <label class="form-label">Degree</label>
                                             <select class="form-select education-level" name="education_level[]">
-                                                <option selected disabled> -- Choose Degree --</option>
-                                                <option value="SMA" {{ old('education_level', $education->degree) == 'SMA' ? 'selected' : '' }}>SMA</option>
-                                                <option value="SMK" {{ old('education_level', $education->degree) == 'SMK' ? 'selected' : '' }}>SMK</option>
-                                                <option value="D3" {{ old('education_level', $education->degree) == 'D3' ? 'selected' : '' }}>D3</option>
-                                                <option value="S1" {{ old('education_level', $education->degree) == 'S1' ? 'selected' : '' }}>S1</option>
-                                                <option value="S2" {{ old('education_level', $education->degree) == 'S2' ? 'selected' : '' }}>S2</option>
+                                                <option disabled> -- Choose Degree --</option>
+                                                <option value="SMA" {{ old('education_level.'.$index, $education->degree) == 'SMA' ? 'selected' : '' }}>SMA</option>
+                                                <option value="SMK" {{ old('education_level.'.$index, $education->degree) == 'SMK' ? 'selected' : '' }}>SMK</option>
+                                                <option value="D3" {{ old('education_level.'.$index, $education->degree) == 'D3' ? 'selected' : '' }}>D3</option>
+                                                <option value="S1" {{ old('education_level.'.$index, $education->degree) == 'S1' ? 'selected' : '' }}>S1</option>
+                                                <option value="S2" {{ old('education_level.'.$index, $education->degree) == 'S2' ? 'selected' : '' }}>S2</option>
                                             </select>
                                         </div>
                                         <div class="col-md-6">
                                             <label class="form-label">Educational Place</label>
-                                            <input type="text" class="form-control" name="education_place[]" placeholder="Educational Place" value="{{ old('education_place.0', $education->educational_place) }}">
+                                            <input type="text" class="form-control" name="education_place[]" placeholder="Educational Place" value="{{ old('education_place.'.$index, $education->educational_place) }}">
                                         </div>
                                         <div class="col-md-6">
                                             <label class="form-label">Province</label>
                                             <select class="form-select province-dropdown" name="education_province[]" required>
                                                 <option value="" disabled selected>Select Province</option>
-                                                <!-- Provinces will be loaded via AJAX -->
+                                                <!-- Add a default selected option for the saved value -->
+                                                @if(!empty($education->educational_province))
+                                                <option value="{{ $education->educational_province }}" selected>{{ $education->educational_province }}</option>
+                                                @endif
                                             </select>
                                         </div>
                                         <div class="col-md-6">
                                             <label class="form-label">City</label>
                                             <select class="form-select city-dropdown" id="educationCity{{ $index + 1 }}" name="education_city[]" required>
                                                 <option value="" disabled selected>Select City</option>
-                                                <!-- Cities will be loaded via AJAX -->
+                                                <!-- Add a default selected option for the saved value -->
+                                                @if(!empty($education->educational_city))
+                                                <option value="{{ $education->educational_city }}" selected>{{ $education->educational_city }}</option>
+                                                @endif
                                             </select>
                                         </div>
                                         <div class="col-md-6">
                                             <label class="form-label">Major</label>
-                                            <input type="text" class="form-control" name="major[]" placeholder="Major" value="{{ old('major.0', $education->major) }}">
+                                            <input type="text" class="form-control" name="major[]" placeholder="Major" value="{{ old('major.'.$index, $education->major) }}">
                                         </div>
                                         <div class="col-md-6">
                                             <label class="form-label">Start Date</label>
-                                            <input type="date" class="form-control education-start-date" name="start_education[]" value="{{ old('start_education.0', $education->start_education) }}">
+                                            <input type="date" class="form-control education-start-date" name="start_education[]" value="{{ old('start_education.'.$index, $education->start_education) }}">
                                         </div>
                                         <div class="col-md-6">
                                             <label class="form-label">End Date</label>
-                                            <input type="date" class="form-control education-end-date" name="end_education[]" value="{{ old('end_education.0', $education->end_education) }}">
+                                            <input type="date" class="form-control education-end-date" name="end_education[]" value="{{ old('end_education.'.$index, $education->end_education) }}">
                                         </div>
                                         <div class="col-md-3">
                                             <label class="form-label">Grade</label>
-                                            <input type="text" class="form-control education-grade" name="grade[]" placeholder="Grade" value="{{ old('grade.0', $education->grade) }}">
+                                            <input type="text" class="form-control education-grade" name="grade[]" placeholder="Grade" value="{{ old('grade.'.$index, $education->grade) }}">
                                         </div>
                                         <div class="col-md-3">
                                             <label class="form-label">Transcript</label>
-
-
-
                                             @if(!empty($education->transcript_file_path))
                                             <div class="input-group mt-1">
                                                 <input type="file" class="form-control" name="education_transcript[]" accept="image/*">
@@ -1067,7 +1020,6 @@
 
                         <div id="trainingContainer" class="mt-4">
                             @if(!empty($userTraining))
-
                             @foreach($userTraining as $index => $training)
                             <div class="card mb-3 training-card">
                                 <div class="card-header bg-primary text-white">
@@ -1075,32 +1027,38 @@
                                 </div>
                                 <div class="card-body">
                                     <div class="row g-3">
-                                        <input type="text" class="form-control" name="id_training[]" value="{{ old('id_training', $training->id) }}" hidden>
+                                        <input type="text" class="form-control" name="id_training[]" value="{{ old('id_training.'.$index, $training->id) }}" hidden>
                                         <div class="col-md-12">
                                             <label class="form-label">Training Name</label>
-                                            <input type="text" class="form-control" name="training_name[]" placeholder="Training Name" value="{{ old('training_name.0', $training->training_name) }}">
+                                            <input type="text" class="form-control" name="training_name[]" placeholder="Training Name" value="{{ old('training_name.'.$index, $training->training_name) }}">
                                         </div>
                                         <div class="col-md-6">
                                             <label class="form-label">Province</label>
                                             <select class="form-select province-dropdown" name="training_province[]" required>
                                                 <option value="" disabled selected>Select Province</option>
-                                                <!-- Provinces will be loaded via AJAX -->
+                                                <!-- Add a default selected option for the saved value -->
+                                                @if(!empty($training->training_province))
+                                                <option value="{{ $training->training_province }}" selected>{{ $training->training_province }}</option>
+                                                @endif
                                             </select>
                                         </div>
                                         <div class="col-md-6">
                                             <label class="form-label">City</label>
                                             <select class="form-select city-dropdown" id="trainingCity{{ $index + 1 }}" name="training_city[]" required>
                                                 <option value="" disabled selected>Select City</option>
-                                                <!-- Cities will be loaded via AJAX -->
+                                                <!-- Add a default selected option for the saved value -->
+                                                @if(!empty($training->training_city))
+                                                <option value="{{ $training->training_city }}" selected>{{ $training->training_city }}</option>
+                                                @endif
                                             </select>
                                         </div>
                                         <div class="col-md-6">
                                             <label class="form-label">Start Date</label>
-                                            <input type="date" class="form-control training-start-date" name="training_start_date[]" value="{{ old('training_start_date.0', $training->start_date) }}">
+                                            <input type="date" class="form-control training-start-date" name="training_start_date[]" value="{{ old('training_start_date.'.$index, $training->start_date) }}">
                                         </div>
                                         <div class="col-md-6">
                                             <label class="form-label">End Date</label>
-                                            <input type="date" class="form-control training-end-date" name="training_end_date[]" value="{{ old('training_end_date.0', $training->end_date) }}">
+                                            <input type="date" class="form-control training-end-date" name="training_end_date[]" value="{{ old('training_end_date.'.$index, $training->end_date) }}">
                                         </div>
                                     </div>
                                     <div class="text-end mt-3">
@@ -1127,7 +1085,6 @@
 
                         <div id="organizationContainer" class="mt-4">
                             @if(!empty($userOrganization))
-
                             @foreach($userOrganization as $index => $organization)
                             <div class="card mb-3 organization-card">
                                 <div class="card-header bg-primary text-white">
@@ -1135,40 +1092,46 @@
                                 </div>
                                 <div class="card-body">
                                     <div class="row g-3">
-                                        <input type="text" class="form-control" name="id_organization[]" value="{{ old('id_organization', $organization->id) }}" hidden>
+                                        <input type="text" class="form-control" name="id_organization[]" value="{{ old('id_organization.'.$index, $organization->id) }}" hidden>
                                         <div class="col-md-6">
                                             <label class="form-label">Organization Name</label>
-                                            <input type="text" class="form-control" name="organization_name[]" placeholder="Organization Name" value="{{ old('organization_name.0', $organization->organization_name) }}">
+                                            <input type="text" class="form-control" name="organization_name[]" placeholder="Organization Name" value="{{ old('organization_name.'.$index, $organization->organization_name) }}">
                                         </div>
                                         <div class="col-md-6">
                                             <label class="form-label">Position</label>
-                                            <input type="text" class="form-control" name="organization_position[]" placeholder="Position" value="{{ old('position.0', $organization->position) }}">
+                                            <input type="text" class="form-control" name="organization_position[]" placeholder="Position" value="{{ old('position.'.$index, $organization->position) }}">
                                         </div>
                                         <div class="col-md-12">
                                             <label class="form-label">Activity Type</label>
-                                            <textarea class="form-control list-textarea" name="activity_type[]" placeholder="- Activity Type" rows="2">{{ old('activity_type.0', isset($organization) ? "- " . str_replace(";", " ", $organization->activity_type) : '') }}</textarea>
+                                            <textarea class="form-control list-textarea" name="activity_type[]" placeholder="- Activity Type" rows="2">{{ old('activity_type.'.$index, isset($organization) ? "- " . str_replace(";", " ", $organization->activity_type) : '') }}</textarea>
                                         </div>
                                         <div class="col-md-6">
                                             <label class="form-label">Province</label>
                                             <select class="form-select province-dropdown" name="organization_province[]" required>
                                                 <option value="" disabled selected>Select Province</option>
-                                                <!-- Provinces will be loaded via AJAX -->
+                                                <!-- Add a default selected option for the saved value -->
+                                                @if(!empty($organization->province))
+                                                <option value="{{ $organization->province }}" selected>{{ $organization->province }}</option>
+                                                @endif
                                             </select>
                                         </div>
                                         <div class="col-md-6">
                                             <label class="form-label">City</label>
                                             <select class="form-select city-dropdown" id="organizationCity{{ $index + 1 }}" name="organization_city[]" required>
                                                 <option value="" disabled selected>Select City</option>
-                                                <!-- Cities will be loaded via AJAX -->
+                                                <!-- Add a default selected option for the saved value -->
+                                                @if(!empty($organization->city))
+                                                <option value="{{ $organization->city }}" selected>{{ $organization->city }}</option>
+                                                @endif
                                             </select>
                                         </div>
                                         <div class="col-md-6">
                                             <label class="form-label">Start Date</label>
-                                            <input type="date" class="form-control organization-start-date" name="organization_start_date[]" value="{{ old('organization_start_date.0', $organization->start_date) }}">
+                                            <input type="date" class="form-control organization-start-date" name="organization_start_date[]" value="{{ old('organization_start_date.'.$index, $organization->start_date) }}">
                                         </div>
                                         <div class="col-md-6">
                                             <label class="form-label">End Date</label>
-                                            <input type="date" class="form-control organization-end-date" name="organization_end_date[]" value="{{ old('organization_end_date.0', $organization->end_date) }}">
+                                            <input type="date" class="form-control organization-end-date" name="organization_end_date[]" value="{{ old('organization_end_date.'.$index, $organization->end_date) }}">
                                         </div>
                                     </div>
                                     <div class="text-end mt-3">
@@ -1253,6 +1216,325 @@
 
 @endsection
 
+<style>
+    .test {
+        --primary-color: #4e73df;
+        --secondary-color: #f8f9fc;
+        --accent-color: #2e59d9;
+        --text-color: #5a5c69;
+        --light-gray: #f8f9fa;
+        --border-radius: 0.5rem;
+        --box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
+        max-width: 1280px;
+        margin: 0 auto;
+    }
+
+    body {
+        background-color: #f8f9fc;
+        color: var(--text-color);
+        font-family: 'Nunito', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    }
+
+    h1.text-center.text-warning {
+        font-weight: 700;
+        margin-bottom: 2rem;
+        background: linear-gradient(to right, #f6c23e, #e0a800);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+        display: inline-block;
+        padding: 0.5rem 0;
+    }
+
+    .card {
+        border: none;
+        border-radius: var(--border-radius);
+        box-shadow: var(--box-shadow);
+        transition: all 0.3s ease;
+        margin-bottom: 2rem;
+    }
+
+    .card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 0.5rem 2rem 0 rgba(58, 59, 69, 0.2);
+    }
+
+    .card-header {
+        background-color: var(--secondary-color);
+        border-bottom: 1px solid #e3e6f0;
+        padding: 1.25rem 1.5rem;
+        border-radius: var(--border-radius) var(--border-radius) 0 0 !important;
+        font-weight: 600;
+    }
+
+    .form-label {
+        font-weight: 600;
+        color: var(--text-color);
+        margin-bottom: 0.5rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .form-control,
+    .form-select {
+        border-radius: var(--border-radius);
+        padding: 0.75rem 1rem;
+        border: 1px solid #d1d3e2;
+        transition: all 0.3s;
+        font-size: 0.9rem;
+    }
+
+    .form-control:focus,
+    .form-select:focus {
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 0.2rem rgba(78, 115, 223, 0.25);
+    }
+
+    .input-group-text {
+        background-color: #eaecf4;
+        border: 1px solid #d1d3e2;
+        color: #6e707e;
+        border-radius: 0 var(--border-radius) var(--border-radius) 0;
+    }
+
+    .btn {
+        border-radius: var(--border-radius);
+        padding: 0.75rem 1.5rem;
+        font-weight: 600;
+        transition: all 0.3s;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+    }
+
+    .btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+    }
+
+    .btn-primary {
+        background-color: var(--primary-color);
+        border-color: var(--primary-color);
+    }
+
+    .btn-primary:hover {
+        background-color: var(--accent-color);
+        border-color: var(--accent-color);
+    }
+
+    .btn-danger {
+        background-color: #e74a3b;
+        border-color: #e74a3b;
+    }
+
+    .btn-danger:hover {
+        background-color: #d52a1a;
+        border-color: #d52a1a;
+    }
+
+    .btn-success {
+        background-color: #1cc88a;
+        border-color: #1cc88a;
+    }
+
+    .btn-success:hover {
+        background-color: #169b6b;
+        border-color: #169b6b;
+    }
+
+    /* Center the Add Employee heading */
+    h1.add-employee-heading {
+        text-align: center;
+        margin: 1.5rem auto 2rem;
+        font-weight: 700;
+        color: #FFD700;
+        /* Gold color for visibility */
+        font-size: 2.5rem;
+    }
+
+    /* Fix the nav tabs to be evenly distributed */
+    .nav-tabs {
+        display: flex;
+        width: 100%;
+        border-bottom: 2px solid rgba(255, 255, 255, 0.2);
+        background-color: rgba(16, 48, 108, 0.8);
+        /* Darker blue background */
+        border-radius: 8px;
+        overflow: hidden;
+        margin-bottom: 2rem;
+    }
+
+    .nav-tabs .nav-item {
+        flex: 1;
+        text-align: center;
+    }
+
+    .nav-tabs .nav-link {
+        color: rgba(255, 255, 255, 0.7);
+        font-weight: 600;
+        padding: 1rem 0;
+        border: none;
+        border-radius: 0;
+        transition: all 0.3s;
+        width: 100%;
+        text-transform: uppercase;
+        font-size: 0.9rem;
+        letter-spacing: 0.5px;
+    }
+
+    .nav-tabs .nav-link:hover:not(.active) {
+        background-color: rgba(255, 255, 255, 0.1);
+        color: #fff;
+    }
+
+    .nav-tabs .nav-link.active {
+        color: #fff;
+        background-color: #1E88E5;
+        /* Bright blue for active tab */
+        border-bottom: 3px solid #FFD700;
+        /* Gold underline */
+        font-weight: 700;
+    }
+
+    /* Make Add Employee text more prominent */
+    .add-employee-title {
+        color: #FFD700;
+        font-size: 2.5rem;
+        text-align: center;
+        margin-bottom: 2rem;
+        position: relative;
+        display: inline-block;
+    }
+
+    .add-employee-title:after {
+        content: '';
+        position: absolute;
+        width: 100%;
+        height: 3px;
+        background-color: #FFD700;
+        bottom: -10px;
+        left: 0;
+    }
+
+    #image-preview {
+        width: 150px;
+        height: 150px;
+        object-fit: cover;
+        border: 3px solid white;
+        box-shadow: var(--box-shadow);
+        transition: all 0.3s;
+        background-color: #f1f5fe;
+    }
+
+    #image-preview:hover {
+        transform: scale(1.05);
+    }
+
+    .section-title {
+        font-size: 1.25rem;
+        color: var(--primary-color);
+        border-bottom: 1px solid #e3e6f0;
+        padding-bottom: 0.5rem;
+        margin-bottom: 1.5rem;
+    }
+
+    hr {
+        border-top: 1px solid #e3e6f0;
+        margin: 1.5rem 0;
+    }
+
+    .text-primary {
+        color: var(--primary-color) !important;
+    }
+
+    .form-check-input {
+        width: 1.25rem;
+        height: 1.25rem;
+        margin-top: 0.1rem;
+    }
+
+    .form-check-label {
+        padding-left: 0.25rem;
+    }
+
+    .bank-row {
+        background-color: rgba(248, 249, 252, 0.8);
+        padding: 1rem;
+        border-radius: var(--border-radius);
+        border: 1px solid #e3e6f0;
+        margin-bottom: 1rem;
+        transition: all 0.3s;
+    }
+
+    .bank-row:hover {
+        background-color: #f1f5fe;
+        box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.1);
+    }
+
+    .small,
+    small {
+        font-size: 80%;
+        font-weight: 400;
+        color: #858796;
+    }
+
+    .tab-content {
+        padding: 1.5rem 0;
+    }
+
+    .alert {
+        border-radius: var(--border-radius);
+        border: none;
+        box-shadow: var(--box-shadow);
+    }
+
+    .alert-danger {
+        background-color: #fff5f5;
+        border-left: 4px solid #e74a3b;
+    }
+
+    /* Responsive adjustments */
+    @media (max-width: 768px) {
+        .nav-tabs .nav-link {
+            padding: 0.75rem 1rem;
+            font-size: 0.9rem;
+        }
+
+        .btn {
+            padding: 0.6rem 1rem;
+            font-size: 0.9rem;
+        }
+
+        .form-control,
+        .form-select {
+            padding: 0.6rem 0.75rem;
+        }
+
+        .card-body {
+            padding: 1rem;
+        }
+    }
+
+    @media (max-width: 576px) {
+        .nav-tabs {
+            display: flex;
+            overflow-x: auto;
+            flex-wrap: nowrap;
+            padding-bottom: 5px;
+        }
+
+        .nav-tabs .nav-link {
+            white-space: nowrap;
+        }
+
+        h1.text-center.text-warning {
+            font-size: 1.75rem;
+        }
+    }
+</style>
+
 
 @push('scripts')
 
@@ -1329,28 +1611,72 @@
     }
 
 
-    function loadProvinces() {
-        $.ajax({
-            url: 'https://alamat.thecloudalert.com/api/provinsi/get/',
-            type: 'GET',
-            dataType: 'json',
-            success: function(response) {
-                if (response.result) {
-                    // Populate all province dropdowns
-                    var options = '<option value="" disabled selected>Select Province</option>';
-                    $.each(response.result, function(i, province) {
-                        // Menggunakan text provinsi sebagai value, bukan id
-                        options += '<option value="' + province.text + '">' + province.text + '</option>';
-                    });
+    // Load provinces but preserve existing selected values
+    function loadProvinces(context = document) {
+        $(context).find('.province-dropdown').each(function() {
+            const dropdownElement = $(this);
+            const selectedValue = dropdownElement.find('option:selected').val();
 
-                    $('.province-dropdown').html(options);
+            // Only load provinces if not already populated with options beyond the default and selected option
+            if (dropdownElement.find('option').length <= 2) {
+                $.ajax({
+                    url: 'https://alamat.thecloudalert.com/api/provinsi/get/',
+                    type: 'GET',
+                    dataType: 'json',
+                    success: function(response) {
+                        if (response.result) {
+                            var options = '<option value="" disabled>Select Province</option>';
 
-                    // Set selected province for each section
-                    setSelectedProvinces();
-                }
-            },
-            error: function(xhr, status, error) {
-                console.error('Error loading provinces:', error);
+                            // Keep the currently selected option if it exists
+                            if (selectedValue && selectedValue !== '') {
+                                const existingOption = dropdownElement.find('option:selected');
+                                if (existingOption.length) {
+                                    options += `<option value="${selectedValue}" selected>${selectedValue}</option>`;
+                                }
+                            }
+
+                            // Add all provinces from API
+                            $.each(response.result, function(i, province) {
+                                // Avoid duplicating the selected option
+                                if (province.text !== selectedValue) {
+                                    options += `<option value="${province.text}" data-id="${province.id}">${province.text}</option>`;
+                                }
+                            });
+
+                            dropdownElement.html(options);
+
+                            // If there's a selected value, load the corresponding cities
+                            if (selectedValue) {
+                                // Find the city dropdown ID
+                                const card = dropdownElement.closest('.education-card, .training-card, .organization-card');
+                                let cityDropdownId;
+
+                                if (card.hasClass('education-card')) {
+                                    const index = $('.education-card').index(card);
+                                    cityDropdownId = 'educationCity' + (index + 1);
+                                } else if (card.hasClass('training-card')) {
+                                    const index = $('.training-card').index(card);
+                                    cityDropdownId = 'trainingCity' + (index + 1);
+                                } else if (card.hasClass('organization-card')) {
+                                    const index = $('.organization-card').index(card);
+                                    cityDropdownId = 'organizationCity' + (index + 1);
+                                }
+
+                                // Get the currently selected city
+                                const cityDropdown = $('#' + cityDropdownId);
+                                const selectedCity = cityDropdown.find('option:selected').val();
+
+                                // Load cities for this province
+                                if (cityDropdownId) {
+                                    loadCities(selectedValue, cityDropdownId, selectedCity);
+                                }
+                            }
+                        }
+                    },
+                    error: function(xhr, status, error) {
+                        console.error('Error loading provinces:', error);
+                    }
+                });
             }
         });
     }
@@ -1391,66 +1717,98 @@
         @endif
     }
 
-    // Fungsi ini perlu dimodifikasi karena sekarang kita mengirim nama provinsi, bukan ID
+    // Load cities for a province and preserve any selected city
     function loadCities(provinceName, cityDropdownId, selectedCityText = null) {
-        // Pertama kita perlu mendapatkan ID provinsi dari namanya
+        const cityDropdown = $('#' + cityDropdownId);
+
+        // Store the currently selected city
+        if (!selectedCityText) {
+            selectedCityText = cityDropdown.find('option:selected').val();
+        }
+
+        // Find the province ID from the dropdown
+        let provinceId = null;
+        $('select.province-dropdown option').each(function() {
+            if ($(this).val() === provinceName && $(this).data('id')) {
+                provinceId = $(this).data('id');
+                return false; // Break the loop once found
+            }
+        });
+
+        // If we couldn't find the province ID in the options, we need to fetch all provinces
+        if (!provinceId) {
+            $.ajax({
+                url: 'https://alamat.thecloudalert.com/api/provinsi/get/',
+                type: 'GET',
+                dataType: 'json',
+                success: function(provinceResponse) {
+                    if (provinceResponse.result) {
+                        // Find province ID by name
+                        $.each(provinceResponse.result, function(i, province) {
+                            if (province.text === provinceName) {
+                                provinceId = province.id;
+                                return false; // Break the loop once found
+                            }
+                        });
+
+                        // Now fetch cities with the found ID
+                        if (provinceId) {
+                            fetchCitiesWithProvinceId(provinceId, cityDropdownId, selectedCityText);
+                        } else {
+                            console.error('Could not find province ID for:', provinceName);
+                        }
+                    }
+                },
+                error: function(xhr, status, error) {
+                    console.error('Error finding province ID:', error);
+                }
+            });
+        } else {
+            // We already have the province ID, so fetch cities
+            fetchCitiesWithProvinceId(provinceId, cityDropdownId, selectedCityText);
+        }
+    }
+
+    // Helper function to fetch cities once we have the province ID
+    function fetchCitiesWithProvinceId(provinceId, cityDropdownId, selectedCityText) {
         $.ajax({
-            url: 'https://alamat.thecloudalert.com/api/provinsi/get/',
+            url: 'https://alamat.thecloudalert.com/api/kabkota/get/',
             type: 'GET',
+            data: {
+                d_provinsi_id: provinceId
+            },
             dataType: 'json',
-            success: function(provinceResponse) {
-                if (provinceResponse.result) {
-                    // Cari ID provinsi berdasarkan nama
-                    var provinceId = null;
-                    $.each(provinceResponse.result, function(i, province) {
-                        if (province.text === provinceName) {
-                            provinceId = province.id;
-                            return false; // Break the loop once found
+            success: function(response) {
+                if (response.result) {
+                    const cityDropdown = $('#' + cityDropdownId);
+                    var options = '<option value="" disabled>Select City</option>';
+
+                    // Keep the currently selected option if it exists
+                    if (selectedCityText && selectedCityText !== '') {
+                        const existingOption = cityDropdown.find('option:selected');
+                        if (existingOption.length && existingOption.val() === selectedCityText) {
+                            options += `<option value="${selectedCityText}" selected>${selectedCityText}</option>`;
+                        } else {
+                            options += `<option value="${selectedCityText}" selected>${selectedCityText}</option>`;
+                        }
+                    }
+
+                    // Add all cities from API
+                    $.each(response.result, function(i, city) {
+                        // Avoid duplicating the selected option
+                        if (city.text !== selectedCityText) {
+                            options += `<option value="${city.text}">${city.text}</option>`;
                         }
                     });
 
-                    if (provinceId) {
-                        // Setelah mendapatkan ID, lakukan permintaan untuk kota
-                        $.ajax({
-                            url: 'https://alamat.thecloudalert.com/api/kabkota/get/',
-                            type: 'GET',
-                            data: {
-                                d_provinsi_id: provinceId
-                            },
-                            dataType: 'json',
-                            success: function(response) {
-                                if (response.result) {
-                                    var options = '<option value="" disabled selected>Select City</option>';
-
-                                    $.each(response.result, function(i, city) {
-                                        // Menggunakan text kota sebagai value, bukan id
-                                        options += '<option value="' + city.text + '">' + city.text + '</option>';
-                                    });
-
-                                    $('#' + cityDropdownId).html(options);
-
-                                    // Set selected city if provided
-                                    if (selectedCityText) {
-                                        $('#' + cityDropdownId).val(selectedCityText);
-                                    }
-                                }
-                            },
-                            error: function(xhr, status, error) {
-                                console.error('Error loading cities:', error);
-                            }
-                        });
-                    } else {
-                        console.error('Province not found:', provinceName);
-                    }
+                    cityDropdown.html(options);
                 }
             },
             error: function(xhr, status, error) {
-                console.error('Error finding province ID:', error);
+                console.error('Error loading cities:', error);
             }
         });
     }
-
-
 
     // Update the language select options
     function updateLanguageOptions() {
@@ -1623,12 +1981,15 @@
 
         // Set up event listener for province selection
         $(document).on('change', '.province-dropdown', function() {
-            var provinceName = $(this).val();
-            var section = $(this).closest('[class$="-card"]').attr('class').split('-')[0]; // education, training, or organization
-            var index = $(this).closest('[class$="-card"]').index('[class$="-card"]') + 1;
-            var cityDropdownId = section + 'City' + index;
+            var provinceId = $(this).find(':selected').data('id');
+            var cityDropdown = $(this).closest('.row').find('.city-dropdown');
 
-            loadCities(provinceName, cityDropdownId);
+            // Kosongkan dropdown city terlebih dahulu
+            cityDropdown.html('<option value="" disabled selected>Select City</option>');
+
+            if (provinceId) {
+                loadCities(provinceId, cityDropdown.attr('id'));
+            }
         });
 
 
@@ -2012,9 +2373,12 @@
         </div>
     `;
 
+            // Add your new card HTML here
             $('#educationContainer').append(newEducationCard);
             updateEducationNumbers();
-            loadProvinces();
+
+            // This is the important part - only load provinces for the new card
+            loadProvinces($('#educationContainer .education-card:last'));
         });
 
         // Add validation for grade based on education level
@@ -2098,7 +2462,7 @@
                                         </div>
                                         <div class="col-md-6">
                                             <label class="form-label">Position</label>
-                                            <input type="text" class="form-control" name="position[]" placeholder="Position" value="{{ old('position.0') }}">
+                                            <input type="text" class="form-control" name="position_work[]" placeholder="Position" value="{{ old('position.0') }}">
                                         </div>
                                         <div class="col-md-6">
                                             <label class="form-label">Start Date</label>
@@ -2317,11 +2681,10 @@
                     </div>
                 </div>
                 `;
+            // existing code...
             $('#trainingContainer').append(newTrainingCard);
-
-            // Update training indices
             updateTrainingIndices();
-            loadProvinces();
+            loadProvinces($('#trainingContainer .training-card:last'));
         });
 
         // Remove training card
@@ -2399,11 +2762,11 @@
             </div>
         </div>
     `;
+            // existing code...
             $('#organizationContainer').append(newOrganizationCard);
             updateOrganizationIndices();
-            loadProvinces();
+            loadProvinces($('#organizationContainer .organization-card:last'));
         });
-
 
         // Remove organization card
         $(document).on('click', '.remove-organization-card', function() {
@@ -2446,8 +2809,70 @@
 
 
 
+        // Show loading state on buttons
+        $(document).on('submit', 'form', function() {
+            $(this).find('button[type="submit"]').html(
+                '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Processing...'
+            ).prop('disabled', true);
+        });
 
+        // Handle form submission with AJAX
+        $('form').on('submit', function(e) {
+            e.preventDefault();
 
+            // Show processing Swal
+            Swal.fire({
+                title: 'Processing',
+                html: 'Please wait while we save employee data...',
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+
+            // Prepare form data
+            let formData = new FormData(this);
+
+            // Submit via AJAX
+            $.ajax({
+                url: $(this).attr('action'),
+                type: 'POST',
+                data: formData,
+                processData: false,
+                contentType: false,
+                success: function(response) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Success!',
+                        text: response.message,
+                        confirmButtonText: 'OK'
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            window.location.href = response.redirect;
+                        }
+                    });
+                },
+                error: function(xhr) {
+                    let errorMessage = 'An error occurred';
+                    if (xhr.responseJSON && xhr.responseJSON.message) {
+                        errorMessage = xhr.responseJSON.message;
+                    } else if (xhr.responseJSON && xhr.responseJSON.errors) {
+                        errorMessage = 'Please check the form for errors';
+                        // Highlight error fields
+                        $.each(xhr.responseJSON.errors, function(key, value) {
+                            $(`[name="${key}"]`).addClass('is-invalid');
+                            $(`[name="${key}"]`).after(`<div class="invalid-feedback">${value[0]}</div>`);
+                        });
+                    }
+
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error!',
+                        text: errorMessage
+                    });
+                }
+            });
+        });
 
 
 

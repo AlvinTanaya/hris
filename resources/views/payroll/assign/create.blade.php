@@ -200,7 +200,7 @@
                                     <th>OT Rate</th>
                                     <th>Allowance</th>
                                     <th>Bonus</th>
-                                    <th>Absences</th>
+                                    <th>Absences (Alpa)</th>
                                     <th>Reduction</th>
                                     <th>Total</th>
                                     <th width="5%">Actions</th>

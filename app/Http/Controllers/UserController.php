@@ -90,13 +90,13 @@ class UserController extends Controller
     // Store a newly created pegawai in the database
     public function employees_store(Request $request)
     {
-        //dd($request->all());
+
         // Validate the form data
         $request->validate([
-            'photo' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
-            'id_card' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
-            'cv' => 'nullable|mimes:pdf|max:2048',
-            'achievement' => 'nullable|mimes:pdf|max:2048',
+            'photo' => 'nullable|image|mimes:jpeg,png,jpg,gif',
+            'id_card' => 'nullable|image|mimes:jpeg,png,jpg,gif',
+            'cv' => 'nullable|mimes:pdf',
+            'achievement' => 'nullable|mimes:pdf',
             'name' => 'required',
             'position_id' => 'required|exists:employee_positions,id',
             'department_id' => 'required|exists:employee_departments,id',
@@ -217,7 +217,7 @@ class UserController extends Controller
         // dd($bankNames,    $bankNumbers);
 
         // Create a new Pegawai record
-        User::create([
+        $user = User::create([
             'employee_id' => $employeeId,
             'sim' => $license ?? null,
             'sim_number' => $license_number ?? null,
@@ -228,7 +228,6 @@ class UserController extends Controller
             'name' => $request->name,
             'position_id' => $request->position_id,
             'department_id' => $request->department_id,
-
             'join_date' => $joinDate,
             'contract_start_date' => $request->contract_start_date ?? null,
             'contract_end_date' => $request->contract_end_date ?? null,
@@ -243,7 +242,7 @@ class UserController extends Controller
             'bank_name' => !empty($bankNames) ? json_encode($bankNames) : null,
             'bank_number' => !empty($bankNumbers) ? json_encode($bankNumbers) : null,
             'bpjs_employment' => $request->bpjs_employment ?? null,
-            'bpjs_kesehatan' => $request->bpjs_kesehatan ?? null,
+            'bpjs_health' => $request->bpjs_health ?? null,
             'ID_number' => $request->ID_number,
             'birth_date' => $request->birth_date,
             'birth_place' => $request->birth_place,
@@ -261,8 +260,7 @@ class UserController extends Controller
         ]);
 
 
-        $user = User::where('employee_id', $request->employee_id)->first();
-        //dd($user->id);
+
 
         // data keluarga
         if ($request->has('name_family')) {
@@ -288,7 +286,7 @@ class UserController extends Controller
 
         if ($request->has('education_level')) {
             foreach ($request->education_level as $index => $name) {
-                if ($request->degree[$index] !== null) {
+                if ($request->education_level[$index] !== null) {
                     $newEducation = users_education::create([
                         'users_id' => $user->id,
                         'degree' => $request->education_level[$index] ?? null,
@@ -297,7 +295,7 @@ class UserController extends Controller
                         'educational_province' => $request->education_province[$index] ?? null,
                         'start_education'  => $request->start_education[$index] ?? null,
                         'end_education'  => $request->end_education[$index] ?? null,
-                        'major'  => $request->major[$index] ?? null,
+                        'major'  => $request->educational_major[$index] ?? null,
                         'grade'  => $request->grade[$index] ?? null,
                         'created_at' => now(),
                         'updated_at' => now(),
@@ -327,7 +325,7 @@ class UserController extends Controller
                     users_work_experience::create([
                         'users_id' => $user->id,
                         'company_name' => $request->company_name[$index],
-                        'position' => $request->position_working[$index],
+                        'position' => $request->position_work[$index],
                         'start_working' => $request->start_work[$index],
                         'end_working' => $request->end_work[$index],
 
@@ -440,11 +438,11 @@ class UserController extends Controller
         ]);
 
 
-
-
-
-
-        return redirect()->route('user.employees.index')->with('success', 'Employee added successfully');
+        // Redirect ke halaman index atau halaman lain dengan pesan sukses
+        return response()->json([
+            'message' => 'Employee Added successfully',
+            'redirect' => route('user.employees.index')
+        ]);
     }
 
 
@@ -533,10 +531,10 @@ class UserController extends Controller
 
         $request->validate([
             'password' => 'nullable|min:8',
-            'photo' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
-            'id_card' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
-            'cv' => 'nullable|mimes:pdf|max:2048',
-            'achievement' => 'nullable|mimes:pdf|max:2048',
+            'photo' => 'nullable|image|mimes:jpeg,png,jpg,gif',
+            'id_card' => 'nullable|image|mimes:jpeg,png,jpg,gif',
+            'cv' => 'nullable|mimes:pdf',
+            'achievement' => 'nullable|mimes:pdf',
             'employee_id' => 'required',
             'name' => 'required',
             'user_status' => 'required',
@@ -699,7 +697,7 @@ class UserController extends Controller
             'employee_status' => $request->employee_status,
             'user_status' => $request->user_status,
             'bpjs_employment' => $request->bpjs_employment,
-            'bpjs_kesehatan' => $request->bpjs_kesehatan,
+            'bpjs_health' => $request->bpjs_health,
             'ID_number' => $request->ID_number,
             'birth_date' => $request->birth_date,
             'birth_place' => $request->birth_place,
@@ -923,7 +921,7 @@ class UserController extends Controller
                             $userWork->end_work !== $request->end_work[$index]
                         ) {
                             $userWork->update([
-                                'nama_perusahaan' => $company_name,
+                                'company_name' => $company_name,
                                 'position' => $request->position_work[$index] ?? null,
                                 'start_working' => $request->start_work[$index] ?? null,
                                 'end_working' => $request->end_work[$index] ?? null,
@@ -1183,7 +1181,10 @@ class UserController extends Controller
         }
 
         // Redirect ke halaman index atau halaman lain dengan pesan sukses
-        return redirect()->route('user.employees.index')->with('success', 'Data Pegawai berhasil diupdate.');
+        return response()->json([
+            'message' => 'Employee Updated successfully',
+            'redirect' => route('user.employees.index')
+        ]);
     }
 
     public function employees_history($id)

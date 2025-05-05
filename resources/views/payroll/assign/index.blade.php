@@ -289,18 +289,6 @@
                 </table>
             </div>
 
-            <div class="row mt-3">
-                <div class="col-md-6">
-                    <div class="dataTables_info">
-                        Showing {{ $payrolls->firstItem() }} to {{ $payrolls->lastItem() }} of {{ $payrolls->total() }} entries
-                    </div>
-                </div>
-                <div class="col-md-6">
-                    <div class="float-end">
-                        {{ $payrolls->links() }}
-                    </div>
-                </div>
-            </div>
         </div>
     </div>
 </div>

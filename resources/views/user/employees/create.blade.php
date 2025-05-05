@@ -1,61 +1,14 @@
 @extends('layouts.app')
 
 @section('content')
-<style>
-    #employeeTab .nav-link {
-        color: white;
-        font-weight: 500;
-        padding: 1rem;
-        transition: all 0.3s ease;
-    }
 
-    #employeeTab .nav-link.active {
-        color: #0d6efd;
-        border-bottom: 3px solid #0d6efd;
-    }
-
-    #employeeTab .nav-item {
-        flex: 1;
-        text-align: center;
-        max-width: 20%;
-    }
-
-    .delete-bank-row {
-        height: 38px;
-        /* Match height with other buttons */
-        margin-bottom: 0;
-        /* Remove bottom margin */
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
-
-    /* Remove extra space */
-    .bank-row {
-        display: flex;
-        align-items: flex-end;
-        /* Align all elements to bottom */
-        margin-bottom: 1rem;
-    }
-
-    /* Ensure consistent sizing */
-    .bank-row .col-md-2 {
-        display: flex;
-        align-items: flex-end;
-    }
-
-    /* Make sure button fills available space */
-    .delete-bank-row {
-        width: 100%;
-    }
-</style>
 <a href="{{ route('user.employees.index') }}" class="btn btn-danger px-5 mb-3">
     <i class="fas fa-arrow-left me-2"></i>Back
 </a>
 
-<h1 class="mb-5 text-center text-warning"><i class="far fa-plus"></i> Add Employee</h1>
+<h1 class="add-employee-heading"><i class="far fa-plus"></i> Add Employee</h1>
 
-<div class="container mt-1">
+<div class="container mt-1 test">
 
 
     <!-- Tab Navigation -->
@@ -90,7 +43,7 @@
 
         <div class="card shadow-lg border-0 rounded mt-4">
 
-            <div class="card-body pt-1">
+            <div class="card-body pt-1 pb-1">
                 <!-- Display validation errors -->
                 @if ($errors->any())
                 <div class="alert alert-danger">
@@ -104,7 +57,7 @@
 
 
 
-                <div class="tab-content mt-4" id="employeeTabContent">
+                <div class="tab-content" id="employeeTabContent">
                     <!-- Data user -->
                     <div class="tab-pane fade show active" id="userData" role="tabpanel" aria-labelledby="userDataTab">
 
@@ -284,7 +237,6 @@
                                 <input type="text" class="form-control" id="bpjs_health" name="bpjs_health" value="{{ old('bpjs_health') }}" required>
                             </div>
                         </div>
-                        <!-- Bank Information Card -->
                         <!-- Bank Information Card -->
 
                         <div class="card mb-4">
@@ -672,6 +624,324 @@
 
 @endsection
 
+<style>
+    .test {
+        --primary-color: #4e73df;
+        --secondary-color: #f8f9fc;
+        --accent-color: #2e59d9;
+        --text-color: #5a5c69;
+        --light-gray: #f8f9fa;
+        --border-radius: 0.5rem;
+        --box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
+        max-width: 1280px;
+        margin: 0 auto;
+    }
+
+    body {
+        background-color: #f8f9fc;
+        color: var(--text-color);
+        font-family: 'Nunito', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    }
+
+    h1.text-center.text-warning {
+        font-weight: 700;
+        margin-bottom: 2rem;
+        background: linear-gradient(to right, #f6c23e, #e0a800);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+        display: inline-block;
+        padding: 0.5rem 0;
+    }
+
+    .card {
+        border: none;
+        border-radius: var(--border-radius);
+        box-shadow: var(--box-shadow);
+        transition: all 0.3s ease;
+        margin-bottom: 2rem;
+    }
+
+    .card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 0.5rem 2rem 0 rgba(58, 59, 69, 0.2);
+    }
+
+    .card-header {
+        background-color: var(--secondary-color);
+        border-bottom: 1px solid #e3e6f0;
+        padding: 1.25rem 1.5rem;
+        border-radius: var(--border-radius) var(--border-radius) 0 0 !important;
+        font-weight: 600;
+    }
+
+    .form-label {
+        font-weight: 600;
+        color: var(--text-color);
+        margin-bottom: 0.5rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .form-control,
+    .form-select {
+        border-radius: var(--border-radius);
+        padding: 0.75rem 1rem;
+        border: 1px solid #d1d3e2;
+        transition: all 0.3s;
+        font-size: 0.9rem;
+    }
+
+    .form-control:focus,
+    .form-select:focus {
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 0.2rem rgba(78, 115, 223, 0.25);
+    }
+
+    .input-group-text {
+        background-color: #eaecf4;
+        border: 1px solid #d1d3e2;
+        color: #6e707e;
+        border-radius: 0 var(--border-radius) var(--border-radius) 0;
+    }
+
+    .btn {
+        border-radius: var(--border-radius);
+        padding: 0.75rem 1.5rem;
+        font-weight: 600;
+        transition: all 0.3s;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+    }
+
+    .btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+    }
+
+    .btn-primary {
+        background-color: var(--primary-color);
+        border-color: var(--primary-color);
+    }
+
+    .btn-primary:hover {
+        background-color: var(--accent-color);
+        border-color: var(--accent-color);
+    }
+
+    .btn-danger {
+        background-color: #e74a3b;
+        border-color: #e74a3b;
+    }
+
+    .btn-danger:hover {
+        background-color: #d52a1a;
+        border-color: #d52a1a;
+    }
+
+    .btn-success {
+        background-color: #1cc88a;
+        border-color: #1cc88a;
+    }
+
+    .btn-success:hover {
+        background-color: #169b6b;
+        border-color: #169b6b;
+    }
+
+    /* Center the Add Employee heading */
+    h1.add-employee-heading {
+        text-align: center;
+        margin: 1.5rem auto 2rem;
+        font-weight: 700;
+        color: #FFD700;
+        /* Gold color for visibility */
+        font-size: 2.5rem;
+    }
+
+    /* Fix the nav tabs to be evenly distributed */
+    .nav-tabs {
+        display: flex;
+        width: 100%;
+        border-bottom: 2px solid rgba(255, 255, 255, 0.2);
+        background-color: rgba(16, 48, 108, 0.8);
+        /* Darker blue background */
+        border-radius: 8px;
+        overflow: hidden;
+        margin-bottom: 2rem;
+    }
+
+    .nav-tabs .nav-item {
+        flex: 1;
+        text-align: center;
+    }
+
+    .nav-tabs .nav-link {
+        color: rgba(255, 255, 255, 0.7);
+        font-weight: 600;
+        padding: 1rem 0;
+        border: none;
+        border-radius: 0;
+        transition: all 0.3s;
+        width: 100%;
+        text-transform: uppercase;
+        font-size: 0.9rem;
+        letter-spacing: 0.5px;
+    }
+
+    .nav-tabs .nav-link:hover:not(.active) {
+        background-color: rgba(255, 255, 255, 0.1);
+        color: #fff;
+    }
+
+    .nav-tabs .nav-link.active {
+        color: #fff;
+        background-color: #1E88E5;
+        /* Bright blue for active tab */
+        border-bottom: 3px solid #FFD700;
+        /* Gold underline */
+        font-weight: 700;
+    }
+
+    /* Make Add Employee text more prominent */
+    .add-employee-title {
+        color: #FFD700;
+        font-size: 2.5rem;
+        text-align: center;
+        margin-bottom: 2rem;
+        position: relative;
+        display: inline-block;
+    }
+
+    .add-employee-title:after {
+        content: '';
+        position: absolute;
+        width: 100%;
+        height: 3px;
+        background-color: #FFD700;
+        bottom: -10px;
+        left: 0;
+    }
+
+    #image-preview {
+        width: 150px;
+        height: 150px;
+        object-fit: cover;
+        border: 3px solid white;
+        box-shadow: var(--box-shadow);
+        transition: all 0.3s;
+        background-color: #f1f5fe;
+    }
+
+    #image-preview:hover {
+        transform: scale(1.05);
+    }
+
+    .section-title {
+        font-size: 1.25rem;
+        color: var(--primary-color);
+        border-bottom: 1px solid #e3e6f0;
+        padding-bottom: 0.5rem;
+        margin-bottom: 1.5rem;
+    }
+
+    hr {
+        border-top: 1px solid #e3e6f0;
+        margin: 1.5rem 0;
+    }
+
+    .text-primary {
+        color: var(--primary-color) !important;
+    }
+
+    .form-check-input {
+        width: 1.25rem;
+        height: 1.25rem;
+        margin-top: 0.1rem;
+    }
+
+    .form-check-label {
+        padding-left: 0.25rem;
+    }
+
+    .bank-row {
+        background-color: rgba(248, 249, 252, 0.8);
+        padding: 1rem;
+        border-radius: var(--border-radius);
+        border: 1px solid #e3e6f0;
+        margin-bottom: 1rem;
+        transition: all 0.3s;
+    }
+
+    .bank-row:hover {
+        background-color: #f1f5fe;
+        box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.1);
+    }
+
+    .small,
+    small {
+        font-size: 80%;
+        font-weight: 400;
+        color: #858796;
+    }
+
+    .tab-content {
+        padding: 1.5rem 0;
+    }
+
+    .alert {
+        border-radius: var(--border-radius);
+        border: none;
+        box-shadow: var(--box-shadow);
+    }
+
+    .alert-danger {
+        background-color: #fff5f5;
+        border-left: 4px solid #e74a3b;
+    }
+
+    /* Responsive adjustments */
+    @media (max-width: 768px) {
+        .nav-tabs .nav-link {
+            padding: 0.75rem 1rem;
+            font-size: 0.9rem;
+        }
+
+        .btn {
+            padding: 0.6rem 1rem;
+            font-size: 0.9rem;
+        }
+
+        .form-control,
+        .form-select {
+            padding: 0.6rem 0.75rem;
+        }
+
+        .card-body {
+            padding: 1rem;
+        }
+    }
+
+    @media (max-width: 576px) {
+        .nav-tabs {
+            display: flex;
+            overflow-x: auto;
+            flex-wrap: nowrap;
+            padding-bottom: 5px;
+        }
+
+        .nav-tabs .nav-link {
+            white-space: nowrap;
+        }
+
+        h1.text-center.text-warning {
+            font-size: 1.75rem;
+        }
+    }
+</style>
 
 @push('scripts')
 
@@ -737,29 +1007,35 @@
 
 
 
+    // Improved function to load provinces
+    function loadProvinces(context = document) {
+        // Only target province dropdowns that don't have options yet
+        $(context).find('.province-dropdown:not(:has(option[value!=""]))').each(function() {
+            const dropdownElement = this; // Store reference to the dropdown
 
-
-
-    function loadProvinces() {
-        $.ajax({
-            url: 'https://alamat.thecloudalert.com/api/provinsi/get/',
-            type: 'GET',
-            dataType: 'json',
-            success: function(response) {
-                if (response.result) {
-                    var options = '<option value="" disabled selected>Select Province</option>';
-                    $.each(response.result, function(i, province) {
-                        options += `<option value="${province.text}" data-id="${province.id}">${province.text}</option>`; // Pakai text sebagai value & simpan ID di data-id
-                    });
-
-                    $('.province-dropdown').html(options);
-                }
-            },
-            error: function(xhr, status, error) {
-                console.error('Error loading provinces:', error);
+            // Only load if not already populated
+            if ($(dropdownElement).find('option').length <= 1) {
+                $.ajax({
+                    url: 'https://alamat.thecloudalert.com/api/provinsi/get/',
+                    type: 'GET',
+                    dataType: 'json',
+                    success: function(response) {
+                        if (response.result) {
+                            var options = '<option value="" disabled selected>Select Province</option>';
+                            $.each(response.result, function(i, province) {
+                                options += `<option value="${province.text}" data-id="${province.id}">${province.text}</option>`;
+                            });
+                            $(dropdownElement).html(options);
+                        }
+                    },
+                    error: function(xhr, status, error) {
+                        console.error('Error loading provinces:', error);
+                    }
+                });
             }
         });
     }
+
 
     // Function to load cities based on selected province ID
     function loadCities(provinceId, cityDropdownId) {
@@ -960,16 +1236,15 @@
         loadProvinces();
 
 
-        // Function to load provinces for all dropdowns
         $(document).on('change', '.province-dropdown', function() {
-            var provinceText = $(this).val(); // Ini tetap text
-            var provinceId = $(this).find(':selected').data('id'); // Ambil ID dari data-id
-            var cityDropdownId = $(this).closest('.row').find('.city-dropdown').attr('id');
+            var provinceId = $(this).find(':selected').data('id');
+            var cityDropdown = $(this).closest('.row').find('.city-dropdown');
 
-            console.log("Selected Province:", provinceText, "| Province ID:", provinceId);
+            // Kosongkan dropdown city terlebih dahulu
+            cityDropdown.html('<option value="" disabled selected>Select City</option>');
 
             if (provinceId) {
-                loadCities(provinceId, cityDropdownId);
+                loadCities(provinceId, cityDropdown.attr('id'));
             }
         });
 
@@ -1187,6 +1462,7 @@
 
         //education
         $('#addRow').on('click', function() {
+
             const newEducationCard = `
         <div class="card mb-3 education-card">
             <div class="card-header bg-primary text-white">
@@ -1240,8 +1516,8 @@
                         <input type="text" class="form-control education-grade" name="grade[]" placeholder="Grade" value="">
                     </div>
                     <div class="col-md-3">
-                        <label class="form-label">Certificate</label>
-                        <input type="file" class="form-control" name="education_certificate[]" accept="image/*">
+                        <label class="form-label">Transcript</label>
+                        <input type="file" class="form-control" name="education_transcript[]" accept="image/*">
                     </div>
                 </div>
                 <div class="text-end mt-3">
@@ -1252,10 +1528,12 @@
             </div>
         </div>
     `;
-
+            // Add your new card HTML here
             $('#educationContainer').append(newEducationCard);
             updateEducationNumbers();
-            loadProvinces();
+
+            // This is the important part - only load provinces for the new card
+            loadProvinces($('#educationContainer .education-card:last'));
         });
 
         // Add validation for grade based on education level
@@ -1324,7 +1602,7 @@
 
 
         $('#addWorkRow').click(function() {
-            console.log('asadas');
+
             const newRow = `
                         <div class="card mb-3 work-card">
                                 <div class="card-header bg-primary text-white">
@@ -1338,7 +1616,7 @@
                                         </div>
                                         <div class="col-md-6">
                                             <label class="form-label">Position</label>
-                                            <input type="text" class="form-control" name="position[]" placeholder="Position" value="{{ old('position.0') }}">
+                                            <input type="text" class="form-control" name="position_work[]" placeholder="Position" value="{{ old('position.0') }}">
                                         </div>
                                         <div class="col-md-6">
                                             <label class="form-label">Start Date</label>
@@ -1358,7 +1636,7 @@
                                         </div>
                                         <div class="col-md-6">
                                             <label class="form-label">Salary</label>
-                                            <input type="text" class="form-control" name="salary[]" placeholder="Salary" value="{{ old('salary.0') }}">
+                                            <input type="text" class="form-control" name="previous_salary[]" placeholder="Salary" value="{{ old('salary.0') }}">
                                         </div>
                                         <div class="col-md-6">
                                             <label class="form-label">Supervisor Name</label>
@@ -1560,11 +1838,10 @@
                     </div>
                 </div>
                 `;
+            // existing code...
             $('#trainingContainer').append(newTrainingCard);
-
-            // Update training indices
             updateTrainingIndices();
-            loadProvinces();
+            loadProvinces($('#trainingContainer .training-card:last'));
         });
 
         // Remove training card
@@ -1643,9 +1920,10 @@
             </div>
         </div>
     `;
+            // existing code...
             $('#organizationContainer').append(newOrganizationCard);
             updateOrganizationIndices();
-            loadProvinces();
+            loadProvinces($('#organizationContainer .organization-card:last'));
         });
 
 
@@ -1680,9 +1958,74 @@
             // Cegah input negatif atau lebih dari 30
             if (value < 0) {
                 $(this).val(0);
-            } else if (value > 30) {
-                $(this).val(30);
+            } else if (value > 50) {
+                $(this).val(50);
             }
+        });
+
+        // Show loading state on buttons
+        $(document).on('submit', 'form', function() {
+            $(this).find('button[type="submit"]').html(
+                '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Processing...'
+            ).prop('disabled', true);
+        });
+
+        // Handle form submission with AJAX
+        $('form').on('submit', function(e) {
+            e.preventDefault();
+
+            // Show processing Swal
+            Swal.fire({
+                title: 'Processing',
+                html: 'Please wait while we save employee data...',
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+
+            // Prepare form data
+            let formData = new FormData(this);
+
+            // Submit via AJAX
+            $.ajax({
+                url: $(this).attr('action'),
+                type: 'POST',
+                data: formData,
+                processData: false,
+                contentType: false,
+                success: function(response) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Success!',
+                        text: response.message,
+                        confirmButtonText: 'OK'
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            window.location.href = response.redirect;
+                        }
+                    });
+                },
+                error: function(xhr) {
+                    let errorMessage = 'An error occurred';
+                    if (xhr.responseJSON && xhr.responseJSON.message) {
+                        errorMessage = xhr.responseJSON.message;
+                    } else if (xhr.responseJSON && xhr.responseJSON.errors) {
+                        errorMessage = 'Please check the form for errors';
+                        // Highlight error fields
+                        $.each(xhr.responseJSON.errors, function(key, value) {
+                            $(`[name="${key}"]`).addClass('is-invalid');
+                            $(`[name="${key}"]`).after(`<div class="invalid-feedback">${value[0]}</div>`);
+                        });
+                    }
+
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error!',
+                        text: errorMessage
+                    });
+                }
+            });
         });
 
     });
