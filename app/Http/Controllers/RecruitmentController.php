@@ -49,21 +49,34 @@ class RecruitmentController extends Controller
     public function index(Request $request)
     {
         $query = DB::table('recruitment_demand')
-            ->join('users', 'recruitment_demand.maker_id', '=', 'users.id')
-            ->join('employee_departments', 'recruitment_demand.department_id', '=', 'employee_departments.id')
-            ->join('employee_positions', 'recruitment_demand.position_id', '=', 'employee_positions.id')
+            ->leftJoin('users as maker', 'recruitment_demand.maker_id', '=', 'maker.id')
+            ->leftJoin('users as responder', 'recruitment_demand.response_id', '=', 'responder.id')
+            ->leftJoin('employee_departments', 'recruitment_demand.department_id', '=', 'employee_departments.id')
+            ->leftJoin('employee_positions', 'recruitment_demand.position_id', '=', 'employee_positions.id')
             ->select(
-                'users.name as maker_name',
-                'recruitment_demand.*',
+                'recruitment_demand.id',
+                'recruitment_demand.recruitment_demand_id',
+                'recruitment_demand.status_demand',
+                'recruitment_demand.department_id',
+                'recruitment_demand.position_id',
+                'recruitment_demand.opening_date',
+                'recruitment_demand.closing_date',
+                'recruitment_demand.status_job',
+                'recruitment_demand.qty_needed',
+                'recruitment_demand.qty_fullfil',
+                'recruitment_demand.response_reason',
+                'maker.name as maker_name',
+                'responder.name as responder_name',
                 'employee_departments.department as department_name',
                 'employee_positions.position as position_name'
             );
 
-        // Apply filters
+
+
+        // Apply filters (keep your existing filter code)
         if ($request->filled('status_demand')) {
             $query->where('recruitment_demand.status_demand', $request->status_demand);
         }
-
         if ($request->filled('department_id')) {
             $query->where('recruitment_demand.department_id', $request->department_id);
         }
@@ -84,7 +97,7 @@ class RecruitmentController extends Controller
             $query->whereDate('recruitment_demand.closing_date', $request->closing_date);
         }
 
-        // Get distinct values for dropdowns from the actual tables
+        // Get distinct values for dropdowns
         $departments = DB::table('employee_departments')->select('id', 'department')->get();
         $positions = DB::table('employee_positions')->select('id', 'position')->get();
         $jobStatuses = DB::table('recruitment_demand')->distinct()->pluck('status_job');
@@ -99,6 +112,45 @@ class RecruitmentController extends Controller
         ));
     }
 
+    public function show_labor_demand($id)
+    {
+        $demand = recruitment_demand::with([
+            'departmentRelation',
+            'positionRelation',
+            'responder' // Eager load the responder relationship
+        ])->find($id);
+
+        if (!$demand) {
+            return response()->json(['message' => 'Labor Demand not found'], 404);
+        }
+
+        return response()->json([
+            'id' => $demand->id,
+            'recruitment_demand_id' => $demand->recruitment_demand_id,
+            'status_demand' => $demand->status_demand,
+            'department_id' => $demand->department_id,
+            'department_name' => $demand->departmentRelation->department ?? 'Unknown Department',
+            'position_id' => $demand->position_id,
+            'position_name' => $demand->positionRelation->position ?? 'Unknown Position',
+            'opening_date' => $demand->opening_date,
+            'closing_date' => $demand->closing_date,
+            'status_job' => $demand->status_job,
+            'reason' => $demand->reason,
+            'qty_needed' => $demand->qty_needed,
+            'qty_fullfil' => $demand->qty_fullfil,
+            'gender' => $demand->gender,
+            'job_goal' => $demand->job_goal,
+            'education' => $demand->education,
+            'major' => $demand->major,
+            'experience' => $demand->experience,
+            'length_of_working' => $demand->length_of_working,
+            'time_work_experience' => $demand->time_work_experience,
+            'response_id' => $demand->response_id,
+            'response_reason' => $demand->response_reason,
+            'skills' => $demand->skills,
+            'responder_name' => $demand->responder->name ?? 'N/A' // Add this line
+        ]);
+    }
 
     public function create_labor_demand()
     {
@@ -108,9 +160,14 @@ class RecruitmentController extends Controller
         return view('recruitment/labor_demand/create', compact('departments', 'positions'));
     }
 
+
     public function edit_labor_demand($id)
     {
+        // Use eager loading to ensure relationships are loaded
         $demand = recruitment_demand::with(['departmentRelation', 'positionRelation'])->findOrFail($id);
+
+        // dd($demand->department_id);
+
         $departments = EmployeeDepartment::all();
         $positions = EmployeePosition::all();
 
@@ -121,11 +178,13 @@ class RecruitmentController extends Controller
         $demand = recruitment_demand::with([
             'departmentRelation',
             'positionRelation',
-            'maker'
+            'maker',
+            'responder'
         ])->findOrFail($id);
 
         // Update status
         $demand->status_demand = 'Approved';
+        $demand->response_id = Auth::user()->id;
         $demand->save();
 
         // Get names from relationships
@@ -176,19 +235,21 @@ class RecruitmentController extends Controller
         $demand = recruitment_demand::with([
             'departmentRelation',
             'positionRelation',
-            'maker'
+            'maker',
+            'responder'
         ])->findOrFail($id);
 
         // Update status and reason
         $demand->status_demand = 'Declined';
-        $demand->response = $request->response;
+        $demand->response_reason = $request->response_reason;
+        $demand->response_id = Auth::user()->id;
         $demand->save();
 
         // Get names from relationships
         $positionName = $demand->positionRelation->position ?? 'Unknown Position';
 
         // Notification message
-        $message = "Labor demand request {$demand->recruitment_demand_id} for position: {$positionName} has been declined with reason: {$request->response}";
+        $message = "Labor demand request {$demand->recruitment_demand_id} for position: {$positionName} has been declined with reason: {$request->response_reason}";
 
         if ($demand->maker) {
             // Send to maker
@@ -235,12 +296,14 @@ class RecruitmentController extends Controller
         $demand = recruitment_demand::with([
             'departmentRelation',
             'positionRelation',
-            'maker'
+            'maker',
+            'responder'
         ])->findOrFail($id);
 
         // Update status and revision reason
         $demand->status_demand = 'Revised';
         $demand->response_reason = $request->revision_reason;
+        $demand->response_id = Auth::user()->id;
         $demand->save();
 
         // Get names from relationships
@@ -291,6 +354,7 @@ class RecruitmentController extends Controller
 
     public function store_labor_demand(Request $request)
     {
+
         // Validasi input  
         $validated = $request->validate([
             'department_id' => 'required|exists:employee_departments,id',
@@ -300,10 +364,15 @@ class RecruitmentController extends Controller
             'reason' => 'required|string|max:255',
             'qty_needed' => 'required|integer',
             'gender' => 'required|string|max:255',
+
+
             'job_goal' => 'required|string|max:255',
             'education' => 'required|string|max:255',
             'major' => 'required|string|max:255',
             'experience' => 'required|string|max:255',
+
+
+
             'status_job' => 'required|string|in:Full Time,Part Time,Contract',
             'length_of_working' => [
                 'nullable',
@@ -313,6 +382,9 @@ class RecruitmentController extends Controller
             'skills' => 'required|string|max:255',
             'time_work_experience' => 'nullable|string|max:255',
         ]);
+
+
+        // dd($request->all());
 
         // Tambahkan status dan informasi tambahan  
         $validated['status_demand'] = 'Pending';
@@ -436,39 +508,7 @@ class RecruitmentController extends Controller
         }
     }
 
-    public function show_labor_demand($id)
-    {
-        $demand = recruitment_demand::with(['departmentRelation', 'positionRelation'])->find($id);
 
-        if (!$demand) {
-            return response()->json(['message' => 'Labor Demand not found'], 404);
-        }
-
-        return response()->json([
-            'id' => $demand->id,
-            'recruitment_demand_id' => $demand->recruitment_demand_id,
-            'status_demand' => $demand->status_demand,
-            'department_id' => $demand->department_id,
-            'department_name' => $demand->departmentRelation->department ?? 'Unknown Department',
-            'position_id' => $demand->position_id,
-            'position_name' => $demand->positionRelation->position ?? 'Unknown Position',
-            'opening_date' => $demand->opening_date,
-            'closing_date' => $demand->closing_date,
-            'status_job' => $demand->status_job,
-            'reason' => $demand->reason,
-            'qty_needed' => $demand->qty_needed,
-            'qty_fullfil' => $demand->qty_fullfil,
-            'gender' => $demand->gender,
-            'job_goal' => $demand->job_goal,
-            'education' => $demand->education,
-            'major' => $demand->major,
-            'experience' => $demand->experience,
-            'length_of_working' => $demand->length_of_working,
-            'time_work_experience' => $demand->time_work_experience,
-            'response' => $demand->response,
-            'skills' => $demand->skills,
-        ]);
-    }
 
 
 
@@ -1226,46 +1266,46 @@ class RecruitmentController extends Controller
             'interview_date' => 'required_if:needs_reschedule,on|nullable|date',
             'interview_note' => 'required_if:needs_reschedule,on|nullable|string',
         ]);
-    
+
         if ($validator->fails()) {
             return response()->json(['errors' => $validator->errors()], 422);
         }
-    
+
         $applicant = recruitment_applicant::findOrFail($request->applicant_id);
-    
+
         // Get new position data with relationships
         $newDemand = recruitment_demand::with(['departmentRelation', 'positionRelation'])
             ->findOrFail($request->new_demand_id);
-    
+
         // Update database with position exchange
         $updateData = [
             'recruitment_demand_id' => $request->new_demand_id,
             'exchange_note' => $request->exchange_reason,
             'updated_at' => now(),
         ];
-        
+
         // Check if reschedule is needed - checkbox is "on" when checked
         $needsReschedule = $request->has('needs_reschedule') && $request->needs_reschedule === 'on';
         $oldInterviewDate = null;
-        
+
         if ($needsReschedule) {
             $oldInterviewDate = $applicant->interview_date; // Save old date for email
-            
+
             // Add interview schedule data to update
             $updateData['interview_date'] = $request->interview_date;
             $updateData['interview_note'] = str_replace("\r\n", "\n", $request->interview_note);
         }
-    
+
         // Update the applicant record
         $applicant->update($updateData);
-    
+
         // Send position exchange email
         Mail::to($applicant->email)->send(new PositionExchangedMail(
             $applicant,
             $newDemand->positionRelation->position ?? 'Unknown Position',
             $newDemand->departmentRelation->department ?? 'Unknown Department'
         ));
-    
+
         // Send interview reschedule email if needed
         if ($needsReschedule && $oldInterviewDate) {
             Mail::to($applicant->email)->send(new InterviewRescheduledMail($applicant, $oldInterviewDate));
@@ -1273,11 +1313,11 @@ class RecruitmentController extends Controller
             // If no previous interview was scheduled, send the initial interview email
             Mail::to($applicant->email)->send(new InterviewScheduledMail($applicant));
         }
-    
+
         return response()->json(['message' => 'Position exchanged successfully' . ($needsReschedule ? ' and interview rescheduled' : '')]);
     }
 
-    
+
     public function update_status(Request $request, $id)
     {
         $request->validate([
@@ -1338,20 +1378,20 @@ class RecruitmentController extends Controller
             $applicant = recruitment_applicant::findOrFail($id);
             $demand = recruitment_demand::with(['departmentRelation', 'positionRelation'])
                 ->findOrFail($applicant->recruitment_demand_id);
-    
+
             // Get department and position names from relationships
             $departmentName = $demand->departmentRelation->department ?? 'Unknown Department';
             $positionName = $demand->positionRelation->position ?? 'Unknown Position';
-    
+
             // Ambil join_date dari request
             $joinDate = $request->join_date ? Carbon::parse($request->join_date) : now();
             $yearMonth = $joinDate->format('Ym'); // Format YYYYMM
-    
+
             // Cari employee terakhir di bulan tersebut
             $lastEmployee = User::where('employee_id', 'like', "{$yearMonth}%")
                 ->orderBy('employee_id', 'desc')
                 ->first();
-    
+
             // Tentukan nomor urut
             $newEmployeeNumber = 1;
             if ($lastEmployee) {
@@ -1359,13 +1399,13 @@ class RecruitmentController extends Controller
                 $newEmployeeNumber = $lastNumber + 1;
             }
             $employeeId = $yearMonth . str_pad($newEmployeeNumber, 3, '0', STR_PAD_LEFT);
-    
+
             // Handle file copying
             $photoProfilePath = $this->copyFile($applicant->photo_profile_path, "user/photos_profile/{$employeeId}");
             $cvPath = $this->copyFile($applicant->cv_path, "user/cv_user/cv_{$employeeId}");
             $idCardPath = $this->copyFile($applicant->ID_card_path, "user/ID_card/ID_card_{$employeeId}");
             $achievementPath = $this->copyFile($applicant->achievement_path, "user/achievement_user/achievement_{$employeeId}");
-    
+
             // Create new employee
             $employee = User::create([
                 'employee_id' => $employeeId,
@@ -1403,7 +1443,7 @@ class RecruitmentController extends Controller
                 'created_at' => now(),
                 'updated_at' => now()
             ]);
-    
+
             // Copy additional data
             $this->copyEducation($applicant->id, $employee->id);
             $this->copyFamily($applicant->id, $employee->id);
@@ -1411,14 +1451,14 @@ class RecruitmentController extends Controller
             $this->copyLanguages($applicant->id, $employee->id);
             $this->copyTraining($applicant->id, $employee->id);
             $this->copyOrganization($applicant->id, $employee->id);
-    
+
             // Update demand quantities
             $demand->decrement('qty_needed');
             $demand->increment('qty_fullfil');
-    
+
             // Update applicant status
             $applicant->update(['status_applicant' => 'Done']);
-    
+
             // **KIRIM EMAIL KE PESERTA**
             Mail::to($applicant->email)->send(new AcceptedApplicantMail(
                 $applicant,
@@ -1426,15 +1466,15 @@ class RecruitmentController extends Controller
                 $departmentName,
                 $joinDate->toFormattedDateString()
             ));
-    
+
             // Ambil semua email user KECUALI email peserta yang baru diterima
             $userEmails = User::where('email', '!=', $applicant->email)
                 ->pluck('email')
                 ->toArray();
-    
+
             // Kirim email ke semua user (kecuali peserta yang baru diterima)
             Mail::to($userEmails)->send(new NewEmployeeNotificationMail($employee));
-    
+
             return response()->json(['message' => 'Employee added successfully']);
         } catch (\Exception $e) {
             return response()->json(['message' => 'Failed to add employee: ' . $e->getMessage()], 500);
@@ -1590,8 +1630,4 @@ class RecruitmentController extends Controller
             ]);
         }
     }
-
-
-
-    
 }

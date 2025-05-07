@@ -1,134 +1,253 @@
 @extends('layouts.app')
 
 @section('content')
-<a href="{{ route('elearning.index') }}" class="btn btn-danger ms-2 px-5"> <i class="fas fa-arrow-left me-2"></i>Back</a>
-<h1 class="text-center text-warning" style="margin-bottom: 65px; margin-top:25px"><i class="fas fa-plus"></i> Add Schedule</h1>
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <a href="{{ route('elearning.index') }}" class="btn btn-outline-primary">
+                    <i class="fas fa-arrow-left me-2"></i>Back to E-Learning
+                </a>
+                <h1 class="text-warning fw-bold mb-0">Add New Schedule</h1>
+                <div></div> <!-- Empty div for flex spacing -->
+            </div>
+        </div>
+    </div>
 
-<div class="container mt-4 mx-auto">
-
-    <div class="card shadow-lg">
-        <div class="card-body">
+    <div class="card border-0 shadow-lg rounded-3">
+        <div class="card-header bg-primary bg-gradient text-white py-3">
+            <h4 class="mb-0"><i class="fas fa-calendar-plus me-2"></i>Schedule Details</h4>
+        </div>
+        <div class="card-body p-4">
             <form action="{{ route('elearning.store_schedule') }}" method="POST" enctype="multipart/form-data">
                 @csrf
 
-                <div class="row mb-3">
-                    <div class="col-md-12">
-                        <label for="lesson_id" class="form-label">Lesson Title</label>
-                        <select name="lesson_id" class="form-control" required>
-                            <option value="" disabled selected>Select a lesson</option>
-                            @foreach($lessons as $lesson)
-                            <option value="{{ $lesson->id }}">{{ $lesson->name }}</option>
-                            @endforeach
-                        </select>
-                    </div>
-                </div>
-
-                <div class="row mb-3">
-                    <div class="col-md-6">
-                        <label for="startDate" class="form-label">Start Date</label>
-                        <input type="date" name="startDate" class="form-control" required>
-                    </div>
-                    <div class="col-md-6">
-                        <label for="endDate" class="form-label">End Date</label>
-                        <input type="date" name="endDate" class="form-control" required>
-                    </div>
-                </div>
-
-                <h4 class="text-primary mt-4 mb-4"><i class="fas fa-users me-2"></i>Invite Employees</h4>
-
-                <div class="row mb-3">
-                    <div class="col-md-6 border-end">
-                        <div class="row">
-                            <div class="col-md-6">
-                                <label for="positionFilter" class="form-label">Filter by Position</label>
-                                <select id="positionFilter" class="form-control select2" multiple>
-                                    <option value="">All Positions</option>
-                                    @foreach($positions as $position)
-                                    <option value="{{ $position->id }}">{{ $position->position }}</option>
-                                    @endforeach
-                                </select>
+                <div class="row g-4">
+                    <!-- Lesson Selection -->
+                    <div class="col-12">
+                        <div class="card border-0 shadow-sm rounded-3">
+                            <div class="card-header bg-light">
+                                <h5 class="mb-0"><i class="fas fa-book me-2"></i>Lesson Information</h5>
                             </div>
-                            <div class="col-md-6">
-                                <label for="departmentFilter" class="form-label">Filter by Department</label>
-                                <select id="departmentFilter" class="form-control select2" multiple>
-                                    <option value="">All Departments</option>
-                                    @foreach($departments as $department)
-                                    <option value="{{ $department->id }}">{{ $department->department }}</option>
-                                    @endforeach
-                                </select>
-                            </div>
-
-                        </div>
-                        <div class="row mt-3">
-                            <div class="col-md-12">
-                                <button type="button" class="btn btn-warning w-100" id="addAllEmployees">
-                                    <i class="fas fa-users me-2"></i> Add All Filtered Employees
-                                </button>
+                            <div class="card-body p-3">
+                                <div class="mb-3">
+                                    <label for="lesson_id" class="form-label fw-bold">Lesson Title</label>
+                                    <select name="lesson_id" class="form-select form-select-lg" required>
+                                        <option value="" disabled selected>Select a lesson</option>
+                                        @foreach($lessons as $lesson)
+                                        <option value="{{ $lesson->id }}">{{ $lesson->name }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="startDate" class="form-label fw-bold">Start Date</label>
+                                            <div class="input-group">
+                                                <span class="input-group-text bg-primary text-white">
+                                                    <i class="fas fa-calendar-alt"></i>
+                                                </span>
+                                                <input type="date" name="startDate" class="form-control form-control-lg" required>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="endDate" class="form-label fw-bold">End Date</label>
+                                            <div class="input-group">
+                                                <span class="input-group-text bg-primary text-white">
+                                                    <i class="fas fa-calendar-check"></i>
+                                                </span>
+                                                <input type="date" name="endDate" class="form-control form-control-lg" required>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
 
-                    <div class="col-md-6">
-                        <div class="row">
-                            <div class="col-md-12">
-                                <label for="employees" class="form-label">Select Employees</label>
-                                <select id="employees" class="form-control select2" style="width: 100%;" multiple>
-                                    @foreach($employees as $employee)
-                                    <option value="{{ $employee->id }}" data-department="{{ $employee->department }}" data-position="{{ $employee->position }}">{{ $employee->employee_id }} - {{ $employee->name }}</option>
-                                    @endforeach
-                                </select>
+                    <!-- Employee Selection -->
+                    <div class="col-12">
+                        <div class="card border-0 shadow-sm rounded-3">
+                            <div class="card-header bg-light">
+                                <h5 class="mb-0"><i class="fas fa-users me-2"></i>Employee Enrollment</h5>
                             </div>
-                        </div>
-                        <div class="row mt-3">
-                            <div class="col-md-12">
-                                <button type="button" class="btn btn-primary w-100" id="addEmployees">
-                                    <i class="fas fa-user-plus me-2"></i> Add Selected Employees
-                                </button>
+                            <div class="card-body p-3">
+                                <div class="row g-3">
+                                    <!-- Filter Section -->
+                                    <div class="col-md-6 border-end">
+                                        <h6 class="text-primary fw-bold mb-3">Filter Options</h6>
+                                        <div class="row g-3">
+                                            <div class="col-md-6">
+                                                <label for="positionFilter" class="form-label">Position Filter</label>
+                                                <select id="positionFilter" class="form-select select2" multiple>
+                                                    <option value="">All Positions</option>
+                                                    @foreach($positions as $position)
+                                                    <option value="{{ $position->id }}">{{ $position->position }}</option>
+                                                    @endforeach
+                                                </select>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <label for="departmentFilter" class="form-label">Department Filter</label>
+                                                <select id="departmentFilter" class="form-select select2" multiple>
+                                                    <option value="">All Departments</option>
+                                                    @foreach($departments as $department)
+                                                    <option value="{{ $department->id }}">{{ $department->department }}</option>
+                                                    @endforeach
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <div class="mt-3">
+                                            <button type="button" class="btn btn-warning btn-lg w-100" id="addAllEmployees">
+                                                <i class="fas fa-users-cog me-2"></i> Add All Filtered Employees
+                                            </button>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Employee Selection -->
+                                    <div class="col-md-6">
+                                        <h6 class="text-primary fw-bold mb-3">Employee Selection</h6>
+                                        <div class="mb-3">
+                                            <label for="employees" class="form-label">Select Employees</label>
+                                            <select id="employees" class="form-select select2" style="width: 100%;" multiple>
+                                                @foreach($employees as $employee)
+                                                <option value="{{ $employee->id }}" data-department="{{ $employee->department }}" data-position="{{ $employee->position }}">
+                                                    {{ $employee->employee_id }} - {{ $employee->name }}
+                                                </option>
+                                                @endforeach
+                                            </select>
+                                        </div>
+                                        <div class="mt-3">
+                                            <button type="button" class="btn btn-primary btn-lg w-100" id="addEmployees">
+                                                <i class="fas fa-user-plus me-2"></i> Add Selected Employees
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
-                </div>
 
-
-
-
-
-                <div class="card mt-3">
-                    <div class="card-header bg-primary text-white">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <span>Invited Employees</span>
-                            <button type="button" class="btn btn-danger btn-sm" id="removeAllEmployees">
-                                <i class="fas fa-trash-alt me-1"></i> Remove All
-                            </button>
+                    <!-- Invited Employees Table -->
+                    <div class="col-12">
+                        <div class="card border-0 shadow-sm rounded-3">
+                            <div class="card-header bg-success bg-gradient text-white">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <h5 class="mb-0"><i class="fas fa-user-check me-2"></i>Invited Employees</h5>
+                                    <button type="button" class="btn btn-danger btn-sm" id="removeAllEmployees">
+                                        <i class="fas fa-trash-alt me-1"></i> Remove All
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="card-body p-0">
+                                <div class="table-responsive">
+                                    <table class="table table-hover table-striped mb-0" id="employeeTable">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th>Employee ID</th>
+                                                <th>Name</th>
+                                                <th>Position</th>
+                                                <th>Department</th>
+                                                <th class="text-center">Action</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="invitedEmployees">
+                                            <!-- Data will be displayed here -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
                         </div>
-                    </div>
-                    <div class="card-body">
-                        <table class="table table-striped table-bordered" id="employeeTable">
-                            <thead>
-                                <tr>
-                                    <th>Employee ID</th>
-                                    <th>Name</th>
-                                    <th>Position</th>
-                                    <th>Department</th>
-                                    <th>Action</th>
-                                </tr>
-                            </thead>
-                            <tbody id="invitedEmployees">
-                                <!-- Data will be displayed here -->
-                            </tbody>
-                        </table>
                     </div>
                 </div>
 
                 <input type="hidden" name="invited_employees" id="invitedEmployeesInput">
 
-                <div class="d-flex justify-content-end mt-3">
-                    <button type="submit" class="btn btn-success"><i class="fas fa-save me-2"></i>Save</button>
+                <div class="d-flex justify-content-end mt-4">
+                    <button type="submit" class="btn btn-success btn-lg px-5">
+                        <i class="fas fa-save me-2"></i>Save Schedule
+                    </button>
                 </div>
             </form>
         </div>
     </div>
 </div>
+
+
+@endsection
+<style>
+    /* Custom Styling */
+    .select2-container .select2-selection--multiple {
+        min-height: 38px;
+        border-color: #ced4da;
+    }
+    
+    .select2-container .select2-selection--single {
+        height: 38px;
+        border-color: #ced4da;
+    }
+    
+    .select2-container--default .select2-selection--single .select2-selection__rendered {
+        line-height: 38px;
+    }
+    
+    .select2-container--default .select2-selection--single .select2-selection__arrow {
+        height: 36px;
+    }
+    
+    /* Table styling */
+    #employeeTable th {
+        font-weight: 600;
+    }
+    
+    #employeeTable td {
+        vertical-align: middle;
+    }
+    
+    /* Card styling */
+    .card {
+        transition: all 0.3s ease;
+    }
+    
+    .card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 20px rgba(0,0,0,0.1) !important;
+    }
+    
+    /* Button styling */
+    .btn {
+        border-radius: 5px;
+        font-weight: 500;
+    }
+    
+    .btn-lg {
+        padding: 0.75rem 1.5rem;
+    }
+    
+    /* Form controls */
+    .form-control, .form-select {
+        border-radius: 5px;
+        padding: 0.5rem 0.75rem;
+    }
+    
+    .form-control:focus, .form-select:focus {
+        border-color: #86b7fe;
+        box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+    }
+    
+    /* Header styling */
+    h1, h4, h5, h6 {
+        font-weight: 600;
+    }
+    
+    /* Input groups */
+    .input-group-text {
+        border-top-right-radius: 0;
+        border-bottom-right-radius: 0;
+    }
+</style>
+
 
 @push('scripts')
 <!-- Include Select2 JS -->
@@ -278,7 +397,11 @@
                             <td>${emp.name}</td>
                             <td>${emp.position.position}</td>
                             <td>${emp.department.department}</td>
-                            <td><button type="button" class="btn btn-danger btn-sm removeEmployee" data-id="${id}">Remove</button></td>
+                            <td class="text-center">
+                                <button type="button" class="btn btn-danger btn-sm removeEmployee" data-id="${id}">
+                                    <i class="fas fa-user-minus me-1"></i> Remove
+                                </button>
+                            </td>
                         </tr>`
                         );
                     }
@@ -301,6 +424,4 @@
         }
     });
 </script>
-
 @endpush
-@endsection

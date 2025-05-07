@@ -565,6 +565,7 @@
 
                         <div class="row">
 
+
                             <!-- Upload ID Card -->
                             <div class="col-md-4 mb-3">
                                 <label for="id_card" class="form-label">
@@ -611,62 +612,6 @@
                                 </div>
                             </div>
                         </div>
-
-                        <!-- Modal View ID Card -->
-                        @if(!empty($user->ID_card_path))
-                        <div class="modal fade" id="viewIDCard" tabindex="-1" aria-labelledby="viewIDCardLabel" aria-hidden="true">
-                            <div class="modal-dialog modal-lg">
-                                <div class="modal-content">
-                                    <div class="modal-header bg-primary text-white">
-                                        <h5 class="modal-title" id="viewIDCardLabel"> <i class="fas fa-id-card"></i> View ID Card</h5>
-                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                                    </div>
-                                    <div class="modal-body text-center">
-                                        <img src="{{ asset('storage/' . $user->ID_card_path) }}" class="img-fluid rounded" alt="ID Card">
-
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        @endif
-
-                        <!-- Modal View CV -->
-                        @if(!empty($user->cv_path))
-
-                        <div class="modal fade" id="viewCV" tabindex="-1" aria-labelledby="viewCVLabel" aria-hidden="true">
-
-                            <div class="modal-dialog modal-lg">
-                                <div class="modal-content">
-                                    <div class="modal-header bg-primary text-white">
-                                        <h5 class="modal-title" id="viewCVLabel"><i class="fas fa-file-alt"></i> View CV </h5>
-                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                                    </div>
-                                    <div class="modal-body text-center">
-                                        <iframe src="{{ asset('storage/'. $user->cv_path) }}" width="100%" height="500px"></iframe>
-
-                                    </div>
-
-                                </div>
-                            </div>
-                        </div>
-                        @endif
-
-                        <!-- Modal Achievement -->
-                        @if(!empty($user->achievement_path))
-                        <div class="modal fade" id="viewAchievement" tabindex="-1" aria-labelledby="viewAchievementLabel" aria-hidden="true">
-                            <div class="modal-dialog modal-lg">
-                                <div class="modal-content">
-                                    <div class="modal-header bg-primary text-white">
-                                        <h5 class="modal-title" id="viewAchievementLabel"><i class="fas fa-file-alt"></i> Achievement</h5>
-                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                                    </div>
-                                    <div class="modal-body text-center">
-                                        <iframe src="{{ asset('storage/'. $user->achievement_path) }}" width="100%" height="500px"></iframe>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        @endif
 
 
                     </div>
@@ -1196,23 +1141,82 @@
     </form>
 </div>
 
-<!-- Transcript Modal -->
-<div class="modal fade" id="transcriptModal" tabindex="-1" aria-labelledby="transcriptModalLabel" aria-hidden="true">
+<!-- Modal View ID Card -->
+@if(!empty($user->ID_card_path))
+<div class="modal fade" id="viewIDCard" tabindex="-1" aria-labelledby="viewIDCardLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="transcriptModalLabel">Transcript</h5>
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="viewIDCardLabel"> <i class="fas fa-id-card"></i> View ID Card</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <div class="modal-body">
-                <img id="transcriptImage" src="" class="img-fluid" alt="Transcript">
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            <div class="modal-body text-center">
+                <img src="{{ asset('storage/' . $user->ID_card_path) }}" class="img-fluid rounded" alt="ID Card">
+
             </div>
         </div>
     </div>
 </div>
+@endif
+
+<!-- Modal View CV -->
+@if(!empty($user->cv_path))
+
+<div class="modal fade" id="viewCV" tabindex="-1" aria-labelledby="viewCVLabel" aria-hidden="true">
+
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="viewCVLabel"><i class="fas fa-file-alt"></i> View CV </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body text-center">
+                <iframe src="{{ asset('storage/'. $user->cv_path) }}" width="100%" height="500px"></iframe>
+
+            </div>
+
+        </div>
+    </div>
+</div>
+@endif
+
+<!-- Modal Achievement -->
+@if(!empty($user->achievement_path))
+<div class="modal fade" id="viewAchievement" tabindex="-1" aria-labelledby="viewAchievementLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="viewAchievementLabel"><i class="fas fa-file-alt"></i> Achievement</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body text-center">
+                <iframe src="{{ asset('storage/'. $user->achievement_path) }}" width="100%" height="500px"></iframe>
+            </div>
+        </div>
+    </div>
+</div>
+@endif
+
+
+
+<!-- Transcript Modal -->
+<div class="modal fade" id="transcriptModal" tabindex="-1" aria-labelledby="transcriptModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg" style="max-width: 900px;">
+        <div class="modal-content" style="border-radius: 15px; overflow: hidden; box-shadow: 0 5px 20px rgba(0,0,0,0.2);">
+            <div class="modal-header" style="background-color: #f8f9fa; padding: 15px 20px;">
+                <h5 class="modal-title" id="transcriptModalLabel" style="color: #2c3e50; font-weight: bold;">Transcript</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" style="filter: brightness(0.5);"></button>
+            </div>
+            <div class="modal-body" style="padding: 20px; background-color: #ffffff; text-align: center;">
+                <img id="transcriptImage" src="" class="img-fluid" alt="Transcript" style="border-radius: 10px; max-height: 500px; object-fit: contain;">
+            </div>
+            <div class="modal-footer" style="background-color: #f1f1f1; padding: 15px 20px;">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" style="padding: 8px 20px; font-size: 14px;">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 
 @endsection
 

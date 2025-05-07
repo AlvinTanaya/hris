@@ -1,115 +1,29 @@
 @extends('layouts.app')
 
 @section('content')
-<style>
-    .modal-content {
-        border: none;
-        border-radius: 15px;
-    }
-
-    .modal-header {
-        border-radius: 15px 15px 0 0;
-        background: linear-gradient(135deg, #1e3c72, #2a5298);
-    }
-
-    .card {
-        transition: transform 0.2s;
-        border-radius: 10px;
-    }
-
-    .info-group {
-        margin-bottom: 1rem;
-    }
-
-    .info-group label {
-        display: block;
-        font-size: 0.875rem;
-        color: #6c757d;
-        margin-bottom: 0.25rem;
-    }
-
-    .info-group p {
-        margin: 0;
-        font-size: 1rem;
-    }
-
-    .timeline {
-        position: relative;
-        padding-left: 30px;
-    }
-
-    .timeline::before {
-        content: '';
-        position: absolute;
-        left: 15px;
-        top: 0;
-        height: 100%;
-        width: 2px;
-        background: #e9ecef;
-    }
-
-    .timeline-item {
-        position: relative;
-        margin-bottom: 1.5rem;
-    }
-
-    .timeline-item i {
-        position: absolute;
-        left: -30px;
-        background: white;
-        padding: 5px;
-    }
-
-    .timeline-item div {
-        margin-left: 10px;
-    }
-
-    .accordion-button:not(.collapsed) {
-        background-color: rgba(30, 60, 114, 0.1);
-        color: #1e3c72;
-    }
-
-    .accordion-button:focus {
-        box-shadow: none;
-        border-color: rgba(30, 60, 114, 0.1);
-    }
-
-    .list-group-item {
-        border-left: none;
-        border-right: none;
-        border-radius: 0;
-        padding: 1rem;
-        position: relative;
-        padding-left: 2rem;
-    }
-
-    .list-group-item::before {
-        content: '•';
-        position: absolute;
-        left: 0.75rem;
-        color: #1e3c72;
-    }
-
-    @media (max-width: 768px) {
-        .modal-dialog {
-            margin: 0.5rem;
-        }
-    }
-</style>
 
 
-<h1 class="text-center text-warning" style="margin-bottom: 65px; margin-top:25px">
-    <i class="fas fa-book"></i> Interview
-</h1>
-<div class="container mt-4 mx-auto">
-    <div class="card shadow-sm">
 
-        <div class="card-header">
-            <h5 class="text-primary mt-2"><i class="fas fa-filter"></i> Filter Labor Demands</h5>
+<div class="container test">
+
+    <div class="page-header">
+        <div class="container">
+            <div class="d-flex align-items-center justify-content-center">
+                <div class="text-center">
+                    <h1 class="page-title"><i class="fas fa-users-viewfinder me-2"></i>Interview Management</h1>
+                    <p class="text-white-50 mt-2 mb-0">View and manage labor demands and applicant interviews</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="card shadow">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5><i class="fas fa-filter me-2"></i>Filter Labor Demands</h5>
+            <span class="badge bg-primary">{{ count($demand) }} Records</span>
         </div>
         <div class="card-body">
             <form action="{{ route('recruitment.index.interview') }}" method="GET" class="row g-3">
-                <div class="col-md-4">
+                <div class="col-md-4 col-lg-4">
                     <label for="department_id" class="form-label">Department</label>
                     <select class="form-select" id="department_id" name="department_id">
                         <option value="">All Departments</option>
@@ -120,7 +34,7 @@
                         @endforeach
                     </select>
                 </div>
-                <div class="col-md-4">
+                <div class="col-md-4 col-lg-4">
                     <label for="position_id" class="form-label">Position</label>
                     <select class="form-select" id="position_id" name="position_id">
                         <option value="">All Positions</option>
@@ -131,7 +45,7 @@
                         @endforeach
                     </select>
                 </div>
-                <div class="col-md-4">
+                <div class="col-md-4 col-lg-4">
                     <label for="status_job" class="form-label">Job Status</label>
                     <select class="form-select" id="status_job" name="status_job">
                         <option value="">All Job Status</option>
@@ -140,15 +54,15 @@
                         @endforeach
                     </select>
                 </div>
-                <div class="col-md-4">
+                <div class="col-md-6 col-lg-4">
                     <label for="opening_date" class="form-label">Opening Date</label>
                     <input type="date" class="form-control" id="opening_date" name="opening_date" value="{{ request('opening_date') }}">
                 </div>
-                <div class="col-md-4">
+                <div class="col-md-6 col-lg-4">
                     <label for="closing_date" class="form-label">Closing Date</label>
                     <input type="date" class="form-control" id="closing_date" name="closing_date" value="{{ request('closing_date') }}">
                 </div>
-                <div class="col-12">
+                <div class="col-12 d-flex gap-2">
                     <button type="submit" class="btn btn-primary">
                         <i class="fas fa-search me-2"></i>Apply Filters
                     </button>
@@ -160,28 +74,26 @@
         </div>
     </div>
 
-
-    <div class="card shadow-sm mt-4">
-
-
+    <div class="card shadow mt-4">
         <div class="card-header d-flex justify-content-between align-items-center">
-            <h5 class="text-primary mt-2"><i class="fas fa-user"></i> Labor Demand List</h5>
+            <h5><i class="fas fa-briefcase me-2"></i>Labor Demand List</h5>
+            <div>
+                <span class="badge bg-info">{{ date('F Y') }}</span>
+            </div>
         </div>
 
         <div class="card-body">
-            <div class="table-responsive" style="padding-right: 1%;">
-                <table id="laborDemandTable" class="table table-bordered mb-3 pt-3">
-                    <thead class="table-dark">
+            <div class="table-responsive">
+                <table id="laborDemandTable" class="table table-hover">
+                    <thead>
                         <tr>
                             <th>ID</th>
-
                             <th>Department</th>
                             <th>Position</th>
                             <th>Opened At</th>
                             <th>Closed At</th>
-                            <th>Qty Needed</th>
-                            <th>Qty Fullfill</th>
-
+                            <th>Needed</th>
+                            <th>Fulfilled</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
@@ -190,41 +102,40 @@
                         <tr>
                             <td>{{ $item->recruitment_demand_id }}</td>
                             <td>{{ $item->department_name }}</td>
-                            <td>{{ $item->position_name }}</td>
+                            <td><span class="fw-medium">{{ $item->position_name }}</span></td>
                             <td>{{ $item->opening_date }}</td>
                             <td>{{ $item->closing_date }}</td>
-                            <td>{{ $item->qty_needed }}</td>
-                            <td>{{ $item->qty_fullfil }}</td>
-
-                            <td class="d-flex">
-
-                                <a href="{{ route('recruitment.applicant', $item->id) }}" class="btn btn-warning btn-sm me-2">
-                                    <i class="fa-solid fa-users"></i> View Applicant
-                                </a>
-
-                                <button class="btn btn-info btn-sm me-2 view-btn"
-                                    data-id="{{ $item->id }}"
-                                    data-recruitment_demand_id="{{ $item->recruitment_demand_id }}"
-                                    data-status="{{ $item->status_demand }}"
-                                    data-department="{{ $item->department_name }}"
-                                    data-position="{{ $item->position_name }}"
-                                    data-opened="{{ $item->opening_date }}"
-                                    data-closed="{{ $item->closing_date }}"
-                                    data-status-job="{{ $item->status_job }}"
-                                    data-reason="{{ $item->reason }}"
-                                    data-needed="{{ $item->qty_needed }}"
-                                    data-fullfill="{{ $item->qty_fullfil }}"
-                                    data-gender="{{ $item->gender }}"
-                                    data-job-goal="{{ $item->job_goal }}"
-                                    data-education="{{ $item->education }}"
-                                    data-major="{{ $item->major }}"
-                                    data-experience="{{ $item->experience }}"
-                                    data-length-of-working="{{ $item->length_of_working ?? 'N/A'}}"
-                                    data-time-work-experience="{{ $item->time_work_experience }}"
-                                    data-declined-reason="{{ $item->declined_reason ?? 'N/A' }}"
-                                    data-skills="{{ $item->skills }}">
-                                    <i class="fas fa-eye"></i> View Detail
-                                </button>
+                            <td><span class="badge bg-primary">{{ $item->qty_needed }}</span></td>
+                            <td><span class="badge bg-success">{{ $item->qty_fullfil }}</span></td>
+                            <td>
+                                <div class="d-flex gap-2">
+                                    <a href="{{ route('recruitment.applicant', $item->id) }}" class="btn btn-warning btn-sm">
+                                        <i class="fa-solid fa-users me-1"></i> Applicants
+                                    </a>
+                                    <button class="btn btn-info btn-sm view-btn"
+                                        data-id="{{ $item->id }}"
+                                        data-recruitment_demand_id="{{ $item->recruitment_demand_id }}"
+                                        data-status="{{ $item->status_demand }}"
+                                        data-department="{{ $item->department_name }}"
+                                        data-position="{{ $item->position_name }}"
+                                        data-opened="{{ $item->opening_date }}"
+                                        data-closed="{{ $item->closing_date }}"
+                                        data-status-job="{{ $item->status_job }}"
+                                        data-reason="{{ $item->reason }}"
+                                        data-needed="{{ $item->qty_needed }}"
+                                        data-fullfill="{{ $item->qty_fullfil }}"
+                                        data-gender="{{ $item->gender }}"
+                                        data-job-goal="{{ $item->job_goal }}"
+                                        data-education="{{ $item->education }}"
+                                        data-major="{{ $item->major }}"
+                                        data-experience="{{ $item->experience }}"
+                                        data-length-of-working="{{ $item->length_of_working ?? 'N/A'}}"
+                                        data-time-work-experience="{{ $item->time_work_experience }}"
+                                        data-declined-reason="{{ $item->declined_reason ?? 'N/A' }}"
+                                        data-skills="{{ $item->skills }}">
+                                        <i class="fas fa-eye me-1"></i> Details
+                                    </button>
+                                </div>
                             </td>
                         </tr>
                         @endforeach
@@ -235,12 +146,11 @@
     </div>
 </div>
 
-
 <!-- View Modal -->
 <div class="modal fade" id="viewModal" tabindex="-1">
-    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
         <div class="modal-content">
-            <div class="modal-header bg-gradient-primary text-white">
+            <div class="modal-header">
                 <h5 class="modal-title">
                     <i class="fas fa-file-alt me-2"></i>Labor Demand Details
                 </h5>
@@ -317,28 +227,32 @@
                     </div>
 
                     <!-- Requirements Card -->
-                    <div class="col-12">
+                    <div class="col-md-12">
                         <div class="card border-0 shadow-sm">
                             <div class="card-header bg-light">
                                 <h6 class="mb-0"><i class="fas fa-check-circle me-2"></i>Requirements</h6>
                             </div>
                             <div class="card-body">
                                 <div class="row">
-                                    <div class="col-md-6">
+                                    <div class="col-md-3">
                                         <div class="info-group">
                                             <label>Gender</label>
                                             <p id="view-gender"></p>
                                         </div>
+                                    </div>
+                                    <div class="col-md-3">
                                         <div class="info-group">
                                             <label>Education</label>
                                             <p id="view-education"></p>
                                         </div>
                                     </div>
-                                    <div class="col-md-6">
+                                    <div class="col-md-3">
                                         <div class="info-group">
                                             <label>Major</label>
                                             <p id="view-major"></p>
                                         </div>
+                                    </div>
+                                    <div class="col-md-3">
                                         <div class="info-group">
                                             <label>Working Period</label>
                                             <p id="view-years-work"></p>
@@ -360,7 +274,7 @@
                                     <div class="accordion-item">
                                         <h2 class="accordion-header">
                                             <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#purposeCollapse">
-                                                Job Purpose
+                                                <i class="fas fa-bullseye me-2"></i> Job Purpose
                                             </button>
                                         </h2>
                                         <div id="purposeCollapse" class="accordion-collapse collapse show" data-bs-parent="#detailsAccordion">
@@ -372,7 +286,7 @@
                                     <div class="accordion-item">
                                         <h2 class="accordion-header">
                                             <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#experienceCollapse">
-                                                Experience Required
+                                                <i class="fas fa-briefcase me-2"></i> Experience Required
                                             </button>
                                         </h2>
                                         <div id="experienceCollapse" class="accordion-collapse collapse" data-bs-parent="#detailsAccordion">
@@ -384,7 +298,7 @@
                                     <div class="accordion-item">
                                         <h2 class="accordion-header">
                                             <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#skillsCollapse">
-                                                Required Skills
+                                                <i class="fas fa-tools me-2"></i> Required Skills
                                             </button>
                                         </h2>
                                         <div id="skillsCollapse" class="accordion-collapse collapse" data-bs-parent="#detailsAccordion">
@@ -396,7 +310,7 @@
                                     <div class="accordion-item">
                                         <h2 class="accordion-header">
                                             <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#reasonCollapse">
-                                                Reasons
+                                                <i class="fas fa-clipboard-list me-2"></i> Reasons
                                             </button>
                                         </h2>
                                         <div id="reasonCollapse" class="accordion-collapse collapse" data-bs-parent="#detailsAccordion">
@@ -411,12 +325,341 @@
                     </div>
                 </div>
             </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
         </div>
     </div>
 </div>
 
-
 @endsection
+
+
+<style>
+    .test {
+        --primary-color: #4361ee;
+        --primary-dark: #3a56d4;
+        --secondary-color: #f8f9fa;
+        --accent-color: #ff6b6b;
+        --success-color: #2ecc71;
+        --warning-color: #f39c12;
+        --info-color: #3498db;
+        --text-dark: #343a40;
+        --text-muted: #6c757d;
+        --border-radius: 0.75rem;
+        --shadow-sm: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+        --shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.1);
+        --shadow-lg: 0 1rem 2rem rgba(0, 0, 0, 0.15);
+        --transition: all 0.3s ease;
+    }
+
+    body {
+        background-color: #f8f9fa;
+    }
+
+    .page-header {
+        position: relative;
+        padding: 2.5rem 0;
+        background: linear-gradient(135deg, var(--primary-dark), var(--primary-color));
+        border-radius: var(--border-radius);
+        box-shadow: var(--shadow);
+        margin-bottom: 2.5rem;
+    }
+
+    .page-title {
+        font-weight: 700;
+        color: white;
+        margin-bottom: 0;
+        letter-spacing: 0.5px;
+    }
+
+    .card {
+        border: none;
+        border-radius: var(--border-radius);
+        box-shadow: var(--shadow-sm);
+        transition: var(--transition);
+        overflow: hidden;
+        margin-bottom: 2rem;
+    }
+
+    .card:hover {
+        box-shadow: var(--shadow);
+        transform: translateY(-5px);
+    }
+
+    .card-header {
+        background: white;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+        padding: 1.25rem 1.5rem;
+    }
+
+    .card-header h5 {
+        margin-bottom: 0;
+        font-weight: 600;
+        color: var(--primary-color);
+    }
+
+    .card-body {
+        padding: 1.5rem;
+    }
+
+    .form-label {
+        font-weight: 500;
+        color: var(--text-dark);
+        margin-bottom: 0.5rem;
+    }
+
+    .form-control,
+    .form-select {
+        border-radius: 0.5rem;
+        padding: 0.75rem;
+        border: 1px solid #e2e8f0;
+        transition: var(--transition);
+    }
+
+    .form-control:focus,
+    .form-select:focus {
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 0.25rem rgba(67, 97, 238, 0.1);
+    }
+
+    .btn {
+        padding: 0.75rem 1.5rem;
+        border-radius: 0.5rem;
+        font-weight: 500;
+        transition: var(--transition);
+    }
+
+    .btn-primary {
+        background-color: var(--primary-color);
+        border-color: var(--primary-color);
+    }
+
+    .btn-primary:hover {
+        background-color: var(--primary-dark);
+        border-color: var(--primary-dark);
+        transform: translateY(-2px);
+    }
+
+    .btn-secondary {
+        background-color: #e2e8f0;
+        border-color: #e2e8f0;
+        color: var(--text-dark);
+    }
+
+    .btn-secondary:hover {
+        background-color: #cbd5e1;
+        border-color: #cbd5e1;
+        transform: translateY(-2px);
+    }
+
+    .btn-warning {
+        background-color: var(--warning-color);
+        border-color: var(--warning-color);
+    }
+
+    .btn-warning:hover {
+        background-color: #e67e22;
+        border-color: #e67e22;
+        transform: translateY(-2px);
+    }
+
+    .btn-info {
+        background-color: var(--info-color);
+        border-color: var(--info-color);
+    }
+
+    .btn-info:hover {
+        background-color: #2980b9;
+        border-color: #2980b9;
+        transform: translateY(-2px);
+    }
+
+    .table {
+        border-collapse: separate;
+        border-spacing: 0;
+    }
+
+    .table th {
+        background-color: var(--primary-color);
+        color: white;
+        font-weight: 600;
+        text-transform: uppercase;
+        font-size: 0.85rem;
+        letter-spacing: 0.5px;
+        padding: 1rem;
+        vertical-align: middle;
+    }
+
+    .table td {
+        padding: 1rem;
+        vertical-align: middle;
+        border-bottom: 1px solid #e2e8f0;
+    }
+
+    .table tr:last-child td {
+        border-bottom: none;
+    }
+
+    .table-responsive {
+        border-radius: var(--border-radius);
+        overflow: hidden;
+    }
+
+    .modal-content {
+        border: none;
+        border-radius: var(--border-radius);
+        overflow: hidden;
+    }
+
+    .modal-header {
+        border-radius: var(--border-radius) var(--border-radius) 0 0;
+        background: linear-gradient(135deg, var(--primary-dark), var(--primary-color));
+        padding: 1.5rem;
+    }
+
+    .modal-title {
+        color: white;
+        font-weight: 600;
+    }
+
+    .modal-body {
+        padding: 2rem;
+    }
+
+    .info-group {
+        margin-bottom: 1.25rem;
+    }
+
+    .info-group label {
+        display: block;
+        font-size: 0.875rem;
+        color: var(--text-muted);
+        margin-bottom: 0.25rem;
+        font-weight: 500;
+    }
+
+    .info-group p {
+        margin: 0;
+        font-size: 1rem;
+        color: var(--text-dark);
+    }
+
+    .timeline {
+        position: relative;
+        padding-left: 30px;
+    }
+
+    .timeline::before {
+        content: '';
+        position: absolute;
+        left: 15px;
+        top: 0;
+        height: 100%;
+        width: 2px;
+        background: #e9ecef;
+    }
+
+    .timeline-item {
+        position: relative;
+        margin-bottom: 1.5rem;
+    }
+
+    .timeline-item i {
+        position: absolute;
+        left: -30px;
+        background: white;
+        padding: 5px;
+        border-radius: 50%;
+        color: var(--primary-color);
+        box-shadow: var(--shadow-sm);
+    }
+
+    .timeline-item div {
+        margin-left: 10px;
+    }
+
+    .accordion-button:not(.collapsed) {
+        background-color: rgba(67, 97, 238, 0.1);
+        color: var(--primary-color);
+        font-weight: 600;
+    }
+
+    .accordion-button:focus {
+        box-shadow: none;
+        border-color: rgba(67, 97, 238, 0.1);
+    }
+
+    .accordion-button {
+        padding: 1.25rem;
+        font-weight: 500;
+    }
+
+    .accordion-body {
+        padding: 1.25rem;
+    }
+
+    .list-group-item {
+        border-left: none;
+        border-right: none;
+        border-radius: 0;
+        padding: 1rem 1rem 1rem 2rem;
+        position: relative;
+    }
+
+    .list-group-item::before {
+        content: '•';
+        position: absolute;
+        left: 0.75rem;
+        color: var(--primary-color);
+        font-size: 1.5rem;
+        line-height: 1;
+    }
+
+    .badge {
+        padding: 0.5rem 0.75rem;
+        font-weight: 500;
+        border-radius: 0.5rem;
+    }
+
+    .card-header .badge {
+        font-size: 0.85rem;
+    }
+
+    .badge.bg-success {
+        background-color: var(--success-color) !important;
+    }
+
+    .badge.bg-warning {
+        background-color: var(--warning-color) !important;
+    }
+
+    .badge.bg-info {
+        background-color: var(--info-color) !important;
+    }
+
+    .badge.bg-primary {
+        background-color: var(--primary-color) !important;
+    }
+
+    @media (max-width: 768px) {
+        .page-header {
+            padding: 1.5rem 0;
+        }
+
+        .modal-dialog {
+            margin: 0.5rem;
+        }
+
+        .btn {
+            padding: 0.5rem 1rem;
+        }
+
+        .card-body {
+            padding: 1rem;
+        }
+    }
+</style>
 
 @push('scripts')
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
@@ -539,7 +782,23 @@
             "paging": true,
             "searching": true,
             "ordering": true,
-            "info": true
+            "info": true,
+            "responsive": true,
+            "lengthMenu": [
+                [10, 25, 50, -1],
+                [10, 25, 50, "All"]
+            ],
+            "language": {
+                "search": "<i class='fas fa-search'></i> _INPUT_",
+                "searchPlaceholder": "Search records...",
+                "lengthMenu": "_MENU_ records per page",
+                "info": "Showing _START_ to _END_ of _TOTAL_ records",
+                "infoEmpty": "Showing 0 to 0 of 0 records",
+                "infoFiltered": "(filtered from _MAX_ total records)"
+            },
+            "dom": "<'row'<'col-sm-12 col-md-6'l><'col-sm-12 col-md-6'f>>" +
+                "<'row'<'col-sm-12'tr>>" +
+                "<'row'<'col-sm-12 col-md-5'i><'col-sm-12 col-md-7'p>>"
         });
 
 
@@ -549,7 +808,9 @@
             icon: 'success',
             title: 'Success',
             text: '{{ session('
-            success ')}}'
+            success ') }}',
+            timer: 3000,
+            timerProgressBar: true
         });
         @endif
     });

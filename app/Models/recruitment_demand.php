@@ -33,6 +33,7 @@ class recruitment_demand extends Model
         'length_of_working',
         'time_work_experience',
         'response_reason',
+        'response_id',
         'skills',
         'created_at',
         'updated_at',
@@ -53,5 +54,10 @@ class recruitment_demand extends Model
     public function maker()
     {
         return $this->belongsTo(User::class, 'maker_id');
+    }
+
+    public function responder()
+    {
+        return $this->belongsTo(User::class, 'response_id');
     }
 }

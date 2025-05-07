@@ -121,46 +121,7 @@ class UserController extends Controller
 
 
         $password = Hash::make(str_replace(' ', '', strtolower($request->name)) . '12345');
-        $temp = null;
-        if ($request->hasFile('photo')) {
-            $photoPath = $request->file('photo')->storeAs(
-                'user/photos_profile',
-                $request->employee_id . '.' . $request->file('photo')->getClientOriginalExtension(),
-                'public'
-            );
-            $temp = $photoPath;
-        }
 
-        $idCardPath = null;
-        if ($request->hasFile('id_card')) {
-            $idCardPath2 = $request->file('id_card')->storeAs(
-                'user/ID_card',
-                'ID_card_' . $request->employee_id . '.' . $request->file('id_card')->getClientOriginalExtension(),
-                'public'
-            );
-            $idCardPath = $idCardPath2;
-        }
-
-        $cvPath = null;
-        if ($request->hasFile('cv')) {
-            $cvPath2 = $request->file('cv')->storeAs(
-                'user/cv_user',
-                'cv_' . $request->employee_id . '.' . $request->file('cv')->getClientOriginalExtension(),
-                'public'
-            );
-            $cvPath = $cvPath2;
-        }
-
-
-        $achievementPath = null;
-        if ($request->hasFile('achievement')) {
-            $achievementPath2 = $request->file('achievement')->storeAs(
-                'user/achievement_user',
-                'achievement_' . $request->employee_id . '.' . $request->file('achievement')->getClientOriginalExtension(),
-                'public'
-            );
-            $achievementPath = $achievementPath2;
-        }
 
         $license = null;
         $license_number = null;
@@ -214,6 +175,51 @@ class UserController extends Controller
                 }
             }
         }
+
+
+
+
+
+        $temp = null;
+        if ($request->hasFile('photo')) {
+            $photoPath = $request->file('photo')->storeAs(
+                'user/photos_profile',
+                $employeeId . '.' . $request->file('photo')->getClientOriginalExtension(),
+                'public'
+            );
+            $temp = $photoPath;
+        }
+
+        $idCardPath = null;
+        if ($request->hasFile('id_card')) {
+            $idCardPath2 = $request->file('id_card')->storeAs(
+                'user/ID_card',
+                'ID_card_' . $employeeId . '.' . $request->file('id_card')->getClientOriginalExtension(),
+                'public'
+            );
+            $idCardPath = $idCardPath2;
+        }
+
+        $cvPath = null;
+        if ($request->hasFile('cv')) {
+            $cvPath2 = $request->file('cv')->storeAs(
+                'user/cv_user',
+                'cv_' . $employeeId . '.' . $request->file('cv')->getClientOriginalExtension(),
+                'public'
+            );
+            $cvPath = $cvPath2;
+        }
+
+
+        $achievementPath = null;
+        if ($request->hasFile('achievement')) {
+            $achievementPath2 = $request->file('achievement')->storeAs(
+                'user/achievement_user',
+                'achievement_' . $employeeId . '.' . $request->file('achievement')->getClientOriginalExtension(),
+                'public'
+            );
+            $achievementPath = $achievementPath2;
+        }
         // dd($bankNames,    $bankNumbers);
 
         // Create a new Pegawai record
@@ -222,7 +228,7 @@ class UserController extends Controller
             'sim' => $license ?? null,
             'sim_number' => $license_number ?? null,
             'photo_profile_path' => $temp ?? null,
-            'id_card_path' => $idCardPath ?? null,
+            'ID_card_path' => $idCardPath ?? null,
             'cv_path' => $cvPath ?? null,
             'achievement_path' => $achievementPath ?? null,
             'name' => $request->name,
@@ -594,8 +600,8 @@ class UserController extends Controller
 
         if ($request->hasFile('id_card')) {
             // Hapus file lama jika ada
-            if ($user->id_card_path) {
-                Storage::disk('public')->delete('user/ID_card/' . $user->id_card_path);
+            if ($user->ID_card_path) {
+                Storage::disk('public')->delete('user/ID_card/' . $user->ID_card_path);
             }
 
             // Simpan file baru
@@ -606,7 +612,7 @@ class UserController extends Controller
             );
 
             // Update path
-            $user->id_card_path = $idCardPath;
+            $user->ID_card_path = $idCardPath;
         }
 
         if ($request->hasFile('cv')) {

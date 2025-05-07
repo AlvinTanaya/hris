@@ -70,34 +70,30 @@ class ElearningController extends Controller
             $query->whereDate('elearning_schedule.end_date', request('end_date'));
         }
 
+        if (request()->has('status') && request('status')) {
+            $today = Carbon::today();
+            $status = request('status');
+
+            if ($status == 'active') {
+                $query->where('start_date', '<=', $today)
+                    ->where('end_date', '>=', $today)
+                    ->whereNull('grade');
+            } elseif ($status == 'expired') {
+                $query->where('end_date', '<', $today)
+                    ->whereNull('grade');
+            } elseif ($status == 'completed') {
+                $query->whereNotNull('grade');
+            } elseif ($status == 'upcoming') {
+                $query->where('start_date', '>', $today);
+            }
+        }
+
         $duty = $query->get();
 
         return view('elearning.index2', compact('duty'));
     }
 
-    // public function index()
-    // {
-    //     $lesson = elearning_lesson::all();
-    //     $schedule = elearning_schedule::all();
-
-    //     $schedulesWithLessons = DB::table('elearning_schedule')
-
-    //         ->join('elearning_lesson', 'elearning_schedule.lesson_id', '=', 'elearning_lesson.id')
-    //         ->select(
-    //             'elearning_lesson.id as lesson_id',
-    //             'elearning_lesson.name as lesson_name',
-    //             'elearning_lesson.duration',
-    //             'elearning_lesson.lesson_file',
-    //             'elearning_schedule.id as schedule_id',
-    //             'elearning_schedule.start_date',
-    //             'elearning_schedule.end_date',
-    //         )
-    //         ->get();
-    //     // dd($schedulesWithLessons);
-
-
-    //     return view('elearning.index', compact('lesson', 'schedule', 'schedulesWithLessons'));
-    // }
+   
 
     public function index(Request $request)
     {
@@ -461,9 +457,10 @@ class ElearningController extends Controller
     }
     public function store_schedule(Request $request)
     {
+
         // Validate request
         $request->validate([
-            'lesson' => 'required',
+            'lesson_id' => 'required',
             'startDate' => 'required|date',
             'endDate' => 'required|date|after_or_equal:startDate',
             'invited_employees' => 'nullable|string',
@@ -635,7 +632,7 @@ class ElearningController extends Controller
         $question = elearning_question::where('lesson_id', $task->lesson_id)->get();
 
         //dd('masuk question', $question);
-        return view('elearning/elearning_material', compact('task', 'question'));
+        return view('elearning/elearning_material', compact('task', 'question', 'id'));
     }
 
     public function elearning_quiz($id)

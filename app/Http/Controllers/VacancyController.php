@@ -211,21 +211,61 @@ class VacancyController extends Controller
 
 
 
-            // Simpan data family
-            foreach ($request->family_name as $index => $name) {
-                recruitment_applicant_family::create([
-                    'applicant_id' => $applicant->id,
-                    'name' => $name,
-                    'relation' => $request->relation[$index] ?? null,
-                    'birth_date' => $request->birth_date_family[$index] ?? null,
-                    'birth_place' => $request->birth_place_family[$index] ?? null,
-                    'ID_number' => $request->ID_number_family[$index] ?? null,
-                    'phone_number' => $request->family_phone[$index] ?? null,
-                    'address' => $request->address[$index] ?? null,
-                    'gender' => $request->gender_family[$index] ?? null,
-                    'job' => $request->job[$index] ?? null,
-                ]);
+
+            // Simpan data family - dengan pengecekan isset untuk semua field
+            if (isset($request->family_name)) {
+                foreach ($request->family_name as $index => $name) {
+                    // Inisialisasi semua nilai dengan null terlebih dahulu
+                    $familyData = [
+                        'applicant_id' => $applicant->id,
+                        'name' => $name,
+                        'relation' => null,
+                        'birth_date' => null,
+                        'birth_place' => null,
+                        'ID_number' => null,
+                        'phone_number' => null,
+                        'address' => null,
+                        'gender' => null,
+                        'job' => null,
+                    ];
+
+                    // Isi nilai hanya jika field tersebut ada di request
+                    if (isset($request->relation[$index])) {
+                        $familyData['relation'] = $request->relation[$index];
+                    }
+
+                    if (isset($request->birth_date_family[$index])) {
+                        $familyData['birth_date'] = $request->birth_date_family[$index];
+                    }
+
+                    if (isset($request->birth_place_family[$index])) {
+                        $familyData['birth_place'] = $request->birth_place_family[$index];
+                    }
+
+                    if (isset($request->ID_number_family[$index])) {
+                        $familyData['ID_number'] = $request->ID_number_family[$index];
+                    }
+
+                    if (isset($request->family_phone[$index])) {
+                        $familyData['phone_number'] = $request->family_phone[$index];
+                    }
+
+                    if (isset($request->address[$index])) {
+                        $familyData['address'] = $request->address[$index];
+                    }
+
+                    if (isset($request->gender_family[$index])) {
+                        $familyData['gender'] = $request->gender_family[$index];
+                    }
+
+                    if (isset($request->job[$index])) {
+                        $familyData['job'] = $request->job[$index];
+                    }
+
+                    recruitment_applicant_family::create($familyData);
+                }
             }
+
 
 
 

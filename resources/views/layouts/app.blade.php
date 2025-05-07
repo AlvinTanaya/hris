@@ -27,10 +27,19 @@
     @vite(['resources/sass/app.scss'])
     <style>
         :root {
-            --primary-color: #1e3c72;
-            --secondary-color: #2a5298;
+            /* Base colors - combining both themes */
+            --primary-color: #0a2463;
+            --secondary-color: #247ba0;
             --accent-color: #ffc107;
+            --primary-light: #1d52d1;
             --text-color: #ffffff;
+            --dark: #0a1128;
+            --success: #06d6a0;
+            --warning: #ffd166;
+            --danger: #ef476f;
+            --light: #f5f9ff;
+
+            /* Layout variables */
             --sidebar-width: 275px;
             --sidebar-collapsed-width: 100px;
             --transition-time: 0.3s;
@@ -40,8 +49,8 @@
 
         /* Base Styles */
         body {
-            font-family: 'Poppins', sans-serif;
-            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color), #2c3e50);
+            font-family: 'Inter', 'Poppins', sans-serif;
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color), var(--primary-light));
             background-size: 400% 400%;
             animation: gradientBG 15s ease infinite;
             min-height: 100vh;
@@ -90,6 +99,39 @@
             animation: float 8s infinite ease-in-out;
         }
 
+        /* Shapes from second theme */
+        .shape {
+            position: absolute;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.1);
+            animation: float 20s infinite;
+            z-index: 0;
+        }
+
+        .shape-1 {
+            width: 200px;
+            height: 200px;
+            top: 10%;
+            left: 10%;
+            animation-delay: 0s;
+        }
+
+        .shape-2 {
+            width: 150px;
+            height: 150px;
+            top: 20%;
+            right: 15%;
+            animation-delay: -5s;
+        }
+
+        .shape-3 {
+            width: 300px;
+            height: 300px;
+            bottom: 15%;
+            right: 10%;
+            animation-delay: -10s;
+        }
+
         /* Animations */
         @keyframes gradientBG {
             0% {
@@ -107,15 +149,23 @@
 
         @keyframes float {
             0% {
-                transform: rotate(45deg) translate(0, 0);
+                transform: rotate(0deg) translate(0, 0);
+            }
+
+            25% {
+                transform: rotate(5deg) translate(10px, 10px);
             }
 
             50% {
-                transform: rotate(50deg) translate(10px, -10px);
+                transform: rotate(0deg) translate(0, 20px);
+            }
+
+            75% {
+                transform: rotate(-5deg) translate(-10px, 10px);
             }
 
             100% {
-                transform: rotate(45deg) translate(0, 0);
+                transform: rotate(0deg) translate(0, 0);
             }
         }
 
@@ -141,13 +191,40 @@
             }
         }
 
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(50px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes pulse {
+            0% {
+                transform: scale(1);
+            }
+
+            50% {
+                transform: scale(1.05);
+            }
+
+            100% {
+                transform: scale(1);
+            }
+        }
+
+
         /* Sidebar Styles */
         #sidebar {
             width: var(--sidebar-width);
             position: fixed;
             left: 0;
             height: 100vh;
-            background: rgba(255, 255, 255, 0.1);
+            background: rgba(10, 36, 99, 0.8);
             backdrop-filter: blur(var(--blur-intensity));
             border-right: 1px solid rgba(255, 255, 255, 0.18);
             box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
@@ -187,11 +264,14 @@
             border-radius: 8px;
             transition: all var(--transition-time);
             filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.1));
+            animation: pulse 2s infinite;
         }
 
         #sidebar.collapsed .logo {
             height: 40px;
         }
+
+
 
         /* Navigation Menu */
         .nav-menu {
@@ -337,6 +417,10 @@
             margin-right: 0;
         }
 
+
+
+
+
         /* Content Area */
         #content {
             margin-left: var(--sidebar-width);
@@ -351,8 +435,9 @@
         }
 
         /* Top Bar */
-        .top-bar {
-            background: rgba(255, 255, 255, 0.1);
+        .top-bar,
+        .navbar {
+            background: rgba(10, 36, 99, 0.8);
             backdrop-filter: blur(var(--blur-intensity));
             padding: 1rem;
             display: flex;
@@ -362,7 +447,16 @@
             align-items: center;
             border-radius: var(--border-radius);
             margin-bottom: 1rem;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        .navbar-brand img {
+            height: 40px;
+            transition: transform 0.3s ease;
+        }
+
+        .navbar-brand:hover img {
+            transform: scale(1.05);
         }
 
         .top-bar-right {
@@ -453,8 +547,10 @@
             background: rgba(255, 255, 255, 0.3) !important;
         }
 
-        /* Custom Cards */
-        .custom-card {
+
+
+/* Custom Cards */
+.custom-card {
             background: rgba(255, 255, 255, 0.1);
             backdrop-filter: blur(var(--blur-intensity));
             border-radius: var(--border-radius);
@@ -480,6 +576,38 @@
             background: linear-gradient(90deg, #ffc107, #ff6b6b, #4facfe, #00f2fe, #f093fb, #f5576c);
             z-index: 2;
         }
+
+
+
+        /* Buttons */
+        .btn {
+            border-radius: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary {
+            border: none;
+        }
+
+        .btn-primary:hover {
+            color: var(--primary-color);
+            transform: translateY(-3px);
+            box-shadow: 0 10px 20px rgba(61, 165, 217, 0.3);
+        }
+
+        .btn-outline-secondary {
+            border: 2px solid white;
+            background: transparent;
+        }
+
+        .btn-outline-secondary:hover {
+            color: var(--primary-color);
+            transform: translateY(-3px);
+            box-shadow: 0 10px 20px rgba(255, 255, 255, 0.2);
+        }
+
 
         /* Loader */
         .loader {
@@ -682,7 +810,7 @@
                         <!-- Human Resources -->
                         <a href="#" class="nav-link dropdown-toggle hr-dropdown">
                             <i class="fas fa-user-tie"></i>
-                            <span>Human Resources</span>
+                            <span>Management</span>
                             <!-- <i class="dropdown-icon fas fa-chevron-right ms-auto"></i> -->
                         </a>
                         <div class="hr-submenu" style="display: none; padding-left: 15px;">
@@ -783,10 +911,10 @@
 
                         </div>
 
-                        <!-- Individual Employee -->
+                        <!-- Employee -->
                         <a href="#" class="nav-link dropdown-toggle employee-dropdown">
                             <i class="fa-solid fa-user"></i>
-                            <span>Individual Employee</span>
+                            <span>Employee</span>
                         </a>
                         <div class="employee-submenu" style="display: none; padding-left: 15px;">
                             <a href="{{ url('/time_management/change_shift/index/' . Auth::user()->id) }}" class="nav-link">
@@ -797,7 +925,7 @@
                                 <i class="fas fa-exclamation-triangle"></i>
                                 <span>Warning Letter</span>
                             </a>
-                            <a href="{{ url('/time_management/overtime/index2/' . Auth::user()->id) }}" class="nav-link">
+                            <a href="{{ url('/time_management/overtime/management/index2/' . Auth::user()->id) }}" class="nav-link">
                                 <i class="fas fa-business-time"></i>
                                 <span>Overtime</span>
                             </a>
@@ -1013,6 +1141,7 @@
                     </div>
                 </li>
 
+
                 <!-- Time Management -->
                 <li class="nav-item">
                     <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown">
@@ -1023,32 +1152,61 @@
                         <!-- Human Resources -->
                         <a href="#" class="nav-link dropdown-toggle hr-dropdown">
                             <i class="fas fa-user-tie"></i>
-                            <span>Human Resources</span>
+                            <span>Management</span>
                             <!-- <i class="dropdown-icon fas fa-chevron-right ms-auto"></i> -->
                         </a>
                         <div class="hr-submenu" style="display: none; padding-left: 15px;">
+                            <!-- Existing shift dropdown with icon -->
+                            <a href="#" class="nav-link dropdown-toggle shift-dropdown">
+                                <i class="fas fa-calendar-alt"></i>
+                                <span>Shift</span>
+                                <!-- <i class="dropdown-icon fas fa-chevron-right ms-auto"></i> -->
+                            </a>
+                            <div class="shift-submenu" style="display: none; padding-left: 15px;">
+
+                                <a href="{{ route('change_shift.index')}}" class="nav-link">
+                                    <i class="fas fa-exchange-alt"></i> {{-- Ikon untuk permintaan/perubahan shift --}}
+                                    <span>Request Shift</span>
+                                </a>
+                            </div>
+
+
+
+
                             <a href="#" class="nav-link dropdown-toggle timeOff-dropdown">
                                 <i class="fas fa-calendar-alt"></i>
                                 <span>Time Off</span>
                                 <!-- <i class="dropdown-icon fas fa-chevron-right ms-auto"></i> -->
                             </a>
                             <div class="timeOff-submenu" style="display: none; padding-left: 15px;">
+
                                 <a href="{{ url('/time_management/time_off/request_time_off/index') }}" class="nav-link">
                                     <i class="fa-solid fa-user-tie"></i>
                                     <span>Request Time Off</span>
                                 </a>
                             </div>
-                            <a href="{{ url('/time_management/overtime/index') }}" class="nav-link">
-                                <i class="fas fa-business-time"></i>
-                                <span>Overtime</span>
+
+                            <a href="#" class="nav-link dropdown-toggle overtime-dropdown">
+                                <i class="fas fa-calendar-alt"></i>
+                                <span>Ovetime</span>
+                                <!-- <i class="dropdown-icon fas fa-chevron-right ms-auto"></i> -->
                             </a>
+                            <div class="overtime-submenu" style="display: none; padding-left: 15px;">
+                                <a href="{{ url('/time_management/overtime/management/index') }}" class="nav-link">
+                                    <i class="fas fa-business-time"></i>
+                                    <span>Management</span>
+                                </a>
+
+                            </div>
+
+
+
                         </div>
 
-
-                        <!-- Individual Employee -->
+                        <!-- Employee -->
                         <a href="#" class="nav-link dropdown-toggle employee-dropdown">
                             <i class="fa-solid fa-user"></i>
-                            <span>Individual Employee</span>
+                            <span>Employee</span>
                         </a>
                         <div class="employee-submenu" style="display: none; padding-left: 15px;">
                             <a href="{{ url('/time_management/change_shift/index/' . Auth::user()->id) }}" class="nav-link">
@@ -1059,7 +1217,7 @@
                                 <i class="fas fa-exclamation-triangle"></i>
                                 <span>Warning Letter</span>
                             </a>
-                            <a href="{{ url('/time_management/overtime/index2/' . Auth::user()->id) }}" class="nav-link">
+                            <a href="{{ url('/time_management/overtime/management/index2/' . Auth::user()->id) }}" class="nav-link">
                                 <i class="fas fa-business-time"></i>
                                 <span>Overtime</span>
                             </a>
@@ -1132,7 +1290,7 @@
                                 <i class="fas fa-exclamation-triangle"></i>
                                 <span>Warning Letter</span>
                             </a>
-                            <a href="{{ url('/time_management/overtime/index2/' . Auth::user()->id) }}" class="nav-link">
+                            <a href="{{ url('/time_management/overtime/management/index2/' . Auth::user()->id) }}" class="nav-link">
                                 <i class="fas fa-business-time"></i>
                                 <span>Overtime</span>
                             </a>
@@ -1205,7 +1363,7 @@
                                 <i class="fas fa-exclamation-triangle"></i>
                                 <span>Warning Letter</span>
                             </a>
-                            <a href="{{ url('/time_management/overtime/index2/' . Auth::user()->id) }}" class="nav-link">
+                            <a href="{{ url('/time_management/overtime/management/index2/' . Auth::user()->id) }}" class="nav-link">
                                 <i class="fas fa-business-time"></i>
                                 <span>Overtime</span>
                             </a>
@@ -1246,10 +1404,10 @@
                         <span>Time Management</span>
                     </a>
                     <div class="dropdown-container">
-                        <!-- Individual Employee -->
+                        <!-- Employee -->
                         <a href="#" class="nav-link dropdown-toggle employee-dropdown">
                             <i class="fa-solid fa-user"></i>
-                            <span>Individual Employee</span>
+                            <span>Employee</span>
                         </a>
                         <div class="employee-submenu" style="display: none; padding-left: 15px;">
                             <a href="{{ url('/time_management/change_shift/index/' . Auth::user()->id) }}" class="nav-link">
@@ -1260,7 +1418,7 @@
                                 <i class="fas fa-exclamation-triangle"></i>
                                 <span>Warning Letter</span>
                             </a>
-                            <a href="{{ url('/time_management/overtime/index2/' . Auth::user()->id) }}" class="nav-link">
+                            <a href="{{ url('/time_management/overtime/management/index2/' . Auth::user()->id) }}" class="nav-link">
                                 <i class="fas fa-business-time"></i>
                                 <span>Overtime</span>
                             </a>
@@ -1349,15 +1507,16 @@
                                     <div class="col-md-10">
                                         <p class="mb-0 text-truncate">{{ $notification->message }}</p>
                                     </div>
-                                    @if($notification->type == 'elearning_duty')
+                               
+                                    @if($notification->type == 'general')
                                     <div class="col-md-2 text-end mt-1">
-                                        <a href="{{ url('/elearning/index2/' . Auth::user()->id) }}" class="text-primary">
+                                        <a href="{{ route('notification.index') }}" class="text-primary">
                                             <i class="fa-solid fa-arrow-right fa-xl"></i>
                                         </a>
                                     </div>
-                                    @elseif($notification->type == 'general')
+                                    @elseif($notification->type == 'elearning_duty')
                                     <div class="col-md-2 text-end mt-1">
-                                        <a href="{{ route('notification.index') }}" class="text-primary">
+                                        <a href="{{ url('/elearning/index2/' . Auth::user()->id) }}" class="text-primary">
                                             <i class="fa-solid fa-arrow-right fa-xl"></i>
                                         </a>
                                     </div>

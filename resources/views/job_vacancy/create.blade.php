@@ -13,40 +13,74 @@
 
 
     <style>
+        :root {
+            --primary: #0a2463;
+            --primary-light: #1d52d1;
+            --secondary: #247ba0;
+            --accent: #3da5d9;
+            --light: #f5f9ff;
+            --dark: #0a1128;
+            --success: #06d6a0;
+            --warning: #ffd166;
+            --danger: #ef476f;
+        }
+
         body {
-            font-family: 'Poppins', sans-serif;
             margin: 0;
             padding: 0;
             min-height: 100vh;
-            background: linear-gradient(135deg, #1e3c72, #2a5298, #2c3e50);
-            background-size: 400% 400%;
-            animation: gradientBG 15s ease infinite;
-            color: white;
+            background: linear-gradient(135deg, var(--primary), var(--secondary), var(--primary-light));
+            background-attachment: fixed;
+            color: #ffffff;
         }
 
-        @keyframes gradientBG {
-            0% {
-                background-position: 0% 50%;
-            }
+        .container {
+            padding: 2rem;
+        }
 
-            50% {
-                background-position: 100% 50%;
-            }
+        .back-btn {
+            position: relative;
+            overflow: hidden;
+            z-index: 1;
+            margin-bottom: 2rem;
+        }
 
-            100% {
-                background-position: 0% 50%;
-            }
+        .back-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: 0.5s;
+            z-index: -1;
+        }
+
+        .back-btn:hover::before {
+            left: 100%;
         }
 
         .form-section {
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(10px);
-            border-radius: 20px;
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(20px);
+            border-radius: 16px;
             padding: 2rem;
             margin: 2rem auto;
             max-width: 1200px;
-            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
-            border: 1px solid rgba(255, 255, 255, 0.18);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            position: relative;
+        }
+
+        .form-section::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 5px;
+            height: 100%;
+            background: linear-gradient(to bottom, var(--accent), transparent);
         }
 
         .profile-section {
@@ -60,8 +94,8 @@
             border-radius: 50%;
             margin: 0 auto 1rem;
             overflow: hidden;
-            border: 3px solid #ffc107;
-            box-shadow: 0 0 20px rgba(255, 193, 7, 0.3);
+            border: 3px solid var(--warning);
+            box-shadow: 0 0 20px rgba(255, 209, 102, 0.3);
         }
 
         .profile-preview img {
@@ -70,67 +104,74 @@
             object-fit: cover;
         }
 
+        .section-title {
+            color: var(--warning);
+            font-weight: 700;
+            margin-bottom: 1.5rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid rgba(255, 209, 102, 0.3);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .form-label {
+            color: #ffffff;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
         .form-control,
         .form-select {
-            background: rgba(42, 82, 152, 0.8);
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(61, 165, 217, 0.3);
+            color: #ffffff;
+            font-weight: 600;
             backdrop-filter: blur(5px);
+            border-radius: 10px;
+            padding: 0.7rem 1rem;
+            transition: all 0.3s ease;
         }
 
         .form-control:focus,
         .form-select:focus {
-            background: rgba(42, 82, 152, 0.9);
-            border-color: rgba(255, 255, 255, 0.5);
+            background: rgba(13, 54, 145, 0.6);
+            border-color: var(--accent);
             color: white;
-            box-shadow: 0 0 0 0.25rem rgba(255, 255, 255, 0.1);
+            box-shadow: 0 0 0 0.25rem rgba(61, 165, 217, 0.25);
         }
 
         .form-control::placeholder {
             color: rgba(255, 255, 255, 0.7);
         }
 
-        .section-title {
-            color: #ffc107;
-            font-weight: 700;
-            margin-bottom: 1.5rem;
-            padding-bottom: 0.5rem;
-            border-bottom: 2px solid rgba(255, 193, 7, 0.3);
-        }
-
-        .table {
+        .input-group-text {
+            background: rgba(61, 165, 217, 0.5);
             color: white;
-        }
-
-        .table thead th {
-            background: rgba(42, 82, 152, 0.9) !important;
-            color: white !important;
-            border-color: rgba(255, 255, 255, 0.2);
-            font-weight: 600;
-        }
-
-        .table td {
-            border-color: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.1);
         }
 
         .btn-add-row {
-            background: #ffc107;
-            color: #1e3c72;
+            background: linear-gradient(45deg, var(--accent), #5fb8e6);
+            color: var(--dark);
             border: none;
-            padding: 0.5rem 1.5rem;
-            border-radius: 50px;
+            padding: 0.8rem 2rem;
+            border-radius: 10px;
             font-weight: 600;
             transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(61, 165, 217, 0.4);
         }
 
         .btn-add-row:hover {
-            background: #ffca2c;
+            background: linear-gradient(45deg, #5fb8e6, var(--accent));
             transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(255, 193, 7, 0.3);
+            box-shadow: 0 8px 25px rgba(61, 165, 217, 0.5);
         }
 
         .btn-remove {
-            color: #ff4444;
+            color: var(--danger);
             background: none;
             border: none;
             padding: 0.25rem 0.5rem;
@@ -142,69 +183,60 @@
             transform: scale(1.1);
         }
 
-        .file-preview {
+        .file-preview,
+        .cv-preview {
             margin-top: 1rem;
             padding: 1rem;
-            background: rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.05);
             border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
         }
 
         .cv-preview {
             display: flex;
             align-items: center;
             gap: 1rem;
-            padding: 1rem;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 10px;
-            margin-top: 1rem;
         }
 
         .cv-preview i {
             font-size: 2rem;
-            color: #ffc107;
-        }
-
-        .work-experience-card {
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 15px;
-            padding: 20px;
-            margin-bottom: 20px;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-        }
-
-        .work-experience-card .row {
-            margin-bottom: 15px;
-        }
-
-        .documents-section .upload-card {
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 10px;
-            padding: 15px;
-            margin-bottom: 15px;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-        }
-
-        .documents-section .upload-card i {
-            font-size: 24px;
-            color: #ffc107;
-            margin-bottom: 10px;
+            color: var(--warning);
         }
 
         .experience-card {
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 15px;
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
             padding: 20px;
             margin-bottom: 20px;
-            border: 1px solid rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            transition: all 0.3s ease;
             position: relative;
+            overflow: visible;
+            /* Changed from overflow: hidden to show the card number */
+        }
+
+        .experience-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+        }
+
+        .experience-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 5px;
+            height: 100%;
+            background: linear-gradient(to bottom, var(--accent), transparent);
         }
 
         .card-number {
             position: absolute;
-            top: -10px;
-            left: -10px;
-            background: #ffc107;
-            color: #1e3c72;
+            top: -15px;
+            left: -15px;
+            background: var(--warning);
+            color: var(--dark);
             width: 30px;
             height: 30px;
             border-radius: 50%;
@@ -213,6 +245,7 @@
             justify-content: center;
             font-weight: bold;
             box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+            z-index: 10;
         }
 
         .card-header {
@@ -223,57 +256,323 @@
             padding-left: 20px;
         }
 
+        .card-header h4 {
+            color: var(--warning);
+            font-weight: 700;
+            margin: 0;
+        }
+
         .section-container {
             position: relative;
         }
 
+        .documents-section .upload-card {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            transition: all 0.3s ease;
+            height: 100%;
+        }
+
+        .documents-section .upload-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .documents-section .upload-card i {
+            font-size: 24px;
+            color: var(--warning);
+            margin-bottom: 10px;
+        }
+
+        .documents-section .upload-card h5 {
+            color: var(--warning);
+            font-weight: 600;
+        }
+
         .select2-container .select2-selection--single {
             height: 100%;
-            padding: 0.375rem 0.75rem;
-            border-radius: 0.25rem;
-            border: 1px solid #ced4da;
-            background-color: #3d5a98;
+            padding: 0.7rem 1rem;
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            background-color: rgba(61, 165, 217, 0.3);
             color: #ffffff;
             display: flex;
             align-items: center;
-            /* Pusatkan teks secara vertikal */
         }
 
         .select2-container--default .select2-selection--single .select2-selection__rendered {
             line-height: normal;
-            /* Pastikan line-height normal */
             color: #ffffff;
+            font-weight: 600;
         }
 
         .select2-container--default .select2-selection--single .select2-selection__arrow {
             height: auto;
             display: flex;
             align-items: center;
-            /* Pusatkan arrow */
         }
 
         .select2-dropdown {
-            background-color: #3d5a98;
+            background-color: rgba(10, 36, 99, 0.9);
             color: #ffffff;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
         }
 
         .select2-results__option {
             color: #ffffff;
+            padding: 0.5rem 1rem;
         }
 
         .select2-results__option--highlighted {
-            background-color: #1f3b73;
+            background-color: var(--accent);
+            color: var(--dark);
+        }
+
+        .select2-container--default .select2-results__option[aria-selected="true"] {
+            background-color: rgba(61, 165, 217, 0.5);
+        }
+
+        .invalid-feedback {
+            color: var(--danger);
+            font-weight: 500;
+        }
+
+        .is-invalid {
+            border-color: var(--danger) !important;
+        }
+
+        .is-invalid:focus {
+            box-shadow: 0 0 0 0.25rem rgba(239, 71, 111, 0.25);
+        }
+
+        .list-textarea {
+            background: rgba(61, 165, 217, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: white;
+            border-radius: 10px;
+        }
+
+        .list-textarea:focus {
+            background: rgba(61, 165, 217, 0.3);
+            color: white;
+        }
+
+        @media (max-width: 768px) {
+            .form-section {
+                padding: 1.5rem;
+            }
+
+            .profile-preview {
+                width: 120px;
+                height: 120px;
+            }
+        }
+
+
+
+
+
+        /* Header Styling to Match Your Existing Theme */
+        .header-section {
+            position: relative;
+            padding: 2rem;
+            margin: 2rem auto;
+            overflow: hidden;
+            background: linear-gradient(135deg, var(--primary-light), var(--accent));
+            border-radius: 16px;
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.2);
+            max-width: 1200px;
+        }
+
+        .header-content {
+            position: relative;
+            z-index: 2;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header-left {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .back-button {
+            display: inline-flex;
+            align-items: center;
+            background-color: var(--danger);
+            color: white;
+            padding: 0.7rem 1.5rem;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 600;
+            margin-bottom: 1.5rem;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(239, 71, 111, 0.4);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .back-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(239, 71, 111, 0.5);
+            color: white;
+        }
+
+        .back-button::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: 0.5s;
+            z-index: -1;
+        }
+
+        .back-button:hover::before {
+            left: 100%;
+        }
+
+        .header-title h1 {
+            font-size: 2.5rem;
+            font-weight: 800;
+            margin-bottom: 0.5rem;
+            color: white;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+            letter-spacing: 1px;
+        }
+
+        .header-title p {
+            font-size: 1.1rem;
+            color: rgba(255, 255, 255, 0.9);
+            font-weight: 400;
+            max-width: 600px;
+        }
+
+        .header-graphic {
+            position: relative;
+            width: 200px;
+            height: 200px;
+        }
+
+        .header-circle {
+            position: absolute;
+            width: 150px;
+            height: 150px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            top: 0;
+            right: 0;
+            animation: pulse 4s infinite alternate;
+        }
+
+        .header-circle-sm {
+            position: absolute;
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.15);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            bottom: 20px;
+            left: 20px;
+            animation: pulse 3s infinite alternate-reverse;
+        }
+
+        .header-line {
+            position: absolute;
+            height: 3px;
+            width: 120px;
+            background: linear-gradient(90deg, transparent, var(--warning), transparent);
+            top: 50%;
+            right: 30px;
+            transform: rotate(-45deg);
+        }
+
+        .header-wave {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 50px;
+            background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1440 320'%3E%3Cpath fill='%23ffffff' fill-opacity='0.05' d='M0,224L48,224C96,224,192,224,288,208C384,192,480,160,576,165.3C672,171,768,213,864,218.7C960,224,1056,192,1152,170.7C1248,149,1344,139,1392,133.3L1440,128L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z'%3E%3C/path%3E%3C/svg%3E") repeat-x;
+            background-size: 1440px 50px;
+        }
+
+        @keyframes pulse {
+            0% {
+                transform: scale(1);
+                opacity: 0.7;
+            }
+
+            100% {
+                transform: scale(1.1);
+                opacity: 0.5;
+            }
+        }
+
+        /* Make sure the required documents title is properly aligned */
+        .section-title {
+            margin-top: 1rem;
+        }
+
+        @media (max-width: 768px) {
+            .header-section {
+                padding: 2rem 1.5rem 3rem;
+            }
+
+            .header-content {
+                flex-direction: column;
+                text-align: center;
+            }
+
+            .header-left {
+                align-items: center;
+            }
+
+            .header-title h1 {
+                font-size: 2rem;
+            }
+
+            .header-graphic {
+                display: none;
+            }
         }
     </style>
-
 </head>
 
 <body>
 
     <div class="container py-5 mx-auto">
-        <a href="{{ route('job_vacancy.index') }}" class="btn btn-danger px-5 ms-5 mb-3">
-            <i class="fas fa-arrow-left me-2"></i>Back
-        </a>
+        <!-- Header Section - Matching Your Existing Style -->
+        <div class="header-section">
+            <div class="header-content">
+                <div class="header-left">
+                    <a href="{{ route('job_vacancy.index') }}" class="back-button">
+                        <i class="fas fa-arrow-left me-2"></i>Back
+                    </a>
+                    <div class="header-title">
+                        <h1>Career Application Portal</h1>
+                        <p>Complete your profile and submit required documents</p>
+                    </div>
+                </div>
+                <div class="header-graphic">
+                    <div class="header-circle"></div>
+                    <div class="header-circle-sm"></div>
+                    <div class="header-line"></div>
+                </div>
+            </div>
+            <div class="header-wave"></div>
+        </div>
 
         <form id="jobApplicationForm" action="{{ route('job_vacancy.store', $demand->id) }}" method="POST" enctype="multipart/form-data">
             @csrf
@@ -434,7 +733,7 @@
                         <label class="form-label">Current Address</label>
                         <textarea class="form-control" name="domicile_address" rows="3" required></textarea>
                     </div>
-           
+
                     <div class="col-md-6">
                         <label class="form-label">Distance Between Domicile Address to Company Location</label>
                         <div class="input-group">
@@ -652,6 +951,38 @@
         if ($('#familyContainer').children().length === 0) addFamily();
         if ($('#languageContainer').children().length === 0) addLanguage();
 
+
+        // Ensure province dropdowns are loaded for any existing cards
+        $('.province-dropdown').each(function() {
+            loadProvinces($(this));
+        });
+        // Set up province change handlers
+        $(document).on('change', '.province-dropdown', function() {
+            // Get the province ID from the data attribute of the selected option
+            const provinceId = $(this).find('option:selected').data('id');
+
+            // Find the associated city dropdown
+            const $cityDropdown = $(this).closest('.row').find('.city-dropdown');
+
+            if (provinceId) {
+                loadCities(provinceId, $cityDropdown);
+            }
+        });
+
+
+
+        $(document).on("input", ".list-textarea", function() {
+            let lines = $(this).val().split("\n");
+            for (let i = 0; i < lines.length; i++) {
+                if (lines[i] && !lines[i].startsWith("- ")) {
+                    lines[i] = "- " + lines[i].trim();
+                }
+            }
+            $(this).val(lines.join("\n"));
+        });
+
+
+
         // Form submission
         $('#jobApplicationForm').on('submit', function(e) {
             e.preventDefault();
@@ -710,16 +1041,6 @@
             });
 
 
-            $('.province-dropdown').each(function() {
-                loadProvinces($(this));
-            });
-
-            // Set up province change handlers
-            $(document).on('change', '.province-dropdown', function() {
-                const provinceId = $(this).val();
-                const cardId = $(this).data('card');
-                loadCities(provinceId, $(`.city-dropdown[data-card="${cardId}"]`));
-            });
 
             // Grade input validation based on education level
             $(document).on('change', '.education-level', function() {
@@ -777,17 +1098,6 @@
         });
 
 
-
-
-        $(document).on("input", ".list-textarea", function() {
-            let lines = $(this).val().split("\n");
-            for (let i = 0; i < lines.length; i++) {
-                if (lines[i] && !lines[i].startsWith("- ")) {
-                    lines[i] = "- " + lines[i].trim();
-                }
-            }
-            $(this).val(lines.join("\n"));
-        });
 
         $(document).on("keydown", ".list-textarea", function(event) {
             let cursorPos = this.selectionStart;
@@ -979,7 +1289,7 @@
         });
     }
 
-    // Add card functions
+    // Modified addEducation function
     function addEducation() {
         const $container = $('#educationContainer');
         const cardCount = $container.children().length + 1;
@@ -1012,13 +1322,13 @@
         </div>
         <div class="col-md-6">
             <label class="form-label">Province</label>
-            <select class="form-select province-dropdown" data-card="${cardId}" name="education_province[]" required>
+            <select class="form-select province-dropdown" id="edu-province-${cardCount}" name="education_province[]" required>
                 <option value="" disabled selected>Select Province</option>
             </select>
         </div>
         <div class="col-md-6">
             <label class="form-label">City</label>
-            <select class="form-select city-dropdown" data-card="${cardId}" name="education_city[]" required>
+            <select class="form-select city-dropdown" id="edu-city-${cardCount}" name="education_city[]" required>
                 <option value="" disabled selected>Select City</option>
             </select>
         </div>
@@ -1083,7 +1393,7 @@
                 });
             }
 
-            // Tambahkan event listener untuk mencegah nilai di luar batas
+            // Prevent values outside allowed range
             $gradeInput.off('input').on('input', function() {
                 let min = parseFloat($(this).attr('min'));
                 let max = parseFloat($(this).attr('max'));
@@ -1096,7 +1406,6 @@
                 }
             });
         });
-
 
         // Add validation for file size
         $card.find('input[name="education_certificate[]"]').on('change', function() {
@@ -1130,22 +1439,13 @@
 
         // Load provinces for this card
         loadProvinces($card.find('.province-dropdown'));
-
-        // Set up city dropdown to update when province changes
-        $card.find('.province-dropdown').on('change', function() {
-            const provinceId = $(this).val();
-            const cardId = $(this).data('card');
-            loadCities(provinceId, $(`.city-dropdown[data-card="${cardId}"]`));
-        });
     }
 
-
-
+    // Modified addTraining function
     function addTraning() {
         const $container = $('#trainingContainer');
         const cardCount = $container.children().length + 1;
         const $card = $('<div>').addClass('experience-card');
-        const cardId = `training-${cardCount}`;
 
         $card.html(`
         <div class="card-number">${cardCount}</div>
@@ -1162,13 +1462,13 @@
             </div>
             <div class="col-md-6">
                 <label class="form-label">Province</label>
-                <select class="form-select province-dropdown" data-card="${cardId}" name="training_province[]" required>
+                <select class="form-select province-dropdown" id="training-province-${cardCount}" name="training_province[]" required>
                     <option value="" disabled selected>Select Province</option>
                 </select>
             </div>
             <div class="col-md-6">
                 <label class="form-label">City</label>
-                <select class="form-select city-dropdown" data-card="${cardId}" name="training_city[]" required>
+                <select class="form-select city-dropdown" id="training-city-${cardCount}" name="training_city[]" required>
                     <option value="" disabled selected>Select City</option>
                 </select>
             </div>
@@ -1201,20 +1501,13 @@
 
         // Load provinces for this card
         loadProvinces($card.find('.province-dropdown'));
-
-        // Set up city dropdown to update when province changes
-        $card.find('.province-dropdown').on('change', function() {
-            const provinceId = $(this).val();
-            const cardId = $(this).data('card');
-            loadCities(provinceId, $(`.city-dropdown[data-card="${cardId}"]`));
-        });
     }
 
+    // Modified addOrganization function
     function addOrganization() {
         const $container = $('#organizationContainer');
         const cardCount = $container.children().length + 1;
         const $card = $('<div>').addClass('experience-card');
-        const cardId = `org-${cardCount}`;
 
         $card.html(`
     <div class="card-number">${cardCount}</div>
@@ -1234,17 +1527,17 @@
             <input type="text" class="form-control" name="org_position[]" required>
         </div>
         <div class="col-md-6">
-                <label class="form-label">Province</label>
-                <select class="form-select province-dropdown" data-card="${cardId}" name="org_province[]" required>
-                    <option value="" disabled selected>Select Province</option>
-                </select>
-            </div>
-            <div class="col-md-6">
-                <label class="form-label">City</label>
-                <select class="form-select city-dropdown" data-card="${cardId}" name="org_city[]" required>
-                    <option value="" disabled selected>Select City</option>
-                </select>
-            </div>
+            <label class="form-label">Province</label>
+            <select class="form-select province-dropdown" id="org-province-${cardCount}" name="org_province[]" required>
+                <option value="" disabled selected>Select Province</option>
+            </select>
+        </div>
+        <div class="col-md-6">
+            <label class="form-label">City</label>
+            <select class="form-select city-dropdown" id="org-city-${cardCount}" name="org_city[]" required>
+                <option value="" disabled selected>Select City</option>
+            </select>
+        </div>
       
         <div class="col-md-12">
             <label class="form-label">Activity Type</label>
@@ -1279,16 +1572,7 @@
 
         // Load provinces for this card
         loadProvinces($card.find('.province-dropdown'));
-
-        // Set up city dropdown to update when province changes
-        $card.find('.province-dropdown').on('change', function() {
-            const provinceId = $(this).val();
-            const cardId = $(this).data('card');
-            loadCities(provinceId, $(`.city-dropdown[data-card="${cardId}"]`));
-        });
     }
-
-
     // Family Cards
     function addFamily() {
         const $container = $('#familyContainer');
@@ -1336,27 +1620,7 @@
                             <option value="Female">Female</option>
                         </select>
                     </div>
-                    <!-- Hidden Fields -->
-                    <div class="col-md-6 d-none">
-                        <label class="form-label">Date of Birth</label>
-                        <input type="date" class="form-control" name="birth_date_family[]" required>
-                    </div>
-                    <div class="col-md-6 d-none">
-                        <label class="form-label">Place of Birth</label>
-                        <input type="text" class="form-control" name="birth_place_family[]" required>
-                    </div>
-                    <div class="col-md-12 d-none">
-                        <label class="form-label">Address</label>
-                        <textarea class="form-control" name="address[]" required rows="2"></textarea>
-                    </div>
-                    <div class="col-md-6 d-none">
-                        <label class="form-label">ID Number</label>
-                        <input type="number" class="form-control" name="ID_number_family[]" required>
-                    </div>
-                    <div class="col-md-6 d-none">
-                        <label class="form-label">Occupation</label>
-                        <input type="text" class="form-control" name="job[]" required>
-                    </div>
+                    
                 </div>
             `);
 
@@ -1519,28 +1783,36 @@
 
     }
 
+    // Improved function to load provinces
     function loadProvinces($dropdown) {
-        $.ajax({
-            url: "https://alamat.thecloudalert.com/api/provinsi/get/",
-            type: "GET",
-            success: function(response) {
-                if (response.result) {
-                    let provinces = response.result;
-                    $dropdown.empty().append('<option value="" disabled selected>Select Province</option>');
+        // Only load if not already populated
+        if ($dropdown.find('option').length <= 1) {
+            $.ajax({
+                url: "https://alamat.thecloudalert.com/api/provinsi/get/",
+                type: "GET",
+                success: function(response) {
+                    if (response.result) {
+                        let provinces = response.result;
+                        $dropdown.empty().append('<option value="" disabled selected>Select Province</option>');
 
-                    provinces.forEach(function(province) {
-                        $dropdown.append(`<option value="${province.id}">${province.text}</option>`);
-                    });
+                        provinces.forEach(function(province) {
+                            // Store province text as value and ID as data attribute
+                            $dropdown.append(`<option value="${province.text}" data-id="${province.id}">${province.text}</option>`);
+                        });
+                    }
+                },
+                error: function(xhr, status, error) {
+                    console.error("Error fetching provinces:", error);
                 }
-            },
-            error: function(xhr, status, error) {
-                console.error("Error fetching provinces:", error);
-            }
-        });
+            });
+        }
     }
 
-    function loadCities(provinceId, $dropdown) {
+    // Modified function to load cities based on province ID
+    function loadCities(provinceId, $cityDropdown) {
         if (!provinceId) return;
+
+        console.log("Loading cities for province ID:", provinceId); // Debug log
 
         $.ajax({
             url: `https://alamat.thecloudalert.com/api/kabkota/get/?d_provinsi_id=${provinceId}`,
@@ -1548,11 +1820,14 @@
             success: function(response) {
                 if (response.result) {
                     let cities = response.result;
-                    $dropdown.empty().append('<option value="" disabled selected>Select City</option>');
+                    $cityDropdown.empty().append('<option value="" disabled selected>Select City</option>');
 
                     cities.forEach(function(city) {
-                        $dropdown.append(`<option value="${city.id}">${city.text}</option>`);
+                        // Store city text as the value
+                        $cityDropdown.append(`<option value="${city.text}">${city.text}</option>`);
                     });
+
+                    console.log(`Loaded ${cities.length} cities`); // Debug log
                 }
             },
             error: function(xhr, status, error) {
@@ -1631,3 +1906,25 @@
     });
 </script>
 @endif
+
+<!-- Hidden Fields -->
+<!-- <div class="col-md-6 d-none">
+    <label class="form-label">Date of Birth</label>
+    <input type="date" class="form-control" name="birth_date_family[]">
+</div>
+<div class="col-md-6 d-none">
+    <label class="form-label">Place of Birth</label>
+    <input type="text" class="form-control" name="birth_place_family[]">
+</div>
+<div class="col-md-12 d-none">
+    <label class="form-label">Address</label>
+    <textarea class="form-control" name="address[]" rows="2"></textarea>
+</div>
+<div class="col-md-6 d-none">
+    <label class="form-label">ID Number</label>
+    <input type="number" class="form-control" name="ID_number_family[]">
+</div>
+<div class="col-md-6 d-none">
+    <label class="form-label">Occupation</label>
+    <input type="text" class="form-control" name="job[]">
+</div> -->
