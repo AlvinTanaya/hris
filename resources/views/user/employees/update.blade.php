@@ -2,14 +2,18 @@
 
 @section('content')
 
-<a href="{{ route('user.employees.index') }}" class="btn btn-danger px-5 mb-3">
+
+@if ($user->id == Auth::user()->id)
+<a href="{{ url('/home') }}" class="btn btn-danger px-5 mb-3">
     <i class="fas fa-arrow-left me-2"></i>Back
 </a>
-@if ($user->id == Auth::user()->id)
 <h1 class="add-employee-heading">
     <i class="fas fa-user"></i> Profile
 </h1>
 @else
+<a href="{{ route('user.employees.index') }}" class="btn btn-danger px-5 mb-3">
+    <i class="fas fa-arrow-left me-2"></i>Back
+</a>
 <h1 class="add-employee-heading"><i class="far fa-user"></i> Employee Profile Information</h1>
 @endif
 

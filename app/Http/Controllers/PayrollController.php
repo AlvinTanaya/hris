@@ -313,6 +313,21 @@ class PayrollController extends Controller
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     // Create - Show form to create new payroll
     public function salaryAssignCreate()
     {
@@ -673,16 +688,16 @@ class PayrollController extends Controller
     {
         // Ensure we have a Carbon instance for comparison
         $endOfMonth = Carbon::createFromDate($year, $month)->endOfMonth();
-        
+
         // Get salary history for this user
         $salaryHistory = SalaryHistory::where('users_id', $user->id)
- 
+
             ->latest('created_at')
             ->first();
-        
+
         // Get regular salary information if no history exists
         $employeeSalary = EmployeeSalary::where('users_id', $user->id)->first();
-        
+
         // Set salary information based on history or regular salary
         if ($salaryHistory) {
             // Check if the date is before the salary history created_at date
@@ -709,7 +724,7 @@ class PayrollController extends Controller
                 'overtime_rate_per_hour' => $employeeSalary ? $employeeSalary->overtime_rate_per_hour : 0,
             ];
         }
-        
+
         // Get overtime hours for this month
         $user->overtime_hours = EmployeeOvertime::where('user_id', $user->id)
             ->where('approval_status', 'Approved')
@@ -868,5 +883,158 @@ class PayrollController extends Controller
                 'message' => 'Failed to update payroll: ' . $e->getMessage()
             ], 500);
         }
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    // HISTORY SECTION
+
+    public function salaryHistoryIndex(Request $request)
+    {
+        // Get filter parameters
+        $search = $request->input('search');
+        $department = $request->input('department');
+        $position = $request->input('position');
+        $dateStart = $request->input('date_start');
+        $dateEnd = $request->input('date_end');
+        $filter = $request->input('filter', 'all');
+
+        // Base query for salary history
+        $query = SalaryHistory::with('user');
+
+        // Apply search filter
+        if ($search) {
+            $query->whereHas('user', function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                    ->orWhere('employee_id', 'like', "%{$search}%");
+            });
+        }
+
+        // Apply date filters
+        if ($dateStart) {
+            $query->whereDate('created_at', '>=', $dateStart);
+        }
+
+        if ($dateEnd) {
+            $query->whereDate('created_at', '<=', $dateEnd);
+        }
+
+        // Apply predefined filters
+        switch ($filter) {
+            case 'week':
+                $query->where('created_at', '>=', Carbon::now()->subWeek());
+                break;
+            case 'month':
+                $query->where('created_at', '>=', Carbon::now()->subMonth());
+                break;
+            case 'quarter':
+                $query->where('created_at', '>=', Carbon::now()->subMonths(3));
+                break;
+            case 'year':
+                $query->where('created_at', '>=', Carbon::now()->subYear());
+                break;
+            case 'increase':
+                $query->whereRaw('new_basic_salary > old_basic_salary');
+                break;
+            case 'decrease':
+                $query->whereRaw('new_basic_salary < old_basic_salary');
+                break;
+            case 'overtime':
+                $query->whereRaw('new_overtime_rate_per_hour != old_overtime_rate_per_hour');
+                break;
+            case 'allowance':
+                $query->whereRaw('new_allowance != old_allowance');
+                break;
+        }
+
+        // Get all records before applying department/position filtering
+        // We'll do this in PHP to properly handle complex historical data
+        $salaryHistories = $query->orderBy('created_at', 'desc')->get();
+
+        // Process each salary history record to find the effective department and position
+        foreach ($salaryHistories as $history) {
+            // Find the closest historical transfer record at or before the salary change
+            $transferHistory = history_transfer_employee::where('users_id', $history->users_id)
+                ->where('created_at', '<=', $history->created_at)
+                ->orderBy('created_at', 'desc')
+                ->first();
+
+            if ($transferHistory) {
+                // Use the department and position from transfer history
+                $effectivePosition = EmployeePosition::find($transferHistory->new_position_id);
+                $effectiveDepartment = EmployeeDepartment::find($transferHistory->new_department_id);
+
+                $history->effectivePosition = $effectivePosition;
+                $history->effectiveDepartment = $effectiveDepartment;
+            } else {
+                // No transfer history found before this time, use user's current position/department
+                $user = User::find($history->users_id);
+                if ($user) {
+                    $history->effectivePosition = $user->position;
+                    $history->effectiveDepartment = $user->department;
+                }
+            }
+        }
+
+        // Apply department and position filters (after we've added the effective departments/positions)
+        if ($department) {
+            $salaryHistories = $salaryHistories->filter(function ($history) use ($department) {
+                return $history->effectiveDepartment && $history->effectiveDepartment->id == $department;
+            })->values();
+        }
+
+        if ($position) {
+            $salaryHistories = $salaryHistories->filter(function ($history) use ($position) {
+                return $history->effectivePosition && $history->effectivePosition->id == $position;
+            })->values();
+        }
+
+        // Gather statistics
+        $stats = [
+            'total_records' => $salaryHistories->count(),
+            'increases' => $salaryHistories->filter(function ($item) {
+                return $item->new_basic_salary > $item->old_basic_salary;
+            })->count(),
+            'decreases' => $salaryHistories->filter(function ($item) {
+                return $item->new_basic_salary < $item->old_basic_salary;
+            })->count(),
+            'overtime_changes' => $salaryHistories->filter(function ($item) {
+                return $item->new_overtime_rate_per_hour != $item->old_overtime_rate_per_hour;
+            })->count(),
+            'allowance_changes' => $salaryHistories->filter(function ($item) {
+                return $item->new_allowance != $item->old_allowance;
+            })->count(),
+        ];
+
+        // Get all departments and positions for the filter dropdowns
+        $departments = EmployeeDepartment::orderBy('department')->get();
+        $positions = EmployeePosition::orderBy('position')->get();
+
+        return view('payroll.salary_history.index', compact(
+            'salaryHistories',
+            'departments',
+            'positions',
+            'search',
+            'department',
+            'position',
+            'dateStart',
+            'dateEnd',
+            'filter',
+            'stats'
+        ));
     }
 }

@@ -1,0 +1,42 @@
+
+2. Set Up Cron Job (on your server)
+To make the Laravel scheduler work, you need to add a single cron job on your server that runs every minute:
+* * * * * cd /path-to-your-project && php artisan schedule:run >> /dev/null 2>&1
+If you're on Windows (XAMPP), you can use Task Scheduler instead.
+
+4. For Development/Testing
+During development, you can manually trigger the command once when needed:
+php artisan contract:check
+And then process the queued emails:
+php artisan queue:work --stop-when-empty
+This way, your contract check runs once per day, emails are queued, and the queue worker processes them efficiently.
+Would you like me to help you set up any specific part of this configuration?
+
+
+
+
+
+
+
+
+
+
+
+
+bgian add to employee employee status contract date itu kokosng V
+bagian education transkrip gk ada (gk bisa viwe) V
+
+
+
+
+qty needed gk usah dikurang V
+ceknya kalau needed > qty fullfil V
+pad aindex ditambahai informasi berapa yang umlah pending, approve , declined
+
+
+
+
+salasry history error V
+
+
+

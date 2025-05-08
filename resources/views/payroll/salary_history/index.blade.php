@@ -20,7 +20,7 @@
             </h4>
         </div>
         <div class="card-body p-4">
-            <form action="{{ route('payroll.salary.history.index') }}" method="GET" id="filter-form">
+            <form action="{{ route('payroll.salary_history.index') }}" method="GET" id="filter-form">
                 <div class="row g-3">
                     <!-- Name/ID Search -->
                     <div class="col-md-6 col-lg-4">
@@ -97,7 +97,7 @@
                 <div class="row g-3 mt-1">
                     <div class="col-md-6 offset-md-6 d-flex justify-content-end align-items-end">
                         <div class="d-flex gap-2 w-100 justify-content-end">
-                            <a href="{{ route('payroll.salary.history.index') }}" class="btn btn-outline-secondary px-4 shadow-sm">
+                            <a href="{{ route('payroll.salary_history.index') }}" class="btn btn-outline-secondary px-4 shadow-sm">
                                 <i class="fas fa-redo me-2"></i> Reset
                             </a>
                             <button type="submit" class="btn btn-primary px-4 shadow-sm">
@@ -115,10 +115,8 @@
 
     <!-- Stats Summary Row -->
     <div class="row mb-4">
-        <div class="col-md-1">
 
-        </div>
-        <div class="col-md-2">
+        <div class="col-md-12 col-lg-12">
             <div class="card border-0 shadow-sm mb-3">
                 <div class="card-body p-3">
                     <div class="d-flex align-items-center">
@@ -133,7 +131,7 @@
                 </div>
             </div>
         </div>
-        <div class="col-md-2">
+        <div class="col-md-6 col-lg-3">
             <div class="card border-0 shadow-sm mb-3">
                 <div class="card-body p-3">
                     <div class="d-flex align-items-center">
@@ -148,7 +146,7 @@
                 </div>
             </div>
         </div>
-        <div class="col-md-2">
+        <div class="col-md-6 col-lg-3">
             <div class="card border-0 shadow-sm mb-3">
                 <div class="card-body p-3">
                     <div class="d-flex align-items-center">
@@ -163,7 +161,7 @@
                 </div>
             </div>
         </div>
-        <div class="col-md-2">
+        <div class="col-md-6 col-lg-3">
             <div class="card border-0 shadow-sm mb-3">
                 <div class="card-body p-3">
                     <div class="d-flex align-items-center">
@@ -178,7 +176,7 @@
                 </div>
             </div>
         </div>
-        <div class="col-md-2">
+        <div class="col-md-6 col-lg-3">
             <div class="card border-0 shadow-sm mb-3">
                 <div class="card-body p-3">
                     <div class="d-flex align-items-center">
@@ -193,9 +191,7 @@
                 </div>
             </div>
         </div>
-        <div class="col-md-1">
 
-        </div>
     </div>
 
     <!-- Main Content Card -->
@@ -463,10 +459,7 @@
 </div>
 @endsection
 
-@push('styles')
-<!-- DataTables CSS -->
-<link href="https://cdn.datatables.net/1.11.5/css/dataTables.bootstrap5.min.css" rel="stylesheet">
-<link href="https://cdn.datatables.net/responsive/2.2.9/css/responsive.bootstrap5.min.css" rel="stylesheet">
+
 <style>
     /* Global Styles */
     body {
@@ -609,16 +602,67 @@
             font-size: 0.75rem;
         }
     }
+
+    /* Additional CSS fixes for responsive layout */
+
+    /* Improve button visibility in collapsed view */
+    .view-details {
+        position: relative;
+        z-index: 100;
+        transition: all 0.2s ease;
+    }
+
+    .view-details:hover {
+        background-color: #4e73df;
+        color: white;
+    }
+
+    /* Ensure columns don't get too narrow on smaller screens */
+    @media (max-width: 992px) {
+        .table-responsive {
+            overflow-x: auto;
+        }
+
+        /* Make the column with the details button fixed width */
+        #history-table th:last-child,
+        #history-table td:last-child {
+            min-width: 100px;
+            width: 100px;
+            text-align: center;
+        }
+
+        /* Ensure the button is clearly visible */
+        .view-details {
+            padding: 6px 12px;
+            width: auto;
+            display: inline-block;
+        }
+    }
+
+    /* Fix for very small screens */
+    @media (max-width: 576px) {
+
+        #history-table td:nth-child(5),
+        #history-table td:nth-child(6),
+        #history-table td:nth-child(7),
+        #history-table td:nth-child(8),
+        #history-table th:nth-child(5),
+        #history-table th:nth-child(6),
+        #history-table th:nth-child(7),
+        #history-table th:nth-child(8) {
+            display: none;
+        }
+
+        .view-details {
+            margin: 0;
+            padding: 4px 8px;
+            font-size: 12px;
+        }
+    }
 </style>
-@endpush
+
 
 @push('scripts')
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-<!-- DataTables JS -->
-<script src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"></script>
-<script src="https://cdn.datatables.net/1.11.5/js/dataTables.bootstrap5.min.js"></script>
-<script src="https://cdn.datatables.net/responsive/2.2.9/js/dataTables.responsive.min.js"></script>
-<script src="https://cdn.datatables.net/responsive/2.2.9/js/responsive.bootstrap5.min.js"></script>
 <script>
     $(document).ready(function() {
         $('#history-table').DataTable({
@@ -648,8 +692,14 @@
 
 
 
-        // Handle the view details button click
-        $('.view-details').on('click', function() {
+        // Use event delegation to handle clicks on the details button
+        $(document).on('click', '.view-details', function(e) {
+            e.preventDefault(); // Prevent default behavior
+            e.stopPropagation(); // Stop event bubbling
+
+            console.log("Details button clicked");
+
+            // Get data attributes
             const id = $(this).data('id');
             const userName = $(this).data('user-name');
             const oldSalary = $(this).data('old-salary');
@@ -745,6 +795,14 @@
             // Show the modal
             $('#salaryDetailModal').modal('show');
         });
+
+        // Helper function to format numbers with commas
+        function numberWithCommas(x) {
+            return x.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+        }
+
+
+
         // Form filter behavior - auto-submit when per_page changes
         $('#per_page').change(function() {
             $('#filter-form').submit();

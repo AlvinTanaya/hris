@@ -1115,7 +1115,7 @@
                         <span>Base Salary</span>
                     </a>
 
-                    <a href="{{ route('payroll.salary.history.index') }}" class="nav-link d-flex align-items-center gap-2">
+                    <a href="{{ route('payroll.salary_history.index') }}" class="nav-link d-flex align-items-center gap-2">
                         <i class="fas fa-history"></i>
                         <span>Salary History</span>
                     </a>

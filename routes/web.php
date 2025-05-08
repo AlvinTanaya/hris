@@ -446,7 +446,7 @@ Route::middleware('auth')->group(function () {
         ->name('payroll.master.salary.destroy');
 
     Route::get('/payroll/salary_history/index', [PayrollController::class, 'salaryHistoryIndex'])
-        ->name('payroll.salary.history.index');
+        ->name('payroll.salary_history.index');
 
 
 

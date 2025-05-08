@@ -35,7 +35,7 @@ class VacancyController extends Controller
         // Base query with relationships
         $query = recruitment_demand::with(['departmentRelation', 'positionRelation'])
             ->where('status_demand', 'Approved')
-            ->where('qty_needed', '>', 0)
+            ->whereColumn('qty_needed', '>', 'qty_fullfil')
             ->where('opening_date', '<=', $today)
             ->where('closing_date', '>=', $today);
 
@@ -59,14 +59,14 @@ class VacancyController extends Controller
         // Get distinct departments and positions for filters
         $departments = EmployeeDepartment::whereHas('demands', function ($q) use ($today) {
             $q->where('status_demand', 'Approved')
-                ->where('qty_needed', '>', 0)
+                ->whereColumn('qty_needed', '>', 'qty_fullfil')
                 ->where('opening_date', '<=', $today)
                 ->where('closing_date', '>=', $today);
         })->get(['id', 'department']);
 
         $positions = EmployeePosition::whereHas('demands', function ($q) use ($today) {
             $q->where('status_demand', 'Approved')
-                ->where('qty_needed', '>', 0)
+                ->whereColumn('qty_needed', '>', 'qty_fullfil')
                 ->where('opening_date', '<=', $today)
                 ->where('closing_date', '>=', $today);
         })->get(['id', 'position']);

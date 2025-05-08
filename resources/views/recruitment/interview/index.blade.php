@@ -94,6 +94,7 @@
                             <th>Closed At</th>
                             <th>Needed</th>
                             <th>Fulfilled</th>
+                            <th>Applicants</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
@@ -107,6 +108,14 @@
                             <td>{{ $item->closing_date }}</td>
                             <td><span class="badge bg-primary">{{ $item->qty_needed }}</span></td>
                             <td><span class="badge bg-success">{{ $item->qty_fullfil }}</span></td>
+                            <td>
+                                <div class="d-flex gap-1">
+                                    <span class="badge bg-warning px-2">Pending: {{ $item->pending_count }}</span>
+                                    <span class="badge bg-info px-2">Approved: {{ $item->approved_count }}</span>
+                                    <span class="badge bg-danger px-2">Declined: {{ $item->declined_count }}</span>
+                                    <span class="badge bg-success px-2">Done: {{ $item->done_count }}</span>
+                                </div>
+                            </td>
                             <td>
                                 <div class="d-flex gap-2">
                                     <a href="{{ route('recruitment.applicant', $item->id) }}" class="btn btn-warning btn-sm">
@@ -144,178 +153,178 @@
             </div>
         </div>
     </div>
-</div>
 
-<!-- View Modal -->
-<div class="modal fade" id="viewModal" tabindex="-1">
-    <div class="modal-dialog modal-xl modal-dialog-scrollable">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">
-                    <i class="fas fa-file-alt me-2"></i>Labor Demand Details
-                </h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <div class="row g-4">
-                    <!-- Basic Information Card -->
-                    <div class="col-md-6">
-                        <div class="card h-100 border-0 shadow-sm">
-                            <div class="card-header bg-light">
-                                <h6 class="mb-0"><i class="fas fa-info-circle me-2"></i>Basic Information</h6>
-                            </div>
-                            <div class="card-body">
-                                <div class="info-group">
-                                    <label>PTK ID</label>
-                                    <p id="view-recruitment_demand_id" class="fw-bold"></p>
+    <!-- View Modal -->
+    <div class="modal fade" id="viewModal" tabindex="-1">
+        <div class="modal-dialog modal-xl modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="fas fa-file-alt me-2"></i>Labor Demand Details
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row g-4">
+                        <!-- Basic Information Card -->
+                        <div class="col-md-6">
+                            <div class="card h-100 border-0 shadow-sm">
+                                <div class="card-header bg-light">
+                                    <h6 class="mb-0"><i class="fas fa-info-circle me-2"></i>Basic Information</h6>
                                 </div>
-                                <div class="info-group">
-                                    <label>Status</label>
-                                    <p id="view-status" class="badge bg-primary"></p>
-                                </div>
-                                <div class="info-group">
-                                    <label>Department</label>
-                                    <p id="view-department"></p>
-                                </div>
-                                <div class="info-group">
-                                    <label>Position</label>
-                                    <p id="view-position" class="text-primary fw-bold"></p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Timeline Card -->
-                    <div class="col-md-6">
-                        <div class="card h-100 border-0 shadow-sm">
-                            <div class="card-header bg-light">
-                                <h6 class="mb-0"><i class="fas fa-clock me-2"></i>Timeline & Status</h6>
-                            </div>
-                            <div class="card-body">
-                                <div class="timeline">
-                                    <div class="timeline-item">
-                                        <i class="fas fa-calendar-plus text-success"></i>
-                                        <div>
-                                            <label>Opened Date</label>
-                                            <p id="view-opened"></p>
-                                        </div>
+                                <div class="card-body">
+                                    <div class="info-group">
+                                        <label>PTK ID</label>
+                                        <p id="view-recruitment_demand_id" class="fw-bold"></p>
                                     </div>
-                                    <div class="timeline-item">
-                                        <i class="fas fa-calendar-minus text-danger"></i>
-                                        <div>
-                                            <label>Closed Date</label>
-                                            <p id="view-closed"></p>
-                                        </div>
+                                    <div class="info-group">
+                                        <label>Status</label>
+                                        <p id="view-status" class="badge bg-primary"></p>
                                     </div>
-                                </div>
-                                <div class="info-group mt-3">
-                                    <label>Job Status</label>
-                                    <p id="view-status-job"></p>
-                                </div>
-                                <div class="d-flex justify-content-between mt-3">
-                                    <div class="text-center">
-                                        <label>Needed</label>
-                                        <h4 id="view-needed" class="text-primary mb-0"></h4>
+                                    <div class="info-group">
+                                        <label>Department</label>
+                                        <p id="view-department"></p>
                                     </div>
-                                    <div class="text-center">
-                                        <label>Fulfilled</label>
-                                        <h4 id="view-fullfill" class="text-success mb-0"></h4>
+                                    <div class="info-group">
+                                        <label>Position</label>
+                                        <p id="view-position" class="text-primary fw-bold"></p>
                                     </div>
                                 </div>
                             </div>
                         </div>
-                    </div>
 
-                    <!-- Requirements Card -->
-                    <div class="col-md-12">
-                        <div class="card border-0 shadow-sm">
-                            <div class="card-header bg-light">
-                                <h6 class="mb-0"><i class="fas fa-check-circle me-2"></i>Requirements</h6>
-                            </div>
-                            <div class="card-body">
-                                <div class="row">
-                                    <div class="col-md-3">
-                                        <div class="info-group">
-                                            <label>Gender</label>
-                                            <p id="view-gender"></p>
+                        <!-- Timeline Card -->
+                        <div class="col-md-6">
+                            <div class="card h-100 border-0 shadow-sm">
+                                <div class="card-header bg-light">
+                                    <h6 class="mb-0"><i class="fas fa-clock me-2"></i>Timeline & Status</h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="timeline">
+                                        <div class="timeline-item">
+                                            <i class="fas fa-calendar-plus text-success"></i>
+                                            <div>
+                                                <label>Opened Date</label>
+                                                <p id="view-opened"></p>
+                                            </div>
+                                        </div>
+                                        <div class="timeline-item">
+                                            <i class="fas fa-calendar-minus text-danger"></i>
+                                            <div>
+                                                <label>Closed Date</label>
+                                                <p id="view-closed"></p>
+                                            </div>
                                         </div>
                                     </div>
-                                    <div class="col-md-3">
-                                        <div class="info-group">
-                                            <label>Education</label>
-                                            <p id="view-education"></p>
-                                        </div>
+                                    <div class="info-group mt-3">
+                                        <label>Job Status</label>
+                                        <p id="view-status-job"></p>
                                     </div>
-                                    <div class="col-md-3">
-                                        <div class="info-group">
-                                            <label>Major</label>
-                                            <p id="view-major"></p>
+                                    <div class="d-flex justify-content-between mt-3">
+                                        <div class="text-center">
+                                            <label>Needed</label>
+                                            <h4 id="view-needed" class="text-primary mb-0"></h4>
                                         </div>
-                                    </div>
-                                    <div class="col-md-3">
-                                        <div class="info-group">
-                                            <label>Working Period</label>
-                                            <p id="view-years-work"></p>
+                                        <div class="text-center">
+                                            <label>Fulfilled</label>
+                                            <h4 id="view-fullfill" class="text-success mb-0"></h4>
                                         </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
-                    </div>
 
-                    <!-- Detailed Lists -->
-                    <div class="col-12">
-                        <div class="card border-0 shadow-sm">
-                            <div class="card-header bg-light">
-                                <h6 class="mb-0"><i class="fas fa-list me-2"></i>Detailed Information</h6>
+                        <!-- Requirements Card -->
+                        <div class="col-md-12">
+                            <div class="card border-0 shadow-sm">
+                                <div class="card-header bg-light">
+                                    <h6 class="mb-0"><i class="fas fa-check-circle me-2"></i>Requirements</h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row">
+                                        <div class="col-md-3">
+                                            <div class="info-group">
+                                                <label>Gender</label>
+                                                <p id="view-gender"></p>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <div class="info-group">
+                                                <label>Education</label>
+                                                <p id="view-education"></p>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <div class="info-group">
+                                                <label>Major</label>
+                                                <p id="view-major"></p>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <div class="info-group">
+                                                <label>Working Period</label>
+                                                <p id="view-years-work"></p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
-                            <div class="card-body">
-                                <div class="accordion" id="detailsAccordion">
-                                    <div class="accordion-item">
-                                        <h2 class="accordion-header">
-                                            <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#purposeCollapse">
-                                                <i class="fas fa-bullseye me-2"></i> Job Purpose
-                                            </button>
-                                        </h2>
-                                        <div id="purposeCollapse" class="accordion-collapse collapse show" data-bs-parent="#detailsAccordion">
-                                            <div class="accordion-body">
-                                                <ul id="view-purpose-list" class="list-group list-group-flush"></ul>
+                        </div>
+
+                        <!-- Detailed Lists -->
+                        <div class="col-12">
+                            <div class="card border-0 shadow-sm">
+                                <div class="card-header bg-light">
+                                    <h6 class="mb-0"><i class="fas fa-list me-2"></i>Detailed Information</h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="accordion" id="detailsAccordion">
+                                        <div class="accordion-item">
+                                            <h2 class="accordion-header">
+                                                <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#purposeCollapse">
+                                                    <i class="fas fa-bullseye me-2"></i> Job Purpose
+                                                </button>
+                                            </h2>
+                                            <div id="purposeCollapse" class="accordion-collapse collapse show" data-bs-parent="#detailsAccordion">
+                                                <div class="accordion-body">
+                                                    <ul id="view-purpose-list" class="list-group list-group-flush"></ul>
+                                                </div>
                                             </div>
                                         </div>
-                                    </div>
-                                    <div class="accordion-item">
-                                        <h2 class="accordion-header">
-                                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#experienceCollapse">
-                                                <i class="fas fa-briefcase me-2"></i> Experience Required
-                                            </button>
-                                        </h2>
-                                        <div id="experienceCollapse" class="accordion-collapse collapse" data-bs-parent="#detailsAccordion">
-                                            <div class="accordion-body">
-                                                <ul id="view-experience-list" class="list-group list-group-flush"></ul>
+                                        <div class="accordion-item">
+                                            <h2 class="accordion-header">
+                                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#experienceCollapse">
+                                                    <i class="fas fa-briefcase me-2"></i> Experience Required
+                                                </button>
+                                            </h2>
+                                            <div id="experienceCollapse" class="accordion-collapse collapse" data-bs-parent="#detailsAccordion">
+                                                <div class="accordion-body">
+                                                    <ul id="view-experience-list" class="list-group list-group-flush"></ul>
+                                                </div>
                                             </div>
                                         </div>
-                                    </div>
-                                    <div class="accordion-item">
-                                        <h2 class="accordion-header">
-                                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#skillsCollapse">
-                                                <i class="fas fa-tools me-2"></i> Required Skills
-                                            </button>
-                                        </h2>
-                                        <div id="skillsCollapse" class="accordion-collapse collapse" data-bs-parent="#detailsAccordion">
-                                            <div class="accordion-body">
-                                                <ul id="view-skills-list" class="list-group list-group-flush"></ul>
+                                        <div class="accordion-item">
+                                            <h2 class="accordion-header">
+                                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#skillsCollapse">
+                                                    <i class="fas fa-tools me-2"></i> Required Skills
+                                                </button>
+                                            </h2>
+                                            <div id="skillsCollapse" class="accordion-collapse collapse" data-bs-parent="#detailsAccordion">
+                                                <div class="accordion-body">
+                                                    <ul id="view-skills-list" class="list-group list-group-flush"></ul>
+                                                </div>
                                             </div>
                                         </div>
-                                    </div>
-                                    <div class="accordion-item">
-                                        <h2 class="accordion-header">
-                                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#reasonCollapse">
-                                                <i class="fas fa-clipboard-list me-2"></i> Reasons
-                                            </button>
-                                        </h2>
-                                        <div id="reasonCollapse" class="accordion-collapse collapse" data-bs-parent="#detailsAccordion">
-                                            <div class="accordion-body">
-                                                <ul id="view-reason-list" class="list-group list-group-flush"></ul>
+                                        <div class="accordion-item">
+                                            <h2 class="accordion-header">
+                                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#reasonCollapse">
+                                                    <i class="fas fa-clipboard-list me-2"></i> Reasons
+                                                </button>
+                                            </h2>
+                                            <div id="reasonCollapse" class="accordion-collapse collapse" data-bs-parent="#detailsAccordion">
+                                                <div class="accordion-body">
+                                                    <ul id="view-reason-list" class="list-group list-group-flush"></ul>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
@@ -324,13 +333,15 @@
                         </div>
                     </div>
                 </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
             </div>
         </div>
     </div>
 </div>
+
+
 
 @endsection
 
@@ -607,14 +618,7 @@
         position: relative;
     }
 
-    .list-group-item::before {
-        content: '•';
-        position: absolute;
-        left: 0.75rem;
-        color: var(--primary-color);
-        font-size: 1.5rem;
-        line-height: 1;
-    }
+
 
     .badge {
         padding: 0.5rem 0.75rem;
@@ -745,7 +749,12 @@
                     if (item.startsWith('- ')) {
                         item = item.substring(2); // Remove the first two characters  
                     }
-                    list.append(`<li class="list-group-item">${item}</li>`);
+                    list.append(`
+                        <li class="list-group-item d-flex align-items-start">
+                            <i class="fas fa-circle mt-2 me-2 text-secondary" style="font-size: 8px;"></i>
+                            <span>disini ${item}</span>
+                        </li>
+                        `);
                 });
             } else {
                 list.append('<li class="list-group-item text-muted">No data available</li>');

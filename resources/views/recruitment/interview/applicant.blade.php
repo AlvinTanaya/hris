@@ -1,71 +1,14 @@
 @extends('layouts.app')
 
 @section('content')
-<style>
-    .nav-tabs .nav-link {
-        color: white;
-        font-weight: 500;
-        padding: 1rem;
-        transition: all 0.3s ease;
-    }
 
 
+<div class="container-fluid px-4 py-5 test">
+    <a href="{{ route('recruitment.index.interview') }}" class="btn-back">
+        <i class="fas fa-arrow-left"></i>Back to Recruitment
+    </a>
 
-
-    .nav-tabs .nav-link.active {
-        color: #0d6efd;
-        border-bottom: 3px solid #0d6efd;
-    }
-
-    .card {
-        border: none;
-        box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
-    }
-
-    .table thead th {
-        border-top: none;
-        border-bottom: 2px solid #dee2e6;
-    }
-
-    .btn-sm {
-        padding: 0.25rem 0.5rem;
-        font-size: 0.875rem;
-    }
-
-    .accordion-button:not(.collapsed) {
-        background-color: rgba(13, 110, 253, 0.1);
-        color: #0d6efd;
-    }
-
-    .accordion-button:focus {
-        box-shadow: none;
-        border-color: rgba(13, 110, 253, 0.1);
-    }
-
-    .badge {
-        padding: 0.5em 0.75em;
-    }
-
-    .modal-header {
-        border-bottom: none;
-    }
-
-    .modal-footer {
-        border-top: none;
-    }
-</style>
-
-<head>
-    <meta name="csrf-token" content="{{ csrf_token() }}">
-</head>
-
-<a href="{{ route('recruitment.index.interview') }}" class="btn btn-danger px-5 mb-3">
-    <i class="fas fa-arrow-left me-2"></i>Back
-</a>
-<div class="container-fluid px-4 py-5">
-
-
-    <h1 class="text-center text-warning" style="margin-bottom: 65px;">
+    <h1 class="text-center text-white mb-5">
         <i class="fas fa-users-cog me-2"></i>Applicant Management
     </h1>
 
@@ -80,10 +23,10 @@
         </div>
         <div class="col-md-10">
             <h3 class="text-white">
-                : {{ $demand->position }}
+                : {{ $demand->positionRelation->position }}
             </h3>
             <h3 class="text-white">
-                : {{ $demand->department }}
+                : {{ $demand->departmentRelation->department }}
             </h3>
         </div>
     </div>
@@ -115,7 +58,7 @@
                 <div class="card-body">
                     <div class="table-responsive" style="padding-right: 1%;">
                         <table class="table mb-3 pt-3 table-bordered table-hover" id="pendingTable">
-                            <thead class="table-dark">
+                            <thead>
                                 <tr class="align-middle">
                                     <th style="width:8%">Profile</th>
                                     <th style="width:12%">Status</th>
@@ -128,7 +71,6 @@
                                 @foreach($applicant as $item)
                                 <tr class="align-middle">
                                     <td class="text-center">
-
                                         <img src="{{ $item->photo_profile_path ? asset('storage/'. $item->photo_profile_path) : asset('storage/default_profile.png') }}"
                                             class="rounded-circle"
                                             style="width: 40px; height: 40px; object-fit: cover; border: 2px solid blue;">
@@ -157,7 +99,6 @@
                                         </button>
                                     </td>
                                 </tr>
-
                                 @endforeach
                             </tbody>
                         </table>
@@ -185,7 +126,7 @@
                                 <col style="width: 42%;"> <!-- Actions -->
                             </colgroup>
 
-                            <thead class="table-dark">
+                            <thead>
                                 <tr class="align-middle">
                                     <th>Profile</th>
                                     <th>Name</th>
@@ -222,21 +163,23 @@
                                     <td>{{ \Carbon\Carbon::parse($interview->created_at)->format('d M Y, H:i') }}</td>
                                     <td>{{ \Carbon\Carbon::parse($interview->interview_date)->format('d M Y, H:i') }}</td>
                                     <td>
-                                        <button class="btn btn-info btn-sm view-btn" data-id="{{ $interview->id }}">
-                                            <i class="fas fa-eye me-1"></i> View
-                                        </button>
-                                        <button class="btn btn-success btn-sm approve-btn" data-id="{{ $interview->id }}">
-                                            <i class="fas fa-check me-1"></i> Approve
-                                        </button>
-                                        <button class="btn btn-danger btn-sm decline-btn" data-id="{{ $interview->id }}">
-                                            <i class="fas fa-times me-1"></i> Decline
-                                        </button>
-                                        <button class="btn btn-warning btn-sm exchange-btn" data-id="{{ $interview->id }}">
-                                            <i class="fas fa-exchange-alt me-1"></i> Exchange
-                                        </button>
-                                        <button class="btn btn-primary btn-sm schedule-btn" data-id="{{ $interview->id }}">
-                                            <i class="fa-solid fa-calendar-days"></i> Change Date
-                                        </button>
+                                        <div class="d-flex gap-1 flex-wrap">
+                                            <button class="btn btn-info btn-sm view-btn" data-id="{{ $interview->id }}">
+                                                <i class="fas fa-eye me-1"></i> View
+                                            </button>
+                                            <button class="btn btn-success btn-sm approve-btn" data-id="{{ $interview->id }}">
+                                                <i class="fas fa-check me-1"></i> Approve
+                                            </button>
+                                            <button class="btn btn-danger btn-sm decline-btn" data-id="{{ $interview->id }}">
+                                                <i class="fas fa-times me-1"></i> Decline
+                                            </button>
+                                            <button class="btn btn-warning btn-sm exchange-btn" data-id="{{ $interview->id }}">
+                                                <i class="fas fa-exchange-alt me-1"></i> Exchange
+                                            </button>
+                                            <button class="btn btn-primary btn-sm schedule-btn" data-id="{{ $interview->id }}">
+                                                <i class="fa-solid fa-calendar-days"></i> Change Date
+                                            </button>
+                                        </div>
                                     </td>
                                 </tr>
                                 @endforeach
@@ -244,7 +187,6 @@
                         </table>
                     </div>
                 </div>
-
             </div>
         </div>
 
@@ -272,7 +214,7 @@
                                 <col>
                                 <col style="width: 22%;">
                             </colgroup>
-                            <thead class="table-dark">
+                            <thead>
                                 <tr class="align-middle">
                                     <th>Profile</th>
                                     <th>Name</th>
@@ -307,20 +249,21 @@
                                     <td>{{ \Carbon\Carbon::parse($approved->interview_date)->format('d M Y, H:i') }}</td>
                                     <td>{{ $approved->status_note }}</td>
                                     <td>
-                                        <button class="btn btn-info btn-sm view-btn" data-id="{{ $approved->id }}">
-                                            <i class="fas fa-eye me-1"></i>View
-                                        </button>
-                                        @if ($approved->status_applicant == 'Approved')
-                                        <button class="btn btn-primary btn-sm add-employee-btn"
-                                            data-id="{{ $approved->id }}">
-                                            <i class="fas fa-user-plus me-1"></i>Add to Employees
-                                        </button>
-                                        @elseif ($approved->status_applicant == 'Done')
-                                        <button class="btn btn-primary btn-sm" disabled>
-                                            <i class="fas fa-user-plus me-1"></i>Add to Employees
-                                        </button>
-                                        @endif
-
+                                        <div class="d-flex gap-1">
+                                            <button class="btn btn-info btn-sm view-btn" data-id="{{ $approved->id }}">
+                                                <i class="fas fa-eye me-1"></i>View
+                                            </button>
+                                            @if ($approved->status_applicant == 'Approved')
+                                            <button class="btn btn-primary btn-sm add-employee-btn"
+                                                data-id="{{ $approved->id }}">
+                                                <i class="fas fa-user-plus me-1"></i>Add to Employees
+                                            </button>
+                                            @elseif ($approved->status_applicant == 'Done')
+                                            <button class="btn btn-primary btn-sm" disabled>
+                                                <i class="fas fa-user-plus me-1"></i>Add to Employees
+                                            </button>
+                                            @endif
+                                        </div>
                                     </td>
                                 </tr>
                                 @endforeach
@@ -328,7 +271,6 @@
                         </table>
                     </div>
                 </div>
-
             </div>
 
             <!-- Declined Applicants -->
@@ -354,7 +296,7 @@
                                 <col style="width: 8%;">
                             </colgroup>
 
-                            <thead class="table-dark">
+                            <thead>
                                 <tr class="align-middle">
                                     <th>Profile</th>
                                     <th>Name</th>
@@ -400,7 +342,6 @@
                         </table>
                     </div>
                 </div>
-
             </div>
         </div>
     </div>
@@ -851,6 +792,413 @@
 
 
 @endsection
+
+<style>
+    .test {
+        --primary-color: #4361ee;
+        --secondary-color: #3f37c9;
+        --success-color: #4cc9f0;
+        --warning-color: #f72585;
+        --danger-color: #e63946;
+        --light-bg: #f8f9fa;
+        --dark-bg: #212529;
+        --card-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+        --transition: all 0.3s ease;
+    }
+
+    .container-fluid {
+        max-width: 1400px;
+        margin: 0 auto;
+    }
+
+    /* Modern tab styling */
+    .nav-tabs {
+        border-bottom: none;
+        gap: 10px;
+        margin-bottom: 25px;
+    }
+
+    .nav-tabs .nav-item {
+        margin-bottom: 0;
+    }
+
+    .nav-tabs .nav-link {
+        color: white;
+        font-weight: 600;
+        padding: 1rem 1.5rem;
+        transition: var(--transition);
+        border-radius: 10px 10px 0 0;
+        border: none;
+        background-color: rgba(255, 255, 255, 0.1);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .nav-tabs .nav-link:hover {
+        background-color: rgba(255, 255, 255, 0.2);
+        transform: translateY(-3px);
+    }
+
+    .nav-tabs .nav-link.active {
+        color: #fff;
+        border: none;
+        background-color: var(--primary-color);
+        box-shadow: 0 -5px 15px rgba(0, 0, 0, 0.1);
+    }
+
+    .nav-tabs .nav-link i {
+        margin-right: 8px;
+    }
+
+    /* Card styling */
+    .card {
+        border: none;
+        border-radius: 12px;
+        box-shadow: var(--card-shadow);
+        transition: var(--transition);
+        overflow: hidden;
+        margin-bottom: 24px;
+    }
+
+    .card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 1rem 2rem rgba(0, 0, 0, 0.2);
+    }
+
+    .card-header {
+        border-bottom: none;
+        padding: 1.25rem 1.5rem;
+        font-weight: 600;
+    }
+
+    .card-body {
+        padding: 1.5rem;
+    }
+
+    /* Table styling */
+    .table {
+        margin-bottom: 0;
+    }
+
+    .table thead th {
+        border-top: none;
+        border-bottom: 2px solid #dee2e6;
+        font-weight: 600;
+        color: #555;
+        padding: 1rem;
+        vertical-align: middle;
+        text-transform: uppercase;
+        font-size: 0.85rem;
+        letter-spacing: 0.5px;
+    }
+
+    .table tbody td {
+        padding: 1rem;
+        vertical-align: middle;
+    }
+
+    .table-bordered {
+        border: none;
+    }
+
+    .table-bordered td,
+    .table-bordered th {
+        border: 1px solid rgba(0, 0, 0, 0.05);
+    }
+
+    .table-hover tbody tr:hover {
+        background-color: rgba(67, 97, 238, 0.05);
+    }
+
+    /* Button styling */
+    .btn {
+        font-weight: 500;
+        border-radius: 8px;
+        padding: 0.5rem 1rem;
+        transition: var(--transition);
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    }
+
+    .btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    }
+
+    .btn-sm {
+        padding: 0.4rem 0.8rem;
+        font-size: 0.85rem;
+        border-radius: 6px;
+    }
+
+    .btn-primary {
+        background: linear-gradient(135deg, #4361ee, #3a0ca3);
+        border: none;
+    }
+
+    .btn-info {
+        background: linear-gradient(135deg, #4cc9f0, #4895ef);
+        border: none;
+        color: white;
+    }
+
+    .btn-success {
+        background: linear-gradient(135deg, #4cc9f0, #2a9d8f);
+        border: none;
+    }
+
+    .btn-danger {
+        background: linear-gradient(135deg, #f72585, #e63946);
+        border: none;
+    }
+
+    .btn-warning {
+        background: linear-gradient(135deg, #ffd166, #f8961e);
+        border: none;
+        color: #343a40;
+    }
+
+    /* Badge styling */
+    .badge {
+        padding: 0.5em 0.8em;
+        font-weight: 500;
+        border-radius: 6px;
+        font-size: 0.75rem;
+        letter-spacing: 0.5px;
+    }
+
+    .bg-warning {
+        background-color: #ffd166 !important;
+        color: #343a40;
+    }
+
+    .bg-success {
+        background-color: #2a9d8f !important;
+    }
+
+    .bg-danger {
+        background-color: #e63946 !important;
+    }
+
+    .bg-primary {
+        background: linear-gradient(135deg, #4361ee, #3a0ca3) !important;
+    }
+
+    /* Profile image styling */
+    .rounded-circle {
+        border: 3px solid white !important;
+        box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
+        transition: all 0.3s ease;
+    }
+
+    .rounded-circle:hover {
+        transform: scale(1.1);
+    }
+
+    /* Modal styling */
+    .modal-content {
+        border: none;
+        border-radius: 15px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        overflow: hidden;
+    }
+
+    .modal-header {
+        padding: 1.5rem;
+        border-bottom: none;
+    }
+
+    .modal-body {
+        padding: 1.5rem;
+    }
+
+    .modal-footer {
+        padding: 1.5rem;
+        border-top: none;
+    }
+
+    /* Form controls */
+    .form-control,
+    .form-select {
+        border-radius: 8px;
+        padding: 0.75rem 1rem;
+        border: 1px solid #dee2e6;
+        transition: var(--transition);
+    }
+
+    .form-control:focus,
+    .form-select:focus {
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 0.2rem rgba(67, 97, 238, 0.25);
+    }
+
+    /* Accordion styling */
+    .accordion-item {
+        border: none;
+        margin-bottom: 10px;
+        border-radius: 10px;
+        overflow: hidden;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+    }
+
+    .accordion-button {
+        padding: 1.25rem 1.5rem;
+        font-weight: 600;
+        background-color: #f8f9fa;
+        color: #212529;
+    }
+
+    .accordion-button:not(.collapsed) {
+        background-color: rgba(67, 97, 238, 0.1);
+        color: var(--primary-color);
+    }
+
+    .accordion-button:focus {
+        box-shadow: none;
+        border-color: rgba(67, 97, 238, 0.1);
+    }
+
+    /* Header styling */
+    h1,
+    h2,
+    h3,
+    h4,
+    h5,
+    h6 {
+        font-weight: 600;
+    }
+
+    h1.text-center {
+        font-size: 2.5rem;
+        margin-bottom: 3rem;
+        position: relative;
+        padding-bottom: 1rem;
+    }
+
+    h1.text-center:after {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 80px;
+        height: 4px;
+        background: linear-gradient(90deg, #4361ee, #f72585);
+        border-radius: 10px;
+    }
+
+    /* Back button */
+    .btn-back {
+        display: inline-flex;
+        align-items: center;
+        font-weight: 600;
+        padding: 0.75rem 1.5rem;
+        border-radius: 12px;
+        margin-bottom: 2rem;
+        background: linear-gradient(135deg, #4361ee, #3a0ca3);
+        color: white;
+        transition: all 0.3s ease;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    }
+
+    .btn-back:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 15px rgba(0, 0, 0, 0.2);
+    }
+
+    .btn-back i {
+        margin-right: 10px;
+        font-size: 1.1rem;
+    }
+
+    /* Personal info card */
+    .personal-info-card {
+        background: linear-gradient(135deg, #e3f2fd, #bbdefb);
+        border-radius: 15px;
+    }
+
+    .info-row {
+        margin-bottom: 0.5rem;
+        display: flex;
+    }
+
+    .info-label {
+        font-weight: 600;
+        color: #555;
+        width: 40%;
+        display: flex;
+        justify-content: space-between;
+        align-items: top;
+    }
+
+    .info-value {
+        width: 60%;
+    }
+
+    .info-group {
+        margin-bottom: 1.25rem;
+    }
+
+    .info-group strong {
+        display: block;
+        margin-bottom: 5px;
+        color: #555;
+        font-size: 0.9rem;
+        font-weight: 600;
+    }
+
+    .info-group p {
+        margin-bottom: 0;
+        color: #212529;
+        font-weight: 500;
+    }
+
+    /* Tab pane animations */
+    .tab-pane {
+        animation: fadeIn 0.5s ease-in-out;
+    }
+
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(10px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    /* Dark mode dashboard style */
+    .dashboard-dark {
+        background-color: #111827;
+        color: #f3f4f6;
+    }
+
+    .dashboard-dark .card {
+        background-color: #1f2937;
+        color: #f3f4f6;
+    }
+
+    /* Custom checkbox */
+    .form-check-input {
+        width: 1.2em;
+        height: 1.2em;
+        margin-top: 0.15em;
+        cursor: pointer;
+    }
+
+    .form-check-input:checked {
+        background-color: var(--primary-color);
+        border-color: var(--primary-color);
+    }
+
+    /* PDF iframe styling */
+    iframe {
+        border-radius: 8px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    }
+</style>
 
 
 @push('scripts')

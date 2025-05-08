@@ -539,7 +539,7 @@ class RecruitmentController extends Controller
         // Filter recruitment_demand based on the unique recruitment_demand_ids  
         $demands =  recruitment_demand::with(['departmentRelation', 'positionRelation'])->whereIn('id', $recruitmentDemandIds)
             ->where('status_demand', 'Approved')
-            ->where('qty_needed', '>', 0)
+            ->whereColumn('qty_needed', '>', 'qty_fullfil')
             ->get();
 
 
@@ -1118,7 +1118,7 @@ class RecruitmentController extends Controller
             ->join('users', 'recruitment_demand.maker_id', '=', 'users.id')
             ->join('employee_departments', 'recruitment_demand.department_id', '=', 'employee_departments.id')
             ->join('employee_positions', 'recruitment_demand.position_id', '=', 'employee_positions.id')
-            ->where('qty_needed', '>', 0)
+            ->whereColumn('qty_needed', '>', 'qty_fullfil')
             ->where('status_demand', 'Approved')
             ->select(
                 'users.name as maker_name',
@@ -1152,23 +1152,64 @@ class RecruitmentController extends Controller
             $query->whereDate('recruitment_demand.closing_date', $request->closing_date);
         }
 
+        // Subqueries to count applicants by status for each demand
+        $pendingCount = DB::table('recruitment_applicant')
+            ->select('recruitment_demand_id', DB::raw('COUNT(*) as count'))
+            ->where('status_applicant', 'Pending')
+            ->groupBy('recruitment_demand_id');
+
+        $approvedCount = DB::table('recruitment_applicant')
+            ->select('recruitment_demand_id', DB::raw('COUNT(*) as count'))
+            ->where('status_applicant', 'Approved')
+            ->groupBy('recruitment_demand_id');
+
+        $declinedCount = DB::table('recruitment_applicant')
+            ->select('recruitment_demand_id', DB::raw('COUNT(*) as count'))
+            ->where('status_applicant', 'Declined')
+            ->groupBy('recruitment_demand_id');
+
+        $doneCount = DB::table('recruitment_applicant')
+            ->select('recruitment_demand_id', DB::raw('COUNT(*) as count'))
+            ->where('status_applicant', 'Done')
+            ->groupBy('recruitment_demand_id');
+
+        // Join the subqueries with the main query
+        $query = $query->leftJoinSub($pendingCount, 'pending', function ($join) {
+            $join->on('recruitment_demand.id', '=', 'pending.recruitment_demand_id');
+        })
+            ->leftJoinSub($approvedCount, 'approved', function ($join) {
+                $join->on('recruitment_demand.id', '=', 'approved.recruitment_demand_id');
+            })
+            ->leftJoinSub($declinedCount, 'declined', function ($join) {
+                $join->on('recruitment_demand.id', '=', 'declined.recruitment_demand_id');
+            })
+            ->leftJoinSub($doneCount, 'done', function ($join) {
+                $join->on('recruitment_demand.id', '=', 'done.recruitment_demand_id');
+            })
+            ->addSelect(
+                DB::raw('COALESCE(pending.count, 0) as pending_count'),
+                DB::raw('COALESCE(approved.count, 0) as approved_count'),
+                DB::raw('COALESCE(declined.count, 0) as declined_count'),
+                DB::raw('COALESCE(done.count, 0) as done_count')
+            );
+
         // Get distinct values for dropdowns from actual tables
         $departments = EmployeeDepartment::whereHas('demands', function ($q) {
-            $q->where('qty_needed', '>', 0)
+            $q->whereColumn('qty_needed', '>', 'qty_fullfil')
                 ->where('status_demand', 'Approved');
         })
             ->select('id', 'department')
             ->get();
 
         $positions = EmployeePosition::whereHas('demands', function ($q) {
-            $q->where('qty_needed', '>', 0)
+            $q->whereColumn('qty_needed', '>', 'qty_fullfil')
                 ->where('status_demand', 'Approved');
         })
             ->select('id', 'position')
             ->get();
 
         $jobStatuses = DB::table('recruitment_demand')
-            ->where('qty_needed', '>', 0)
+            ->whereColumn('qty_needed', '>', 'qty_fullfil')
             ->where('status_demand', 'Approved')
             ->distinct()
             ->pluck('status_job');
@@ -1185,7 +1226,7 @@ class RecruitmentController extends Controller
 
     public function applicant_list($id)
     {
-        $demand = recruitment_demand::where('id', $id)->first();
+        $demand = recruitment_demand::with(['positionRelation', 'departmentRelation'])->where('id', $id)->first();
         $applicant = recruitment_applicant::where('recruitment_demand_id', $id)->where('status_applicant', 'Pending')->whereNull('interview_date')->get();
 
 
@@ -1356,7 +1397,7 @@ class RecruitmentController extends Controller
 
         // Ambil posisi yang tersedia kecuali ID yang sedang dipilih
         $positions = recruitment_demand::with(['departmentRelation', 'positionRelation'])
-            ->where('qty_needed', '>', 0)
+            ->whereColumn('qty_needed', '>', 'qty_fullfil')
             ->where('status_demand', 'Approved')
             // ->where('id', '!=', $applicant->id)
             ->get();
@@ -1406,6 +1447,18 @@ class RecruitmentController extends Controller
             $idCardPath = $this->copyFile($applicant->ID_card_path, "user/ID_card/ID_card_{$employeeId}");
             $achievementPath = $this->copyFile($applicant->achievement_path, "user/achievement_user/achievement_{$employeeId}");
 
+            // Set contract dates based on employee status
+            $contractStartDate = null;
+            $contractEndDate = null;
+
+            if ($demand->status_job == 'Part Time' || $demand->status_job == 'Contract') {
+                $contractStartDate = $joinDate;
+                // If length_of_working exists, calculate end date
+                if (!is_null($demand->length_of_working)) {
+                    $contractEndDate = $joinDate->copy()->addMonths($demand->length_of_working);
+                }
+            }
+
             // Create new employee
             $employee = User::create([
                 'employee_id' => $employeeId,
@@ -1415,8 +1468,8 @@ class RecruitmentController extends Controller
                 'email' => $applicant->email,
                 'phone_number' => $applicant->phone_number,
                 'employee_status' => $demand->status_job,
-                'contract_start_date' => now(),
-                'contract_end_date' => now()->addMonths($demand->length_of_working),
+                'contract_start_date' => $contractStartDate,
+                'contract_end_date' => $contractEndDate,
                 'user_status' => 'Unbanned',
                 'join_date' => $joinDate,
                 'ID_number' => $applicant->ID_number,
@@ -1453,7 +1506,7 @@ class RecruitmentController extends Controller
             $this->copyOrganization($applicant->id, $employee->id);
 
             // Update demand quantities
-            $demand->decrement('qty_needed');
+            // $demand->decrement('qty_needed');
             $demand->increment('qty_fullfil');
 
             // Update applicant status
@@ -1502,8 +1555,9 @@ class RecruitmentController extends Controller
     private function copyEducation($applicantId, $userId)
     {
         $educations = recruitment_applicant_education::where('applicant_id', $applicantId)->get();
+
         foreach ($educations as $education) {
-            users_education::create([
+            $newEducation = users_education::create([
                 'users_id' => $userId,
                 'degree' => $education->degree,
                 'educational_place' => $education->educational_place,
@@ -1516,9 +1570,24 @@ class RecruitmentController extends Controller
                 'created_at' => now(),
                 'updated_at' => now()
             ]);
+
+            // Copy transcript file if exists
+            if (!empty($education->transcript_file_path)) {
+                $fileName = "transcript_{$userId}_{$education->degree}_{$newEducation->id}." .
+                    pathinfo($education->transcript_file_path, PATHINFO_EXTENSION);
+
+                $newPath = "user/transcript_user/{$fileName}";
+
+                // Copy the file to the new location
+                $transcriptPath = $this->copyFile($education->transcript_file_path, $newPath);
+
+                // Update the new education record with the transcript path
+                if ($transcriptPath) {
+                    $newEducation->update(['transcript_file_path' => $transcriptPath]);
+                }
+            }
         }
     }
-
     /**
      * Copy applicant family data to user family
      */
