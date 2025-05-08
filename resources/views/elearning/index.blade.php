@@ -1,11 +1,7 @@
 @extends('layouts.app')
 
 @section('content')
-
-
-
-
-<div class="container test">
+<div class="container elearning-container">
 
     <!-- Page Header -->
     <div class="page-header">
@@ -128,8 +124,9 @@
                                                 data-lesson-id="{{ $item->id }}">
                                                 <i class="fas fa-edit"></i> Edit
                                             </a>
-                                            <a hidden id="deleteLessonAnswer" href="javascript:void(0);" class="btn btn-danger btn-sm delete-lesson" data-delete-lesson-id="{{ $item->id }}">
-                                                <i class="fas fa-trash"></i> Erase Answers
+                                            <a href="javascript:void(0);" class="btn btn-danger btn-sm delete-lesson"
+                                                data-delete-lesson-id="{{ $item->id }}" style="display: none;">
+                                                <i class="fas fa-trash"></i> Erase
                                             </a>
                                         </div>
                                     </td>
@@ -269,7 +266,8 @@
                                                 data-schedule-id="{{ $item->schedule_id }}">
                                                 <i class="fas fa-edit"></i> Edit
                                             </a>
-                                            <a hidden id="deleteScheduleAnswer" href="javascript:void(0);" class="btn btn-danger btn-sm delete-schedule" data-delete-schedule-id="{{ $item->schedule_id }}">
+                                            <a href="javascript:void(0);" class="btn btn-danger btn-sm delete-schedule"
+                                                data-delete-schedule-id="{{ $item->schedule_id }}" style="display: none;">
                                                 <i class="fas fa-trash"></i> Erase
                                             </a>
                                         </div>
@@ -304,7 +302,7 @@
                                     </tr>
                                 </thead>
                                 <tbody id="invitationTableBody">
-                                    <!-- Data akan dimuat lewat AJAX -->
+                                    <!-- Data will be loaded via AJAX -->
                                 </tbody>
                             </table>
                         </div>
@@ -317,8 +315,8 @@
 @endsection
 
 <style>
-    /* Modern color scheme and styling */
-    .test {
+    /* resources/css/elearning.css */
+    .elearning-container {
         --primary-color: #4361ee;
         --secondary-color: #3f37c9;
         --accent-color: #4895ef;
@@ -328,12 +326,12 @@
         --dark-bg: #212529;
     }
 
-    body {
+    .elearning-container body {
         background-color: #f5f7fa;
         font-family: 'Poppins', sans-serif;
     }
 
-    .page-header {
+    .elearning-container .page-header {
         background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
         color: white;
         padding: 2rem 0;
@@ -342,7 +340,7 @@
         box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
     }
 
-    .card {
+    .elearning-container .card {
         border: none;
         border-radius: 0.8rem;
         box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.08);
@@ -350,34 +348,19 @@
         margin-bottom: 1.5rem;
     }
 
-    .card:hover {
+    .elearning-container .card:hover {
         transform: translateY(-5px);
     }
 
-    .card-header {
+    .elearning-container .card-header {
         background: white;
         border-bottom: 1px solid rgba(0, 0, 0, 0.05);
         border-radius: 0.8rem 0.8rem 0 0 !important;
         padding: 1rem 1.5rem;
     }
 
-    .table {
-        border-collapse: separate;
-        border-spacing: 0;
-    }
-
-    .table th {
-        background-color: var(--dark-bg);
-        color: white;
-        font-weight: 500;
-    }
-
-    .table-hover tbody tr:hover {
-        background-color: rgba(67, 97, 238, 0.05);
-    }
-
     /* Enhanced Tab Design */
-    #educationTab {
+    .elearning-container #educationTab {
         border-bottom: none;
         background-color: var(--dark-bg);
         border-radius: 0.8rem;
@@ -385,7 +368,7 @@
         margin-bottom: 2rem;
     }
 
-    #educationTab .nav-link {
+    .elearning-container #educationTab .nav-link {
         color: rgba(255, 255, 255, 0.8);
         font-weight: 500;
         padding: 1rem 1.5rem;
@@ -394,277 +377,428 @@
         transition: all 0.3s ease;
     }
 
-    #educationTab .nav-link:hover {
+    .elearning-container #educationTab .nav-link:hover {
         color: white;
         background-color: rgba(255, 255, 255, 0.1);
     }
 
-    #educationTab .nav-link.active {
+    .elearning-container #educationTab .nav-link.active {
         color: var(--dark-bg);
         background-color: white;
         border: none;
         box-shadow: 0 0.25rem 0.5rem rgba(0, 0, 0, 0.1);
     }
 
-    #educationTab .nav-link i {
+    .elearning-container #educationTab .nav-link i {
         margin-right: 0.5rem;
     }
 
     /* Button enhancements */
-    .btn {
+    .elearning-container .btn {
         border-radius: 0.5rem;
         padding: 0.5rem 1rem;
         font-weight: 500;
         transition: all 0.3s ease;
     }
 
-    .btn-primary {
+    .elearning-container .btn-primary {
         background-color: var(--primary-color);
         border: none;
     }
 
-    .btn-primary:hover {
+    .elearning-container .btn-primary:hover {
         background-color: var(--secondary-color);
         transform: translateY(-2px);
         box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
     }
 
-    .btn-warning {
+    .elearning-container .btn-warning {
         background-color: #ff9e00;
         border: none;
         color: white;
     }
 
-    .btn-danger {
+    .elearning-container .btn-danger {
         background-color: var(--warning-color);
         border: none;
     }
 
-    .btn-info {
+    .elearning-container .btn-info {
         background-color: var(--success-color);
         border: none;
         color: white;
     }
 
-    .btn-sm {
+    .elearning-container .btn-sm {
         padding: 0.25rem 0.75rem;
         font-size: 0.875rem;
     }
 
     /* Form controls */
-    .form-control,
-    .form-select {
+    .elearning-container .form-control,
+    .elearning-container .form-select {
         border-radius: 0.5rem;
         padding: 0.5rem 0.75rem;
         border: 1px solid #dee2e6;
     }
 
-    .form-control:focus,
-    .form-select:focus {
+    .elearning-container .form-control:focus,
+    .elearning-container .form-select:focus {
         box-shadow: 0 0 0 0.25rem rgba(67, 97, 238, 0.25);
         border-color: var(--primary-color);
     }
 
     /* Modal enhancements */
-    .modal-content {
+    .elearning-container .modal-content {
         border: none;
         border-radius: 1rem;
         overflow: hidden;
     }
 
-    .modal-header {
+    .elearning-container .modal-header {
         border-bottom: none;
         padding: 1.5rem;
     }
 
-    .modal-body {
+    .elearning-container .modal-body {
         padding: 1.5rem;
     }
 
     /* Custom Checkbox Styling */
-    .form-check-input:checked {
+    .elearning-container .form-check-input:checked {
         background-color: var(--primary-color);
         border-color: var(--primary-color);
     }
 
-    /* DataTables Styling */
-    .dataTables_wrapper .dataTables_length,
-    .dataTables_wrapper .dataTables_filter,
-    .dataTables_wrapper .dataTables_info,
-    .dataTables_wrapper .dataTables_processing,
-    .dataTables_wrapper .dataTables_paginate {
-        color: #666;
-        padding: 0.5rem 0;
-    }
-
-    .dataTables_wrapper .dataTables_paginate .paginate_button.current {
-        background: var(--primary-color);
-        color: white !important;
-        border: none;
-        border-radius: 0.25rem;
-    }
-
-    .dataTables_wrapper .dataTables_paginate .paginate_button:hover {
-        background: var(--accent-color);
-        color: white !important;
-        border: none;
-    }
-
-
-    /* Add this to your existing CSS */
-    .table-responsive {
-        width: 100%;
-    }
-
-    #scheduleTable,
-    #lessonTable {
-        width: 100% !important;
-        table-layout: fixed;
-    }
-
-    .dataTables_wrapper {
-        width: 100% !important;
-    }
-
-    .table {
-        width: 100% !important;
-        border-collapse: separate;
-        border-spacing: 0;
-        margin-bottom: 1rem;
-    }
-
-    /* Fix for DataTables width issue */
-    .dataTables_wrapper {
-        width: 100% !important;
-    }
-
-    /* Fix DataTables specific width issues */
-    .dataTables_wrapper .dataTables_scroll,
-    .dataTables_wrapper .dataTables_scrollBody,
-    .dataTables_wrapper .dataTables_scrollHeadInner {
-        width: 100% !important;
-    }
-
-    .dataTables_wrapper .dataTables_scrollHeadInner table,
-    .dataTables_wrapper .dataTables_scrollBody table {
-        width: 100% !important;
-    }
-
-    /* Column width adjustments */
-    #scheduleTable th:nth-child(1),
-    #scheduleTable td:nth-child(1) {
-        width: 25%;
-    }
-
-    #scheduleTable th:nth-child(2),
-    #scheduleTable td:nth-child(2),
-    #scheduleTable th:nth-child(3),
-    #scheduleTable td:nth-child(3),
-    #scheduleTable th:nth-child(4),
-    #scheduleTable td:nth-child(4) {
-        width: 15%;
-    }
-
-    #scheduleTable th:nth-child(5),
-    #scheduleTable td:nth-child(5),
-    #scheduleTable th:nth-child(6),
-    #scheduleTable td:nth-child(6) {
-        width: 15%;
-    }
-
-    /* Ensure column widths are respected */
-    .table th,
-    .table td {
-        white-space: nowrap;
-    }
-
-    /* Make specific columns take proportional space */
-    .table th:first-child,
-    .table td:first-child {
-        width: 25% !important;
-    }
-
-    .table th:last-child,
-    .table td:last-child {
-        width: 150px !important;
+    /* Button with icon enhancements */
+    .elearning-container .btn i {
+        margin-right: 0.25rem;
     }
 
     /* Ensure cards take full width */
-    .card {
+    .elearning-container .card {
         width: 100%;
     }
 
-    .card-body {
+    .elearning-container .card-body {
         padding: 1rem;
     }
 
-    /* Ensure pagination controls stay within bounds */
-    .dataTables_wrapper .dataTables_paginate {
-        width: 100%;
-        overflow-x: auto;
-        white-space: nowrap;
+
+    /* Add these CSS rules to ensure modals display properly */
+    .modal {
+        z-index: 1050 !important;
     }
 
-    /* Mobile responsiveness */
-    @media (max-width: 768px) {
+    .modal-backdrop {
+        z-index: 1040 !important;
+    }
 
-        .table th,
-        .table td {
-            min-width: 120px;
+    /* Fix for mobile devices */
+    @media (max-width: 768px) {
+        .modal-dialog {
+            margin: 0.5rem auto;
+            max-width: 95%;
         }
 
-        .table th:first-child,
-        .table td:first-child {
-            min-width: 200px;
+        .modal-content {
+            width: 100%;
+        }
+    }
+
+    /* Additional styles to ensure buttons behave properly in responsive mode */
+    /* Handle both desktop and responsive modes */
+    .elearning-container .btn.disabled {
+        pointer-events: none !important;
+        opacity: 0.65;
+        cursor: not-allowed;
+    }
+
+    /* Fix for responsive DataTables */
+    .dtr-data .btn.disabled {
+        pointer-events: none !important;
+        opacity: 0.65;
+        background-color: #6c757d !important;
+        border-color: #6c757d !important;
+        color: white !important;
+    }
+
+    /* DataTables responsive specific rules */
+    .dtr-details {
+        width: 100%;
+    }
+
+    .dtr-details .dtr-data {
+        display: flex !important;
+        justify-content: flex-start !important;
+        gap: 5px !important;
+        flex-wrap: wrap !important;
+    }
+
+    /* Ensure link behavior is overridden in responsive mode */
+    .dtr-data a.btn.disabled,
+    .dtr-data a.btn[disabled],
+    .dtr-data a.btn[data-checked="true"] {
+        pointer-events: none !important;
+        background-color: #6c757d !important;
+        border-color: #6c757d !important;
+        color: #fff !important;
+        opacity: 0.65 !important;
+        text-decoration: none !important;
+    }
+
+    /* Fix for collapsed rows in responsive mode */
+    li.child ul.dtr-details {
+        display: flex !important;
+        flex-direction: column !important;
+        width: 100% !important;
+    }
+
+    li.disabled-action .dtr-data a.btn.check-lesson,
+    li.disabled-action .dtr-data a.btn.check-schedule {
+        pointer-events: none !important;
+        background-color: #6c757d !important;
+        border-color: #6c757d !important;
+        color: #fff !important;
+        opacity: 0.65 !important;
+    }
+
+    /* Ensure proper styling in responsive view */
+    @media (max-width: 768px) {
+        .dtr-data .d-flex {
+            display: flex !important;
+            gap: 5px !important;
+        }
+
+        /* Force pointer-events none on disabled buttons even in responsive mode */
+        .btn[disabled],
+        .btn.disabled {
+            pointer-events: none !important;
+            touch-action: none !important;
+            cursor: default !important;
+            opacity: 0.65 !important;
+        }
+    }
+
+    /* Additional styles to ensure buttons behave properly in all modes */
+    .btn.disabled,
+    .btn[disabled],
+    .btn[data-checked="true"] {
+        pointer-events: none !important;
+        cursor: not-allowed !important;
+        opacity: 0.65 !important;
+        background-color: #6c757d !important;
+        border-color: #6c757d !important;
+        color: #fff !important;
+        text-decoration: none !important;
+    }
+
+    /* Fix specifically for responsive DataTables child rows */
+    .dtr-data .btn.disabled,
+    .dtr-data .btn[disabled],
+    .dtr-data .btn[data-checked="true"],
+    .dtr-data a.check-lesson[data-checked="true"],
+    .dtr-data a.check-schedule[data-checked="true"] {
+        pointer-events: none !important;
+        cursor: not-allowed !important;
+        opacity: 0.65 !important;
+        background-color: #6c757d !important;
+        border-color: #6c757d !important;
+        color: #fff !important;
+        text-decoration: none !important;
+    }
+
+    /* Fix for collapsed row containers */
+    li.child ul.dtr-details {
+        width: 100% !important;
+    }
+
+    /* Ensure responsive design works correctly */
+    .dtr-data .d-flex {
+        display: flex !important;
+        gap: 5px !important;
+    }
+
+    /* Additional fix for disabled parent rows */
+    tr.disabled-row td.dtr-control:before {
+        color: #6c757d !important;
+    }
+
+    /* Fix for DataTables responsive view */
+    table.dataTable.dtr-inline.collapsed>tbody>tr>td.dtr-control:before {
+        background-color: var(--primary-color);
+    }
+
+    /* Adding stronger specificity for disabled buttons in responsive mode */
+    .dtr-data a.btn.check-lesson[disabled],
+    .dtr-data a.btn.check-schedule[disabled] {
+        pointer-events: none !important;
+        background-color: #6c757d !important;
+        border-color: #6c757d !important;
+        color: #fff !important;
+        opacity: 0.65 !important;
+    }
+
+    /* Apply styles also to wrapper elements */
+    .dtr-details li.disabled-action .dtr-data {
+        position: relative;
+    }
+
+    /* For touch devices */
+    @media (hover: none) and (pointer: coarse) {
+
+        .dtr-data a.btn.disabled,
+        .dtr-data a.btn[disabled],
+        .dtr-data a.btn[data-checked="true"] {
+            pointer-events: none !important;
+            touch-action: none !important;
         }
     }
 </style>
 
 @push('scripts')
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-
 <script>
     $(document).ready(function() {
-        // Simple initialization without too many complex options
-        $('#scheduleTable').DataTable({
-            responsive: false, // Turn off responsive to prevent column collapsing
-            autoWidth: false, // Don't let DataTables calculate widths automatically
-            scrollX: false, // Disable horizontal scrolling
-            language: {
-                search: "<i class='fas fa-search'></i> Search:",
-                lengthMenu: "<i class='fas fa-list'></i> _MENU_ records per page",
-                info: "Showing <strong>_START_</strong> to <strong>_END_</strong> of <strong>_TOTAL_</strong> entries",
-                paginate: {
-                    first: "<i class='fas fa-angle-double-left'></i>",
-                    last: "<i class='fas fa-angle-double-right'></i>",
-                    next: "<i class='fas fa-angle-right'></i>",
-                    previous: "<i class='fas fa-angle-left'></i>"
+        // Global objects to store checked states
+        window.checkedLessons = {};
+        window.checkedSchedules = {};
+
+        // Enhanced function to handle responsive DataTables child rows
+        function handleResponsiveButtons() {
+            // For DataTables responsive child rows
+            $('.dtr-data a.btn').each(function() {
+                var btn = $(this);
+                var btnId;
+
+                // Handle lesson buttons in responsive mode
+                if (btn.hasClass('check-lesson')) {
+                    btnId = btn.data('lesson-id');
+                    if (window.checkedLessons && window.checkedLessons[btnId]) {
+                        applyDisabledState(btn);
+                        // Show erase button if original is shown
+                        btn.siblings('.delete-lesson').show();
+                    }
                 }
+
+                // Handle schedule buttons in responsive mode
+                if (btn.hasClass('check-schedule')) {
+                    btnId = btn.data('schedule-id');
+                    if (window.checkedSchedules && window.checkedSchedules[btnId]) {
+                        applyDisabledState(btn);
+                        // Show erase button if original is shown
+                        btn.siblings('.delete-schedule').show();
+                    }
+                }
+            });
+        }
+
+        // Listen for DataTables responsive events and DOM changes
+        $(document).on('responsive-display', function(e, datatable, row, showHide) {
+            if (showHide) {
+                // Small delay to ensure DOM is updated
+                setTimeout(handleResponsiveButtons, 100);
             }
         });
 
-        // Same for lesson table
-        $('#lessonTable').DataTable({
-            responsive: false,
-            autoWidth: false,
-            scrollX: false,
-            language: {
-                search: "<i class='fas fa-search'></i> Search:",
-                lengthMenu: "<i class='fas fa-list'></i> _MENU_ records per page",
-                info: "Showing <strong>_START_</strong> to <strong>_END_</strong> of <strong>_TOTAL_</strong> entries",
-                paginate: {
-                    first: "<i class='fas fa-angle-double-left'></i>",
-                    last: "<i class='fas fa-angle-double-right'></i>",
-                    next: "<i class='fas fa-angle-right'></i>",
-                    previous: "<i class='fas fa-angle-left'></i>"
+        // Initialize modals with proper z-index
+        var pdfModal = new bootstrap.Modal(document.getElementById('pdfModal'), {
+            backdrop: 'static'
+        });
+
+        var questionModal = new bootstrap.Modal(document.getElementById('questionModal'), {
+            backdrop: 'static'
+        });
+
+        var invitationModal = new bootstrap.Modal(document.getElementById('invitationModal'), {
+            backdrop: 'static'
+        });
+
+        // Initialize DataTables with responsive features
+        const lessonTable = $('#lessonTable').DataTable({
+            "paging": true,
+            "searching": true,
+            "ordering": true,
+            "info": true,
+            "responsive": {
+                details: {
+                    display: $.fn.dataTable.Responsive.display.childRowImmediate,
+                    type: 'none',
+                    target: ''
                 }
+            },
+            "lengthMenu": [
+                [10, 25, 50, -1],
+                [10, 25, 50, "All"]
+            ],
+            "language": {
+                "search": "<i class='fas fa-search'></i> _INPUT_",
+                "searchPlaceholder": "Search records...",
+                "lengthMenu": "_MENU_ records per page",
+                "info": "Showing _START_ to _END_ of _TOTAL_ records",
+                "infoEmpty": "Showing 0 to 0 of 0 records",
+                "infoFiltered": "(filtered from _MAX_ total records)"
+            },
+            "dom": "<'row'<'col-sm-12 col-md-6'l><'col-sm-12 col-md-6'f>>" +
+                "<'row'<'col-sm-12'tr>>" +
+                "<'row'<'col-sm-12 col-md-5'i><'col-sm-12 col-md-7'p>>",
+            "drawCallback": function() {
+                // Re-apply button state checks after table redraw
+                checkLessonButtons();
+                // Also handle responsive buttons
+                handleResponsiveButtons();
             }
+        });
+
+        const scheduleTable = $('#scheduleTable').DataTable({
+            "paging": true,
+            "searching": true,
+            "ordering": true,
+            "info": true,
+            "responsive": {
+                details: {
+                    display: $.fn.dataTable.Responsive.display.childRowImmediate,
+                    type: 'none',
+                    target: ''
+                }
+            },
+            "lengthMenu": [
+                [10, 25, 50, -1],
+                [10, 25, 50, "All"]
+            ],
+            "language": {
+                "search": "<i class='fas fa-search'></i> _INPUT_",
+                "searchPlaceholder": "Search records...",
+                "lengthMenu": "_MENU_ records per page",
+                "info": "Showing _START_ to _END_ of _TOTAL_ records",
+                "infoEmpty": "Showing 0 to 0 of 0 records",
+                "infoFiltered": "(filtered from _MAX_ total records)"
+            },
+            "dom": "<'row'<'col-sm-12 col-md-6'l><'col-sm-12 col-md-6'f>>" +
+                "<'row'<'col-sm-12'tr>>" +
+                "<'row'<'col-sm-12 col-md-5'i><'col-sm-12 col-md-7'p>>",
+            "drawCallback": function() {
+                // Re-apply button state checks after table redraw
+                checkScheduleButtons();
+                // Also handle responsive buttons
+                handleResponsiveButtons();
+            }
+        });
+
+        // Ensure table width is correct on resize
+        $(window).on('resize', function() {
+            $('.dataTables_scrollHeadInner, .dataTables_scrollHeadInner table').css('width', '100%');
+            $('.table').css('width', '100%');
+
+            // Check table states after resize
+            handleResponsiveButtons();
         });
 
         // Force correct table width after initialization
         setTimeout(function() {
             $('.dataTables_scrollHeadInner, .dataTables_scrollHeadInner table').css('width', '100%');
             $('.table').css('width', '100%');
+            handleResponsiveButtons();
         }, 100);
 
         // Check if there's a hash in URL to activate the appropriate tab
@@ -676,65 +810,154 @@
         // Update URL hash when tab changes
         $('a[data-bs-toggle="tab"]').on('shown.bs.tab', function(e) {
             window.location.hash = e.target.hash;
+
+            // Force redraw of tables when switching tabs
+            if (e.target.hash === '#schedule') {
+                scheduleTable.draw(false);
+            } else {
+                lessonTable.draw(false);
+            }
+
+            // Also handle responsive buttons after tab switch
+            setTimeout(handleResponsiveButtons, 100);
         });
 
         // Handle opening the modal for PDF
-        $('.view-pdf-btn').click(function() {
+        $(document).on('click', '.view-pdf-btn', function() {
             var pdfUrl = $(this).data('pdf-url');
             $('#pdfViewer').attr('src', pdfUrl);
-            $('#pdfModal').modal('show');
+            pdfModal.show();
         });
 
-        // check lesson
-        $('.check-lesson').each(function() {
-            var button = $(this);
-            var buttonErase = $("#deleteLessonAnswer");
-            var lessonId = button.data('lesson-id');
+        // Enhanced function to check lesson buttons
+        function checkLessonButtons() {
+            $('.check-lesson').each(function() {
+                var button = $(this);
+                var buttonErase = button.siblings('.delete-lesson');
+                var lessonId = button.data('lesson-id');
 
-            $.ajax({
-                url: '/elearning/check-lesson/' + lessonId,
-                type: 'GET',
-                success: function(response) {
-                    if (response.lessonExist) {
-                        buttonErase.prop('hidden', false);
-
-                        button.addClass('disabled');
-                        button.addClass('btn-secondary').removeClass('btn-warning');
-                    }
-                },
-                error: function() {
-                    console.error('Gagal mengecek data');
-
+                // If we already checked this lesson, apply the state immediately
+                if (window.checkedLessons[lessonId] === true) {
+                    applyDisabledState(button);
+                    buttonErase.show();
+                    return;
                 }
-            });
-        });
 
-        // check lesson
-        $('.check-schedule').each(function() {
-            var button = $(this);
-            var buttonErase = $("#deleteScheduleAnswer");
-            var scheduleId = button.data('schedule-id');
+                $.ajax({
+                    url: '/elearning/check-lesson/' + lessonId,
+                    type: 'GET',
+                    success: function(response) {
+                        if (response.lessonExist) {
+                            // Store the checked state
+                            window.checkedLessons[lessonId] = true;
 
-            $.ajax({
-                url: '/elearning/check-schedule/' + scheduleId,
-                type: 'GET',
-                success: function(response) {
-                    if (response.scheduleExist) {
-                        buttonErase.prop('hidden', false);
-                        button.addClass('disabled');
-                        button.addClass('btn-secondary').removeClass('btn-warning');
+                            // Apply the disabled state
+                            applyDisabledState(button);
+                            buttonErase.show();
+
+                            // Also update any responsive mode buttons
+                            updateResponsiveButtons('lesson', lessonId);
+                        }
+                    },
+                    error: function() {
+                        console.error('Failed to check lesson data');
                     }
-                },
-                error: function() {
-                    console.error('Gagal mengecek data');
-                }
+                });
             });
-        });
+        }
 
-        // Handle tombol "View Questions"
-        $('.view-questions-btn').click(function() {
-            var lessonId = $(this).data('lesson-id'); // Ambil lesson ID
-            $('#questionTableBody').html('<tr><td colspan="4" class="text-center"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div></td></tr>'); // Placeholder
+        // Enhanced function to apply disabled state to buttons
+        function applyDisabledState(button) {
+            // Apply both class and attribute changes
+            button.addClass('disabled btn-secondary').removeClass('btn-warning');
+            button.attr({
+                'disabled': 'disabled',
+                'aria-disabled': 'true',
+                'data-checked': 'true'
+            });
+
+            // Add pointer-events none with !important to override any other styles
+            button.css({
+                'pointer-events': 'none !important',
+                'cursor': 'not-allowed !important',
+                'opacity': '0.65 !important'
+            });
+
+            // Apply inline style with !important to ensure it can't be clicked
+            button.attr('style', button.attr('style') + '; pointer-events: none !important; cursor: not-allowed !important; opacity: 0.65 !important;');
+
+            // For responsive mode, find parent and mark it
+            if (button.closest('li.dtr-control').length) {
+                button.closest('li.dtr-control').addClass('disabled-action');
+            }
+        }
+
+        // Function to update buttons in responsive mode
+        function updateResponsiveButtons(type, id) {
+            if (type === 'lesson') {
+                $('.dtr-data a.check-lesson[data-lesson-id="' + id + '"]').each(function() {
+                    applyDisabledState($(this));
+                    // Find and show erase button in responsive view
+                    $(this).siblings('.delete-lesson').show();
+                });
+            } else if (type === 'schedule') {
+                $('.dtr-data a.check-schedule[data-schedule-id="' + id + '"]').each(function() {
+                    applyDisabledState($(this));
+                    // Find and show erase button in responsive view
+                    $(this).siblings('.delete-schedule').show();
+                });
+            }
+        }
+
+        // Enhanced function to check schedule buttons
+        function checkScheduleButtons() {
+            $('.check-schedule').each(function() {
+                var button = $(this);
+                var buttonErase = button.siblings('.delete-schedule');
+                var scheduleId = button.data('schedule-id');
+
+                // If we already checked this schedule, apply the state immediately
+                if (window.checkedSchedules[scheduleId] === true) {
+                    applyDisabledState(button);
+                    buttonErase.show();
+                    return;
+                }
+
+                $.ajax({
+                    url: '/elearning/check-schedule/' + scheduleId,
+                    type: 'GET',
+                    success: function(response) {
+                        if (response.scheduleExist) {
+                            // Store the checked state
+                            window.checkedSchedules[scheduleId] = true;
+
+                            // Apply the disabled state
+                            applyDisabledState(button);
+                            buttonErase.show();
+
+                            // Also update any responsive mode buttons
+                            updateResponsiveButtons('schedule', scheduleId);
+                        }
+                    },
+                    error: function() {
+                        console.error('Failed to check schedule data');
+                    }
+                });
+            });
+        }
+
+        // Initial button checks
+        checkLessonButtons();
+        checkScheduleButtons();
+
+        // Force responsive buttons check after a short delay 
+        // to ensure responsive view is fully rendered
+        setTimeout(handleResponsiveButtons, 500);
+
+        // Handle "View Questions" button
+        $(document).on('click', '.view-questions-btn', function() {
+            var lessonId = $(this).data('lesson-id');
+            $('#questionTableBody').html('<tr><td colspan="4" class="text-center"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div></td></tr>');
 
             $.ajax({
                 url: '/elearning/questions/' + lessonId,
@@ -744,35 +967,35 @@
                     if (response.questions.length > 0) {
                         response.questions.forEach(function(question, index) {
                             var choicesHtml = '';
-                            var choices = question.multiple_choice.split(';'); // Pisahkan pilihan
-                            var answerKey = question.answer_key; // Ambil jawaban benar
+                            var choices = question.multiple_choice.split(';');
+                            var answerKey = question.answer_key;
 
                             choices.forEach(function(choice) {
-                                var isChecked = (choice.trim() === answerKey.trim()) ? 'checked' : ''; // Tandai jawaban benar
-                                var isCorrect = (choice.trim() === answerKey.trim()) ? 'text-success fw-bold' : ''; // Highlight correct answer
+                                var isChecked = (choice.trim() === answerKey.trim()) ? 'checked' : '';
+                                var isCorrect = (choice.trim() === answerKey.trim()) ? 'text-success fw-bold' : '';
 
                                 choicesHtml += `
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="radio" name="question_${question.id}" ${isChecked} disabled>
-                                        <label class="form-check-label ${isCorrect}">${choice}</label>
-                                    </div>
-                                `;
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="question_${question.id}" ${isChecked} disabled>
+                                    <label class="form-check-label ${isCorrect}">${choice}</label>
+                                </div>
+                            `;
                             });
 
                             rows += `
-                                <tr>
-                                    <td class="text-center align-middle">${index + 1}</td>
-                                    <td class="align-middle">${question.question}</td>
-                                    <td class="text-center align-middle">${question.grade}</td>
-                                    <td>${choicesHtml}</td>
-                                </tr>
-                            `;
+                            <tr>
+                                <td class="text-center align-middle">${index + 1}</td>
+                                <td class="align-middle">${question.question}</td>
+                                <td class="text-center align-middle">${question.grade}</td>
+                                <td>${choicesHtml}</td>
+                            </tr>
+                        `;
                         });
                     } else {
                         rows = '<tr><td colspan="4" class="text-center text-muted py-4"><i class="far fa-question-circle fa-2x mb-2"></i><br>No questions available</td></tr>';
                     }
                     $('#questionTableBody').html(rows);
-                    $('#questionModal').modal('show');
+                    questionModal.show();
                 },
                 error: function() {
                     $('#questionTableBody').html('<tr><td colspan="4" class="text-center text-danger py-4"><i class="fas fa-exclamation-triangle fa-2x mb-2"></i><br>Failed to load questions</td></tr>');
@@ -780,10 +1003,10 @@
             });
         });
 
-        // Handle tombol "View Invitation"
-        $('.view-invitation-btn').click(function() {
-            var scheduleId = $(this).data('schedule-id'); // Ambil ID schedule
-            $('#invitationTableBody').html('<tr><td colspan="3" class="text-center"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div></td></tr>'); // Placeholder
+        // Handle "View Invitation" button
+        $(document).on('click', '.view-invitation-btn', function() {
+            var scheduleId = $(this).data('schedule-id');
+            $('#invitationTableBody').html('<tr><td colspan="3" class="text-center"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div></td></tr>');
 
             $.ajax({
                 url: '/elearning/invitation/' + scheduleId,
@@ -793,91 +1016,119 @@
                     if (response.invitationEmployee.length > 0) {
                         response.invitationEmployee.forEach(function(invite, index) {
                             rows += `
-                                <tr>
-                                    <td class="text-center align-middle">${index + 1}</td>
-                                    <td class="align-middle text-center">${invite.employee_id}</td>
-                                    <td class="align-middle text-center">${invite.users_name}</td>
-                                </tr>
-                            `;
+                            <tr>
+                                <td class="text-center align-middle">${index + 1}</td>
+                                <td class="align-middle text-center">${invite.employee_id}</td>
+                                <td class="align-middle text-center">${invite.users_name}</td>
+                            </tr>
+                        `;
                         });
                     } else {
                         rows = '<tr><td colspan="3" class="text-center text-muted py-4"><i class="far fa-user-circle fa-2x mb-2"></i><br>No invitations available</td></tr>';
                     }
                     $('#invitationTableBody').html(rows);
-                    $('#invitationModal').modal('show');
+                    invitationModal.show();
                 },
                 error: function() {
-                    $('#invitationTableBody').html('<tr><td colspan="5" class="text-center text-danger">Failed to load invitations</td></tr>');
+                    $('#invitationTableBody').html('<tr><td colspan="3" class="text-center text-danger">Failed to load invitations</td></tr>');
                 }
             });
         });
 
-
-        // Hapus Jawaban berdasarkan Lesson
-        $('.delete-lesson').click(function() {
+        // Delete answers by Lesson
+        $(document).on('click', '.delete-lesson', function() {
             var lessonId = $(this).data('delete-lesson-id');
-            console.log(lessonId);
+
             Swal.fire({
-                title: "Apakah Anda yakin?",
-                text: "Apakah Anda yakin ingin menghapus semua jawaban peserta yang menggunakan lesson ini?",
+                title: "Are you sure?",
+                text: "Are you sure you want to delete all participant answers using this lesson?",
                 icon: "warning",
                 showCancelButton: true,
                 confirmButtonColor: "#d33",
                 cancelButtonColor: "#3085d6",
-                confirmButtonText: "Ya, Hapus!",
-                cancelButtonText: "Batal"
+                confirmButtonText: "Yes, Delete!",
+                cancelButtonText: "Cancel"
             }).then((result) => {
                 if (result.isConfirmed) {
                     $.ajax({
                         url: '/elearning/delete_lesson_answer/' + lessonId,
                         type: 'POST',
                         headers: {
-                            'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                            'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
                         },
                         success: function(response) {
-                            Swal.fire("Dihapus!", "Semua jawaban peserta telah dihapus.", "success");
+                            Swal.fire("Deleted!", "All participant answers have been deleted.", "success");
                             location.reload();
                         },
                         error: function() {
-                            Swal.fire("Gagal!", "Terjadi kesalahan saat menghapus.", "error");
+                            Swal.fire("Failed!", "An error occurred while deleting.", "error");
                         }
                     });
                 }
             });
         });
 
-        // Hapus Jawaban berdasarkan Schedule
-        $('.delete-schedule').click(function() {
+        // Delete answers by Schedule
+        $(document).on('click', '.delete-schedule', function() {
             var scheduleId = $(this).data('delete-schedule-id');
 
             Swal.fire({
-                title: "Apakah Anda yakin?",
-                text: "Apakah Anda yakin ingin menghapus semua jawaban peserta pada invitation ini?",
+                title: "Are you sure?",
+                text: "Are you sure you want to delete all participant answers for this invitation?",
                 icon: "warning",
                 showCancelButton: true,
                 confirmButtonColor: "#d33",
                 cancelButtonColor: "#3085d6",
-                confirmButtonText: "Ya, Hapus!",
-                cancelButtonText: "Batal"
+                confirmButtonText: "Yes, Delete!",
+                cancelButtonText: "Cancel"
             }).then((result) => {
                 if (result.isConfirmed) {
                     $.ajax({
                         url: '/elearning/delete_schedule_answer/' + scheduleId,
                         type: 'POST',
                         headers: {
-                            'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                            'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
                         },
                         success: function(response) {
-                            Swal.fire("Dihapus!", "Semua jawaban peserta telah dihapus.", "success");
+                            Swal.fire("Deleted!", "All participant answers have been deleted.", "success");
                             location.reload();
                         },
                         error: function() {
-                            Swal.fire("Gagal!", "Terjadi kesalahan saat menghapus.", "error");
+                            Swal.fire("Failed!", "An error occurred while deleting.", "error");
                         }
                     });
                 }
             });
         });
+
+        // Add additional CSS to force disabled styles
+        const styleElement = document.createElement('style');
+        styleElement.textContent = `
+        .btn.disabled, 
+        .btn[disabled], 
+        .btn[data-checked="true"] {
+            pointer-events: none !important;
+            cursor: not-allowed !important;
+            opacity: 0.65 !important;
+            background-color: #6c757d !important;
+            border-color: #6c757d !important;
+            color: #fff !important;
+        }
+        
+        /* Force styles in responsive mode */
+        .dtr-data .btn.disabled,
+        .dtr-data .btn[disabled],
+        .dtr-data .btn[data-checked="true"] {
+            pointer-events: none !important;
+            cursor: not-allowed !important;
+            opacity: 0.65 !important;
+            background-color: #6c757d !important;
+            border-color: #6c757d !important;
+            color: #fff !important;
+            text-decoration: none !important;
+        }
+    `;
+        document.head.appendChild(styleElement);
     });
 </script>
 @endpush

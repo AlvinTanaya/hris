@@ -412,38 +412,38 @@
     <div class="quiz-wrapper">
         <div class="quiz-header">
             <h1><i class="fas fa-graduation-cap me-2"></i> E-Learning Quiz</h1>
-            <p>Jawab semua pertanyaan sebelum waktu habis</p>
+            <p>Answer all questions before the time runs out</p>
         </div>
 
         <div class="container main-container">
             <!-- Timer Card -->
             <div class="timer-card shadow-hover">
-                <h3 class="timer-title"><i class="fas fa-clock me-2"></i> Waktu Tersisa</h3>
+                <h3 class="timer-title"><i class="fas fa-clock me-2"></i> Time Remaining</h3>
                 <div class="timer-display">
                     <div class="time-unit">
                         <div class="time-value" id="hours">00</div>
-                        <div class="time-label">Jam</div>
+                        <div class="time-label">Hours</div>
                     </div>
                     <div class="time-unit">
                         <div class="time-value" id="minutes">00</div>
-                        <div class="time-label">Menit</div>
+                        <div class="time-label">Minutes</div>
                     </div>
                     <div class="time-unit">
                         <div class="time-value" id="seconds">00</div>
-                        <div class="time-label">Detik</div>
+                        <div class="time-label">Seconds</div>
                     </div>
                 </div>
             </div>
 
             <!-- Progress Bar -->
             <div class="progress-container shadow-hover">
-                <h4 class="progress-title"><i class="fas fa-tasks me-2"></i> Progress Kuis</h4>
+                <h4 class="progress-title"><i class="fas fa-tasks me-2"></i> Quiz Progress</h4>
                 <div class="progress-bar">
                     <div class="progress-fill" id="progress-bar" style="width: 0%"></div>
                 </div>
                 <div class="progress-stats">
-                    <span>Sudah dikerjakan: <strong id="answered-count">0</strong></span>
-                    <span>Total soal: <strong id="total-questions">0</strong></span>
+                    <span>Completed: <strong id="answered-count">0</strong></span>
+                    <span>Total questions: <strong id="total-questions">0</strong></span>
                 </div>
             </div>
 
@@ -456,7 +456,7 @@
                 <div class="question-card shadow-hover question-item" data-question-id="{{ $q->id }}">
                     <div class="card-header">
                         <div class="card-header-content">
-                            <span class="question-number">Pertanyaan {{ $index + 1 }}</span>
+                            <span class="question-number">Question {{ $index + 1 }}</span>
                             <span class="question-badge"><i class="fas fa-list-ol me-1"></i> {{ $index + 1 }}/{{ count($questions) }}</span>
                         </div>
                     </div>
@@ -485,7 +485,7 @@
             </form>
 
             <div class="quiz-footer">
-                <p>© 2025 E-Learning Quiz Platform. Dilarang menyegarkan atau meninggalkan halaman ini.</p>
+                <p>© 2025 E-Learning Quiz Platform. Refreshing or leaving this page is prohibited.</p>
             </div>
         </div>
 
@@ -509,8 +509,8 @@
             window.onpopstate = function() {
                 history.go(1);
                 Swal.fire({
-                    title: 'Peringatan!',
-                    text: 'Tombol back tidak bisa digunakan selama quiz berlangsung',
+                    title: 'Warning!',
+                    text: 'Back button cannot be used during the quiz',
                     icon: 'warning',
                     confirmButtonText: 'OK',
                     confirmButtonColor: '#173b77'
@@ -531,8 +531,14 @@
                 initialDuration;
 
             function submitForm() {
+                // Remove the beforeunload event handler to prevent the browser alert
+                window.removeEventListener('beforeunload', beforeUnloadHandler);
+                
+                // Clear localStorage data
                 localStorage.removeItem('timeLeft_' + quizId);
                 localStorage.removeItem('quizAnswers_' + quizId);
+                
+                // Submit the form
                 $('#quiz-form').off('submit').submit();
             }
 
@@ -540,8 +546,8 @@
                 if (totalSeconds <= 0) {
                     localStorage.removeItem('timeLeft_' + quizId);
                     Swal.fire({
-                        title: 'Waktu Habis!',
-                        text: 'Jawaban akan dikirim secara otomatis',
+                        title: 'Time\'s Up!',
+                        text: 'Your answers will be submitted automatically',
                         icon: 'warning',
                         allowOutsideClick: false,
                         showConfirmButton: false,
@@ -630,14 +636,17 @@
                 }
             });
 
-            // Show warning when user tries to refresh or close the page
-            window.addEventListener('beforeunload', function(e) {
+            // Define the beforeunload handler as a named function so we can remove it later
+            function beforeUnloadHandler(e) {
                 saveAnswers();
                 if (totalSeconds > 0) {
                     e.preventDefault();
                     e.returnValue = '';
                 }
-            });
+            }
+            
+            // Show warning when user tries to refresh or close the page
+            window.addEventListener('beforeunload', beforeUnloadHandler);
 
             // Submit form confirmation
             $('#quiz-form').on('submit', function(e) {
@@ -647,26 +656,32 @@
                 const answeredCount = $('input[type=radio]:checked').length;
                 const unansweredCount = totalQuestions - answeredCount;
                 
-                let confirmMessage = 'Apakah Anda yakin ingin mengirim jawaban?';
+                let confirmMessage = 'Are you sure you want to submit your answers?';
                 if (unansweredCount > 0) {
-                    confirmMessage = `Anda memiliki ${unansweredCount} pertanyaan yang belum dijawab. Tetap kirim jawaban?`;
+                    confirmMessage = `You have ${unansweredCount} unanswered question(s). Submit anyway?`;
                 }
 
                 Swal.fire({
-                    title: 'Konfirmasi Submit',
+                    title: 'Confirm Submission',
                     text: confirmMessage,
                     icon: 'question',
                     showCancelButton: true,
-                    confirmButtonText: 'Ya, Submit!',
-                    cancelButtonText: 'Batal',
+                    confirmButtonText: 'Yes, Submit!',
+                    cancelButtonText: 'Cancel',
                     reverseButtons: true,
                     confirmButtonColor: '#173b77',
                     cancelButtonColor: '#6c757d'
                 }).then((result) => {
                     if (result.isConfirmed) {
+                        // Remove the beforeunload event handler to prevent the browser alert
+                        window.removeEventListener('beforeunload', beforeUnloadHandler);
+                        
+                        // Clear localStorage data
                         localStorage.removeItem('timeLeft_' + quizId);
                         localStorage.removeItem('quizAnswers_' + quizId);
-                        $(this).off('submit').submit(); // Disable event handler then submit
+                        
+                        // Disable event handler then submit
+                        $(this).off('submit').submit();
                     }
                 });
             });
@@ -678,18 +693,18 @@
 
             // Show welcome message
             Swal.fire({
-                title: 'Quiz Dimulai!',
+                title: 'Quiz Started!',
                 html: `
-                    <p>Selamat datang di E-Learning Quiz Platform.</p>
-                    <p>Pastikan untuk menjawab semua pertanyaan sebelum waktu habis.</p>
+                    <p>Welcome to the E-Learning Quiz Platform.</p>
+                    <p>Be sure to answer all questions before time runs out.</p>
                     <ul class="text-start">
-                        <li>Total soal: ${totalQuestions}</li>
-                        <li>Waktu: ${Math.floor(initialDuration/60)} menit</li>
-                        <li>Jawaban Anda tersimpan otomatis</li>
+                        <li>Total questions: ${totalQuestions}</li>
+                        <li>Time: ${Math.floor(initialDuration/60)} minutes</li>
+                        <li>Your answers are saved automatically</li>
                     </ul>
                 `,
                 icon: 'info',
-                confirmButtonText: 'Mulai Quiz',
+                confirmButtonText: 'Start Quiz',
                 confirmButtonColor: '#173b77',
                 allowOutsideClick: false
             });
