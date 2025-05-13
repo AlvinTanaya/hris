@@ -2,480 +2,7 @@
 
 @section('content')
 
-<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-<style>
-    /* Base styles */
-    #container-body {
-        margin: 0;
-        padding: 20px;
-        min-height: 100vh;
-    }
 
-    .error {
-        color: red;
-        font-weight: bold;
-    }
-
-    .container {
-        max-width: 1200px;
-        margin: 0 auto;
-        padding: 20px;
-    }
-
-    .page-title {
-        text-align: center;
-        margin: 2rem 0;
-        font-size: 2.5rem;
-        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
-    }
-
-    /* Card styles */
-    .card {
-        border-radius: 15px;
-        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
-        margin-bottom: 2rem;
-        overflow: hidden;
-        transition: transform 0.3s ease;
-    }
-
-    .card:hover {
-        transform: translateY(-5px);
-    }
-
-    .card-header {
-        color: #0d6efd;
-        padding: 1.5rem;
-    }
-
-    .card-header h5 {
-        margin: 0;
-        font-size: 1.25rem;
-    }
-
-    .card-header small {
-        opacity: 0.8;
-        display: block;
-        margin-top: 0.5rem;
-    }
-
-    .card-body {
-        padding: 2rem;
-    }
-
-    /* Form elements */
-    .form-select,
-    .form-control {
-        width: 100%;
-        padding: 0.75rem;
-        border: 2px solid #ddd;
-        border-radius: 8px;
-        font-size: 1rem;
-        margin-bottom: 1.5rem;
-        transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
-    }
-
-    .form-control:focus {
-        border-color: #3498db;
-        box-shadow: 0 0 0 0.2rem rgba(52, 152, 219, 0.25);
-    }
-
-    .form-control-static {
-        padding: 6px 12px;
-        background-color: #f8f9fa;
-        border: 1px solid #ced4da;
-        border-radius: 4px;
-    }
-
-    /* Criteria components */
-    .criteria-container {
-        margin: 35px 0 1.5rem;
-        display: flex;
-        flex-wrap: wrap;
-        gap: 15px;
-        justify-content: center;
-    }
-
-    .criteria-box,
-    .criteria-selector {
-        background: #f8f9fa;
-        border-radius: 10px;
-        padding: 15px;
-        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-        text-align: center;
-        position: relative;
-    }
-
-    .criteria-box {
-        min-width: 150px;
-    }
-
-    .criteria-selector {
-        max-width: 100%;
-    }
-
-    .criteria-label {
-        margin-top: 34px;
-        font-size: 14px;
-        font-weight: bold;
-        color: #2c3e50;
-    }
-
-    .criteria-percentage {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 16px;
-        font-weight: bold;
-        color: #3498db;
-    }
-
-    .percentage-input {
-        width: 60px;
-        padding: 5px;
-        border: 2px solid #ddd;
-        border-radius: 8px;
-        text-align: center;
-        font-weight: bold;
-        color: #2c3e50;
-    }
-
-    .percentage-total {
-        text-align: center;
-        font-size: 18px;
-        font-weight: bold;
-        margin-bottom: 15px;
-        color: #3498db;
-        padding: 1rem;
-    }
-
-    .percentage-total.error {
-        color: #e74c3c;
-    }
-
-    #languageWeightTotal,
-    #experienceWeightTotal,
-    #organizationWeightTotal,
-    #trainingWeightTotal {
-        text-align: center;
-        font-size: 18px;
-        font-weight: bold;
-        margin-bottom: 15px;
-        color: #3498db;
-        padding: 1rem;
-    }
-
-
-    .criteria-actions {
-        position: absolute;
-        top: 5px;
-        right: 5px;
-        display: flex;
-        gap: 5px;
-    }
-
-    .remove-criteria,
-    .configure-criteria {
-        background: none;
-        border: none;
-        cursor: pointer;
-        font-size: 14px;
-    }
-
-    .remove-criteria {
-        color: #e74c3c;
-    }
-
-    .configure-criteria {
-        color: #3498db;
-    }
-
-    .config-badge {
-        position: absolute;
-        top: -5px;
-        right: -5px;
-        width: 15px;
-        height: 15px;
-        background-color: #e74c3c;
-        border-radius: 50%;
-        border: 2px solid white;
-        display: none;
-    }
-
-    .config-badge.active {
-        display: block;
-    }
-
-    /* Buttons */
-    .btn-primary,
-    .btn-success,
-    .calculate-btn,
-    .add-criteria-btn,
-    .age-range-delete {
-        border-radius: 8px;
-        font-weight: bold;
-        cursor: pointer;
-        transition: all 0.3s ease;
-    }
-
-    .btn-primary,
-    .btn-success {
-        color: white;
-        border: none;
-        padding: 1rem 2rem;
-        font-size: 1.1rem;
-    }
-
-    .calculate-btn {
-        display: block;
-        width: 200px;
-        margin: 0 auto;
-        background-color: #3498db;
-        color: white;
-        padding: 10px;
-        border: none;
-        font-size: 16px;
-    }
-
-    .add-criteria-btn {
-        background-color: #2ecc71;
-        color: white;
-        border: none;
-        padding: 10px 15px;
-        margin: 10px auto;
-        display: block;
-    }
-
-    .btn-primary {
-        background: #3498db;
-    }
-
-    .btn-success {
-        background: #2ecc71;
-        margin-top: 1rem;
-    }
-
-    .btn-primary:hover {
-        background: #2c3e50;
-        transform: scale(1.05);
-    }
-
-    .btn-success:hover,
-    .calculate-btn:hover {
-        background: #27ae60;
-        transform: scale(1.05);
-    }
-
-    .calculate-btn:hover {
-        border: 2px solid #ccc;
-        background-color: #2ecc71;
-        color: white;
-    }
-
-    .modal-footer .btn {
-        min-width: 150px;
-        height: 38px;
-        font-size: 14px;
-    }
-
-    /* Table styles */
-    .table {
-        width: 100%;
-        border-collapse: collapse;
-        margin-top: 1rem;
-    }
-
-    .table th {
-        background: #2c3e50;
-        color: white;
-        padding: 1rem;
-        text-align: left;
-    }
-
-    .table td {
-        padding: 1rem;
-        border-bottom: 1px solid #ddd;
-    }
-
-    .table tbody tr:hover {
-        background: #ecf0f1;
-    }
-
-    /* Range rows (age, education, distance, salary) */
-    .age-range-row,
-    .education-level-row,
-    .distance-range-row,
-    .salary-range-row {
-        display: flex;
-        align-items: center;
-        gap: 15px;
-        margin-bottom: 15px;
-        padding: 15px;
-        border-radius: 8px;
-        background-color: #f8f9fa;
-        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
-        transition: all 0.3s ease;
-        position: relative;
-    }
-
-    .age-range-row:hover,
-    .education-level-row:hover,
-    .distance-range-row:hover,
-    .salary-range-row:hover {
-        background-color: #f0f4f7;
-        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-    }
-
-    .age-range-handle,
-    .education-level-handle,
-    .distance-range-handle,
-    .salary-range-handle {
-        cursor: move;
-        color: #6c757d;
-        font-size: 20px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        height: 100%;
-        transition: color 0.3s ease;
-
-    }
-
-    .age-range-handle:hover,
-    .education-level-handle:hover,
-    .distance-range-handle:hover,
-    .salary-range-handle:hover {
-        color: #3498db;
-    }
-
-    .age-range-delete {
-        color: #e74c3c;
-        background: none;
-        border: none;
-        margin-top: 25px;
-        font-size: 16px;
-        padding: 8px 12px;
-    }
-
-    .age-range-delete i {
-        font-size: 18px;
-    }
-
-    /* Sortable styles */
-    .sortable-ghost {
-        opacity: 0.4;
-        background-color: #f0f8ff !important;
-        border: 2px dashed #3498db !important;
-    }
-
-    .sortable-drag {
-        opacity: 0.8;
-        background-color: #ffffff !important;
-        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2) !important;
-        transform: scale(1.05);
-        z-index: 1000;
-    }
-
-    .sortable-chosen {
-        background-color: #e9f7fe !important;
-        border-left: 4px solid #3498db;
-    }
-
-    #suggestionContainer .alert-info {
-        background-color: #f8f9fa;
-        border-left: 4px solid #17a2b8;
-        border-radius: 0;
-    }
-
-    #suggestionContainer {
-        margin-top: 15px;
-        transition: all 0.3s ease;
-    }
-
-    /* Animations */
-    @keyframes spin {
-        to {
-            transform: rotate(360deg);
-        }
-    }
-
-    @keyframes highlight-effect {
-        0% {
-            background-color: #fff9c4;
-            transform: translateY(0);
-        }
-
-        50% {
-            background-color: #ffecb3;
-        }
-
-        100% {
-            background-color: #f8f9fa;
-            transform: translateY(0);
-        }
-    }
-
-    @keyframes fadeIn {
-        from {
-            opacity: 0;
-            transform: translateY(10px);
-        }
-
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
-    }
-
-    @keyframes fadeInDown {
-        from {
-            opacity: 0;
-            transform: translateY(-20px);
-        }
-
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
-    }
-
-    @keyframes highlight {
-        0% {
-            background-color: #f8f9fa;
-        }
-
-        50% {
-            background-color: #d4edda;
-        }
-
-        100% {
-            background-color: #f8f9fa;
-        }
-    }
-
-    .highlight-row {
-        animation: highlight-effect 1s ease;
-    }
-
-    .age-range-row-new,
-    .education-level-row-new {
-        animation: fadeIn 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55) forwards;
-    }
-
-    .distance-range-row-new,
-    .salary-range-row-new {
-        animation: fadeInDown 0.5s;
-    }
-
-    .spinner-border {
-        display: inline-block;
-        width: 1rem;
-        height: 1rem;
-        border: 3px solid white;
-        border-right-color: transparent;
-        border-radius: 50%;
-        animation: spin 1s linear infinite;
-    }
-</style>
 
 <h1 class="page-title text-warning mb-5">
     <i class="fas fa-calculator"></i> AHP Recommendation System
@@ -538,14 +65,14 @@
     </div>
 
     <!-- Ranking Results -->
-    <div class="card">
-        <div class="card-header bg-primary text-white">
-            <h5>Applicant Ranking Results</h5>
+    <div class="card shadow-sm border-0 mb-4">
+        <div class="card-header bg-primary text-white py-3">
+            <h5 class="mb-0"><i class="fas fa-chart-bar me-2"></i>Applicant Ranking Results</h5>
         </div>
         <div class="card-body">
-            <div style="overflow-x: auto;">
-                <table class="table">
-                    <thead>
+            <div class="table-responsive">
+                <table id="rankingTable" class="table table-striped table-hover" style="width:100%">
+                    <thead class="table-light">
                         <tr>
                             <th>Rank</th>
                             <th>Name</th>
@@ -558,12 +85,12 @@
                             <th>Organization</th>
                             <th>Training</th>
                             <th>Total Score</th>
-                            <th>Schdule Interview</th>
+                            <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody id="rankingResults">
                         <tr>
-                            <td colspan="10" style="text-align: center">Please select a demand and add criteria to see results</td>
+                            <td colspan="12" class="text-center">Please select a demand and add criteria to see results</td>
                         </tr>
                     </tbody>
                 </table>
@@ -1167,15 +694,648 @@
     </div>
 </div>
 
+
+<!-- Tambahkan modal view pelamar di bagian bawah halaman -->
+<div class="modal fade" id="applicantRankingModal" tabindex="-1" aria-labelledby="applicantRankingModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="applicantRankingModalLabel">
+                    <i class="fas fa-user me-2"></i>Applicant Detail
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <!-- Isi modal akan diisi secara dinamis melalui JavaScript -->
+                <div id="applicantModalContent"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 @endsection
+
+
+
+
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+<style>
+    /* Base styles */
+    #container-body {
+        margin: 0;
+        padding: 20px;
+        min-height: 100vh;
+    }
+
+    .error {
+        color: red;
+        font-weight: bold;
+    }
+
+    .container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 20px;
+    }
+
+    .page-title {
+        text-align: center;
+        margin: 2rem 0;
+        font-size: 2.5rem;
+        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    /* Card styles */
+    .card {
+        border-radius: 15px;
+        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+        margin-bottom: 2rem;
+        overflow: hidden;
+        transition: transform 0.3s ease;
+    }
+
+    .card:hover {
+        transform: translateY(-5px);
+    }
+
+    .card-header {
+        color: #0d6efd;
+        padding: 1.5rem;
+    }
+
+    .card-header h5 {
+        margin: 0;
+        font-size: 1.25rem;
+    }
+
+    .card-header small {
+        opacity: 0.8;
+        display: block;
+        margin-top: 0.5rem;
+    }
+
+    .card-body {
+        padding: 2rem;
+    }
+
+    /* Form elements */
+    .form-select,
+    .form-control {
+        width: 100%;
+        padding: 0.75rem;
+        border: 2px solid #ddd;
+        border-radius: 8px;
+        font-size: 1rem;
+        margin-bottom: 1.5rem;
+        transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+    }
+
+    .form-control:focus {
+        border-color: #3498db;
+        box-shadow: 0 0 0 0.2rem rgba(52, 152, 219, 0.25);
+    }
+
+    .form-control-static {
+        padding: 6px 12px;
+        background-color: #f8f9fa;
+        border: 1px solid #ced4da;
+        border-radius: 4px;
+    }
+
+    /* Criteria components */
+    .criteria-container {
+        margin: 35px 0 1.5rem;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 15px;
+        justify-content: center;
+    }
+
+    .criteria-box,
+    .criteria-selector {
+        background: #f8f9fa;
+        border-radius: 10px;
+        padding: 15px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        text-align: center;
+        position: relative;
+    }
+
+    .criteria-box {
+        min-width: 150px;
+    }
+
+    .criteria-selector {
+        max-width: 100%;
+    }
+
+    .criteria-label {
+        margin-top: 34px;
+        font-size: 14px;
+        font-weight: bold;
+        color: #2c3e50;
+    }
+
+    .criteria-percentage {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 16px;
+        font-weight: bold;
+        color: #3498db;
+    }
+
+    .percentage-input {
+        width: 60px;
+        padding: 5px;
+        border: 2px solid #ddd;
+        border-radius: 8px;
+        text-align: center;
+        font-weight: bold;
+        color: #2c3e50;
+    }
+
+    .percentage-total {
+        text-align: center;
+        font-size: 18px;
+        font-weight: bold;
+        margin-bottom: 15px;
+        color: #3498db;
+        padding: 1rem;
+    }
+
+    .percentage-total.error {
+        color: #e74c3c;
+    }
+
+    #languageWeightTotal,
+    #experienceWeightTotal,
+    #organizationWeightTotal,
+    #trainingWeightTotal {
+        text-align: center;
+        font-size: 18px;
+        font-weight: bold;
+        margin-bottom: 15px;
+        color: #3498db;
+        padding: 1rem;
+    }
+
+
+    .criteria-actions {
+        position: absolute;
+        top: 5px;
+        right: 5px;
+        display: flex;
+        gap: 5px;
+    }
+
+    .remove-criteria,
+    .configure-criteria {
+        background: none;
+        border: none;
+        cursor: pointer;
+        font-size: 14px;
+    }
+
+    .remove-criteria {
+        color: #e74c3c;
+    }
+
+    .configure-criteria {
+        color: #3498db;
+    }
+
+    .config-badge {
+        position: absolute;
+        top: -5px;
+        right: -5px;
+        width: 15px;
+        height: 15px;
+        background-color: #e74c3c;
+        border-radius: 50%;
+        border: 2px solid white;
+        display: none;
+    }
+
+    .config-badge.active {
+        display: block;
+    }
+
+    /* Buttons */
+    .btn-primary,
+    .btn-success,
+    .calculate-btn,
+    .add-criteria-btn,
+    .age-range-delete {
+        border-radius: 8px;
+        font-weight: bold;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .btn-primary,
+    .btn-success {
+        color: white;
+        border: none;
+        padding: 1rem 2rem;
+        font-size: 1.1rem;
+    }
+
+    .calculate-btn {
+        display: block;
+        width: 200px;
+        margin: 0 auto;
+        background-color: #3498db;
+        color: white;
+        padding: 10px;
+        border: none;
+        font-size: 16px;
+    }
+
+    .add-criteria-btn {
+        background-color: #2ecc71;
+        color: white;
+        border: none;
+        padding: 10px 15px;
+        margin: 10px auto;
+        display: block;
+    }
+
+    .btn-primary {
+        background: #3498db;
+    }
+
+    .btn-success {
+        background: #2ecc71;
+        margin-top: 1rem;
+    }
+
+    .btn-primary:hover {
+        background: #2c3e50;
+        transform: scale(1.05);
+    }
+
+    .btn-success:hover,
+    .calculate-btn:hover {
+        background: #27ae60;
+        transform: scale(1.05);
+    }
+
+    .calculate-btn:hover {
+        border: 2px solid #ccc;
+        background-color: #2ecc71;
+        color: white;
+    }
+
+    .modal-footer .btn {
+        min-width: 150px;
+        height: 38px;
+        font-size: 14px;
+    }
+
+    /* Table styles */
+    .table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 1rem;
+    }
+
+    .table th {
+        background: #2c3e50;
+        color: white;
+        padding: 1rem;
+        text-align: left;
+    }
+
+    .table td {
+        padding: 1rem;
+        border-bottom: 1px solid #ddd;
+    }
+
+    .table tbody tr:hover {
+        background: #ecf0f1;
+    }
+
+    /* Range rows (age, education, distance, salary) */
+    .age-range-row,
+    .education-level-row,
+    .distance-range-row,
+    .salary-range-row {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        margin-bottom: 15px;
+        padding: 15px;
+        border-radius: 8px;
+        background-color: #f8f9fa;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+        transition: all 0.3s ease;
+        position: relative;
+    }
+
+    .age-range-row:hover,
+    .education-level-row:hover,
+    .distance-range-row:hover,
+    .salary-range-row:hover {
+        background-color: #f0f4f7;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    .age-range-handle,
+    .education-level-handle,
+    .distance-range-handle,
+    .salary-range-handle {
+        cursor: move;
+        color: #6c757d;
+        font-size: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: 100%;
+        transition: color 0.3s ease;
+
+    }
+
+    .age-range-handle:hover,
+    .education-level-handle:hover,
+    .distance-range-handle:hover,
+    .salary-range-handle:hover {
+        color: #3498db;
+    }
+
+    .age-range-delete {
+        color: #e74c3c;
+        background: none;
+        border: none;
+        margin-top: 25px;
+        font-size: 16px;
+        padding: 8px 12px;
+    }
+
+    .age-range-delete i {
+        font-size: 18px;
+    }
+
+    /* Sortable styles */
+    .sortable-ghost {
+        opacity: 0.4;
+        background-color: #f0f8ff !important;
+        border: 2px dashed #3498db !important;
+    }
+
+    .sortable-drag {
+        opacity: 0.8;
+        background-color: #ffffff !important;
+        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2) !important;
+        transform: scale(1.05);
+        z-index: 1000;
+    }
+
+    .sortable-chosen {
+        background-color: #e9f7fe !important;
+        border-left: 4px solid #3498db;
+    }
+
+    #suggestionContainer .alert-info {
+        background-color: #f8f9fa;
+        border-left: 4px solid #17a2b8;
+        border-radius: 0;
+    }
+
+    #suggestionContainer {
+        margin-top: 15px;
+        transition: all 0.3s ease;
+    }
+
+    /* Animations */
+    @keyframes spin {
+        to {
+            transform: rotate(360deg);
+        }
+    }
+
+    @keyframes highlight-effect {
+        0% {
+            background-color: #fff9c4;
+            transform: translateY(0);
+        }
+
+        50% {
+            background-color: #ffecb3;
+        }
+
+        100% {
+            background-color: #f8f9fa;
+            transform: translateY(0);
+        }
+    }
+
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(10px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    @keyframes fadeInDown {
+        from {
+            opacity: 0;
+            transform: translateY(-20px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    @keyframes highlight {
+        0% {
+            background-color: #f8f9fa;
+        }
+
+        50% {
+            background-color: #d4edda;
+        }
+
+        100% {
+            background-color: #f8f9fa;
+        }
+    }
+
+    .highlight-row {
+        animation: highlight-effect 1s ease;
+    }
+
+    .age-range-row-new,
+    .education-level-row-new {
+        animation: fadeIn 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55) forwards;
+    }
+
+    .distance-range-row-new,
+    .salary-range-row-new {
+        animation: fadeInDown 0.5s;
+    }
+
+    .spinner-border {
+        display: inline-block;
+        width: 1rem;
+        height: 1rem;
+        border: 3px solid white;
+        border-right-color: transparent;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+    }
+
+
+    /* Tambahkan di bagian CSS Anda */
+    #applicantRankingModal .modal-xl {
+        max-width: 1200px;
+    }
+
+    #applicantRankingModal .card {
+        margin-bottom: 1rem;
+        border-radius: 10px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+    }
+
+    #applicantRankingModal .nav-tabs .nav-link {
+        color: #495057;
+        border: none;
+        padding: 0.75rem 1.25rem;
+    }
+
+    #applicantRankingModal .nav-tabs .nav-link.active {
+        color: #fff;
+        background-color: #4361ee;
+        border-radius: 0;
+    }
+
+    #applicantRankingModal .list-group-item {
+        border-left: none;
+        border-right: none;
+        border-radius: 0;
+    }
+
+    #applicantRankingModal .list-group-item:first-child {
+        border-top: none;
+    }
+
+    #applicantRankingModal .list-group-item:last-child {
+        border-bottom: none;
+    }
+
+    #applicantRankingModal .badge {
+        font-size: 0.9em;
+        padding: 0.35em 0.65em;
+    }
+
+
+    #rankingTable_wrapper .row {
+        margin-bottom: 15px;
+    }
+
+    #rankingTable thead th {
+        font-weight: 600;
+        white-space: nowrap;
+    }
+
+    #rankingTable tbody tr:hover {
+        background-color: rgba(67, 97, 238, 0.05);
+    }
+
+    #rankingTable .btn-group .btn {
+        margin-right: 5px;
+    }
+
+    #rankingTable .progress {
+        height: 8px;
+        margin-top: 3px;
+    }
+
+    #rankingTable .score-cell {
+        min-width: 80px;
+    }
+
+    #rankingTable .actions-cell {
+        min-width: 200px;
+    }
+
+    .dataTables_info,
+    .dataTables_paginate {
+        margin-top: 15px;
+    }
+
+    .dataTables_filter input {
+        border-radius: 0.375rem;
+        border: 1px solid #ced4da;
+        padding: 0.375rem 0.75rem;
+    }
+
+    .dataTables_length select {
+        border-radius: 0.375rem;
+        border: 1px solid #ced4da;
+        padding: 0.375rem 0.5rem;
+    }
+</style>
+
+@push('scripts')
 <!-- Core Scripts -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-<script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
 <script>
+    function initializeDataTable() {
+        // Destroy existing DataTable instance if it exists
+        if ($.fn.DataTable.isDataTable('#rankingTable')) {
+            $('#rankingTable').DataTable().destroy();
+        }
+
+        // Initialize DataTable with options
+        $('#rankingTable').DataTable({
+            responsive: true,
+            language: {
+                search: "<i class='fas fa-search'></i>",
+                searchPlaceholder: "Search applicants...",
+                emptyTable: "No applicant data available",
+                zeroRecords: "No matching applicants found",
+                info: "Showing _START_ to _END_ of _TOTAL_ applicants",
+                infoEmpty: "Showing 0 to 0 of 0 applicants",
+                infoFiltered: "(filtered from _MAX_ total applicants)",
+                paginate: {
+                    first: '<i class="fas fa-angle-double-left"></i>',
+                    previous: '<i class="fas fa-angle-left"></i>',
+                    next: '<i class="fas fa-angle-right"></i>',
+                    last: '<i class="fas fa-angle-double-right"></i>'
+                }
+            },
+            columnDefs: [{
+                    orderable: false,
+                    targets: -1
+                } // Disable sorting for action buttons column
+            ],
+            order: [
+                [0, 'asc']
+            ], // Default sort by rank ascending
+            dom: '<"row align-items-center"<"col-md-6"l><"col-md-6"f>>rtip',
+            lengthMenu: [
+                [10, 25, 50, -1],
+                [10, 25, 50, "All"]
+            ]
+        });
+    }
+
+
     $(document).ready(function() {
+
+
         // Cache frequently used elements
         const $form = $('#ahpForm');
         const $calculateBtn = $('#calculateBtn');
@@ -3771,14 +3931,15 @@
             });
         }
 
-        // Display the rankings in the table
+        // Modified displayRankings function to work with DataTable
         function displayRankings(rankings) {
             let html = '';
 
             // If no rankings data, show empty message
             if (!rankings || rankings.length === 0) {
                 html = '<tr><td colspan="12" class="text-center">No data available</td></tr>';
-                $rankingResults.html(html);
+                $('#rankingResults').html(html);
+                initializeDataTable();
                 return;
             }
 
@@ -3788,21 +3949,21 @@
                     // Skip if applicant data is missing
                     if (!item.applicant) {
                         html += `
-                    <tr>
-                        <td>${index + 1}</td>
-                        <td>N/A</td>
-                        <td>N/A</td>
-                        <td>N/A</td>
-                        <td>N/A</td>
-                        <td>N/A</td>
-                        <td>N/A</td>
-                        <td>N/A</td>
-                        <td>N/A</td>
-                        <td>N/A</td>
-                        <td>N/A</td>
-                        <td>N/A</td>
-                    </tr>
-                `;
+                <tr>
+                    <td>${index + 1}</td>
+                    <td>N/A</td>
+                    <td>N/A</td>
+                    <td>N/A</td>
+                    <td>N/A</td>
+                    <td>N/A</td>
+                    <td>N/A</td>
+                    <td>N/A</td>
+                    <td>N/A</td>
+                    <td>N/A</td>
+                    <td>N/A</td>
+                    <td>N/A</td>
+                </tr>
+            `;
                         return;
                     }
 
@@ -3812,7 +3973,7 @@
                         moment().diff(moment(item.applicant.birth_date), 'years') :
                         null;
                     const ageDisplay = age !== null ? `${age} Year` : "N/A";
-                    const ageScore = item.breakdown?.age ? `${(item.breakdown.age * 100).toFixed(1)}%` : "N/A";
+                    const ageScore = item.breakdown?.age ? (item.breakdown.age * 100).toFixed(1) : 0;
 
                     // Expected Salary (formatted as Rp X.XXX.XXX)
                     const salary = item.applicant.expected_salary;
@@ -3820,75 +3981,553 @@
                         `Rp ${Number(salary).toLocaleString('id-ID')}` :
                         "N/A";
                     const salaryScore = item.breakdown?.expected_salary ?
-                        `${(item.breakdown.expected_salary * 100).toFixed(1)}%` :
-                        "N/A";
+                        (item.breakdown.expected_salary * 100).toFixed(1) : 0;
 
                     // Distance
                     const distance = item.applicant.distance;
                     const distanceDisplay = distance ? `${distance} KM` : "N/A";
                     const distanceScore = item.breakdown?.distance ?
-                        `${(item.breakdown.distance * 100).toFixed(1)}%` :
-                        "N/A";
+                        (item.breakdown.distance * 100).toFixed(1) : 0;
 
                     // Other breakdown scores
                     const educationScore = item.breakdown?.education ?
-                        `${(item.breakdown.education * 100).toFixed(1)}%` :
-                        "N/A";
+                        (item.breakdown.education * 100).toFixed(1) : 0;
                     const experienceScore = item.breakdown?.experience_duration ?
-                        `${(item.breakdown.experience_duration * 100).toFixed(1)}%` :
-                        "N/A";
+                        (item.breakdown.experience_duration * 100).toFixed(1) : 0;
                     const languageScore = item.breakdown?.language ?
-                        `${(item.breakdown.language * 100).toFixed(1)}%` :
-                        "N/A";
+                        (item.breakdown.language * 100).toFixed(1) : 0;
                     const organizationScore = item.breakdown?.organization ?
-                        `${(item.breakdown.organization * 100).toFixed(1)}%` :
-                        "N/A";
+                        (item.breakdown.organization * 100).toFixed(1) : 0;
                     const trainingScore = item.breakdown?.training ?
-                        `${(item.breakdown.training * 100).toFixed(1)}%` :
-                        "N/A";
+                        (item.breakdown.training * 100).toFixed(1) : 0;
 
                     // Total Score
-                    const totalScore = item.score ? `${(item.score * 100).toFixed(2)}%` : "N/A";
+                    const totalScore = item.score ? (item.score * 100).toFixed(2) : 0;
+
+                    // Progress bar helper function
+                    const createProgressBar = (score) => {
+                        // Determine color class based on score
+                        let colorClass = 'bg-danger';
+                        if (score >= 70) colorClass = 'bg-success';
+                        else if (score >= 40) colorClass = 'bg-warning';
+
+                        return `
+                    <div class="d-flex align-items-center score-cell">
+                        <span>${score}%</span>
+                        <div class="progress w-100 ms-2">
+                            <div class="progress-bar ${colorClass}" role="progressbar" 
+                                style="width: ${score}%" aria-valuenow="${score}" 
+                                aria-valuemin="0" aria-valuemax="100">
+                            </div>
+                        </div>
+                    </div>
+                `;
+                    };
 
                     // --- Generate HTML Row ---
                     html += `
-                <tr>
-                    <td>${index + 1}</td>
-                    <td>${item.applicant.name || "N/A"}</td>
-                    <td>${ageDisplay}${age !== null ? ` (${ageScore})` : ""}</td>
-                    <td>${salaryDisplay}${salary ? ` (${salaryScore})` : ""}</td>
-                    <td>${distanceDisplay}${distance ? ` (${distanceScore})` : ""}</td>
-                    <td>${educationScore}</td>
-                    <td>${experienceScore}</td>
-                    <td>${languageScore}</td>
-                    <td>${organizationScore}</td>
-                    <td>${trainingScore}</td>
-                    <td>${totalScore}</td>
-                    <td>
-                        <button 
-                            class="btn btn-sm btn-primary schedule-interview m-0" 
-                            id="scheduleBtn-${item.applicant.id}" 
-                            data-id="${item.applicant.id}" 
-                            data-name="${item.applicant.name}">
-                            Schedule Interview
+            <tr>
+                <td>${index + 1}</td>
+                <td><strong>${item.applicant.name || "N/A"}</strong></td>
+                <td>${ageDisplay}</td>
+                <td>${salaryDisplay}</td>
+                <td>${distanceDisplay}</td>
+                <td>${createProgressBar(educationScore)}</td>
+                <td>${createProgressBar(experienceScore)}</td>
+                <td>${createProgressBar(languageScore)}</td>
+                <td>${createProgressBar(organizationScore)}</td>
+                <td>${createProgressBar(trainingScore)}</td>
+                <td><strong>${createProgressBar(totalScore)}</strong></td>
+                <td class="actions-cell">
+                    <div class="btn-group" role="group">
+                        <button class="btn btn-sm btn-outline-info view-applicant-btn" 
+                                data-id="${item.applicant.id}" 
+                                data-name="${item.applicant.name}">
+                            <i class="fas fa-eye me-1"></i> View
                         </button>
-                    </td>
-                </tr>
-            `;
+                        <button class="btn btn-sm btn-outline-primary schedule-interview" 
+                                id="scheduleBtn-${item.applicant.id}" 
+                                data-id="${item.applicant.id}" 
+                                data-name="${item.applicant.name}">
+                            <i class="fas fa-calendar-alt me-1"></i> Schedule
+                        </button>
+                    </div>
+                </td>
+            </tr>
+        `;
                 } catch (error) {
                     console.error("Error processing applicant:", error);
                     html += `
-                <tr>
-                    <td>${index + 1}</td>
-                    <td colspan="11" class="text-danger">Error loading data</td>
-                </tr>
-            `;
+            <tr>
+                <td>${index + 1}</td>
+                <td colspan="11" class="text-danger">Error loading data</td>
+            </tr>
+        `;
                 }
             });
 
-            // Update the table
-            $rankingResults.html(html);
+            // Update the table body
+            $('#rankingResults').html(html);
+
+            // Initialize DataTable
+            initializeDataTable();
         }
+
+        // Fungsi untuk memformat konten modal
+        function formatApplicantModalContent(response) {
+            const applicant = response.applicant;
+
+            // Helper functions for formatting data
+            const formatData = (value) => value || '-';
+            const formatDate = (dateString) => {
+                if (!dateString) return '-';
+                return new Date(dateString).toLocaleDateString('en-US', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
+                });
+            };
+
+            // Format profile photo
+            const photoUrl = applicant.photo_profile_path ?
+                `/storage/${applicant.photo_profile_path}` :
+                '/storage/default_profile.png';
+
+            // Format CV and other documents
+            const cvUrl = applicant.cv_path ? `/storage/${applicant.cv_path}` : '#';
+            const idCardUrl = applicant.ID_card_path ? `/storage/${applicant.ID_card_path}` : '#';
+            const achievementUrl = applicant.achievement_path ? `/storage/${applicant.achievement_path}` : '#';
+
+            return `
+        <div class="row">
+            <!-- Basic Information Column -->
+            <div class="col-md-4">
+                <div class="card mb-4">
+                    <div class="card-body text-center">
+                        <img src="${photoUrl}" class="rounded-circle mb-3" style="width: 150px; height: 150px; object-fit: cover;">
+                        <h4>${formatData(applicant.name)}</h4>
+                        <p class="text-muted">Applicant #${formatData(applicant.id)}</p>
+                        
+                        <div class="d-flex justify-content-center mb-3">
+                            <span class="badge ${applicant.status_applicant === 'Approved' ? 'bg-success' : 
+                                applicant.status_applicant === 'Declined' ? 'bg-danger' : 'bg-warning'}">
+                                ${formatData(applicant.status_applicant)}
+                            </span>
+                        </div>
+                        
+                        <hr>
+                        
+                        <div class="text-start">
+                            <p><strong><i class="fas fa-id-card me-2"></i>ID Number:</strong> ${formatData(applicant.ID_number)}</p>
+                            <p><strong><i class="fas fa-birthday-cake me-2"></i>Birth:</strong> ${formatData(applicant.birth_place)}, ${formatDate(applicant.birth_date)}</p>
+                            <p><strong><i class="fas fa-venus-mars me-2"></i>Gender:</strong> ${formatData(applicant.gender)}</p>
+                            <p><strong><i class="fas fa-map-marker-alt me-2"></i>ID Address:</strong> ${formatData(applicant.ID_address)}</p>
+                            <p><strong><i class="fas fa-home me-2"></i>Domicile:</strong> ${formatData(applicant.domicile_address)}</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card mb-4">
+                    <div class="card-header bg-primary text-white">
+                        <i class="fas fa-phone-alt me-2"></i>Contact
+                    </div>
+                    <div class="card-body">
+                        <p><strong>Email:</strong> ${formatData(applicant.email)}</p>
+                        <p><strong>Phone:</strong> ${formatData(applicant.phone_number)}</p>
+                        <p><strong>Emergency Contact:</strong> ${formatData(applicant.emergency_contact)}</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Detailed Information Column -->
+            <div class="col-md-8">
+                <div class="card mb-4">
+                    <div class="card-header bg-primary text-white">
+                        <i class="fas fa-info-circle me-2"></i>Additional Information
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <p><strong>Religion:</strong> ${formatData(applicant.religion)}</p>
+                                <p><strong>Height:</strong> ${applicant.height ? applicant.height + ' cm' : '-'}</p>
+                                <p><strong>Weight:</strong> ${applicant.weight ? applicant.weight + ' kg' : '-'}</p>
+                            </div>
+                            <div class="col-md-6">
+                                <p><strong>Health Insurance:</strong> ${formatData(applicant.bpjs_health)}</p>
+                                <p><strong>Employment Insurance:</strong> ${formatData(applicant.bpjs_employment)}</p>
+                                <p><strong>Distance to Company:</strong> ${applicant.distance ? applicant.distance + ' km' : '-'}</p>
+                            </div>
+                        </div>
+                        
+                        <hr>
+                        
+                        <h5 class="mb-3">Expectations</h5>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <p><strong>Expected Salary:</strong> ${applicant.expected_salary ? 'Rp ' + Number(applicant.expected_salary).toLocaleString('id-ID') : '-'}</p>
+                            </div>
+                            <div class="col-md-6">
+                                <p><strong>Expected Facilities:</strong> ${formatData(applicant.expected_facility)}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Documents -->
+                <div class="card mb-4">
+                    <div class="card-header bg-primary text-white">
+                        <i class="fas fa-file-alt me-2"></i>Documents
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <h6>ID Card</h6>
+                                ${idCardUrl !== '#' ? 
+                                    `<a href="${idCardUrl}" target="_blank" class="btn btn-sm btn-outline-primary">
+                                        <i class="fas fa-eye me-1"></i> View ID Card
+                                    </a>` : 
+                                    '<p class="text-muted">Not available</p>'}
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <h6>CV</h6>
+                                ${cvUrl !== '#' ? 
+                                    `<a href="${cvUrl}" target="_blank" class="btn btn-sm btn-outline-primary">
+                                        <i class="fas fa-eye me-1"></i> View CV
+                                    </a>` : 
+                                    '<p class="text-muted">Not available</p>'}
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <h6>Achievement</h6>
+                                ${achievementUrl !== '#' ? 
+                                    `<a href="${achievementUrl}" target="_blank" class="btn btn-sm btn-outline-primary">
+                                        <i class="fas fa-eye me-1"></i> View Achievement
+                                    </a>` : 
+                                    '<p class="text-muted">Not available</p>'}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Detailed Information Tabs -->
+                <div class="card">
+                    <div class="card-header bg-warning">
+                        <ul class="nav nav-tabs card-header-tabs" id="applicantDetailTabs" role="tablist">
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link active" id="education-tab" data-bs-toggle="tab" data-bs-target="#education" type="button" role="tab">
+                                    Education
+                                </button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="experience-tab" data-bs-toggle="tab" data-bs-target="#experience" type="button" role="tab">
+                                    Experience
+                                </button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="organization-tab" data-bs-toggle="tab" data-bs-target="#organization" type="button" role="tab">
+                                    Organization
+                                </button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="training-tab" data-bs-toggle="tab" data-bs-target="#training" type="button" role="tab">
+                                    Training
+                                </button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="language-tab" data-bs-toggle="tab" data-bs-target="#language" type="button" role="tab">
+                                    Language
+                                </button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="family-tab" data-bs-toggle="tab" data-bs-target="#family" type="button" role="tab">
+                                    Family
+                                </button>
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="card-body">
+                        <div class="tab-content" id="applicantDetailTabContent">
+                            <!-- Education Tab -->
+                            <div class="tab-pane fade show active" id="education" role="tabpanel">
+                                ${formatEducationTab(response.education)}
+                            </div>
+                            
+                            <!-- Experience Tab -->
+                            <div class="tab-pane fade" id="experience" role="tabpanel">
+                                ${formatExperienceTab(response.experience)}
+                            </div>
+                            
+                            <!-- Organization Tab -->
+                            <div class="tab-pane fade" id="organization" role="tabpanel">
+                                ${formatOrganizationTab(response.organization)}
+                            </div>
+                            
+                            <!-- Training Tab -->
+                            <div class="tab-pane fade" id="training" role="tabpanel">
+                                ${formatTrainingTab(response.training)}
+                            </div>
+                            
+                            <!-- Language Tab -->
+                            <div class="tab-pane fade" id="language" role="tabpanel">
+                                ${formatLanguageTab(response.language)}
+                            </div>
+                            
+                            <!-- Family Tab -->
+                            <div class="tab-pane fade" id="family" role="tabpanel">
+                                ${formatFamilyTab(response.family)}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+        }
+
+        // Function to format education tab
+        function formatEducationTab(educationData) {
+            if (!educationData || educationData.length === 0) {
+                return '<p class="text-muted">No education data available</p>';
+            }
+
+            let html = '<div class="list-group">';
+
+            educationData.sort((a, b) => new Date(b.end_education) - new Date(a.end_education))
+                .forEach(edu => {
+                    const transcriptBtn = edu.transcript_file_path ?
+                        `<a href="/storage/${edu.transcript_file_path}" target="_blank" class="btn btn-sm btn-outline-primary">
+                    <i class="fas fa-file-pdf me-1"></i> Transcript
+                </a>` : '';
+
+                    html += `
+            <div class="list-group-item">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <h5 class="mb-1">${formatData(edu.degree)}</h5>
+                        <p class="mb-1"><strong>${formatData(edu.educational_place)}</strong></p>
+                        <p class="mb-1">${formatData(edu.major)}</p>
+                        <small class="text-muted">${formatDate(edu.start_education)} - ${formatDate(edu.end_education)}</small>
+                    </div>
+                    ${transcriptBtn}
+                </div>
+            </div>
+        `;
+                });
+
+            html += '</div>';
+            return html;
+        }
+
+        // Function to format experience tab
+        function formatExperienceTab(experienceData) {
+            if (!experienceData || experienceData.length === 0) {
+                return '<p class="text-muted">No work experience data available</p>';
+            }
+
+            let html = '<div class="list-group">';
+
+            experienceData.sort((a, b) => new Date(b.end_date) - new Date(a.end_date))
+                .forEach(exp => {
+                    html += `
+            <div class="list-group-item">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <h5 class="mb-1">${formatData(exp.position)}</h5>
+                        <p class="mb-1"><strong>${formatData(exp.company_name)}</strong></p>
+                        <p class="mb-1">${formatData(exp.company_address)}</p>
+                        <p class="mb-1">Salary: ${exp.salary ? 'Rp ' + Number(exp.salary).toLocaleString('id-ID') : '-'}</p>
+                        <small class="text-muted">${formatDate(exp.working_start)} - ${formatDate(exp.working_end)}</small>
+                    </div>
+                </div>
+                <div class="mt-2">
+                    <p class="mb-1"><strong>Job Description:</strong></p>
+                    <p>${formatData(exp.job_desc)}</p>
+                </div>
+            </div>
+        `;
+                });
+
+            html += '</div>';
+            return html;
+        }
+
+        // Function to format organization tab
+        function formatOrganizationTab(organizationData) {
+            if (!organizationData || organizationData.length === 0) {
+                return '<p class="text-muted">No organization data available</p>';
+            }
+
+            let html = '<div class="list-group">';
+
+            organizationData.sort((a, b) => new Date(b.end_date) - new Date(a.end_date))
+                .forEach(org => {
+                    html += `
+            <div class="list-group-item">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <h5 class="mb-1">${formatData(org.organization_name)}</h5>
+                        <p class="mb-1"><strong>Position: ${formatData(org.position)}</strong></p>
+                        <p class="mb-1">Activity: ${formatData(org.activity_type)}</p>
+                        <p class="mb-1">Location: ${formatData(org.city)}, ${formatData(org.province)}</p>
+                        <small class="text-muted">${formatDate(org.start_date)} - ${formatDate(org.end_date)}</small>
+                    </div>
+                </div>
+            </div>
+        `;
+                });
+
+            html += '</div>';
+            return html;
+        }
+
+        // Function to format training tab
+        function formatTrainingTab(trainingData) {
+            if (!trainingData || trainingData.length === 0) {
+                return '<p class="text-muted">No training data available</p>';
+            }
+
+            let html = '<div class="list-group">';
+
+            trainingData.sort((a, b) => new Date(b.end_date) - new Date(a.end_date))
+                .forEach(training => {
+                    html += `
+            <div class="list-group-item">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <h5 class="mb-1">${formatData(training.training_name)}</h5>
+                        <p class="mb-1">Location: ${formatData(training.training_city)}, ${formatData(training.training_province)}</p>
+                        <small class="text-muted">${formatDate(training.start_date)} - ${formatDate(training.end_date)}</small>
+                    </div>
+                </div>
+            </div>
+        `;
+                });
+
+            html += '</div>';
+            return html;
+        }
+
+        // Function to format language tab
+        function formatLanguageTab(languageData) {
+            if (!languageData || languageData.length === 0) {
+                return '<p class="text-muted">No language data available</p>';
+            }
+
+            let html = `
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead class="table-light">
+                    <tr>
+                        <th>Language</th>
+                        <th>Verbal Proficiency</th>
+                        <th>Written Proficiency</th>
+                    </tr>
+                </thead>
+                <tbody>
+    `;
+
+            languageData.forEach(lang => {
+                html += `
+            <tr>
+                <td>${formatData(lang.language)}</td>
+                <td>${formatData(lang.verbal)}</td>
+                <td>${formatData(lang.written)}</td>
+            </tr>
+        `;
+            });
+
+            html += `
+                </tbody>
+            </table>
+        </div>
+    `;
+
+            return html;
+        }
+
+        // Function to format family tab
+        function formatFamilyTab(familyData) {
+            if (!familyData || familyData.length === 0) {
+                return '<p class="text-muted">No family data available</p>';
+            }
+
+            let html = '<div class="row">';
+
+            familyData.forEach(member => {
+                html += `
+        <div class="col-md-6 mb-3">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">${formatData(member.name)}</h5>
+                    <h6 class="card-subtitle mb-2 text-muted">${formatData(member.relation)}</h6>
+                    <p class="card-text">
+                        <i class="fas fa-phone me-1"></i> ${formatData(member.phone_number)}<br>
+                        <i class="fas fa-venus-mars me-1"></i> ${formatData(member.gender)}
+                    </p>
+                </div>
+            </div>
+        </div>
+    `;
+            });
+
+            html += '</div>';
+            return html;
+        }
+
+        // Helper function for formatting data
+        function formatData(value) {
+            return value || '-';
+        }
+
+        // Helper function for formatting dates
+        function formatDate(dateString) {
+            if (!dateString) return '-';
+            return new Date(dateString).toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+            });
+        }
+
+        // Event handler for view button
+        $(document).on('click', '.view-applicant-btn', function() {
+            const applicantId = $(this).data('id');
+            const applicantName = $(this).data('name');
+
+            // Update modal title
+            $('#applicantRankingModalLabel').html(`<i class="fas fa-user me-2"></i>Applicant Details - ${applicantName}`);
+
+            // Show loading spinner
+            $('#applicantModalContent').html(`
+        <div class="text-center py-5">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <p class="mt-2">Loading applicant data...</p>
+        </div>
+    `);
+
+            // Show modal
+            $('#applicantRankingModal').modal('show');
+
+            // Get applicant data via AJAX
+            $.ajax({
+                url: `/recruitment/applicant/show/${applicantId}`,
+                method: 'GET',
+                success: function(response) {
+                    // Format modal content
+                    const modalContent = formatApplicantModalContent(response);
+                    $('#applicantModalContent').html(modalContent);
+                },
+                error: function(xhr) {
+                    $('#applicantModalContent').html(`
+                <div class="alert alert-danger">
+                    Failed to load applicant data. Please try again.
+                </div>
+            `);
+                }
+            });
+        });
+
 
 
         // ----------------------- INTERVIEW -----------------------
@@ -3986,3 +4625,4 @@
 
     });
 </script>
+@endpush

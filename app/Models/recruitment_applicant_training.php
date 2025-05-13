@@ -16,7 +16,7 @@ class recruitment_applicant_training extends Model
     protected $fillable = [
         'id',
         'applicant_id',
-        'training_namee',
+        'training_name',
         'training_city',
         'training_province',
         'start_date',

@@ -1,0 +1,147 @@
+
+digunakan untuk pembuatan materi tentang elearaning emmployee dalam perusahaan indoesteel 
+<?php
+namespace App\Models;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+class elearning_lesson extends Model
+{
+    use HasFactory;
+    protected $table = 'elearning_lesson';
+    protected $fillable = [
+        'id', ini akan di degenerate auto increment pada sql jadi gk usah kawatir
+        'name', name ini adalah nama judul ddari metrial 
+        'duration', durasi pengerjaan metrail ini dalam minnutes kyk 90 itu berarti 90 menit
+        'passing_grade', grade untuk menentukan pass atau enggak
+        'lesson_file', isi aja dengan elearning_lesson_material/Tesing_Demo.pdf
+        'created_at',
+        'updated_at'
+    ];
+}
+
+
+ini tabel untuk menyimbhpan pertanyaakn dan dan jawaban multiple choice dari pembuatan material
+<?php
+namespace App\Models;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+class elearning_question extends Model
+{
+    use HasFactory;
+    protected $table = 'elearning_question';
+    protected $fillable = [
+        'lesson_id', ambil id dari 'elearning_lesson' yang dibuat itu
+        'question', pertanyaan bebas pertanyanan aku ingin buatkan soalnya adalah koncui jawanban, Misal Testing A
+        'multiple_choice', buatkan muriple choice yang dibuat dibentuk seperti ini Testing A;Testing B;Testing C;Testing D
+        'answer_key', kunci jawaan yang benar misal itu Testing A
+        'grade', nilai per soal misal 10 gitu 
+        'created_at',
+        'updated_at'
+    ];
+
+}
+
+ini dalah tabel untuk invitation/ undangan penegerjaan materi yang dibuat
+<?php
+namespace App\Models;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+
+class elearning_schedule extends Model
+{
+    use HasFactory;
+    protected $table = 'elearning_schedule';
+    protected $fillable = [
+        'lesson_id', ambil dari id yang dibuat pada 'elearning_lesson';
+        'start_date', waktu muali penugasan
+        'end_date', batas akhir pengerjaan material itu
+        'created_at',
+        'updated_at'
+    ];
+}
+
+
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+
+class elearning_invitation extends Model
+{
+    use HasFactory;
+
+    // Define the table name if it's not the plural of the model name
+    protected $table = 'elearning_invitation';
+
+    // Define which fields can be mass-assigned
+    protected $fillable = [
+        'lesson_id', ambil dari id yang dibuat pada 'elearning_lesson';
+        'schedule_id', ambil dari id yang dibuat pada 'elearning_schedule';
+        'users_id',ambil dari id pada 'users';
+        'grade', Nilai dari User yang sudah mengerjaan
+        'created_at',
+        'updated_at',
+    ];
+}
+
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+
+class elearning_answer extends Model
+{
+    use HasFactory;
+
+    // Define the table name if it's not the plural of the model name
+    protected $table = 'elearning_answer';
+
+    // Define which fields can be mass-assigned
+    protected $fillable = [
+        'invitation_id', ambil dari id pada 'elearning_invitation';
+        'lesson_id',ambil dari id pada 'elearning_lesson';
+        'schedule_id', ambil dari id pada 'elearning_schedule';
+        'users_id', amvil id dari 'users;'
+        'question', in ipertanyaan dari soal materi
+        'multiple_choice', ini mltiple choice dari materi
+        'answer_key', kunci jawaan dari materi
+        'answer', jawaban dari peserta users
+        'grade', ini grade/ nilai dair per soalnya
+        'mark', nilai yang didapatkan user saat menjawab nah ini juga dicocokan dengan kucni jawaban misal nih kuncuk jawabn b nah dia usersnya jawab A otomatis mark nay 0, kecuali kalau b bener ya dia mendapatkan seusai gradenay pser noomor gitu
+        'created_at',
+        'updated_at'
+    ];
+}
+
+
+class User extends Authenticatable
+{
+    protected $table = 'users';
+
+    protected $fillable = [
+
+        'name', terserah random generate
+
+        'employee_status', nah ini ada 4 opsi 'Full Time', 'Contract', 'Part Time', 'Inactive' usahaain banayk kamu generaate yang full time terutama ini khusu untuk yang jawban manager gitu, lalau kedua itu utamakan yang contract, lalau partiem dan terakhir kasih sedkit mungkin 1-5 user itu Inactive
+        Nah khuss untuk yanh part time dan contract col dibawah ini wajib diisi kalau Full time dan inactive gk usag
+        'contract_start_date',
+        'contract_end_date',
+
+        'join_date'
+
+        'birth_date', 
+        'birth_place',
+
+ 'exit_date', isin tgl kalau statusnya yang inactive
+
+    ];
+}
+
+
+
+
+

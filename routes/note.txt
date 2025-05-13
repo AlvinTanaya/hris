@@ -20,23 +20,10 @@ Would you like me to help you set up any specific part of this configuration?
 
 
 
+reporting performance detail V
+reporting excel V
+reporting dicipline dinal dia exceed (liaht export final) VV
 
 
-
-bgian add to employee employee status contract date itu kokosng V
-bagian education transkrip gk ada (gk bisa viwe) V
-
-
-
-
-qty needed gk usah dikurang V
-ceknya kalau needed > qty fullfil V
-pad aindex ditambahai informasi berapa yang umlah pending, approve , declined
-
-
-
-
-salasry history error V
-
-
-
+reporting final aneh
+seed data salary

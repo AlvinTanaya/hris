@@ -549,8 +549,8 @@
 
 
 
-/* Custom Cards */
-.custom-card {
+        /* Custom Cards */
+        .custom-card {
             background: rgba(255, 255, 255, 0.1);
             backdrop-filter: blur(var(--blur-intensity));
             border-radius: var(--border-radius);
@@ -660,7 +660,7 @@
                 right: 0;
                 bottom: 0;
                 background: rgba(0, 0, 0, 0.5);
-                z-index: 1030;
+                z-index: 999;
             }
 
             .sidebar-overlay.show {
@@ -671,15 +671,10 @@
                 padding: 0.75rem;
                 margin-bottom: 1rem;
                 border-radius: 10px;
+                z-index: 990;
             }
 
-            .notification-dropdown {
-                position: fixed;
-                top: 70px;
-                right: 10px;
-                width: 90%;
-                max-width: 350px;
-            }
+
 
             /* Ensure dropdown arrows remain visible on mobile */
             #sidebar.collapsed .dropdown-icon {
@@ -705,6 +700,46 @@
 
         .transition-all {
             transition: all var(--transition-time) ease;
+        }
+
+
+        /* Tambahkan di bagian CSS */
+        .no-scroll {
+            overflow: hidden;
+        }
+
+        .sidebar-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 999;
+            /* Pastikan di bawah sidebar tapi di atas konten */
+        }
+
+        .sidebar-overlay.show {
+            display: block;
+        }
+
+        @media (max-width: 768px) {
+            #sidebar {
+                transform: translateX(-100%);
+                width: 280px;
+                z-index: 1000;
+                transition: transform 0.3s ease;
+            }
+
+            #sidebar.show {
+                transform: translateX(0);
+            }
+
+            /* Pastikan konten utama tidak scroll saat sidebar terbuka */
+            body.no-scroll {
+                overflow: hidden;
+            }
         }
     </style>
 </head>
@@ -1507,7 +1542,7 @@
                                     <div class="col-md-10">
                                         <p class="mb-0 text-truncate">{{ $notification->message }}</p>
                                     </div>
-                               
+
                                     @if($notification->type == 'general')
                                     <div class="col-md-2 text-end mt-1">
                                         <a href="{{ route('notification.index') }}" class="text-primary">
@@ -2056,12 +2091,16 @@
             });
 
             // Improved sidebar toggle handling
-            $('#sidebarToggle').click(function() {
+            // Ganti kode sidebar toggle dengan ini
+            $('#sidebarToggle').click(function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+
                 if ($(window).width() < 768) {
                     // Mobile behavior
                     $('#sidebar').toggleClass('show');
                     $('.sidebar-overlay').toggleClass('show');
-                    $(this).toggleClass('active');
+                    $('body').toggleClass('no-scroll');
                 } else {
                     // Desktop behavior
                     $('#sidebar').toggleClass('collapsed');
@@ -2073,9 +2112,8 @@
             $('.sidebar-overlay').click(function() {
                 $('#sidebar').removeClass('show');
                 $('.sidebar-overlay').removeClass('show');
-                $('#sidebarToggle').removeClass('active');
+                $('body').removeClass('no-scroll');
             });
-
             // PERBAIKAN: Handle sidebar dropdowns
             $('.dropdown-toggle').click(function(e) {
                 e.preventDefault();
@@ -2139,7 +2177,7 @@
                 if ($(window).width() < 768) {
                     $('#sidebar').removeClass('show');
                     $('.sidebar-overlay').removeClass('show');
-                    $('#sidebarToggle').removeClass('active');
+                    $('body').removeClass('no-scroll');
                 }
             });
 

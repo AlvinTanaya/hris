@@ -64,8 +64,10 @@ class UserController extends Controller
         }
 
         // Get the filtered results
-        $users = $query->get();
-
+        $users = $query->join('employee_positions', 'users.position_id', '=', 'employee_positions.id')
+                    ->orderBy('employee_positions.ranking')
+                    ->select('users.*')
+                    ->get();
         // Get options for dropdowns from related tables
         $departments = EmployeeDepartment::orderBy('department')->get();
         $positions = EmployeePosition::orderBy('ranking')->get();

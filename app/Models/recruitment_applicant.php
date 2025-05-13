@@ -13,8 +13,6 @@ class recruitment_applicant extends Model
     protected $fillable = [
         'recruitment_demand_id',
         'name',
-        'position',
-        'department',
         'email',
         'phone_number',
         'ID_number',

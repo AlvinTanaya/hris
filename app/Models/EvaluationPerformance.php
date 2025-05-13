@@ -16,6 +16,7 @@ class EvaluationPerformance extends Model
         'evaluator_id',
         'date',
         'total_score',
+        'final_score',
         'total_reduction'
     ];
     

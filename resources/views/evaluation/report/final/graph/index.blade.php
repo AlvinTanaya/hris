@@ -1,149 +1,227 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="container-fluid">
-    <div class="row mb-4">
-        <div class="col-12">
-            <div class="card shadow-sm border-0 rounded-lg">
-                <div class="card-header bg-primary text-white">
-                    <h4 class="mb-0"><i class="fas fa-chart-line me-2"></i>Employee Evaluation Report</h4>
-                </div>
-                <div class="card-body bg-light">
-                    <div class="row">
-                        <div class="col-md-5">
-                            <div class="form-group mb-3">
-                                <label for="years" class="form-label fw-bold">Select Years (Max 5)</label>
-                                <select class="form-control select2 border-0 shadow-sm" id="years" name="years[]" multiple="multiple">
-                                    <!-- Will be populated via AJAX -->
-                                </select>
-                            </div>
-                        </div>
-                        <div class="col-md-5">
-                            <div class="form-group mb-3">
-                                <label for="employees" class="form-label fw-bold">Select Employees (Max 5)</label>
-                                <select class="form-control select2 border-0 shadow-sm" id="employees" name="employees[]" multiple="multiple">
-                                    <!-- Will be populated via AJAX -->
-                                </select>
-                            </div>
-                        </div>
-                        <div class="col-md-2 d-flex align-items-end">
-                            <button type="button" id="generateReport" class="btn btn-primary w-100 shadow-sm">
-                                <i class="fas fa-chart-bar me-2"></i> Generate Report
-                            </button>
-                        </div>
+<div class="container-fluid px-4 test">
+    <!-- Header Section -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="text-warning fw-bold">
+            <i class="fas fa-chart-line me-2"></i>Employee Evaluation Analytics
+        </h1>
+    </div>
+
+    <!-- Filter Card -->
+    <div class="card shadow border-0 mb-4">
+        <div class="card-header bg-primary text-white py-3">
+            <div class="d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    <i class="fas fa-filter me-2"></i>Report Filters
+                </h5>
+                <span class="badge bg-white text-primary">{{ now()->format('F j, Y') }}</span>
+            </div>
+        </div>
+        <div class="card-body bg-light-gradient">
+            <div class="row g-3">
+                <div class="col-md-5">
+                    <div class="form-floating">
+                        <select class="form-select select2" id="years" name="years[]" multiple="multiple">
+                            <!-- Will be populated via AJAX -->
+                        </select>
+                        <label for="years" class="fw-semibold">
+                            <i class="fas fa-calendar-alt me-2"></i>Select Years (Max 5)
+                        </label>
                     </div>
+                </div>
+                <div class="col-md-5">
+                    <div class="form-floating">
+                        <select class="form-select select2" id="employees" name="employees[]" multiple="multiple">
+                            <!-- Will be populated via AJAX -->
+                        </select>
+                        <label for="employees" class="fw-semibold">
+                            <i class="fas fa-users me-2"></i>Select Employees (Max 5)
+                        </label>
+                    </div>
+                </div>
+                <div class="col-md-2 d-flex align-items-end">
+                    <button type="button" id="generateReport" class="btn btn-primary btn-lg w-100 shadow-sm py-3">
+                        <i class="fas fa-chart-bar me-2"></i> Generate
+                    </button>
                 </div>
             </div>
         </div>
     </div>
 
+    <!-- Report Content -->
     <div id="reportContent" class="d-none">
-        <!-- First row - Performance -->
-        <div class="row mb-4">
-            <div class="col-md-6">
-                <div class="card shadow-sm border-0 rounded-lg h-100">
-                    <div class="card-header text-white" style="background-color: #00c0ef;">
-                        <h5 class="mb-0"><i class="fas fa-chart-pie me-2"></i>Performance Grade Distribution</h5>
-                    </div>
-                    <div class="card-body" style="height: 300px;">
-                        <canvas id="performanceChart"></canvas>
-                    </div>
-                </div>
+        <!-- Performance Section -->
+        <div class="card shadow border-0 mb-4">
+            <div class="card-header bg-gradient-primary text-white py-3">
+                <h5 class="mb-0">
+                    <i class="fas fa-tachometer-alt me-2"></i>Performance Metrics
+                </h5>
             </div>
-            <div class="col-md-6">
-                <div class="card shadow-sm border-0 rounded-lg h-100">
-                    <div class="card-header text-white" style="background-color: #00a65a;">
-                        <h5 class="mb-0"><i class="fas fa-chart-bar me-2"></i>Performance Score Comparison</h5>
+            <div class="card-body">
+                <div class="row g-4">
+                    <div class="col-md-6">
+                        <div class="card h-100 border-0 shadow-sm">
+                            <div class="card-header bg-info text-white">
+                                <h6 class="mb-0"><i class="fas fa-chart-pie me-2"></i>Grade Distribution</h6>
+                            </div>
+                            <div class="card-body position-relative" style="height: 300px;">
+                                <canvas id="performanceChart"></canvas>
+                                <div class="chart-overlay d-none">
+                                    <div class="spinner-border text-primary" role="status"></div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                    <div class="card-body" style="height: 300px;">
-                        <canvas id="performanceScoreChart"></canvas>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Second row - Discipline -->
-        <div class="row mb-4">
-            <div class="col-md-6">
-                <div class="card shadow-sm border-0 rounded-lg h-100">
-                    <div class="card-header text-white" style="background-color: #f39c12;">
-                        <h5 class="mb-0"><i class="fas fa-chart-pie me-2"></i>Discipline Grade Distribution</h5>
-                    </div>
-                    <div class="card-body" style="height: 300px;">
-                        <canvas id="disciplineChart"></canvas>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-6">
-                <div class="card shadow-sm border-0 rounded-lg h-100">
-                    <div class="card-header text-white" style="background-color: #dd4b39;">
-                        <h5 class="mb-0"><i class="fas fa-chart-bar me-2"></i>Discipline Score Comparison</h5>
-                    </div>
-                    <div class="card-body" style="height: 300px;">
-                        <canvas id="disciplineScoreChart"></canvas>
+                    <div class="col-md-6">
+                        <div class="card h-100 border-0 shadow-sm">
+                            <div class="card-header bg-success text-white">
+                                <h6 class="mb-0"><i class="fas fa-chart-bar me-2"></i>Score Comparison</h6>
+                            </div>
+                            <div class="card-body position-relative" style="height: 300px;">
+                                <canvas id="performanceScoreChart"></canvas>
+                                <div class="chart-overlay d-none">
+                                    <div class="spinner-border text-primary" role="status"></div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- Third row - E-Learning -->
-        <div class="row mb-4">
-            <div class="col-md-6">
-                <div class="card shadow-sm border-0 rounded-lg h-100">
-                    <div class="card-header text-white" style="background-color: #3c8dbc;">
-                        <h5 class="mb-0"><i class="fas fa-chart-pie me-2"></i>E-Learning Grade Distribution</h5>
-                    </div>
-                    <div class="card-body" style="height: 300px;">
-                        <canvas id="elearningChart"></canvas>
-                    </div>
-                </div>
+        <!-- Discipline Section -->
+        <div class="card shadow border-0 mb-4">
+            <div class="card-header bg-gradient-warning text-white py-3">
+                <h5 class="mb-0">
+                    <i class="fas fa-user-shield me-2"></i>Discipline Metrics
+                </h5>
             </div>
-            <div class="col-md-6">
-                <div class="card shadow-sm border-0 rounded-lg h-100">
-                    <div class="card-header text-white" style="background-color: #605ca8;">
-                        <h5 class="mb-0"><i class="fas fa-chart-bar me-2"></i>E-Learning Score Comparison</h5>
+            <div class="card-body">
+                <div class="row g-4">
+                    <div class="col-md-6">
+                        <div class="card h-100 border-0 shadow-sm">
+                            <div class="card-header bg-warning text-white">
+                                <h6 class="mb-0"><i class="fas fa-chart-pie me-2"></i>Grade Distribution</h6>
+                            </div>
+                            <div class="card-body position-relative" style="height: 300px;">
+                                <canvas id="disciplineChart"></canvas>
+                                <div class="chart-overlay d-none">
+                                    <div class="spinner-border text-primary" role="status"></div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                    <div class="card-body" style="height: 300px;">
-                        <canvas id="elearningScoreChart"></canvas>
+                    <div class="col-md-6">
+                        <div class="card h-100 border-0 shadow-sm">
+                            <div class="card-header bg-danger text-white">
+                                <h6 class="mb-0"><i class="fas fa-chart-bar me-2"></i>Score Comparison</h6>
+                            </div>
+                            <div class="card-body position-relative" style="height: 300px;">
+                                <canvas id="disciplineScoreChart"></canvas>
+                                <div class="chart-overlay d-none">
+                                    <div class="spinner-border text-primary" role="status"></div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- Fourth row - Final scores -->
-        <div class="row mb-4">
-            <div class="col-md-6">
-                <div class="card shadow-sm border-0 rounded-lg h-100">
-                    <div class="card-header text-white" style="background-color: #7e57c2;">
-                        <h5 class="mb-0"><i class="fas fa-chart-pie me-2"></i>Final Grade Distribution</h5>
+        <!-- E-Learning Section -->
+        <div class="card shadow border-0 mb-4">
+            <div class="card-header bg-gradient-info text-white py-3">
+                <h5 class="mb-0">
+                    <i class="fas fa-laptop-code me-2"></i>E-Learning Metrics
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row g-4">
+                    <div class="col-md-6">
+                        <div class="card h-100 border-0 shadow-sm">
+                            <div class="card-header bg-primary text-white">
+                                <h6 class="mb-0"><i class="fas fa-chart-pie me-2"></i>Grade Distribution</h6>
+                            </div>
+                            <div class="card-body position-relative" style="height: 300px;">
+                                <canvas id="elearningChart"></canvas>
+                                <div class="chart-overlay d-none">
+                                    <div class="spinner-border text-primary" role="status"></div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                    <div class="card-body" style="height: 300px;">
-                        <canvas id="finalGradeChart"></canvas>
+                    <div class="col-md-6">
+                        <div class="card h-100 border-0 shadow-sm">
+                            <div class="card-header bg-success text-white">
+                                <h6 class="mb-0"><i class="fas fa-chart-bar me-2"></i>Score Comparison</h6>
+                            </div>
+                            <div class="card-body position-relative" style="height: 300px;">
+                                <canvas id="elearningScoreChart"></canvas>
+                                <div class="chart-overlay d-none">
+                                    <div class="spinner-border text-primary" role="status"></div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
-            <div class="col-md-6">
-                <div class="card shadow-sm border-0 rounded-lg h-100">
-                    <div class="card-header text-white" style="background-color: #222d32;">
-                        <h5 class="mb-0"><i class="fas fa-chart-bar me-2"></i>Final Score Comparison</h5>
-                    </div>
-                    <div class="card-body" style="height: 300px;">
-                        <canvas id="finalScoreChart"></canvas>
-                    </div>
-                </div>
-            </div>
-
         </div>
 
-        <!-- Fifth row - Radar chart -->
-        <div class="row mb-4">
-            <div class="col-12">
-                <div class="card shadow-sm border-0 rounded-lg">
-                    <div class="card-header text-white" style="background-color: #00a65a;">
-                        <h5 class="mb-0"><i class="fas fa-radar me-2"></i>Overall Performance Radar</h5>
+        <!-- Final Scores Section -->
+        <div class="card shadow border-0 mb-4">
+            <div class="card-header bg-gradient-purple text-white py-3">
+                <h5 class="mb-0">
+                    <i class="fas fa-star me-2"></i>Final Evaluation Metrics
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row g-4">
+                    <div class="col-md-6">
+                        <div class="card h-100 border-0 shadow-sm">
+                            <div class="card-header bg-primary text-white">
+                                <h6 class="mb-0"><i class="fas fa-chart-pie me-2"></i>Grade Distribution</h6>
+                            </div>
+                            <div class="card-body position-relative" style="height: 300px;">
+                                <canvas id="finalGradeChart"></canvas>
+                                <div class="chart-overlay d-none">
+                                    <div class="spinner-border text-primary" role="status"></div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                    <div class="card-body" style="height: 400px;">
+                    <div class="col-md-6">
+                        <div class="card h-100 border-0 shadow-sm">
+                            <div class="card-header bg-dark text-white">
+                                <h6 class="mb-0"><i class="fas fa-chart-bar me-2"></i>Score Comparison</h6>
+                            </div>
+                            <div class="card-body position-relative" style="height: 300px;">
+                                <canvas id="finalScoreChart"></canvas>
+                                <div class="chart-overlay d-none">
+                                    <div class="spinner-border text-primary" role="status"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Radar Chart Section -->
+        <div class="card shadow border-0">
+            <div class="card-header bg-gradient-success text-white py-3">
+                <h5 class="mb-0">
+                    <i class="fas fa-radar me-2"></i>Overall Performance Comparison
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-body position-relative" style="height: 400px;">
                         <canvas id="radarChart"></canvas>
+                        <div class="chart-overlay d-none">
+                            <div class="spinner-border text-primary" role="status"></div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -152,89 +230,186 @@
 </div>
 @endsection
 
-@push('styles')
+
 <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
 <style>
-    .select2-container .select2-selection--multiple {
-        min-height: 38px;
+    .test {
+        --primary-color: #3c8dbc;
+        --secondary-color: #6c757d;
+        --success-color: #28a745;
+        --info-color: #17a2b8;
+        --warning-color: #ffc107;
+        --danger-color: #dc3545;
+        --indigo-color: #6610f2;
+        --purple-color: #6f42c1;
+    }
+
+    body {
+        background-color: #f8f9fa;
     }
 
     .card {
+        border-radius: 0.5rem;
         transition: all 0.3s ease;
+        overflow: hidden;
     }
 
     .card:hover {
         transform: translateY(-5px);
-        box-shadow: 0 1rem 3rem rgba(0, 0, 0, .175) !important;
+        box-shadow: 0 1rem 3rem rgba(0, 0, 0, 0.1) !important;
+    }
+
+    .card-header {
+        border-bottom: none;
+        font-weight: 600;
+    }
+
+    .bg-gradient-primary {
+        background: linear-gradient(135deg, #3c8dbc 0%, #367fa9 100%);
+    }
+
+    .bg-gradient-warning {
+        background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);
+    }
+
+    .bg-gradient-info {
+        background: linear-gradient(135deg, #17a2b8 0%, #117a8b 100%);
+    }
+
+    .bg-gradient-purple {
+        background: linear-gradient(135deg, #6f42c1 0%, #5a2d9a 100%);
+    }
+
+    .bg-gradient-success {
+        background: linear-gradient(135deg, #28a745 0%, #1e7e34 100%);
+    }
+
+
+    .form-floating>label {
+        padding: 1rem 0.75rem;
     }
 
     .select2-container--default .select2-selection--multiple {
+        min-height: calc(3.5rem + 2px);
+        padding-top: 1.625rem;
         border-radius: 0.375rem;
-    }
-
-    .form-select:focus,
-    .select2-container--default.select2-container--focus .select2-selection--multiple {
-        border-color: #86b7fe;
-        outline: 0;
-        box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
-    }
-
-    .btn {
-        padding: 0.5rem 1rem;
-        border-radius: 0.375rem;
-        transition: all 0.15s ease-in-out;
-    }
-
-    .btn:hover {
-        transform: translateY(-2px);
-    }
-
-    /* Improved Select2 styling */
-    .select2-container {
-        width: 100% !important;
-    }
-
-    .select2-selection__choice {
-        background-color: #3c8dbc !important;
-        color: white !important;
-        border: none !important;
-        padding: 2px 8px !important;
-        margin: 3px !important;
-        border-radius: 3px !important;
-    }
-
-    .select2-selection__choice__remove {
-        color: white !important;
-        margin-right: 5px !important;
-    }
-
-    .select2-search__field {
-        width: 100% !important;
-    }
-
-    .select2-container--default .select2-selection--multiple {
-        background-color: white;
         border: 1px solid #ced4da;
-        padding: 5px;
     }
 
-    /* Custom tooltip styling */
+    .select2-container--default .select2-selection--multiple .select2-selection__choice {
+        background-color: var(--primary-color);
+        border: none;
+        color: var(--primary-color);
+        padding: 0.25rem 0.5rem;
+        margin-top: 0.5rem;
+    }
+
+    .select2-container--default .select2-selection--multiple .select2-selection__choice__remove {
+        color: var(--primary-color);
+        margin-right: 5px;
+    }
+
+    .btn-primary {
+        background-color: var(--primary-color);
+        border-color: var(--primary-color);
+    }
+
+    .btn-primary:hover {
+        background-color: #367fa9;
+        border-color: #367fa9;
+    }
+
+    .chart-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: rgba(255, 255, 255, 0.8);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 10;
+    }
+
+    .bg-light-gradient {
+        background: linear-gradient(to bottom, #f8f9fa 0%, #e9ecef 100%);
+    }
+
+    /* Custom scrollbar */
+    ::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
+    }
+
+    ::-webkit-scrollbar-track {
+        background: #f1f1f1;
+    }
+
+    ::-webkit-scrollbar-thumb {
+        background: var(--primary-color);
+        border-radius: 10px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+        background: #367fa9;
+    }
+
+    /* Tooltip styling */
     .chart-tooltip {
-        background: rgba(0, 0, 0, 0.7);
+        position: absolute;
+        background: rgba(0, 0, 0, 0.8);
         color: white;
         padding: 8px 12px;
         border-radius: 4px;
         font-size: 12px;
+        pointer-events: none;
+        z-index: 100;
+        transition: all 0.3s ease;
+    }
+
+    /* Responsive adjustments */
+    @media (max-width: 768px) {
+        .card-header h5 {
+            font-size: 1.1rem;
+        }
+
+        .form-floating>label {
+            font-size: 0.9rem;
+        }
+    }
+
+    #toast-container>.toast-success {
+        background-color: #28a745 !important;
+        /* Warna hijau yang lebih terang */
+        color: white !important;
+        /* Teks jadi putih */
+        opacity: 1 !important;
+        /* Hilangkan transparansi */
+        font-weight: bold;
     }
 </style>
-@endpush
+
 
 @push('scripts')
 <script src="https://cdn.jsdelivr.net/npm/chart.js@3.7.1/dist/chart.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script src="https://cdn.jsdelivr.net/npm/toastr@2.1.4/build/toastr.min.js"></script>
 <script>
     $(document).ready(function() {
+        // Initialize tooltips
+        $('[data-bs-toggle="tooltip"]').tooltip();
+
+        // Initialize toastr
+        toastr.options = {
+            "closeButton": true,
+            "progressBar": true,
+            "positionClass": "toast-top-right",
+            "timeOut": "5000"
+        };
+
         // Available grades in order
         const allGrades = ['A', 'A-', 'B+', 'B', 'B-', 'C+', 'C', 'C-', 'D+', 'D', 'D-', 'E+', 'E', 'F'];
 
@@ -271,11 +446,14 @@
             'E': 'rgb(165, 0, 0)'
         };
 
-        // Initialize Select2 for employees
+        // Initialize Select2 for employees with enhanced styling
         $('#employees').select2({
-            placeholder: 'Select employees (max 5)',
+            placeholder: 'Search employees...',
             maximumSelectionLength: 5,
             width: '100%',
+            closeOnSelect: false,
+            templateResult: formatEmployee,
+            templateSelection: formatEmployeeSelection,
             ajax: {
                 url: "{{ route('api.employees') }}",
                 dataType: 'json',
@@ -285,7 +463,9 @@
                         results: $.map(data, function(item) {
                             return {
                                 text: item.name,
-                                id: item.id
+                                id: item.id,
+                                department: item.department || 'N/A',
+                                position: item.position || 'N/A'
                             }
                         })
                     };
@@ -294,11 +474,43 @@
             }
         });
 
-        // Initialize Select2 for years
+        // Format employee display in dropdown
+        function formatEmployee(employee) {
+            if (!employee.id) {
+                return employee.text;
+            }
+
+            var $container = $(
+                '<div class="d-flex justify-content-between align-items-center">' +
+                '<div>' +
+                '<span class="fw-semibold">' + employee.text + '</span>' +
+                '<div class="text-muted small">' + employee.position.position + '</div>' +
+                '</div>' +
+                '<span class="badge bg-primary">' + employee.department.department + '</span>' +
+                '</div>'
+            );
+
+            return $container;
+        }
+
+        // Format selected employee display
+        function formatEmployeeSelection(employee) {
+            if (!employee.id) {
+                return employee.text;
+            }
+
+            return $(
+                '<span class="fw-semibold">' + employee.text + '</span>' +
+                '<span class="text-muted small ms-2">' + (employee.department.department || '') + '</span>'
+            );
+        }
+
+        // Initialize Select2 for years with enhanced styling
         $('#years').select2({
-            placeholder: 'Select years (max 5)',
+            placeholder: 'Select years...',
             maximumSelectionLength: 5,
-            width: '100%'
+            width: '100%',
+            closeOnSelect: false
         });
 
         // Fetch years dynamically
@@ -322,36 +534,51 @@
                         yearSelect.append(new Option(year, year, index === 0, index === 0));
                     });
                 }
+
+                // Trigger change to update Select2
+                yearSelect.trigger('change');
             },
             error: function(error) {
                 console.error("Error fetching years:", error);
 
                 // Fallback to current year
                 const currentYear = new Date().getFullYear();
-                $('#years').append(new Option(currentYear, currentYear, true, true));
+                $('#years').append(new Option(currentYear, currentYear, true, true)).trigger('change');
             }
         });
 
         let charts = {};
 
-        // Add loading indicator
-        function showLoading(elementId) {
-            const element = $('#' + elementId);
-            element.html('<div class="d-flex justify-content-center align-items-center h-100"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div></div>');
+        // Show loading indicator for a chart
+        function showChartLoading(chartId) {
+            $('#' + chartId).siblings('.chart-overlay').removeClass('d-none');
+        }
+
+        // Hide loading indicator for a chart
+        function hideChartLoading(chartId) {
+            $('#' + chartId).siblings('.chart-overlay').addClass('d-none');
         }
 
         // Event handler for the generate report button
         $('#generateReport').click(function() {
             const years = $('#years').val();
             const employeeIds = $('#employees').val();
+            const $btn = $(this);
+
+            // Save original button content
+            const originalContent = $btn.html();
+
+            // Show loading state
+            $btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin me-2"></i> Generating...');
 
             if (!employeeIds || employeeIds.length === 0) {
                 Swal.fire({
                     icon: 'warning',
                     title: 'Selection Required',
                     text: 'Please select at least one employee',
-                    confirmButtonColor: '#3085d6'
+                    confirmButtonColor: '#3c8dbc'
                 });
+                $btn.prop('disabled', false).html(originalContent);
                 return;
             }
 
@@ -360,19 +587,23 @@
                     icon: 'warning',
                     title: 'Selection Required',
                     text: 'Please select at least one year',
-                    confirmButtonColor: '#3085d6'
+                    confirmButtonColor: '#3c8dbc'
                 });
+                $btn.prop('disabled', false).html(originalContent);
                 return;
             }
 
-            // Show the report content
-            $('#reportContent').removeClass('d-none');
+            // Show the report content with animation
+            $('#reportContent').removeClass('d-none').hide().fadeIn(500);
 
-            // Show loading indicators
-            ['performanceChart', 'performanceScoreChart', 'disciplineChart',
+            // Show loading indicators for all charts
+            const chartIds = [
+                'performanceChart', 'performanceScoreChart', 'disciplineChart',
                 'disciplineScoreChart', 'elearningChart', 'elearningScoreChart',
                 'finalScoreChart', 'finalGradeChart', 'radarChart'
-            ].forEach(showLoading);
+            ];
+
+            chartIds.forEach(showChartLoading);
 
             // Fetch data from API
             $.ajax({
@@ -387,6 +618,11 @@
 
                     // Show success notification
                     toastr.success('Report generated successfully!');
+
+                    // Scroll to report section
+                    $('html, body').animate({
+                        scrollTop: $('#reportContent').offset().top - 20
+                    }, 500);
                 },
                 error: function(error) {
                     console.error("Error fetching data:", error);
@@ -395,16 +631,23 @@
                         icon: 'error',
                         title: 'Data Loading Error',
                         text: 'Error loading evaluation data. Please try again.',
-                        confirmButtonColor: '#3085d6'
+                        confirmButtonColor: '#3c8dbc'
                     });
 
                     // Hide report section
                     $('#reportContent').addClass('d-none');
+                },
+                complete: function() {
+                    // Restore button state
+                    $btn.prop('disabled', false).html(originalContent);
+
+                    // Hide loading indicators
+                    chartIds.forEach(hideChartLoading);
                 }
             });
         });
 
-        // Modify your renderCharts function to use the new chart type
+        // Modified renderCharts function to use the selected years
         function renderCharts(data) {
             // Destroy existing charts to prevent duplicates
             Object.keys(charts).forEach(key => {
@@ -453,8 +696,8 @@
                 'Performance Scores',
                 data,
                 'performance_score',
-                'rgba(0, 166, 90, 0.7)',
-                'rgb(0, 166, 90)'
+                'rgba(40, 167, 69, 0.7)',
+                'rgb(40, 167, 69)'
             );
 
             charts.disciplineScore = createScoreComparisonChart(
@@ -462,8 +705,8 @@
                 'Discipline Scores',
                 data,
                 'discipline_score',
-                'rgba(221, 75, 57, 0.7)',
-                'rgb(221, 75, 57)'
+                'rgba(220, 53, 69, 0.7)',
+                'rgb(220, 53, 69)'
             );
 
             charts.elearningScore = createScoreComparisonChart(
@@ -471,8 +714,8 @@
                 'E-Learning Scores',
                 data,
                 'elearning_score',
-                'rgba(96, 92, 168, 0.7)',
-                'rgb(96, 92, 168)'
+                'rgba(102, 16, 242, 0.7)',
+                'rgb(102, 16, 242)'
             );
 
             charts.finalScore = createScoreComparisonChart(
@@ -480,20 +723,20 @@
                 'Final Scores',
                 data,
                 'final_score',
-                'rgba(34, 45, 50, 0.7)',
-                'rgb(34, 45, 50)'
+                'rgba(33, 37, 41, 0.7)',
+                'rgb(33, 37, 41)'
             );
         }
 
         function createGradeLineChart(canvasId, label, data) {
             const ctx = document.getElementById(canvasId).getContext('2d');
 
-            // Extract unique employees and years
+            // Extract unique employees and years (from actual data, not from selection)
             const employees = [...new Set(data.map(item => item.employee_name))];
-            const years = [...new Set(data.map(item => item.year))].sort();
+            const years = [...new Set(data.map(item => item.year))].sort(); // Sort years in ascending order
 
-            // Define your grade order
-            const gradeOrder = ['A', 'A-', 'B+', 'B', 'B-', 'C+', 'C', 'C-', 'D+', 'D', 'D-', 'E', 'F'];
+            // Define your grade order from highest (A) to lowest (F)
+            const gradeOrder = ['A', 'A-', 'B+', 'B', 'B-', 'C+', 'C', 'C-', 'D+', 'D', 'D-', 'E+', 'E', 'F'];
 
             // Determine which field to use based on chart type
             const metricType = label.toLowerCase().includes('performance') ? 'performance' :
@@ -515,8 +758,8 @@
                     const yearData = employeeData.find(item => item.year == year);
                     if (yearData) {
                         gradeData.push({
-                            x: yearData[metricType], // Grade as x-value
-                            y: year, // Year as y-value
+                            x: year,
+                            y: yearData[metricType],
                             grade: yearData[metricType],
                             score: yearData[`${metricType}_score`] || 0
                         });
@@ -553,22 +796,25 @@
                     scales: {
                         x: {
                             type: 'category',
-                            labels: gradeOrder,
+                            labels: years,
                             title: {
                                 display: true,
-                                text: 'Grade',
+                                text: 'Year',
                                 font: {
                                     weight: 'bold'
                                 }
+                            },
+                            grid: {
+                                display: false
                             }
                         },
                         y: {
                             type: 'category',
-                            labels: years,
+                            labels: gradeOrder,
                             reverse: false,
                             title: {
                                 display: true,
-                                text: 'Year',
+                                text: 'Grade',
                                 font: {
                                     weight: 'bold'
                                 }
@@ -580,30 +826,53 @@
                     },
                     plugins: {
                         tooltip: {
+                            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                            titleFont: {
+                                size: 14,
+                                weight: 'bold'
+                            },
+                            bodyFont: {
+                                size: 13
+                            },
+                            padding: 12,
                             callbacks: {
                                 title: function(tooltipItems) {
-                                    return `${tooltipItems[0].dataset.label} - ${tooltipItems[0].raw.y}`;
+                                    return `${tooltipItems[0].dataset.label} - ${tooltipItems[0].raw.x}`;
                                 },
                                 label: function(context) {
-                                    return `Grade: ${context.raw.grade} (Score: ${context.raw.score})`;
+                                    return [
+                                        `Grade: ${context.raw.grade}`,
+                                        `Score: ${context.raw.score}`
+                                    ];
                                 }
                             }
                         },
                         legend: {
-                            position: 'top'
+                            position: 'top',
+                            labels: {
+                                font: {
+                                    size: 12
+                                },
+                                padding: 20,
+                                usePointStyle: true,
+                                pointStyle: 'circle'
+                            }
                         }
+                    },
+                    interaction: {
+                        intersect: false,
+                        mode: 'index'
                     }
                 }
             });
         }
-
 
         function createScoreComparisonChart(canvasId, label, data, scoreKey, backgroundColor, borderColor) {
             const ctx = document.getElementById(canvasId).getContext('2d');
 
             // Group by year and employee
             const yearGroups = {};
-            const years = [...new Set(data.map(item => item.year))];
+            const years = [...new Set(data.map(item => item.year))].sort();
 
             years.forEach(year => {
                 yearGroups[year] = data.filter(item => item.year == year);
@@ -623,12 +892,15 @@
                     data: yearGroups[year].map(item => item[scoreKey]),
                     backgroundColor: bgColor,
                     borderColor: bdColor,
-                    borderWidth: 1
+                    borderWidth: 1,
+                    borderRadius: 4,
+                    hoverBackgroundColor: `hsla(${hue}, 70%, 50%, 0.9)`,
+                    hoverBorderColor: bdColor
                 });
             });
 
             // Get employee names (using the first year's data for labels)
-            const employeeLabels = yearGroups[years[0]].map(item => item.employee_name);
+            const employeeLabels = yearGroups[years[0]] ? yearGroups[years[0]].map(item => item.employee_name) : [];
 
             return new Chart(ctx, {
                 type: 'bar',
@@ -641,25 +913,65 @@
                     maintainAspectRatio: false,
                     scales: {
                         y: {
-                            beginAtZero: true
+                            beginAtZero: true,
+                            grid: {
+                                display: true,
+                                drawBorder: false
+                            },
+                            ticks: {
+                                precision: 0
+                            }
+                        },
+                        x: {
+                            grid: {
+                                display: false
+                            }
                         }
                     },
                     plugins: {
                         tooltip: {
+                            enabled: true,
+                            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                            titleFont: {
+                                size: 14,
+                                weight: 'bold'
+                            },
+                            bodyFont: {
+                                size: 13
+                            },
+                            padding: 12,
+                            displayColors: true,
                             callbacks: {
+                                title: function(tooltipItems) {
+                                    return tooltipItems[0].label;
+                                },
                                 label: function(context) {
                                     const datasetLabel = context.dataset.label || '';
-                                    const value = context.raw;
-                                    return `${datasetLabel}: ${value}`;
+                                    const value = context.raw !== null ? context.raw : 0;
+                                    return `${datasetLabel}: ${value.toFixed(2)}`;
                                 }
                             }
+                        },
+                        legend: {
+                            position: 'top',
+                            labels: {
+                                font: {
+                                    size: 12
+                                },
+                                padding: 20,
+                                usePointStyle: true,
+                                pointStyle: 'rectRounded'
+                            }
                         }
+                    },
+                    interaction: {
+                        intersect: false,
+                        mode: 'index'
                     }
                 }
             });
         }
 
-        // Modified function for radar chart
         function createEnhancedRadarChart(canvasId, data) {
             const ctx = document.getElementById(canvasId).getContext('2d');
 
@@ -683,7 +995,7 @@
             Object.values(uniqueEmployees).forEach(employee => {
                 // Generate a unique color
                 const hue = (index * 137) % 360;
-                const color = `hsla(${hue}, 70%, 60%, 0.7)`;
+                const color = `hsla(${hue}, 70%, 60%, 0.5)`;
                 const borderColor = `hsl(${hue}, 70%, 50%)`;
 
                 datasets.push({
@@ -701,11 +1013,14 @@
                     pointBorderColor: '#fff',
                     pointHoverBackgroundColor: '#fff',
                     pointHoverBorderColor: borderColor,
-                    pointRadius: 4
+                    pointRadius: 5,
+                    pointHoverRadius: 7
                 });
 
                 index++;
             });
+
+
 
             return new Chart(ctx, {
                 type: 'radar',

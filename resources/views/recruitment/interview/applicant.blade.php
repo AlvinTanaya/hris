@@ -1569,7 +1569,7 @@
 
 
         // View Applicant Details
-        $('.view-btn').click(function() {
+        $(document).on('click', '.view-btn', function() {
             const id = $(this).data('id');
             $.ajax({
                 url: `/recruitment/applicant/show/${id}`,
@@ -1655,14 +1655,17 @@
             });
         });
 
-        // Schedule Interview
-        $('.schedule-btn').click(function() {
+
+
+        
+        // Untuk tombol Schedule
+        $(document).on('click', '.schedule-btn', function() {
             const id = $(this).data('id');
             $('#scheduleForm').data('id', id);
             $('#scheduleModal').modal('show');
         });
 
-        $('#saveSchedule').click(function() {
+        $(document).on('click', '#saveSchedule', function() {
             const id = $('#scheduleForm').data('id');
             const formData = new FormData($('#scheduleForm')[0]);
 
@@ -1684,8 +1687,7 @@
         });
 
         // Handle Status Updates (Approve/Decline)
-        $('.approve-btn, .decline-btn').click(function() {
-
+        $(document).on('click', '.approve-btn, .decline-btn', function() {
             const id = $(this).data('id');
             const status = $(this).hasClass('approve-btn') ? 'Approved' : 'Declined';
             $('#statusModalTitle').html(`<i class="fas fa-${status === 'Approved' ? 'check' : 'times'} me-2"></i>
@@ -1711,7 +1713,7 @@
             $('#statusModal').modal('show');
         });
 
-        $('#saveStatus').click(function() {
+        $(document).on('#saveStatus', function() {
             const id = $('#statusForm').data('id');
             const formData = new FormData($('#statusForm')[0]);
 
@@ -1734,7 +1736,7 @@
 
 
         // Position Exchange
-        $('.exchange-btn').click(function() {
+        $(document).on('click', '.exchange-btn', function() {
             const id = $(this).data('id');
 
             // Load available positions
@@ -1804,11 +1806,11 @@
         // Add to Employees handler
         let selectedApplicantId = null;
 
-        // Ketika tombol Add Employee diklik, tampilkan modal
-        $('.add-employee-btn').click(function() {
+        // Untuk tombol Add Employee
+        $(document).on('click', '.add-employee-btn', function() {
             selectedApplicantId = $(this).data('id');
             $('#applicant_id').val(selectedApplicantId);
-            $('#addEmployeeModal').modal('show'); // Tampilkan modal
+            $('#addEmployeeModal').modal('show');
         });
 
         // Ketika form modal disubmit

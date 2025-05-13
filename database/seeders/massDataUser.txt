@@ -1,0 +1,356 @@
+class User extends Authenticatable
+{
+    protected $table = 'users';
+
+    protected $fillable = [
+        'employee_id', formatnya adalah seperti ini
+  // Ambil join_date dari request
+        $joinDate = $request->join_date ? Carbon::parse($request->join_date) : now();
+        $yearMonth = $joinDate->format('Ym'); // Format YYYYMM
+
+        // Cari employee terakhir di bulan tersebut
+        $lastEmployee = User::where('employee_id', 'like', "{$yearMonth}%")
+            ->orderBy('employee_id', 'desc')
+            ->first();
+
+        // Tentukan nomor urut
+        $newEmployeeNumber = 1;
+        if ($lastEmployee) {
+            $lastNumber = intval(substr($lastEmployee->employee_id, -3)); // Ambil 3 angka terakhir
+            $newEmployeeNumber = $lastNumber + 1;
+        }
+        $employeeId = $yearMonth . str_pad($newEmployeeNumber, 3, '0', STR_PAD_LEFT);
+
+           'position_id',
+           ini itu diambil dari tabel ini
+           Tabel employee_positions
+            id	position	ranking
+            1	Director	1	
+            2	General Manager	2
+            3	Manager	3
+            4	Supervisor	4
+            5	Staff	5
+
+
+        'department_id',
+            ini itu diambil dari tabel ini
+
+            Tabel employee_departments
+        id	department	
+        1	Director	
+        2	General Manager	
+        3	Human Resources	
+        4	Finance and Accounting	
+        5	Administration	
+        6	Checker	
+        7	Marketing	
+        8	Driver	
+        9	Internal Audit	
+        10	Audit	
+        11	Information Technology	
+        12	Cleaning	
+        13	Security	
+
+        untuk position_id dan department_id ini pastikan setiap posisi punya 1 staff 1 supervisor 1 manager
+        nah unutk yang directur dan General Manager dan bagian Human resources gk usah karena aku sudah buat untuk departmen dan position lainnya belum
+        jadi kamu gk perlu buat GM DAN DIRECTOR dAN SEMAU PSIISI Department HUMAN Resources
+        
+        'name', terserah random generate
+        'email', random email jgn paaki yang exsit pakai terserah dah pakai email yang gk pernah dibuat
+        'phone_number', nomor telepon indonesia
+        'employee_status', nah ini ada 4 opsi 'Full Time', 'Contract', 'Part Time', 'Inactive' usahaain banayk kamu generaate yang full time terutama ini khusu untuk yang jawban manager gitu, lalau kedua itu utamakan yang contract, lalau partiem dan terakhir kasih sedkit mungkin 1-5 user itu Inactive
+        Nah khuss untuk yanh part time dan contract col dibawah ini wajib diisi kalau Full time dan inactive gk usag
+        'contract_start_date',
+        'contract_end_date',
+        'user_status', itu opsinya antara Banned/ Unbaned kasih yang Banned itu dikit aja 1-3 nah sisanya Unbaned
+              'join_date', terserah pastikan yang masuk akal
+
+
+        'ID_number', nomor ktp indonesia
+        'birth_date', 
+        'birth_place',
+        'religion', Islam, Katholik Kristen Buddha hindu
+        'gender', Male / Female
+        'ID_address', alamart terserah
+        'domicile_address', alamat terseraj
+        'height', tinggi badan terserah
+        'weight', tinggi bada terserah
+        'blood_type', A/ B/ AB/ O
+        'bpjs_employment', terseah angka
+        'bpjs_health', terserah angka
+        'sim', A,C / A / A,B / C Gitu 
+        'sim_number', bentuknay json {"A":"1231-323-3232","C":"1231-323-3232"} / {"A":"1231-323-3232"} / {"A":"1231-323-3232","B":"1231-323-3232"}
+        'password', buakan hash dari name yang diproses menjadi lowercase semua dan hapus sapsi gitu msial nama Alvin TAnaya jadi alvintanaya + 12345
+                'NPWP', bebas isinya
+            'bank_number', bentukunya harus json ["123123131231321","9679567967963"]/ ["123123131231321"]
+        'bank_name',bentukunya harus json ["Bank Central Asia (BCA)","Bank Mandiri"]/ ["Bank Central Asia (BCA)"]
+        'emergency_contact', bebas no tlp indonesia pastikan gk aktif ya bebas jngn  asih not lp assignable
+        'status', pilih antara TK/0, TK/1, TK/2, TK/3, K/1, K/2, K/3
+'distance', bebas lah 0-20 gitu
+ 'exit_date', isin kalau statusnya yang inactive
+        
+
+        'created_at',
+        'updated_at'
+    ];
+}
+
+
+class users_work_experience extends Model
+{
+    use HasFactory;
+
+    // Define the table name if it's not the plural of the model name
+    protected $table = 'users_work_experience';
+
+
+    protected $fillable = [
+              'users_id', cocokkan dengan id di atas
+        'company_name', bebeas
+        'position', bebas
+            'start_working',bebas mulai nya
+        'end_working', bebas akhirnya
+        'company_address', bebeas
+        'company_phone', bebas
+        'salary', bebas
+        'supervisor_name', bebas
+        'supervisor_phone', bebas
+        'job_desc', bebas
+        'reason', bebas ini alasan dia keluar
+        'benefit', bebas
+        'facility', bebas
+        'created_at',
+        'updated_at',
+    ];
+}
+
+
+class users_education extends Model
+{
+    use HasFactory;
+
+    protected $table = 'users_education';
+    protected $fillable = [
+          'users_id', seauikan dengan yang diaats
+        'degree', isi antara SMK/SMA/S1/S2
+        'educational_place', Bebas
+        'educational_city', isi denagn Jawa Timur
+        'educational_province', isi denagn Kota Surabaya aja
+        'start_education', bebas ya sesauikan kalau biasanya sma kan 3 tahun kalau kuliah 4 athun
+        'end_education', bebas
+        'grade', kalau grade SMA/ SMK ya antara 0-100 tp kalau S1/S2 ya antara gpa 0 - 4.0
+        'major', bebas
+        'created_at',
+        'updated_at',
+    ];
+}
+
+
+
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+
+class recruitment_applicant_family extends Model
+{
+    use HasFactory;
+
+    // Define the table name if it's not the plural of the model name
+    protected $table = 'recruitment_applicant_family';
+
+    // Define which fields can be mass-assigned
+    protected $fillable = [
+        'users_id', sesuaikan di atas applicantnay
+        'name', bebas
+        'relation', pilih antara Father/Mother/Wife/Husband?Child
+        'phone_number', bebas no tlp indonesia
+        'gender', Male/Female
+            'birth_date', bebas
+        'birth_place', bebas
+        'ID_number', no ktp orang itu
+         'address', alamat
+           'job', pekerjaannay seperti wiraswasta/ guru dsb
+        'created_at',
+        'updated_at',
+    ];
+}
+
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+
+class recruitment_applicant_language extends Model
+{
+    use HasFactory;
+
+    // Define the table name if it's not the plural of the model name
+    protected $table = 'recruitment_applicant_language';
+
+    // Define which fields can be mass-assigned
+    protected $fillable = [
+          'users_id', sesauikan yang diaatas
+        'language', pilih antara English/Mandarin/Indonesian
+        'verbal', pilih Antara Active/Passive
+        'written', pilih natara Active/Passive
+        'created_at',
+        'updated_at',
+    ];
+}
+
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+
+class recruitment_applicant_training extends Model
+{
+    use HasFactory;
+
+    // Define the table name if it's not the plural of the model name
+    protected $table = 'recruitment_applicant_training';
+
+    // Define which fields can be mass-assigned
+    protected $fillable = [
+               'users_id', sesauikan diatas applicant_id
+        'training_name', bebas terserah dah
+        'training_city', isi Jawa Timur
+        'training_province', isi Kota Surabaya
+        'start_date', bebas dah
+        'end_date', bebas dah
+        'created_at',
+        'updated_at',
+    ];
+}
+
+
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+
+class recruitment_applicant_organization extends Model
+{
+    use HasFactory;
+
+    // Define the table name if it's not the plural of the model name
+    protected $table = 'recruitment_applicant_organization';
+
+    // Define which fields can be mass-assigned
+    protected $fillable = [
+         'users_id', sesauikan denagn id diatas
+        'organization_name', bebas
+        'activity_type', isi bebas aktivitas dalam organisasi
+        'position', bebas isinya
+        'city', isi denan Kota Surabaya
+        'province', isi dengan Jawa Timur
+        'start_date', bebas
+        'end_date', bebas
+        'created_at',
+        'updated_at',
+    ];
+}
+
+
+nah ini ada tabel user extend nah jadi gini untuk pegwai yang diatas itu yg lu buat untuk yang employee_statusnya itu Contract /  Part Time
+itu bisa diperpanjang nah itu diamsukkin disini gitu jadi tolong waktu kamu buat kan itu misal diatas itu ya kamu buatk kanotraknya 1 tahunnah dia itu ada history ternyata dia awalnya kerja 6 bulan lalau diperpanjang lagi 6 bulan gitu jadi dia nyimpen history nah buatin gitu
+
+<?php
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+
+class history_extend_employee extends Model
+{
+    use HasFactory;
+
+    protected $table = 'users_extend_history';
+    
+    protected $fillable = [
+        'id',
+        'users_id',
+        'position_id',
+        'department_id',
+        'reason',
+        'start_date',
+        'end_date',
+        'created_at',
+        'updated_at',
+    ];
+    
+    // Relationships
+    public function position()
+    {
+        return $this->belongsTo(EmployeePosition::class, 'position_id');
+    }
+    
+    public function department()
+    {
+        return $this->belongsTo(EmployeeDepartment::class, 'department_id');
+    }
+}
+
+
+
+nah sama nah gini yang ini adalah hsotry perpindahnan jadi misal dia diterima awalnya staff lalu diuah menjadi superosire berarti dia kan mengalamari promosi nah dia dipindahkan
+nah sama juga misal ada demosi gitu atau juga ad mutasi dia di pindah itu ada history nah buaton juga beberapa hisoty user itu
+nah kalau penetapan artinay dia yang awalnya kontrak menjadi pegawai tetap gitu
+serta kalau resign artinya diberhantikan gitu bro
+
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+
+class history_transfer_employee extends Model
+{
+    use HasFactory;
+
+    protected $table = 'users_transfer_history';
+
+    protected $fillable = [
+        'id',
+        'users_id',
+        'old_position_id',
+        'old_department_id',
+        'new_position_id',
+        'new_department_id',
+        'transfer_type', -> Penetapan / Mutasi / Promosi / Demosi / Resign
+        'reason', 
+        'created_at',
+        'updated_at',
+    ];
+
+    // Relationships remain the same as before
+    public function oldPosition()
+    {
+        return $this->belongsTo(EmployeePosition::class, 'old_position_id');
+    }
+
+    public function newPosition()
+    {
+        return $this->belongsTo(EmployeePosition::class, 'new_position_id');
+    }
+
+    public function oldDepartment()
+    {
+        return $this->belongsTo(EmployeeDepartment::class, 'old_department_id');
+    }
+
+    public function newDepartment()
+    {
+        return $this->belongsTo(EmployeeDepartment::class, 'new_department_id');
+    }
+}

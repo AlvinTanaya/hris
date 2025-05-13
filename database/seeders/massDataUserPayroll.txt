@@ -1,0 +1,494 @@
+buatkan aku seeder 1 class laravel saja dari penjeasan aku dibawah itu, itu aksih ss contoh databse ku yang sudah ecsit gitu ingat loh ya 
+untuk class User, rule_shift, CustomHoliday, TimeOffPolicy, employee_department, employee_position gk usah di seeder kamu cukup ambil data yang ada  
+
+EmployeeAbsent,EmployeeShift,TimeOffAssign,  EmployeeOvertime, RequestTimeOff ini yang perlu disini
+
+owh ya utnuk yang calss yang perl diseeder pastikan kamu membaca culu apakah didalamnya itu ada datanay nggak contoh saat mengtur shift itu ada beberapa user yang sudah di atur dan end_datenya itu null sehingga masih berlaku oromtasi kamu gk boelah menmupuknay gitu
+
+lalu pada absent ada seditku yang udah aku kasih usernya pada tanggal tanggal tertentiu lalau pada time f asisng juga sudah ada bebearapa yang aku kasih lalau pada meployee overtime time time off requesrt juga ada ebeberapa aku aksih
+
+nah pastikan gk nabrak tgl" nya 
+
+serta aku ingin dia itu bervarisasi ya ada yang di declined ada yang masih pending ada yang approved, alalu pada hisft juga ada variasi
+
+nah jug akau igin danyanya itu dari 2023-2025 mei ini gitu jadi pastikan dia variasinya banyak dan masuk akal ya pastikan tgl libr dari api dan custom itu gk numpuk deqn request misal nih aku reqeust cuti di hari libur kan gk amasuk akakl aku lembur dia hari minggu yang libru kan juga gk masuk akal
+
+
+
+aku jelaskan dulu
+ntuk class User, rule_shift, CustomHoliday, TimeOffPolicy, employee_department, employee_position gk usah di seeder kamu cukup ambil data yang ada
+
+EmployeeAbsent,EmployeeShift,TimeOffAssign,  EmployeeOvertime, RequestTimeOff ini yang perlu disini
+
+Gini aku jealskan pada bagian users itu kan ada posiiton dan department nah ada datanya itu aku kasih gk perlu lu ubah tatu tambah nah gini yang di position itu ada rankgin nah sekarin kecil itu semaking psosotnya lebih tinggi gitu
+nah ada juga join date, dsb
+
+anh untuk employee abseentkamu harus gin iinputkan datanya gk boleh sekedar random tp haru smasuk akal pada user kan ada joindate nah pastikan tgl dia absensi itu jnagan dibawahnya dia join datekan gk masuk akan gitu
+lalau untuk datanay kamu harus cocokkan juga jam nya dengan jam employee shiftnya nah untuk employee shiftnay kalau gk ada ya buatkan saj agitu kalau ada ya sudah nah ingetkan dia end_datenya ada yang nul berrati kan berlaku untuk selamanay nah kamu buat dulu baru kamu atsus masuk kejra absendisnya
+nah juga selain shift kamu haru cek pada time off nah pada time off kan ada beberapa jenis itu nah itu gk usah lu tamah lu hapus lu pakai saja lalau kamu asisgn terlebih dahuu user itu punay qbalalnce bearap ya ng bisa dipakai pastikan juga masuk akal tida lebih dari quota rulenya, lalau waktu diassaign aku ingin kamu
+ngemass data di RequestTimeOff request timem off itu seuai kan jumlah balanc eyang dia punay lalau buatan nah itu ada ada ribet banget gini
+'start_date', dan 'end_date', itu bentuknya adalah datetime nah nah igni itu kan ada tipenya yang butuh time taungagak ka n contoh misal pada bagian cuti tahunan kan gk butuh maka
+start_date dan end_datenay dimodel gini 2025-05-08 00:00:00, 2025-05-09 23:59:59 dibuat 00000 dan 239559 kalau gk butuh input nah kalau yang buttuh misla untuk pulan gawal nah kamu harus ococokkan dnegan shift jam kerja nya
+kalau pulang awal kan pasti untuk start_datedia gk boleh kurang dari jam masuk dia kerja dan jam pulang tentu lebih kurang dari jam pulang dia nah sam keliakn juga dnegan masuk telat gitu harus seauu dan start_date dna enddate nay dimodle kyk gini
+2025-05-05 10:00:00, 2025-05-05 16:30:00.
+lanjut pada bian approval_status nya itu kan ada pending decline approved apstikan vaariasi ya nah utuk penjawalnay itu butuh 2 useryiatu dari kepala department tauitu manager department itu sendiri meisla di user dari deartment Checker dia reqeust yang approval pertama dulu si managernya dair deprtment itu sendiri
+lalau unutk aproval dfinal adalah bagian admin yaitu 3 orang si Directoru/Gm/Manager Human rsources nah gini ada peratutan kalau misal si reqeust itu positionnay supervisor atau satf kan dai harus approval dari meanager department sendiri alau antara 3 admin final itu kan
+nah kalau msial yang minta itu posisinya sebagai manager selain humanr esocuces kan dia gk perlu aprovel kepla departmen kan di amanagernya sendiri tp dia kan masih perlu final approval
+nah kaau misal si 3 adminnay yang rqeust tentu gk usah kepala departmentetapi kan haru sada parroval final dan tentu dia gk boleh accept sendii kan kan culu saya sebagai Gm izin tme off yg approe say asendiri nah itu perlu orang lainnya
+nah yang overtime konsepnya sama dengan reqesut time off itu,
+
+AKHIRNYA KAMU PERLU NGATUr di bagina absen nah waktui absent tentu kamu harus lihat dia shift kerjannay daept apa lalu untuk yang hari libur yang bsia kamu lihat pada custom holiday dan dari api bawah ini pastikan yang true itu gk boellh tglnay disii denag itu lalau serta absensi pada harui minggu itu libur tetapi sabtu masuk seuai denagn rule-shift yang dibuat itu contohnya
+nah pastikan dia akurat denagn rqeust time off misal untuk pulang awal contoh dia minta izin pulang awal jam 2 pulang nah dan di approve tuh request time ogffnay nah tentu waktu di absensni ya keluarnay dibuat 14:02 gitu bukan sembahrang jam yang cukup amsuk akal allau misal ada overtime dia lembur sampek jam 8 ya tentu diamsensi dai 8 05 gitu masuih masuk akala jangan jdisisi dajm 4 kan gk masuk akal
+gitu 
+
+
+
+https://api-harilibur.vercel.app/api
+{"holiday_date":"2025-12-25","holiday_name":"Hari Raya Natal","is_national_holiday":true},
+
+class User extends Authenticatable
+{
+    protected $table = 'users';
+
+    protected $fillable = [
+
+        'name', terserah random generate
+      'position_id',
+           ini itu diambil dari tabel ini
+           Tabel employee_positions
+            id	position	ranking
+            1	Director	1	
+            2	General Manager	2
+            3	Manager	3
+            4	Supervisor	4
+            5	Staff	5
+
+
+        'department_id',
+            ini itu diambil dari tabel ini
+
+            Tabel employee_departments
+        id	department	
+        1	Director	
+        2	General Manager	
+        3	Human Resources	
+        4	Finance and Accounting	
+        5	Administration	
+        6	Checker	
+        7	Marketing	
+        8	Driver	
+        9	Internal Audit	
+        10	Audit	
+        11	Information Technology	
+        12	Cleaning	
+        13	Security	
+
+        'employee_status', nah ini ada 4 opsi 'Full Time', 'Contract', 'Part Time', 'Inactive' usahaain banayk kamu generaate yang full time terutama ini khusu untuk yang jawban manager gitu, lalau kedua itu utamakan yang contract, lalau partiem dan terakhir kasih sedkit mungkin 1-5 user itu Inactive
+        Nah khuss untuk yanh part time dan contract col dibawah ini wajib diisi kalau Full time dan inactive gk usag
+        'contract_start_date',
+        'contract_end_date',
+
+        'join_date'
+
+        'birth_date', 
+        'birth_place',
+
+ 'exit_date', isin tgl kalau statusnya yang inactive
+
+    ];
+}
+
+
+
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+
+class rule_shift extends Model
+{
+    use HasFactory;
+    protected $table = 'rule_shift';
+
+    protected $fillable = [
+        'type', tipe rule shift
+        'hour_start', mulai jam kerja ini mbentuknya json
+        'hour_end', mulai jam akhir ini bentuknya json
+        'days', hari bentuknay json 
+        'created_at',
+        'updated_at',
+    ];
+}
+Tidak perlu kamu seedernya udah exsit
+isinya begini
+id type hour_start hour_end days
+
+5
+Morning
+["08:00","08:00","08:00","08:00","08:00","09:00"]
+["16:30","16:30","16:30","16:30","16:30","13:00"]
+["Monday","Tuesday","Wednesday","Thursday","Friday",Satuday"]
+6
+Afternoon
+["13:00","13:00","13:00","13:00","13:00","11:00"]
+["21:00","21:00","21:00","21:00","21:00","16:00"]
+["16:30","16:30","16:30","16:30","16:30","13:00"]
+["Monday","Tuesday","Wednesday","Thursday","Friday",Satuday"]
+7
+Normal
+["08:15","08:15","08:15","08:15","08:15","08:15"]
+["16:30","16:30","16:30","16:30","16:30","13:30"]
+["16:30","16:30","16:30","16:30","16:30","13:00"]
+["Monday","Tuesday","Wednesday","Thursday","Friday",Satuday"]
+
+
+
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+
+class EmployeeAbsent extends Model
+{
+    use HasFactory;
+    protected $table = 'employee_absent';
+
+    protected $fillable = [
+        'user_id', ini id dari tabel user
+        'absent_place', bebeas di aman Office git gpp 
+        'date', tgl dia
+        'hour_in', jam masuk kerja
+        'hour_out', jam pualng kerja
+        'status_in', status ini ada late/early kalau misal hour_in nya dia absent < dari jam masuk kerja maka early nah kalau lebih ya late
+        'status_out', kalau ini late/early kalai misal ohur_out dia absentnya < dari jam keluar kerja ya early kalau lebih ya late gitu 
+        'rule_in', jam dia masuk kerja
+        'rule_out', jam dia keluar kerja
+        'rule_type', tipe rulenya
+        'late_minutes', jumlah telat unuk masuk kerja
+        'early_minutes', jumlah early untuk pulang awal
+        'created_at',
+        'updated_at',
+    ];
+}
+
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+
+
+class EmployeeShift extends Model
+{
+    use HasFactory;
+    protected $table = 'employee_shift';
+
+    protected $fillable = [
+    'user_id', id dari user
+     'rule_id', rule dari shift_rule
+     'start_date', tgl mualai shift itu berlaku 
+     'end_date',  tgl akhir shift itu berakhir nah ini isikan null aja, null artinay dia itu tidak berakhir
+     'created_at', 
+     'updated_at'];
+
+    public function user()
+    {
+        return $this->belongsTo(User::class);
+    }
+
+    public function ruleShift()
+    {
+        return $this->belongsTo(rule_shift::class, 'rule_id');
+    }
+}
+
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+
+
+class CustomHoliday extends Model
+{
+
+    use HasFactory;
+
+    protected $table = 'custom_holiday';
+
+    protected $fillable = ['name', 'description', 'date'];
+
+}
+
+
+
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+
+class TimeOffPolicy extends Model
+{
+    use HasFactory;
+
+    // Define the table name if it's not the plural of the model name
+    protected $table = 'time_off_policy';
+
+    // Define which fields can be mass-assigned
+    protected $fillable = [
+        'time_off_name', ini namanya
+        'time_off_description', penjelasan
+        'requires_time_input', ini boolean 0 artinya gk perlu 1 perlu
+        'quota', jumlah quotanya
+        'start_date', tgl mulai berlaku
+        'end_date', tgl akhir berlaku nah ini bisa null yang artinya dia gk ada akhir berlakunya gitu
+        'created_at',
+        'updated_at',
+    ];
+}
+
+id
+time_off_name
+time_off_description
+requires_time_input
+quota
+start_date
+end_date
+created_at
+updated_at
+
+
+3
+Cuti Tahunan 2025
+Cuti Tahunan 2025 (test ganti)
+0
+12
+2025-01-01
+2025-12-31
+2025-03-12 15:08:02
+2025-03-16 21:16:20
+
+4
+Cuti Sakit
+Cuti Sakit wajib surat dokter (test ganti)
+0
+12
+2025-01-01
+NULL
+2025-03-12 15:17:05
+2025-03-16 21:07:34
+
+
+5
+Masuk Siang
+Izin Masuk Siang
+1
+20
+2025-03-05
+NULL
+2025-03-28 17:19:42
+2025-03-28 17:19:42
+
+
+7
+Pulang Awal
+Izin Pulang Awal
+1
+20
+2025-03-03
+NULL
+2025-03-28 17:20:47
+2025-03-28 17:20:47
+
+8
+Ijin
+Ijin
+1
+20
+2024-11-12
+
+
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+
+class TimeOffAssign extends Model
+{
+    use HasFactory;
+
+    // Define the table name if it's not the plural of the model name
+    protected $table = 'time_off_assign';
+
+    // Define which fields can be mass-assigned
+    protected $fillable = [
+        'user_id', id dari tabel users nya
+        'time_off_id', id dari time_off policy diatas
+        'balance', jumlah balancenya
+        'created_at',
+        'updated_at',
+    ];
+}
+
+
+
+<?php
+// RequestTimeOff Model Update
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+
+class RequestTimeOff extends Model
+{
+    use HasFactory;
+
+    // Define the table name if it's not the plural of the model name
+    protected $table = 'request_time_off';
+
+    // Define which fields can be mass-assigned
+    protected $fillable = [
+        'user_id', id apda users id itu
+        'time_off_id', time_off policy itu
+        'start_date', tanggal mulai
+        'end_date', tanggal akhir
+        'reason', alasan utuk cuti
+        'status', Antara Pending/Declined/Approved
+        'reason_declined', alasan di decline
+        'created_at', 
+        'updated_at',
+        'dept_approval_status', Antara Pending/Declined/Approved
+        'dept_approval_user_id', ini adalah id dari user dari manager pada department yang sama
+        'admin_approval_status', Antara Pending/Declined/Approved
+        'admin_approval_user_id', ini adalah id dari user antara posisiton Director, General Manager/ Manger dnegan department Human Resources
+
+    ];
+
+    public function timeOffPolicy()
+    {
+        return $this->belongsTo(TimeOffPolicy::class, 'time_off_id');
+    }
+
+
+    public function user()
+    {
+        return $this->belongsTo(User::class, 'user_id');
+    }
+
+
+    // Add these relationships to your RequestShiftChange model
+    public function deptApprovalUser()
+    {
+        return $this->belongsTo(User::class, 'dept_approval_user_id');
+    }
+
+    public function adminApprovalUser()
+    {
+        return $this->belongsTo(User::class, 'admin_approval_user_id');
+    }
+
+
+    public function isDeptDeclined()
+    {
+        return $this->dept_approval_status === 'Declined';
+    }
+
+
+    public function isAdminDeclined()
+    {
+        return $this->admin_approval_status === 'Declined';
+    }
+
+    public function getDeclinedByUser()
+    {
+        if ($this->isAdminDeclined()) {
+            return $this->adminApprovalUser;
+        } elseif ($this->isDeptDeclined()) {
+            return $this->deptApprovalUser;
+        }
+
+        return null;
+    }
+}
+
+<?php
+// EmployeeOvertime Model Update
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+
+class EmployeeOvertime extends Model
+{
+    use HasFactory;
+
+    protected $table = 'employee_overtime';
+
+    protected $fillable = [
+        'user_id', i dari users
+        'date', tgl dia request overtiem
+        'start_time', jam dimulai
+        'end_time', jam akhir
+        'total_hours', total jamnya
+        'reason', reason untuk lakuakan overtime
+        'approval_status', statusnya Pending/Approved/Declined
+        'declined_reason', alasan decline
+        'created_at',
+        'updated_at',
+      'dept_approval_status', Antara Pending/Declined/Approved
+        'dept_approval_user_id', ini adalah id dari user dari manager pada department yang sama
+        'admin_approval_status', Antara Pending/Declined/Approved
+        'admin_approval_user_id', ini adalah id dari user antara posisiton Director, General Manager/ Manger dnegan department Human Resources
+    ];
+
+    // Relationship to the User who created the overtime request
+    public function user()
+    {
+        return $this->belongsTo(User::class, 'user_id');
+    }
+
+    // Relationship to the Department Approver user
+    public function deptApprovalUser()
+    {
+        return $this->belongsTo(User::class, 'dept_approval_user_id');
+    }
+
+    // Relationship to the Admin Approver user
+    public function adminApprovalUser()
+    {
+        return $this->belongsTo(User::class, 'admin_approval_user_id');
+    }
+
+    public function isDeptDeclined()
+    {
+        return $this->dept_approval_status === 'Declined';
+    }
+
+    public function isAdminDeclined()
+    {
+        return $this->admin_approval_status === 'Declined';
+    }
+
+    public function getDeclinedByUser()
+    {
+        if ($this->isAdminDeclined()) {
+            return $this->adminApprovalUser;
+        } elseif ($this->isDeptDeclined()) {
+            return $this->deptApprovalUser;
+        }
+
+        return null;
+    }
+}
+
+

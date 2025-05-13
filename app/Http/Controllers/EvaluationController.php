@@ -504,17 +504,26 @@ class EvaluationController extends Controller
             ->whereIn('user_id', $subordinateIds)
             ->orderBy('date', 'desc');
 
-        // Apply filters
-        if ($request->filled('month')) {
-            $query->whereMonth('date', $request->month);
-        }
+        // Jika ini request awal (tanpa parameter filter), gunakan bulan dan tahun saat ini
+        if (
+            !$request->has('month') && !$request->has('year') && !$request->has('employee') &&
+            !$request->has('position') && !$request->has('department')
+        ) {
+            $query->whereMonth('date', date('n'))
+                ->whereYear('date', date('Y'));
+        } else {
+            // Jika ada filter yang diberikan, gunakan filter tersebut
+            if ($request->filled('month')) {
+                $query->whereMonth('date', $request->month);
+            }
 
-        if ($request->filled('year')) {
-            $query->whereYear('date', $request->year);
-        }
+            if ($request->filled('year')) {
+                $query->whereYear('date', $request->year);
+            }
 
-        if ($request->filled('employee')) {
-            $query->where('user_id', $request->employee);
+            if ($request->filled('employee')) {
+                $query->where('user_id', $request->employee);
+            }
         }
 
         $evaluations = $query->get();
@@ -1126,42 +1135,36 @@ class EvaluationController extends Controller
             $availableYears = [$currentYear];
         }
 
-        // Get distinct users who have evaluations in the selected year
-        $userIds = EvaluationPerformance::whereYear('date', $yearFilter)
-            ->when($employeeFilter, function ($query) use ($employeeFilter) {
-                return $query->where('user_id', $employeeFilter);
-            })
-            ->pluck('user_id')
-            ->unique()
-            ->toArray();
+        // Base query for evaluations in the selected year
+        $evaluationsQuery = EvaluationPerformance::whereYear('date', $yearFilter);
 
-        // Get all users who have evaluations
-        $users = User::whereIn('id', $userIds)->get();
+        // Apply employee filter if provided
+        if ($employeeFilter) {
+            $evaluationsQuery->where('user_id', $employeeFilter);
+        }
 
-        // Get all evaluations for these users in the selected year
-        $evaluations = EvaluationPerformance::whereYear('date', $yearFilter)
-            ->whereIn('user_id', $userIds)
-            ->get();
+        // Get all evaluations for the year
+        $evaluations = $evaluationsQuery->get();
 
         // Group evaluations by user
         $evaluationsByUser = $evaluations->groupBy('user_id');
 
-        // Create a mapping of user historical positions and departments
+        // Prepare user data with their historical position and department
         $userHistoricalData = [];
+        $userIds = $evaluations->pluck('user_id')->unique()->toArray();
 
-        foreach ($users as $user) {
-            // For each user, get their position and department at the end of the year
-            $referenceDate = $yearFilter . '-12-31'; // End of the selected year
-
-            // Find the most recent transfer history before the reference date
-            $history = history_transfer_employee::where('users_id', $user->id)
-                ->where('created_at', '<', $referenceDate)
+        foreach ($userIds as $userId) {
+            // Find the most recent transfer history for the user
+            $history = history_transfer_employee::where('users_id', $userId)
+                ->where('created_at', '<', $yearFilter . '-12-31')
                 ->orderBy('created_at', 'desc')
                 ->first();
 
+            $user = User::find($userId);
+
             if ($history) {
                 // Use historical position and department
-                $userHistoricalData[$user->id] = [
+                $userHistoricalData[$userId] = [
                     'position_id' => $history->new_position_id,
                     'department_id' => $history->new_department_id,
                     'position' => EmployeePosition::find($history->new_position_id),
@@ -1169,7 +1172,7 @@ class EvaluationController extends Controller
                 ];
             } else {
                 // No history found, use current position and department
-                $userHistoricalData[$user->id] = [
+                $userHistoricalData[$userId] = [
                     'position_id' => $user->position_id,
                     'department_id' => $user->department_id,
                     'position' => $user->position,
@@ -1178,7 +1181,7 @@ class EvaluationController extends Controller
             }
         }
 
-        // Filter users based on historical position and department
+        // Filter users based on position and department
         $filteredUserIds = $userIds;
 
         if ($positionFilter) {
@@ -1193,53 +1196,53 @@ class EvaluationController extends Controller
             });
         }
 
-        // Calculate final scores for filtered users
+        // Calculate final evaluations for filtered users
         $finalEvaluations = [];
         foreach ($filteredUserIds as $userId) {
             if (!isset($evaluationsByUser[$userId])) {
                 continue;
             }
 
-            $user = $users->firstWhere('id', $userId);
             $userEvaluations = $evaluationsByUser[$userId];
-            $totalScore = $userEvaluations->sum('total_score');
+
+            // Total score is the sum of total scores for all evaluations
+            $totalScore = $userEvaluations->sum('total_score') / 12;
+
+            // Total reduction is the sum of total reductions
             $totalReduction = $userEvaluations->sum('total_reduction');
-            $monthCount = $userEvaluations->count();
 
-            if ($monthCount > 0) {
-                $averageScore = $totalScore / $monthCount;
-                $finalScore = $averageScore - $totalReduction;
+            // Final score is total score minus total reduction
+            $finalScore = ($totalScore - $totalReduction);
 
-                // Add historical position and department to the user object
-                $historicalUser = clone $user;
-                $historicalUser->historical_position = $userHistoricalData[$userId]['position'];
-                $historicalUser->historical_department = $userHistoricalData[$userId]['department'];
 
-                $finalEvaluations[] = (object)[
-                    'user_id' => $userId,
-                    'user' => $historicalUser,
-                    'average_score' => $averageScore,
-                    'total_reduction' => $totalReduction,
-                    'final_score' => $finalScore,
-                    'month_count' => $monthCount,
-                    'year' => $yearFilter
-                ];
-            }
-        }
+            $user = User::find($userId);
 
-        // Get performance grade rules
-        $gradeRules = RulePerformanceGrade::orderBy('min_score', 'desc')->get();
+            // Add historical position and department to the user object
+            $historicalUser = clone $user;
+            $historicalUser->historical_position = $userHistoricalData[$userId]['position'];
+            $historicalUser->historical_department = $userHistoricalData[$userId]['department'];
 
-        // Calculate grades
-        foreach ($finalEvaluations as $evaluation) {
-            $grade = $gradeRules->first(function ($rule) use ($evaluation) {
-                $belowMaxOrNoMax = ($rule->max_score === null || $evaluation->final_score <= $rule->max_score);
-                $aboveMinOrNoMin = ($rule->min_score === null || $evaluation->final_score >= $rule->min_score);
+            // Get performance grade rules
+            $gradeRules = RulePerformanceGrade::orderBy('min_score', 'desc')->get();
+
+            // Determine grade based on final score
+            $grade = $gradeRules->first(function ($rule) use ($finalScore) {
+                $belowMaxOrNoMax = ($rule->max_score === null || $finalScore <= $rule->max_score);
+                $aboveMinOrNoMin = ($rule->min_score === null || $finalScore >= $rule->min_score);
                 return $aboveMinOrNoMin && $belowMaxOrNoMax;
             });
 
-            $evaluation->grade = $grade ? $grade->grade : 'N/A';
-            $evaluation->grade_description = $grade ? $grade->description : 'Not Available';
+            $finalEvaluations[] = (object)[
+                'user_id' => $userId,
+                'user' => $historicalUser,
+                'total_score' => $totalScore,
+                'total_reduction' => $totalReduction,
+                'final_score' => $finalScore,
+                'month_count' => $userEvaluations->count(),
+                'year' => $yearFilter,
+                'grade' => $grade ? $grade->grade : 'N/A',
+                'grade_description' => $grade ? $grade->description : 'Not Available'
+            ];
         }
 
         // Get collection of all historical positions and departments for dropdowns
@@ -1273,6 +1276,8 @@ class EvaluationController extends Controller
             'gradeRules'
         ));
     }
+
+
     public function exportExcelAll()
     {
         // Get filter parameters
@@ -1412,35 +1417,24 @@ class EvaluationController extends Controller
                             $monthlyData[$monthIndex]['rawScore'] += $avgScore;
                         }
                     }
-
-                    // Calculate deductions for this month
-                    $monthlyData[$monthIndex]['deductions'] = $monthEvaluations->sum(function ($eval) {
-                        return $eval->reductions->sum('reduction_amount');
-                    });
-
-                    $monthlyData[$monthIndex]['finalScore'] = max(
-                        0,
-                        $monthlyData[$monthIndex]['rawScore'] - $monthlyData[$monthIndex]['deductions']
-                    );
                 }
             }
 
-            // With this corrected version:
-            $validRawScores = array_filter(array_column($monthlyData, 'rawScore'));
-            $overallRawAverage = $validRawScores ? array_sum($validRawScores) / count($validRawScores) : 0;
+            // Fixed version - always divide by 12 months:
+            $totalRawScore = array_sum(array_column($monthlyData, 'rawScore'));
+            $overallRawAverage = $totalRawScore / 12;
 
-            // Calculate yearly reductions and total deductions BEFORE using the value
+            // Reset the deductions in monthly data to avoid duplicate counting
+            foreach ($monthlyData as $monthIndex => $month) {
+                $monthlyData[$monthIndex]['deductions'] = 0;
+            }
+
+            // Process yearly reductions
             $reductionRules = RuleEvaluationReductionPerformance::where('Status', "Active")->get();
-            $maxPossibleDeductions = $reductionRules->sum('weight');
             $yearlyReductions = [];
             $totalDeductions = 0;
+
             foreach ($reductionRules as $rule) {
-                // Get warning letters that have been applied to evaluations
-                $warningLetters = WarningLetter::where('user_id', $user->id)
-                    ->where('type_id', $rule->type_id)
-                    ->whereYear('created_at', $year)
-                    ->whereHas('evaluationReductions')
-                    ->get();
                 $ruleData = [
                     'id' => $rule->id,
                     'name' => $rule->warningLetterRule->name ?? $rule->name,
@@ -1449,20 +1443,58 @@ class EvaluationController extends Controller
                     'total_count' => 0,
                     'total_reduction' => 0
                 ];
+
+                // Get warning letters that have been applied to evaluations
+                $warningLetters = WarningLetter::where('user_id', $user->id)
+                    ->where('type_id', $rule->type_id)
+                    ->whereYear('created_at', $year)
+                    ->whereHas('evaluationReductions')
+                    ->get();
+
                 foreach ($warningLetters as $letter) {
-                    $monthNumber = $letter->date ? $letter->date->month : now()->month;
+                    // FIXED: Use the warning letter's actual date for counting
+                    $letterDate = $letter->created_at ?? now();
+                    $monthNumber = $letterDate->month;
+
                     // Sum only the actual reductions applied
-                    $reductionAmount = $letter->evaluationReductions->sum('reduction_amount');
+                    $reductionAmount = $letter->evaluationReductions
+                        ->filter(function ($reduction) use ($year) {
+                            // Only count reductions where the associated evaluation is from this year
+                            $evaluation = $reduction->evaluation;
+                            if (!$evaluation || !$evaluation->date) return false;
+                            return Carbon::parse($evaluation->date)->year == $year;
+                        })
+                        ->sum('reduction_amount');
+
                     $ruleData['monthly'][$monthNumber]['count']++;
                     $ruleData['monthly'][$monthNumber]['reduction'] += $reductionAmount;
                     $ruleData['total_count']++;
                     $ruleData['total_reduction'] += $reductionAmount;
                 }
+
                 $yearlyReductions[$rule->id] = $ruleData;
                 $totalDeductions += $ruleData['total_reduction'];
             }
 
-            // Now calculate the true overall average
+            // Apply deductions based on warning letter dates, not evaluation dates
+            foreach ($yearlyReductions as $ruleId => $ruleData) {
+                foreach ($ruleData['monthly'] as $monthNumber => $monthData) {
+                    $monthIndex = $monthNumber - 1;
+                    if (isset($monthlyData[$monthIndex])) {
+                        $monthlyData[$monthIndex]['deductions'] += $monthData['reduction'];
+                    }
+                }
+            }
+
+            // Recalculate final scores for each month
+            foreach ($monthlyData as $monthIndex => $month) {
+                $monthlyData[$monthIndex]['finalScore'] = max(
+                    0,
+                    $monthlyData[$monthIndex]['rawScore'] - $monthlyData[$monthIndex]['deductions']
+                );
+            }
+
+            // Calculate the final score with the correctly summed deductions
             $overallAverage = max(0, $overallRawAverage - $totalDeductions);
 
             // Calculate criterion averages
@@ -1615,39 +1647,6 @@ class EvaluationController extends Controller
             ]);
             $row++;
 
-            // Process yearly reductions
-            $reductionRules = RuleEvaluationReductionPerformance::where('Status', "Active")->get();
-            $maxPossibleDeductions = $reductionRules->sum('weight');
-            $yearlyReductions = [];
-            $totalDeductions = 0;
-            foreach ($reductionRules as $rule) {
-                // Get warning letters that have been applied to evaluations
-                $warningLetters = WarningLetter::where('user_id', $user->id)
-                    ->where('type_id', $rule->type_id)
-                    ->whereYear('created_at', $year)
-                    ->whereHas('evaluationReductions')
-                    ->get();
-                $ruleData = [
-                    'id' => $rule->id,
-                    'name' => $rule->warningLetterRule->name ?? $rule->name,
-                    'weight' => $rule->weight,
-                    'monthly' => array_fill(1, 12, ['count' => 0, 'reduction' => 0]),
-                    'total_count' => 0,
-                    'total_reduction' => 0
-                ];
-                foreach ($warningLetters as $letter) {
-                    $monthNumber = $letter->date ? $letter->date->month : now()->month;
-                    // Sum only the actual reductions applied
-                    $reductionAmount = $letter->evaluationReductions->sum('reduction_amount');
-                    $ruleData['monthly'][$monthNumber]['count']++;
-                    $ruleData['monthly'][$monthNumber]['reduction'] += $reductionAmount;
-                    $ruleData['total_count']++;
-                    $ruleData['total_reduction'] += $reductionAmount;
-                }
-                $yearlyReductions[$rule->id] = $ruleData;
-                $totalDeductions += $ruleData['total_reduction'];
-            }
-
             // Add warning letters to excel
             foreach ($yearlyReductions as $ruleId => $ruleData) {
                 $sheet->setCellValue('A' . $row, '');
@@ -1664,7 +1663,6 @@ class EvaluationController extends Controller
                     $sheet->setCellValue($col++ . $row, $hasDeduction ? $monthData['count'] : '');
                     $sheet->setCellValue($col++ . $row, $hasDeduction ? '-' . $monthData['reduction'] : '0');
                     if ($hasDeduction) {
-
                         $prevCol = chr(ord($col) - 1);
                         $sheet->getStyle($prevCol . $row)->getFont()->getColor()->setRGB('DC3545');
                     }
@@ -1738,6 +1736,7 @@ class EvaluationController extends Controller
 
         $writer->save('php://output');
     }
+
 
     public function exportEmployeeExcel(Request $request)
     {
@@ -1869,35 +1868,24 @@ class EvaluationController extends Controller
                         $monthlyData[$monthIndex]['rawScore'] += $avgScore;
                     }
                 }
-
-                // Calculate deductions for this month
-                $monthlyData[$monthIndex]['deductions'] = $monthEvaluations->sum(function ($eval) {
-                    return $eval->reductions->sum('reduction_amount');
-                });
-
-                $monthlyData[$monthIndex]['finalScore'] = max(
-                    0,
-                    $monthlyData[$monthIndex]['rawScore'] - $monthlyData[$monthIndex]['deductions']
-                );
             }
         }
 
-        // With this corrected version:
-        $validRawScores = array_filter(array_column($monthlyData, 'rawScore'));
-        $overallRawAverage = $validRawScores ? array_sum($validRawScores) / count($validRawScores) : 0;
+        // Fixed version - always divide by 12 months:
+        $totalRawScore = array_sum(array_column($monthlyData, 'rawScore'));
+        $overallRawAverage = $totalRawScore / 12;
 
-        // Calculate yearly reductions and total deductions BEFORE using the value
+        // Reset the deductions in monthly data to avoid duplicate counting
+        foreach ($monthlyData as $monthIndex => $month) {
+            $monthlyData[$monthIndex]['deductions'] = 0;
+        }
+
+        // Process yearly reductions
         $reductionRules = RuleEvaluationReductionPerformance::where('Status', "Active")->get();
-        $maxPossibleDeductions = $reductionRules->sum('weight');
         $yearlyReductions = [];
         $totalDeductions = 0;
+
         foreach ($reductionRules as $rule) {
-            // Get warning letters that have been applied to evaluations
-            $warningLetters = WarningLetter::where('user_id', $employee->id)
-                ->where('type_id', $rule->type_id)
-                ->whereYear('created_at', $year)
-                ->whereHas('evaluationReductions')
-                ->get();
             $ruleData = [
                 'id' => $rule->id,
                 'name' => $rule->warningLetterRule->name ?? $rule->name,
@@ -1906,20 +1894,58 @@ class EvaluationController extends Controller
                 'total_count' => 0,
                 'total_reduction' => 0
             ];
+
+            // Get warning letters that have been applied to evaluations
+            $warningLetters = WarningLetter::where('user_id', $employee->id)
+                ->where('type_id', $rule->type_id)
+                ->whereYear('created_at', $year)
+                ->whereHas('evaluationReductions')
+                ->get();
+
             foreach ($warningLetters as $letter) {
-                $monthNumber = $letter->date ? $letter->date->month : now()->month;
+                // FIXED: Use the warning letter's actual date for counting
+                $letterDate = $letter->created_at ?? now();
+                $monthNumber = $letterDate->month;
+
                 // Sum only the actual reductions applied
-                $reductionAmount = $letter->evaluationReductions->sum('reduction_amount');
+                $reductionAmount = $letter->evaluationReductions
+                    ->filter(function ($reduction) use ($year) {
+                        // Only count reductions where the associated evaluation is from this year
+                        $evaluation = $reduction->evaluation;
+                        if (!$evaluation || !$evaluation->date) return false;
+                        return Carbon::parse($evaluation->date)->year == $year;
+                    })
+                    ->sum('reduction_amount');
+
                 $ruleData['monthly'][$monthNumber]['count']++;
                 $ruleData['monthly'][$monthNumber]['reduction'] += $reductionAmount;
                 $ruleData['total_count']++;
                 $ruleData['total_reduction'] += $reductionAmount;
             }
+
             $yearlyReductions[$rule->id] = $ruleData;
             $totalDeductions += $ruleData['total_reduction'];
         }
 
-        // Now calculate the true overall average
+        // Apply deductions based on warning letter dates, not evaluation dates
+        foreach ($yearlyReductions as $ruleId => $ruleData) {
+            foreach ($ruleData['monthly'] as $monthNumber => $monthData) {
+                $monthIndex = $monthNumber - 1;
+                if (isset($monthlyData[$monthIndex])) {
+                    $monthlyData[$monthIndex]['deductions'] += $monthData['reduction'];
+                }
+            }
+        }
+
+        // Recalculate final scores for each month
+        foreach ($monthlyData as $monthIndex => $month) {
+            $monthlyData[$monthIndex]['finalScore'] = max(
+                0,
+                $monthlyData[$monthIndex]['rawScore'] - $monthlyData[$monthIndex]['deductions']
+            );
+        }
+
+        // Calculate the final score with the correctly summed deductions
         $overallAverage = max(0, $overallRawAverage - $totalDeductions);
 
         // Calculate criterion averages
@@ -2056,7 +2082,6 @@ class EvaluationController extends Controller
 
         $row++;
 
-        // ADD THE MISSING DEDUCTIONS SECTION FROM exportExcelAll
         // Deductions section header
         $sheet->setCellValue('A' . $row, '');
         $sheet->mergeCells('A' . $row . ':' . $lastColumn . $row);
@@ -2066,39 +2091,6 @@ class EvaluationController extends Controller
             'fill' => ['fillType' => Fill::FILL_SOLID, 'color' => ['rgb' => 'DC3545']]
         ]);
         $row++;
-
-        // Process yearly reductions
-        $reductionRules = RuleEvaluationReductionPerformance::where('Status', "Active")->get();
-        $maxPossibleDeductions = $reductionRules->sum('weight');
-        $yearlyReductions = [];
-        $totalDeductions = 0;
-        foreach ($reductionRules as $rule) {
-            // Get warning letters that have been applied to evaluations
-            $warningLetters = WarningLetter::where('user_id', $employee->id)
-                ->where('type_id', $rule->type_id)
-                ->whereYear('created_at', $year)
-                ->whereHas('evaluationReductions')
-                ->get();
-            $ruleData = [
-                'id' => $rule->id,
-                'name' => $rule->warningLetterRule->name ?? $rule->name,
-                'weight' => $rule->weight,
-                'monthly' => array_fill(1, 12, ['count' => 0, 'reduction' => 0]),
-                'total_count' => 0,
-                'total_reduction' => 0
-            ];
-            foreach ($warningLetters as $letter) {
-                $monthNumber = $letter->date ? $letter->date->month : now()->month;
-                // Sum only the actual reductions applied
-                $reductionAmount = $letter->evaluationReductions->sum('reduction_amount');
-                $ruleData['monthly'][$monthNumber]['count']++;
-                $ruleData['monthly'][$monthNumber]['reduction'] += $reductionAmount;
-                $ruleData['total_count']++;
-                $ruleData['total_reduction'] += $reductionAmount;
-            }
-            $yearlyReductions[$rule->id] = $ruleData;
-            $totalDeductions += $ruleData['total_reduction'];
-        }
 
         // Add warning letters to excel
         foreach ($yearlyReductions as $ruleId => $ruleData) {
@@ -2181,7 +2173,6 @@ class EvaluationController extends Controller
 
         $writer->save('php://output');
     }
-
 
 
     /**
@@ -2269,20 +2260,85 @@ class EvaluationController extends Controller
                         $monthlyData[$monthNumber]['rawScore'] += $avgScore;
                     }
                 }
-
-                // Calculate deductions for this month (only count reductions that exist)
-                $monthlyData[$monthNumber]['deductions'] = $monthEvaluations->sum(function ($eval) {
-                    return $eval->reductions->sum('reduction_amount');
-                });
-
-                $monthlyData[$monthNumber]['finalScore'] = max(
-                    0,
-                    $monthlyData[$monthNumber]['rawScore'] - $monthlyData[$monthNumber]['deductions']
-                );
             }
         }
 
-        // Calculate overall averages for individual criteria
+        // BAGIAN YANG DIMODIFIKASI: Proses deduction hanya berdasarkan warning letter yang terhubung dengan evaluasi
+        // Reset dan inisialisasi ulang semua deduction
+        foreach (range(1, 12) as $monthNumber) {
+            $monthlyData[$monthNumber]['deductions'] = 0;
+        }
+
+        // Proses deduction secara ketat berdasarkan data evaluasi dan reduction yang terkait
+        foreach ($evaluations as $evaluation) {
+            $monthNumber = Carbon::parse($evaluation->date)->month;
+
+            // Hanya ambil reduction yang memiliki warning letter yang valid
+            $reductions = $evaluation->reductions->filter(function ($reduction) {
+                return $reduction->warning_letter_id && $reduction->warningLetter;
+            });
+
+            // Tambahkan ke deduction bulan tersebut
+            $monthlyData[$monthNumber]['deductions'] += $reductions->sum('reduction_amount');
+
+            // Update final score untuk bulan ini
+            $monthlyData[$monthNumber]['finalScore'] = max(
+                0,
+                $monthlyData[$monthNumber]['rawScore'] - $monthlyData[$monthNumber]['deductions']
+            );
+        }
+
+        // BAGIAN YANG DIMODIFIKASI: Hitung rata-rata dengan membagi total dengan 12 (semua bulan)
+        $totalRawScore = 0;
+        foreach (range(1, 12) as $monthNumber) {
+            $totalRawScore += $monthlyData[$monthNumber]['rawScore'];
+        }
+        $overallRawAverage = $totalRawScore / 12;
+
+        // Process yearly reductions dengan pendekatan yang lebih ketat
+        $reductionRules = RuleEvaluationReductionPerformance::where('Status', "Active")->get();
+        $maxPossibleDeductions = $reductionRules->sum('weight');
+        $yearlyReductions = [];
+        $totalDeductions = 0;
+
+        foreach ($reductionRules as $rule) {
+            $ruleData = [
+                'id' => $rule->id,
+                'name' => $rule->warningLetterRule->name ?? $rule->name,
+                'weight' => $rule->weight,
+                'monthly' => array_fill(1, 12, ['count' => 0, 'reduction' => 0]),
+                'total_count' => 0,
+                'total_reduction' => 0
+            ];
+
+            // Untuk setiap bulan, hitung reduction berdasarkan evaluasi
+            foreach ($evaluations as $evaluation) {
+                $monthNumber = Carbon::parse($evaluation->date)->month;
+
+                // Filter reduction yang termasuk dalam tipe/aturan ini
+                $reductionsForThisRule = $evaluation->reductions->filter(function ($reduction) use ($rule) {
+                    return $reduction->warningLetter && $reduction->warningLetter->type_id == $rule->type_id;
+                });
+
+                if ($reductionsForThisRule->isNotEmpty()) {
+                    $count = $reductionsForThisRule->count();
+                    $amount = $reductionsForThisRule->sum('reduction_amount');
+
+                    $ruleData['monthly'][$monthNumber]['count'] += $count;
+                    $ruleData['monthly'][$monthNumber]['reduction'] += $amount;
+                    $ruleData['total_count'] += $count;
+                    $ruleData['total_reduction'] += $amount;
+                }
+            }
+
+            $yearlyReductions[$rule->id] = $ruleData;
+            $totalDeductions += $ruleData['total_reduction'];
+        }
+
+        // Calculate total possible score
+        $totalPossible = $criteria->sum('weight') * 3; // Assuming max score per criterion is 3
+
+        // Calculate individual criteria averages
         $averageValues = [];
         $averageTotals = [];
 
@@ -2300,71 +2356,17 @@ class EvaluationController extends Controller
                 }
             }
 
-            $averageValues[$criterion['name']] = $count ? $sumValues / $count : 0;
-            $averageTotals[$criterion['name']] = $count ? $sumScores / $count : 0;
-        }
-
-        // Process yearly reductions (only count those actually applied to evaluations)
-        $reductionRules = RuleEvaluationReductionPerformance::where('Status', "Active")->get();
-        $maxPossibleDeductions = $reductionRules->sum('weight');
-        $yearlyReductions = [];
-        $totalDeductions = 0;
-
-        foreach ($reductionRules as $rule) {
-            // Initialize the rule data structure with months 1-12
-            $ruleData = [
-                'id' => $rule->id,
-                'name' => $rule->warningLetterRule->name ?? $rule->name,
-                'weight' => $rule->weight,
-                'monthly' => array_fill(1, 12, ['count' => 0, 'reduction' => 0]),
-                'total_count' => 0,
-                'total_reduction' => 0
-            ];
-
-            // Get warning letters that have actually been applied to evaluations
-            $warningLetters = WarningLetter::where('user_id', $user->id)
-                ->where('type_id', $rule->type_id)
-                ->whereYear('created_at', $year)
-                ->whereHas('evaluationReductions')
-                ->get();
-
-            foreach ($warningLetters as $letter) {
-                // Ensure we're getting the correct month number
-                $monthNumber = $letter->date ? $letter->date->month : ($letter->created_at ? $letter->created_at->month : now()->month);
-
-                // Sum only the actual reductions applied
-                $reductionAmount = $letter->evaluationReductions->sum('reduction_amount');
-
-                $ruleData['monthly'][$monthNumber]['count']++;
-                $ruleData['monthly'][$monthNumber]['reduction'] += $reductionAmount;
-                $ruleData['total_count']++;
-                $ruleData['total_reduction'] += $reductionAmount;
-            }
-
-            $yearlyReductions[$rule->id] = $ruleData;
-            $totalDeductions += $ruleData['total_reduction'];
-        }
-
-        // Calculate total possible score
-        $totalPossible = $criteria->sum('weight') * 3; // Assuming max score per criterion is 3
-
-        // Calculate the overall raw average and final score (sum of raw scores)
-        $overallRawAverage = 0;
-        $totalMonthsWithData = 0;
-
-        foreach ($monthlyData as $month) {
-            if ($month['rawScore'] > 0) {
-                $overallRawAverage += $month['rawScore'];
-                $totalMonthsWithData++;
+            // Jika tidak ada data, set nilai rata-rata menjadi 0
+            if ($count == 0) {
+                $averageValues[$criterion['name']] = 0;
+                $averageTotals[$criterion['name']] = 0;
+            } else {
+                $averageValues[$criterion['name']] = $sumValues / $count;
+                $averageTotals[$criterion['name']] = $sumScores / $count;
             }
         }
 
-        // If there are months with data, calculate the average
-        if ($totalMonthsWithData > 0) {
-            $overallRawAverage = $overallRawAverage / $totalMonthsWithData;
-        }
-
-        // Calculate the final score as the sum of all criteria averages minus total deductions
+        // Calculate the final score
         $overallAverage = max(0, $overallRawAverage - $totalDeductions);
 
         // Get evaluation messages
@@ -2427,6 +2429,9 @@ class EvaluationController extends Controller
             'evaluationMessages'
         ));
     }
+
+
+
 
 
     /**
@@ -2691,17 +2696,30 @@ class EvaluationController extends Controller
         ));
     }
 
+
     /**
      * Get Discipline Report Data
      */
     public function getDisciplineReportData(Request $request)
     {
+        set_time_limit(900); // 15 menit
+
         $month = $request->input('month', date('m'));
         $year = $request->input('year', date('Y'));
         $employeeId = $request->input('employee_id');
         $departmentId = $request->input('department_id');
         $positionId = $request->input('position_id');
 
+        // Handle 'final' month case
+        if ($month === 'final') {
+            return $this->getFinalYearlyData($year, $request);
+        }
+
+        // Get reference date for historical position/department lookup
+        $daysInMonth = Carbon::create($year, $month)->daysInMonth;
+        $referenceDate = Carbon::create($year, $month, $daysInMonth)->format('Y-m-d');
+
+        // Base query for getting employees
         $query = User::query();
 
         // Base filtering
@@ -2709,13 +2727,43 @@ class EvaluationController extends Controller
             $query->where('id', $employeeId);
         }
 
-        // We'll handle department and position filtering differently 
-        // after we get historical data
-        $employees = $query->get();
+        // Filter by department and position based on historical data
+        if ($departmentId || $positionId) {
+            // Get all employees who might match our filters based on history
+            $matchingUserIds = [];
 
-        if ($month === 'final') {
-            return $this->getFinalYearlyData($employees, $year);
+            // First get all users
+            $allPotentialUsers = User::select('id', 'department_id', 'position_id')->get();
+
+            foreach ($allPotentialUsers as $user) {
+                // Find the most recent transfer history before the reference date
+                $history = history_transfer_employee::where('users_id', $user->id)
+                    ->where('created_at', '<', $referenceDate)
+                    ->orderBy('created_at', 'desc')
+                    ->first();
+
+                $effectiveDepartmentId = $history ? $history->new_department_id : $user->department_id;
+                $effectivePositionId = $history ? $history->new_position_id : $user->position_id;
+
+                // Check if this user matches our department/position filters
+                $deptMatch = !$departmentId || $effectiveDepartmentId == $departmentId;
+                $posMatch = !$positionId || $effectivePositionId == $positionId;
+
+                if ($deptMatch && $posMatch) {
+                    $matchingUserIds[] = $user->id;
+                }
+            }
+
+            // Filter the original query by these matching user IDs
+            $query->whereIn('id', $matchingUserIds);
         }
+
+        // Untuk testing - ambil hanya 10 orang pertama
+        // if (env('APP_ENV') === 'local' || $request->has('test_mode')) {
+        //     $query->limit(10);
+        // }
+
+        $employees = $query->get();
 
         // Get discipline rules
         $attendanceRules = DisciplineRule::where('rule_type', 'attendance')->orderBy('min_value', 'desc')->get();
@@ -2725,7 +2773,6 @@ class EvaluationController extends Controller
         $stRule = DisciplineRule::where('rule_type', 'st')->first();
         $spRule = DisciplineRule::where('rule_type', 'sp')->first();
 
-        $daysInMonth = Carbon::create($year, $month)->daysInMonth;
         $startDate = Carbon::create($year, $month, 1)->format('Y-m-d');
         $endDate = Carbon::create($year, $month, $daysInMonth)->format('Y-m-d');
 
@@ -2766,10 +2813,6 @@ class EvaluationController extends Controller
                 ->whereMonth('created_at', $month)
                 ->get();
 
-            // Find historical position and department
-            // Use the end of the month as reference date
-            $referenceDate = Carbon::create($year, $month, $daysInMonth)->format('Y-m-d');
-
             // Find the most recent transfer history before the reference date
             $history = history_transfer_employee::where('users_id', $employee->id)
                 ->where('created_at', '<', $referenceDate)
@@ -2778,25 +2821,12 @@ class EvaluationController extends Controller
 
             // Get historical position and department
             if ($history) {
-                $positionId = $history->new_position_id;
-                $departmentId = $history->new_department_id;
-                $position = EmployeePosition::find($positionId);
-                $department = EmployeeDepartment::find($departmentId);
+                $position = EmployeePosition::find($history->new_position_id);
+                $department = EmployeeDepartment::find($history->new_department_id);
             } else {
                 // If no history, use current position and department
-                $positionId = $employee->position_id;
-                $departmentId = $employee->department_id;
                 $position = $employee->position;
                 $department = $employee->department;
-            }
-
-            // Skip this employee if filtering by position/department and they don't match
-            if ($request->input('position_id') && $positionId != $request->input('position_id')) {
-                continue;
-            }
-
-            if ($request->input('department_id') && $departmentId != $request->input('department_id')) {
-                continue;
             }
 
             // Calculate working days
@@ -2854,11 +2884,62 @@ class EvaluationController extends Controller
         return response()->json($reportData);
     }
 
+
     /**
      * Get Final Yearly Report Data
      */
-    private function getFinalYearlyData($employees, $year)
+    private function getFinalYearlyData($year, Request $request)
     {
+        set_time_limit(900); // 15 menit
+
+        // Get filter parameters from request
+        $departmentId = $request->input('department_id');
+        $positionId = $request->input('position_id');
+
+        // Base query for getting employees
+        $query = User::query();
+
+        // Untuk testing - ambil hanya 10 orang pertama
+        // if (env('APP_ENV') === 'local' || $request->has('test_mode')) {
+        //     $query->limit(25);
+        // }
+
+        // Filter by department and position based on historical data
+        if ($departmentId || $positionId) {
+            // Get all employees who might match our filters based on history
+            $matchingUserIds = [];
+
+            // First get all users
+            $allPotentialUsers = User::select('id', 'department_id', 'position_id')->get();
+
+            // Reference date is the end of the year
+            $referenceDate = Carbon::create($year, 12, 31)->format('Y-m-d');
+
+            foreach ($allPotentialUsers as $user) {
+                // Find the most recent transfer history before the reference date
+                $history = history_transfer_employee::where('users_id', $user->id)
+                    ->where('created_at', '<', $referenceDate)
+                    ->orderBy('created_at', 'desc')
+                    ->first();
+
+                $effectiveDepartmentId = $history ? $history->new_department_id : $user->department_id;
+                $effectivePositionId = $history ? $history->new_position_id : $user->position_id;
+
+                // Check if this user matches our department/position filters
+                $deptMatch = !$departmentId || $effectiveDepartmentId == $departmentId;
+                $posMatch = !$positionId || $effectivePositionId == $positionId;
+
+                if ($deptMatch && $posMatch) {
+                    $matchingUserIds[] = $user->id;
+                }
+            }
+
+            // Filter the original query by these matching user IDs
+            $query->whereIn('id', $matchingUserIds);
+        }
+
+        $employees = $query->get();
+
         $reportData = [];
 
         // Get discipline rules once
@@ -2872,7 +2953,6 @@ class EvaluationController extends Controller
         // Get grade rules from database
         $gradeRules = RuleDisciplineGrade::orderBy('min_score', 'desc')->get();
 
-
         foreach ($employees as $employee) {
             $yearlyData = [
                 'employee_id' => $employee->employee_id,
@@ -2885,8 +2965,33 @@ class EvaluationController extends Controller
                 'early_departures' => 0,
                 'sick_leave' => 0,
                 'st_count' => 0,
-                'sp_count' => 0
+                'sp_count' => 0,
+                'monthly_scores' => [] // To store monthly scores for summation
             ];
+
+            // Initialize total scores
+            $totalAttendanceScore = 0;
+            $totalLateScore = 0;
+            $totalAfternoonShiftScore = 0;
+            $totalEarlyDepartureScore = 0;
+            $totalStScore = 0;
+            $totalSpScore = 0;
+
+            // Find the most recent transfer history for the entire year
+            $history = history_transfer_employee::where('users_id', $employee->id)
+                ->where('created_at', '<', Carbon::create($year, 12, 31)->format('Y-m-d'))
+                ->orderBy('created_at', 'desc')
+                ->first();
+
+            // Get historical position and department
+            if ($history) {
+                $position = EmployeePosition::find($history->new_position_id);
+                $department = EmployeeDepartment::find($history->new_department_id);
+            } else {
+                // If no history, use current position and department
+                $position = $employee->position;
+                $department = $employee->department;
+            }
 
             for ($month = 1; $month <= 12; $month++) {
                 $monthStr = str_pad($month, 2, '0', STR_PAD_LEFT);
@@ -2931,33 +3036,54 @@ class EvaluationController extends Controller
                     ->get();
 
                 // Sum all monthly values (including zeros if no data)
-                $yearlyData['presence'] += $absences->count();
-                $yearlyData['late_arrivals'] += $this->countLateArrivals($absences);
-                $yearlyData['early_departures'] += $this->countEarlyDepartures($absences);
-                $yearlyData['sick_leave'] += $this->countTimeOffByType($timeOffRequests, 'sick');
-                $yearlyData['permission'] += $this->countTimeOffByType($timeOffRequests, 'permission');
-                $yearlyData['afternoon_shift_count'] += $this->countAfternoonShifts($timeOffRequests);
-                $yearlyData['st_count'] += $this->countWarningLetters($warningLetters, 'ST');
-                $yearlyData['sp_count'] += $this->countWarningLetters($warningLetters, 'SP');
+                $monthPresence = $absences->count();
+                $yearlyData['presence'] += $monthPresence;
+                $monthLateArrivals = $this->countLateArrivals($absences);
+                $yearlyData['late_arrivals'] += $monthLateArrivals;
+                $monthEarlyDepartures = $this->countEarlyDepartures($absences);
+                $yearlyData['early_departures'] += $monthEarlyDepartures;
+                $monthSickLeave = $this->countTimeOffByType($timeOffRequests, 'sick');
+                $yearlyData['sick_leave'] += $monthSickLeave;
+                $monthPermission = $this->countTimeOffByType($timeOffRequests, 'permission');
+                $yearlyData['permission'] += $monthPermission;
+                $monthAfternoonShift = $this->countAfternoonShifts($timeOffRequests);
+                $yearlyData['afternoon_shift_count'] += $monthAfternoonShift;
+                $monthStCount = $this->countWarningLetters($warningLetters, 'ST');
+                $yearlyData['st_count'] += $monthStCount;
+                $monthSpCount = $this->countWarningLetters($warningLetters, 'SP');
+                $yearlyData['sp_count'] += $monthSpCount;
+
+                // Calculate monthly attendance percentage
+                $monthAttendancePercentage = $workingDays > 0
+                    ? round(($monthPresence / $workingDays) * 100)
+                    : 0;
+
+                // Calculate monthly scores
+                $monthAttendanceScore = $monthPresence === 0 ? 0 : $this->calculateAttendanceScore($monthAttendancePercentage, $attendanceRules, $monthPresence);
+                $monthLateScore = $this->calculateLateScore($monthLateArrivals, $lateRules);
+                $monthAfternoonShiftScore = $this->calculateOccurrenceScore($monthAfternoonShift, $afternoonShiftRule);
+                $monthEarlyDepartureScore = $this->calculateOccurrenceScore($monthEarlyDepartures, $earlyLeaveRule);
+                $monthStScore = $this->calculateOccurrenceScore($monthStCount, $stRule);
+                $monthSpScore = $this->calculateOccurrenceScore($monthSpCount, $spRule);
+
+                // Sum up all monthly scores
+                $totalAttendanceScore += $monthAttendanceScore;
+                $totalLateScore += $monthLateScore;
+                $totalAfternoonShiftScore += $monthAfternoonShiftScore;
+                $totalEarlyDepartureScore += $monthEarlyDepartureScore;
+                $totalStScore += $monthStScore;
+                $totalSpScore += $monthSpScore;
             }
 
-            // Calculate attendance percentage
+            // Calculate total score from summed monthly scores
+            $totalScore = $totalAttendanceScore - $totalLateScore - $totalAfternoonShiftScore - $totalEarlyDepartureScore - $totalStScore - $totalSpScore;
+
+            // Calculate attendance percentage for display
             $attendancePercentage = $yearlyData['working_days'] > 0
                 ? round(($yearlyData['presence'] / $yearlyData['working_days']) * 100)
                 : 0;
 
-            // Calculate scores based on yearly totals
-            $attendanceScore = $yearlyData['presence'] === 0 ? 0 : $this->calculateAttendanceScore($attendancePercentage, $attendanceRules, $yearlyData['presence']);
-            $lateScore = $this->calculateLateScore($yearlyData['late_arrivals'], $lateRules);
-            $afternoonShiftScore = $this->calculateOccurrenceScore($yearlyData['afternoon_shift_count'], $afternoonShiftRule);
-            $earlyDepartureScore = $this->calculateOccurrenceScore($yearlyData['early_departures'], $earlyLeaveRule);
-            $stScore = $this->calculateOccurrenceScore($yearlyData['st_count'], $stRule);
-            $spScore = $this->calculateOccurrenceScore($yearlyData['sp_count'], $spRule);
-
-            // Calculate total score
-            $totalScore = $attendanceScore - $lateScore - $afternoonShiftScore - $earlyDepartureScore - $stScore - $spScore;
-
-            // Calculate final grade based on database rules
+            // Calculate final grade based on summed scores
             $grade = '';
             if ($yearlyData['presence'] > 0) {
                 foreach ($gradeRules as $rule) {
@@ -2975,6 +3101,8 @@ class EvaluationController extends Controller
             $finalData = [
                 'employee_id' => $yearlyData['employee_id'],
                 'name' => $yearlyData['name'],
+                'position' => $position ? $position->position : '', // Added position
+                'department' => $department ? $department->department : '', // Added department
                 'working_days' => $yearlyData['working_days'] > 0 ? $yearlyData['working_days'] : '',
                 'presence' => $yearlyData['presence'] > 0 ? $yearlyData['presence'] : '',
                 'attendance_percentage' => $yearlyData['presence'] > 0 ? $attendancePercentage : '',
@@ -2985,12 +3113,12 @@ class EvaluationController extends Controller
                 'sick_leave' => $yearlyData['sick_leave'] > 0 ? $yearlyData['sick_leave'] : '',
                 'st_count' => $yearlyData['st_count'] > 0 ? $yearlyData['st_count'] : '',
                 'sp_count' => $yearlyData['sp_count'] > 0 ? $yearlyData['sp_count'] : '',
-                'attendance_score' => $yearlyData['presence'] > 0 ? $attendanceScore : '',
-                'late_score' => $yearlyData['late_arrivals'] > 0 ? -$lateScore : '',
-                'afternoon_shift_score' => $yearlyData['afternoon_shift_count'] > 0 ? -$afternoonShiftScore : '',
-                'early_departure_score' => $yearlyData['early_departures'] > 0 ? -$earlyDepartureScore : '',
-                'st_score' => $yearlyData['st_count'] > 0 ? -$stScore : '',
-                'sp_score' => $yearlyData['sp_count'] > 0 ? -$spScore : '',
+                'attendance_score' => $totalAttendanceScore > 0 ? $totalAttendanceScore : '',
+                'late_score' => $totalLateScore > 0 ? -$totalLateScore : '',
+                'afternoon_shift_score' => $totalAfternoonShiftScore > 0 ? -$totalAfternoonShiftScore : '',
+                'early_departure_score' => $totalEarlyDepartureScore > 0 ? -$totalEarlyDepartureScore : '',
+                'st_score' => $totalStScore > 0 ? -$totalStScore : '',
+                'sp_score' => $totalSpScore > 0 ? -$totalSpScore : '',
                 'total_score' => $yearlyData['presence'] > 0 ? $totalScore : '',
                 'grade' => $grade // Add the grade from database
             ];
@@ -3000,8 +3128,6 @@ class EvaluationController extends Controller
 
         return response()->json($reportData);
     }
-
-
 
 
     /**
@@ -3153,6 +3279,92 @@ class EvaluationController extends Controller
     /**
      * Export discipline report to Excel
      */
+
+    // public function exportDisciplineReport(Request $request)
+    // {
+    //     // Increase memory limit and execution time for large exports
+    //     ini_set('memory_limit', '512M');
+    //     ini_set('max_execution_time', 300); // 5 minutes
+
+    //     $year = $request->input('year', date('Y'));
+    //     $employeeId = $request->input('employee_id');
+    //     $departmentId = $request->input('department_id');
+    //     $positionId = $request->input('position_id');
+    //     $month = $request->input('month');
+    //     $exportType = $request->input('export_type', 'all');
+
+    //     // Get employees based on filters
+    //     $employees = $this->getFilteredEmployees($employeeId, $departmentId, $positionId);
+
+    //     // Use caching to improve performance
+    //     $cacheKey = "discipline_report_{$year}_{$employeeId}_{$departmentId}_{$positionId}_{$exportType}";
+    //     $expiresAt = now()->addMinutes(60);
+
+    //     // Create new Spreadsheet object
+    //     $spreadsheet = new Spreadsheet();
+
+    //     // Set document properties for better metadata
+    //     $spreadsheet->getProperties()
+    //         ->setCreator('HR System')
+    //         ->setLastModifiedBy('HR System')
+    //         ->setTitle('Discipline Report ' . $year)
+    //         ->setSubject('Employee Discipline Report')
+    //         ->setDescription('Employee Discipline Report for ' . $year);
+
+    //     // Handle different export types with optimized processing
+    //     if ($exportType == 'monthly') {
+    //         // Export all monthly sheets
+    //         $this->createMonthlySheets($spreadsheet, $request, $year);
+    //         $fileName = 'Discipline_Report_Monthly_' . $year . '.xlsx';
+    //     } elseif ($exportType == 'final') {
+    //         // Add Final sheet only
+    //         $finalData = $this->getFinalYearlyData($employees, $year)->original;
+    //         $this->createFinalYearlySheet($spreadsheet, $finalData, $year);
+    //         $fileName = 'Discipline_Report_Final_' . $year . '.xlsx';
+    //     } else {
+    //         // Export everything (all monthly + yearly sheets)
+    //         $this->createMonthlySheets($spreadsheet, $request, $year);
+
+    //         // Add Final sheet as the last sheet
+    //         $spreadsheet->createSheet();
+    //         $spreadsheet->setActiveSheetIndex(12);
+    //         $finalData = $this->getFinalYearlyData($employees, $year)->original;
+    //         $this->createFinalYearlySheet($spreadsheet, $finalData, $year);
+    //         $fileName = 'Discipline_Report_Complete_' . $year . '.xlsx';
+    //     }
+
+    //     // Set first sheet as active for better UX
+    //     if ($spreadsheet->getSheetCount() > 0) {
+    //         $spreadsheet->setActiveSheetIndex(0);
+    //     }
+
+    //     // Add custom header/footer information
+    //     foreach ($spreadsheet->getAllSheets() as $sheet) {
+    //         $sheet->getHeaderFooter()
+    //             ->setOddHeader('&C&BDiscipline Report ' . $year)
+    //             ->setOddFooter('&L&B' . $sheet->getTitle() . '&R&P of &N');
+    //     }
+
+    //     // Create Excel writer with better caching options for performance
+    //     $writer = new Xlsx($spreadsheet);
+    //     $writer->setPreCalculateFormulas(false); // Performance improvement
+
+    //     // Use temporary file to avoid memory issues with large files
+    //     $tempFile = tempnam(sys_get_temp_dir(), 'discipline_report_');
+    //     $writer->save($tempFile);
+
+    //     // Return the response with proper headers
+    //     return response()->download($tempFile, $fileName, [
+    //         'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    //         'Content-Disposition' => 'attachment; filename="' . $fileName . '"',
+    //         'Cache-Control' => 'max-age=0',
+    //     ])->deleteFileAfterSend(true);
+    // }
+
+
+    /**
+     * Export discipline report to Excel
+     */
     public function exportDisciplineReport(Request $request)
     {
         // Increase memory limit and execution time for large exports
@@ -3165,13 +3377,6 @@ class EvaluationController extends Controller
         $positionId = $request->input('position_id');
         $month = $request->input('month');
         $exportType = $request->input('export_type', 'all');
-
-        // Get employees based on filters
-        $employees = $this->getFilteredEmployees($employeeId, $departmentId, $positionId);
-
-        // Use caching to improve performance
-        $cacheKey = "discipline_report_{$year}_{$employeeId}_{$departmentId}_{$positionId}_{$exportType}";
-        $expiresAt = now()->addMinutes(60);
 
         // Create new Spreadsheet object
         $spreadsheet = new Spreadsheet();
@@ -3191,7 +3396,8 @@ class EvaluationController extends Controller
             $fileName = 'Discipline_Report_Monthly_' . $year . '.xlsx';
         } elseif ($exportType == 'final') {
             // Add Final sheet only
-            $finalData = $this->getFinalYearlyData($employees, $year)->original;
+            // Pass request object directly instead of employees
+            $finalData = $this->getFinalYearlyData($year, $request)->original;
             $this->createFinalYearlySheet($spreadsheet, $finalData, $year);
             $fileName = 'Discipline_Report_Final_' . $year . '.xlsx';
         } else {
@@ -3201,7 +3407,8 @@ class EvaluationController extends Controller
             // Add Final sheet as the last sheet
             $spreadsheet->createSheet();
             $spreadsheet->setActiveSheetIndex(12);
-            $finalData = $this->getFinalYearlyData($employees, $year)->original;
+            // Pass request object directly instead of employees
+            $finalData = $this->getFinalYearlyData($year, $request)->original;
             $this->createFinalYearlySheet($spreadsheet, $finalData, $year);
             $fileName = 'Discipline_Report_Complete_' . $year . '.xlsx';
         }
@@ -3450,6 +3657,176 @@ class EvaluationController extends Controller
     /**
      * Create final yearly report sheet with grades
      */
+    // private function createFinalYearlySheet($spreadsheet, $data, $year)
+    // {
+    //     // Set active sheet
+    //     $sheet = $spreadsheet->getActiveSheet();
+    //     $sheet->setTitle('FINAL');
+
+    //     // Set company information
+    //     $sheet->setCellValue('A1', 'LAPORAN KEDISIPLINAN TAHUNAN');
+    //     $sheet->setCellValue('A2', 'Tahun: ' . $year);
+    //     $sheet->mergeCells('A1:P1');
+    //     $sheet->mergeCells('A2:P2');
+
+    //     // Create "FINAL" header
+    //     $sheet->setCellValue('A3', 'FINAL');
+    //     $sheet->mergeCells('A3:P3');
+    //     $sheet->getStyle('A3')->applyFromArray([
+    //         'font' => ['bold' => true, 'size' => 12],
+    //         'alignment' => [
+    //             'horizontal' => Alignment::HORIZONTAL_CENTER,
+    //         ],
+    //         'fill' => [
+    //             'fillType' => Fill::FILL_SOLID,
+    //             'startColor' => ['rgb' => 'FFFF00'], // Yellow highlight for FINAL
+    //         ],
+    //     ]);
+
+    //     // Set headers based on the screenshot shared
+    //     $headers = [
+    //         'A4' => 'NIK',
+    //         'B4' => 'NAMA',
+    //         'C4' => 'TTL KERJA/BL',
+    //         'D4' => 'KEHADIRAN',
+    //         'E4' => '%',
+    //         'F4' => 'TERLAMBAT',
+    //         'G4' => 'MASUK SIANG',
+    //         'H4' => 'PULANG AWAL',
+    //         'I4' => 'SAKIT',
+    //         'J4' => 'ST',
+    //         'K4' => 'SP',
+    //         'L4' => 'KEHADIRAN',
+    //         'M4' => 'TERLAMBAT',
+    //         'N4' => 'MASUK SIANG',
+    //         'O4' => 'PULANG AWAL',
+    //         'P4' => 'ST',
+    //         'Q4' => 'SP',
+    //         'R4' => 'TOTAL',
+    //         'S4' => 'GRADE',
+    //     ];
+
+    //     // Add SCORE header above score columns
+    //     $sheet->setCellValue('L3', 'SCORE');
+    //     $sheet->mergeCells('L3:S3');
+    //     $sheet->getStyle('L3')->applyFromArray([
+    //         'font' => ['bold' => true],
+    //         'alignment' => [
+    //             'horizontal' => Alignment::HORIZONTAL_CENTER,
+    //         ],
+    //         'fill' => [
+    //             'fillType' => Fill::FILL_SOLID,
+    //             'startColor' => ['rgb' => '9ACD32'], // Light green for score header
+    //         ]
+    //     ]);
+
+    //     foreach ($headers as $cell => $value) {
+    //         $sheet->setCellValue($cell, $value);
+    //     }
+
+    //     // Add data rows
+    //     $row = 5;
+    //     foreach ($data as $item) {
+    //         $sheet->setCellValue('A' . $row, $item['employee_id']);
+    //         $sheet->setCellValue('B' . $row, $item['name']);
+    //         $sheet->setCellValue('C' . $row, $item['working_days']);
+    //         $sheet->setCellValue('D' . $row, $item['presence']);
+    //         $sheet->setCellValue('E' . $row, $item['attendance_percentage']);
+    //         $sheet->setCellValue('F' . $row, $item['late_arrivals']);
+    //         $sheet->setCellValue('G' . $row, $item['afternoon_shift_count']);
+    //         $sheet->setCellValue('H' . $row, $item['early_departures']);
+    //         $sheet->setCellValue('I' . $row, $item['sick_leave']);
+    //         $sheet->setCellValue('J' . $row, $item['st_count']);
+    //         $sheet->setCellValue('K' . $row, $item['sp_count']);
+
+    //         // Score columns
+    //         $sheet->setCellValue('L' . $row, $item['attendance_score']);
+    //         $sheet->setCellValue('M' . $row, $item['late_score']);
+    //         $sheet->setCellValue('N' . $row, $item['afternoon_shift_score']);
+    //         $sheet->setCellValue('O' . $row, $item['early_departure_score']);
+    //         $sheet->setCellValue('P' . $row, $item['st_score']);
+    //         $sheet->setCellValue('Q' . $row, $item['sp_score']);
+    //         $sheet->setCellValue('R' . $row, $item['total_score']);
+    //         $sheet->setCellValue('S' . $row, $item['grade']);
+
+    //         // Apply grade formatting
+    //         if (!empty($item['grade'])) {
+    //             $gradeColor = $this->getGradeColor($item['grade']);
+    //             $sheet->getStyle('S' . $row)->applyFromArray([
+    //                 'fill' => [
+    //                     'fillType' => Fill::FILL_SOLID,
+    //                     'startColor' => ['rgb' => $gradeColor],
+    //                 ],
+    //                 'font' => [
+    //                     'bold' => true,
+    //                     'color' => ['rgb' => 'FFFFFF'],
+    //                 ],
+    //             ]);
+    //         }
+
+    //         $row++;
+    //     }
+
+    //     // Set column widths
+    //     $sheet->getColumnDimension('A')->setWidth(15);
+    //     $sheet->getColumnDimension('B')->setWidth(30);
+
+    //     for ($col = 'C'; $col <= 'S'; $col++) {
+    //         $sheet->getColumnDimension($col)->setWidth(15);
+    //     }
+
+    //     // Style headers
+    //     $headerStyle = [
+    //         'font' => ['bold' => true],
+    //         'alignment' => [
+    //             'horizontal' => Alignment::HORIZONTAL_CENTER,
+    //             'vertical' => Alignment::VERTICAL_CENTER,
+    //         ],
+    //         'fill' => [
+    //             'fillType' => Fill::FILL_SOLID,
+    //             'startColor' => ['rgb' => '9ACD32'], // Light green color
+    //         ],
+    //         'borders' => [
+    //             'allBorders' => [
+    //                 'borderStyle' => Border::BORDER_THIN,
+    //             ],
+    //         ],
+    //     ];
+
+    //     $sheet->getStyle('A4:S4')->applyFromArray($headerStyle);
+
+    //     // Style data cells
+    //     $dataStyle = [
+    //         'borders' => [
+    //             'allBorders' => [
+    //                 'borderStyle' => Border::BORDER_THIN,
+    //             ],
+    //         ],
+    //     ];
+
+    //     $sheet->getStyle('A5:S' . ($row - 1))->applyFromArray($dataStyle);
+
+    //     // Set numeric columns to center alignment
+    //     $numericColumns = ['C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S'];
+    //     foreach ($numericColumns as $col) {
+    //         $sheet->getStyle($col . '5:' . $col . ($row - 1))->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+    //     }
+
+    //     // Apply title styles
+    //     $titleStyle = [
+    //         'font' => ['bold' => true, 'size' => 14],
+    //         'alignment' => [
+    //             'horizontal' => Alignment::HORIZONTAL_CENTER,
+    //         ],
+    //     ];
+
+    //     $sheet->getStyle('A1:S2')->applyFromArray($titleStyle);
+    // }
+
+
+    /**
+     * Create final yearly report sheet with grades
+     */
     private function createFinalYearlySheet($spreadsheet, $data, $year)
     {
         // Set active sheet
@@ -3459,12 +3836,12 @@ class EvaluationController extends Controller
         // Set company information
         $sheet->setCellValue('A1', 'LAPORAN KEDISIPLINAN TAHUNAN');
         $sheet->setCellValue('A2', 'Tahun: ' . $year);
-        $sheet->mergeCells('A1:P1');
-        $sheet->mergeCells('A2:P2');
+        $sheet->mergeCells('A1:S1');
+        $sheet->mergeCells('A2:S2');
 
         // Create "FINAL" header
         $sheet->setCellValue('A3', 'FINAL');
-        $sheet->mergeCells('A3:P3');
+        $sheet->mergeCells('A3:S3');
         $sheet->getStyle('A3')->applyFromArray([
             'font' => ['bold' => true, 'size' => 12],
             'alignment' => [
@@ -3476,32 +3853,9 @@ class EvaluationController extends Controller
             ],
         ]);
 
-        // Set headers based on the screenshot shared
-        $headers = [
-            'A4' => 'NIK',
-            'B4' => 'NAMA',
-            'C4' => 'TTL KERJA/BL',
-            'D4' => 'KEHADIRAN',
-            'E4' => '%',
-            'F4' => 'TERLAMBAT',
-            'G4' => 'MASUK SIANG',
-            'H4' => 'PULANG AWAL',
-            'I4' => 'SAKIT',
-            'J4' => 'ST',
-            'K4' => 'SP',
-            'L4' => 'KEHADIRAN',
-            'M4' => 'TERLAMBAT',
-            'N4' => 'MASUK SIANG',
-            'O4' => 'PULANG AWAL',
-            'P4' => 'ST',
-            'Q4' => 'SP',
-            'R4' => 'TOTAL',
-            'S4' => 'GRADE',
-        ];
-
         // Add SCORE header above score columns
         $sheet->setCellValue('L3', 'SCORE');
-        $sheet->mergeCells('L3:S3');
+        $sheet->mergeCells('L3:R3');
         $sheet->getStyle('L3')->applyFromArray([
             'font' => ['bold' => true],
             'alignment' => [
@@ -3513,6 +3867,29 @@ class EvaluationController extends Controller
             ]
         ]);
 
+        // Set headers based on the requirements
+        $headers = [
+            'A4' => 'NIK',
+            'B4' => 'NAMA',
+            'C4' => 'JABATAN',
+            'D4' => 'DEPARTEMEN',
+            'E4' => 'TTL KERJA/TH',
+            'F4' => 'KEHADIRAN',
+            'G4' => '%',
+            'H4' => 'TERLAMBAT',
+            'I4' => 'IJIN',
+            'J4' => 'MASUK SIANG',
+            'K4' => 'PULANG AWAL',
+            'L4' => 'KEHADIRAN',
+            'M4' => 'TERLAMBAT',
+            'N4' => 'MASUK SIANG',
+            'O4' => 'PULANG AWAL',
+            'P4' => 'ST',
+            'Q4' => 'SP',
+            'R4' => 'TOTAL',
+            'S4' => 'GRADE',
+        ];
+
         foreach ($headers as $cell => $value) {
             $sheet->setCellValue($cell, $value);
         }
@@ -3522,15 +3899,15 @@ class EvaluationController extends Controller
         foreach ($data as $item) {
             $sheet->setCellValue('A' . $row, $item['employee_id']);
             $sheet->setCellValue('B' . $row, $item['name']);
-            $sheet->setCellValue('C' . $row, $item['working_days']);
-            $sheet->setCellValue('D' . $row, $item['presence']);
-            $sheet->setCellValue('E' . $row, $item['attendance_percentage']);
-            $sheet->setCellValue('F' . $row, $item['late_arrivals']);
-            $sheet->setCellValue('G' . $row, $item['afternoon_shift_count']);
-            $sheet->setCellValue('H' . $row, $item['early_departures']);
-            $sheet->setCellValue('I' . $row, $item['sick_leave']);
-            $sheet->setCellValue('J' . $row, $item['st_count']);
-            $sheet->setCellValue('K' . $row, $item['sp_count']);
+            $sheet->setCellValue('C' . $row, $item['position']);
+            $sheet->setCellValue('D' . $row, $item['department']);
+            $sheet->setCellValue('E' . $row, $item['working_days']);
+            $sheet->setCellValue('F' . $row, $item['presence']);
+            $sheet->setCellValue('G' . $row, $item['attendance_percentage']);
+            $sheet->setCellValue('H' . $row, $item['late_arrivals']);
+            $sheet->setCellValue('I' . $row, $item['permission']);
+            $sheet->setCellValue('J' . $row, $item['afternoon_shift_count']);
+            $sheet->setCellValue('K' . $row, $item['early_departures']);
 
             // Score columns
             $sheet->setCellValue('L' . $row, $item['attendance_score']);
@@ -3563,8 +3940,10 @@ class EvaluationController extends Controller
         // Set column widths
         $sheet->getColumnDimension('A')->setWidth(15);
         $sheet->getColumnDimension('B')->setWidth(30);
+        $sheet->getColumnDimension('C')->setWidth(20);
+        $sheet->getColumnDimension('D')->setWidth(20);
 
-        for ($col = 'C'; $col <= 'S'; $col++) {
+        for ($col = 'E'; $col <= 'S'; $col++) {
             $sheet->getColumnDimension($col)->setWidth(15);
         }
 
@@ -3600,7 +3979,7 @@ class EvaluationController extends Controller
         $sheet->getStyle('A5:S' . ($row - 1))->applyFromArray($dataStyle);
 
         // Set numeric columns to center alignment
-        $numericColumns = ['C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S'];
+        $numericColumns = ['E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S'];
         foreach ($numericColumns as $col) {
             $sheet->getStyle($col . '5:' . $col . ($row - 1))->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
         }
@@ -3614,6 +3993,27 @@ class EvaluationController extends Controller
         ];
 
         $sheet->getStyle('A1:S2')->applyFromArray($titleStyle);
+
+        // Apply conditional formatting to highlight important data
+        $conditionalStyles = [];
+
+        // Red for negative scores
+        $conditionalStyleNegative = new Conditional();
+        $conditionalStyleNegative->setConditionType(Conditional::CONDITION_CELLIS);
+        $conditionalStyleNegative->setOperatorType(Conditional::OPERATOR_LESSTHAN);
+        $conditionalStyleNegative->addCondition('0');
+        $conditionalStyleNegative->getStyle()->getFont()->getColor()->setRGB('FF0000');
+        $conditionalStyles[] = $conditionalStyleNegative;
+
+        // Green for positive scores
+        $conditionalStylePositive = new Conditional();
+        $conditionalStylePositive->setConditionType(Conditional::CONDITION_CELLIS);
+        $conditionalStylePositive->setOperatorType(Conditional::OPERATOR_GREATERTHANOREQUAL);
+        $conditionalStylePositive->addCondition('0');
+        $conditionalStylePositive->getStyle()->getFont()->getColor()->setRGB('008000');
+        $conditionalStyles[] = $conditionalStylePositive;
+
+        $sheet->getStyle('R5:R' . ($row - 1))->setConditionalStyles($conditionalStyles);
     }
 
     /**
@@ -4755,8 +5155,6 @@ class EvaluationController extends Controller
     /**
      * Show the final evaluation report index
      */
-
-
     public function reportFinalCalculateIndex(Request $request)
     {
         // Get current year for default filtering
@@ -4943,7 +5341,7 @@ class EvaluationController extends Controller
 
     public function getFinalCalculateReportData(Request $request)
     {
-
+        set_time_limit(900);
         $userIds = $request->input('userIds', []);
         $year = $request->input('year');
 
@@ -4955,10 +5353,14 @@ class EvaluationController extends Controller
             $userIds = json_decode($userIds, true);
         }
 
+        // Limit to first 15 users only
+        // $limitedUserIds = array_slice($userIds, 0, 15);
+        // $performanceData = $this->getPerformanceData($limitedUserIds, $year);
+        // $disciplineData = $this->getDisciplineData($limitedUserIds, $year);
+        // $elearningData = $this->getElearningData($limitedUserIds, $year);
+
         // dd($userIds);
-
         $performanceData = $this->getPerformanceData($userIds, $year);
-
         $disciplineData = $this->getDisciplineData($userIds, $year);
         $elearningData = $this->getElearningData($userIds, $year);
 
@@ -4974,6 +5376,7 @@ class EvaluationController extends Controller
      */
     private function getPerformanceData($employeeIds, $year)
     {
+        set_time_limit(900);
         $data = [];
 
         // Get all evaluations for these users in the selected year
@@ -5016,6 +5419,7 @@ class EvaluationController extends Controller
      */
     private function getDisciplineData($employeeIds, $year)
     {
+        set_time_limit(900);
         $data = [];
 
         // Get grade rules from database
@@ -5060,10 +5464,9 @@ class EvaluationController extends Controller
      */
     private function calculateDisciplineYearlyData($employee, $year)
     {
-        // This code is based on the existing getDisciplineReportData method
-        // Calculate working days, absences, and scores for the entire year
+        set_time_limit(900);
 
-        // Get discipline rules
+        // Get discipline rules once
         $attendanceRules = DisciplineRule::where('rule_type', 'attendance')->orderBy('min_value', 'desc')->get();
         $lateRules = DisciplineRule::where('rule_type', 'late')->orderBy('min_value', 'asc')->get();
         $afternoonShiftRule = DisciplineRule::where('rule_type', 'afternoon_shift')->first();
@@ -5071,6 +5474,15 @@ class EvaluationController extends Controller
         $stRule = DisciplineRule::where('rule_type', 'st')->first();
         $spRule = DisciplineRule::where('rule_type', 'sp')->first();
 
+        // Initialize total scores
+        $totalAttendanceScore = 0;
+        $totalLateScore = 0;
+        $totalAfternoonShiftScore = 0;
+        $totalEarlyDepartureScore = 0;
+        $totalStScore = 0;
+        $totalSpScore = 0;
+
+        // Initialize yearly counters for display
         $yearlyData = [
             'working_days' => 0,
             'presence' => 0,
@@ -5122,31 +5534,47 @@ class EvaluationController extends Controller
                 ->get();
 
             // Sum all monthly values
-            $yearlyData['presence'] += $absences->count();
-            $yearlyData['late_arrivals'] += $this->countLateArrivals($absences);
-            $yearlyData['early_departures'] += $this->countEarlyDepartures($absences);
-            $yearlyData['sick_leave'] += $this->countTimeOffByType($timeOffRequests, 'sick');
-            $yearlyData['permission'] += $this->countTimeOffByType($timeOffRequests, 'permission');
-            $yearlyData['afternoon_shift_count'] += $this->countAfternoonShifts($timeOffRequests);
-            $yearlyData['st_count'] += $this->countWarningLetters($warningLetters, 'ST');
-            $yearlyData['sp_count'] += $this->countWarningLetters($warningLetters, 'SP');
+            $monthPresence = $absences->count();
+            $yearlyData['presence'] += $monthPresence;
+            $monthLateArrivals = $this->countLateArrivals($absences);
+            $yearlyData['late_arrivals'] += $monthLateArrivals;
+            $monthEarlyDepartures = $this->countEarlyDepartures($absences);
+            $yearlyData['early_departures'] += $monthEarlyDepartures;
+            $monthSickLeave = $this->countTimeOffByType($timeOffRequests, 'sick');
+            $yearlyData['sick_leave'] += $monthSickLeave;
+            $monthPermission = $this->countTimeOffByType($timeOffRequests, 'permission');
+            $yearlyData['permission'] += $monthPermission;
+            $monthAfternoonShift = $this->countAfternoonShifts($timeOffRequests);
+            $yearlyData['afternoon_shift_count'] += $monthAfternoonShift;
+            $monthStCount = $this->countWarningLetters($warningLetters, 'ST');
+            $yearlyData['st_count'] += $monthStCount;
+            $monthSpCount = $this->countWarningLetters($warningLetters, 'SP');
+            $yearlyData['sp_count'] += $monthSpCount;
+
+            // Calculate monthly attendance percentage
+            $monthAttendancePercentage = $workingDays > 0
+                ? round(($monthPresence / $workingDays) * 100)
+                : 0;
+
+            // Calculate monthly scores
+            $monthAttendanceScore = $monthPresence === 0 ? 0 : $this->calculateAttendanceScore($monthAttendancePercentage, $attendanceRules, $monthPresence);
+            $monthLateScore = $this->calculateLateScore($monthLateArrivals, $lateRules);
+            $monthAfternoonShiftScore = $this->calculateOccurrenceScore($monthAfternoonShift, $afternoonShiftRule);
+            $monthEarlyDepartureScore = $this->calculateOccurrenceScore($monthEarlyDepartures, $earlyLeaveRule);
+            $monthStScore = $this->calculateOccurrenceScore($monthStCount, $stRule);
+            $monthSpScore = $this->calculateOccurrenceScore($monthSpCount, $spRule);
+
+            // Sum up all monthly scores
+            $totalAttendanceScore += $monthAttendanceScore;
+            $totalLateScore += $monthLateScore;
+            $totalAfternoonShiftScore += $monthAfternoonShiftScore;
+            $totalEarlyDepartureScore += $monthEarlyDepartureScore;
+            $totalStScore += $monthStScore;
+            $totalSpScore += $monthSpScore;
         }
 
-        // Calculate attendance percentage
-        $attendancePercentage = $yearlyData['working_days'] > 0
-            ? round(($yearlyData['presence'] / $yearlyData['working_days']) * 100)
-            : 0;
-
-        // Calculate scores based on yearly totals
-        $attendanceScore = $yearlyData['presence'] === 0 ? 0 : $this->calculateAttendanceScore($attendancePercentage, $attendanceRules, $yearlyData['presence']);
-        $lateScore = $this->calculateLateScore($yearlyData['late_arrivals'], $lateRules);
-        $afternoonShiftScore = $this->calculateOccurrenceScore($yearlyData['afternoon_shift_count'], $afternoonShiftRule);
-        $earlyDepartureScore = $this->calculateOccurrenceScore($yearlyData['early_departures'], $earlyLeaveRule);
-        $stScore = $this->calculateOccurrenceScore($yearlyData['st_count'], $stRule);
-        $spScore = $this->calculateOccurrenceScore($yearlyData['sp_count'], $spRule);
-
-        // Calculate total score
-        $totalScore = $attendanceScore - $lateScore - $afternoonShiftScore - $earlyDepartureScore - $stScore - $spScore;
+        // Calculate total score from summed monthly scores
+        $totalScore = $totalAttendanceScore - $totalLateScore - $totalAfternoonShiftScore - $totalEarlyDepartureScore - $totalStScore - $totalSpScore;
 
         $finalData = [
             'total_score' => $yearlyData['presence'] > 0 ? $totalScore : ''
@@ -5160,6 +5588,7 @@ class EvaluationController extends Controller
      */
     private function getElearningData($employeeIds, $year)
     {
+        set_time_limit(900);
         $data = [];
 
         // Get grade rules
@@ -5185,6 +5614,7 @@ class EvaluationController extends Controller
      */
     private function calculateElearningYearScores($userId, $year)
     {
+        set_time_limit(900);
         // This implementation follows the logic in your original calculateYearScores method
         $totalPercentage = 0;
         $totalLessons = 0;
@@ -5225,6 +5655,7 @@ class EvaluationController extends Controller
 
     public function finalCalculateExportToExcel(Request $request)
     {
+        set_time_limit(900);
         // Get parameters from the request
         $selectedYear = $request->input('year', date('Y'));
         $employeeFilter = $request->input('employee');
@@ -5428,6 +5859,7 @@ class EvaluationController extends Controller
      */
     private function getGradeFromScore($score)
     {
+
         if ($score >= 5.0) return 'A';
         if ($score >= 4.6) return 'A-';
         if ($score >= 4.1) return 'B+';
@@ -5535,6 +5967,16 @@ class EvaluationController extends Controller
             ], 500);
         }
     }
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -5670,7 +6112,7 @@ class EvaluationController extends Controller
      */
     public function reportFinalGraphData(Request $request)
     {
-        $year = $request->input('year', date('Y'));
+        $years = $request->input('years', [date('Y')]);
         $employeeIds = $request->input('employees', []);
 
         $evaluations = EmployeeFinalEvaluation::select(
@@ -5678,7 +6120,7 @@ class EvaluationController extends Controller
             'users.name as employee_name'
         )
             ->leftJoin('users', 'users.id', '=', 'employee_final_evaluations.user_id')
-            ->where('year', $year)
+            ->whereIn('year', $years)
             ->whereIn('user_id', $employeeIds)
             ->get();
 
@@ -5691,18 +6133,18 @@ class EvaluationController extends Controller
     public function getEmployees(Request $request)
     {
         $search = $request->input('search', '');
-        $page = $request->input('page', 1);
-        $limit = 10;
-
-        $query = User::select('id', 'name');
+        
+        // Remove pagination limit
+        $query = User::with(['position', 'department'])->select('id', 'name', 'position_id', 'department_id');
 
         if (!empty($search)) {
             $query->where('name', 'like', "%{$search}%");
         }
 
-        $employees = $query->paginate($limit, ['*'], 'page', $page);
+        // Get all matching employees with no limit
+        $employees = $query->get();
 
-        return response()->json($employees->items());
+        return response()->json($employees);
     }
 
     /**
@@ -5723,6 +6165,15 @@ class EvaluationController extends Controller
 
         return response()->json($years);
     }
+
+
+
+
+
+
+
+
+
 
 
 
@@ -5786,9 +6237,8 @@ class EvaluationController extends Controller
             $query->where('proposal_grade', $request->proposal_grade);
         }
 
-        // Apply department and position filters later after we have processed the evaluations
-
-        $evaluations = $query->paginate(15);
+        // Change from paginate(15) to get() to show all data
+        $evaluations = $query->get();
 
         // Process each evaluation to add department, position, and salary data
         foreach ($evaluations as $evaluation) {

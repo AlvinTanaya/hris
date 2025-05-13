@@ -496,7 +496,7 @@
         $('#userTable').DataTable({
             "paging": true,
             "searching": true,
-            "ordering": true,
+            "ordering": false,
             "info": true,
             "responsive": true,
             "language": {
@@ -597,7 +597,8 @@
         Swal.fire({
             icon: 'success',
             title: 'Success!',
-            text: '{{ session('success') }}',
+            text: '{{ session('
+            success ') }}',
             confirmButtonColor: '#3085d6',
             timer: 3000
         });
@@ -607,7 +608,8 @@
         Swal.fire({
             icon: 'error',
             title: 'Error!',
-            text: '{{ session('error') }}',
+            text: '{{ session('
+            error ') }}',
             confirmButtonColor: '#3085d6'
         });
         @endif

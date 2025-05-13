@@ -67,7 +67,9 @@ use App\Mail\TimeOffRequestSubmitted;
 use App\Mail\TimeOffRequestCancelled;
 use App\Mail\TimeOffRequestApproved;
 use App\Mail\TimeOffRequestDeclined;
-
+use App\Mail\ResignationUpdatedHRMail;
+use App\Mail\ResignationCancelledHRMail;
+use App\Mail\ResignationRequestHRMail;
 
 class TimeManagementController extends Controller
 {
@@ -1279,6 +1281,7 @@ class TimeManagementController extends Controller
                         }
                     }
 
+          
                     // Only add data if there's something to show
                     if ($absence->hour_in || $absence->hour_out) {
                         $dayAttendance = [
@@ -1313,6 +1316,7 @@ class TimeManagementController extends Controller
                             'is_early_departure' => $hasEarlyDepartureRequest
                         ];
                     }
+                   
                 }
 
                 // If no attendance record but there's a time-off request
@@ -1347,7 +1351,7 @@ class TimeManagementController extends Controller
                     $attendance[$day] = $dayAttendance;
                 }
             }
-
+            // dd($attendance);
             return [
                 'employee_id' => $employee->employee_id,
                 'name' => $employee->name,
@@ -2776,7 +2780,9 @@ class TimeManagementController extends Controller
             $hrDepartment = EmployeeDepartment::where('department', 'Human Resources')->first();
 
             // Then get users in that department
-            $hrUsers = User::where('department_id', $hrDepartment->id)
+            $hrUsers = User::whereHas('department', function ($query) {
+                $query->where('department', 'Human Resources');
+            })
                 ->where('employee_status', '!=', 'Inactive')
                 ->get();
 
@@ -3034,7 +3040,6 @@ class TimeManagementController extends Controller
         return view('time_management/request_resign/create', compact('id'));
     }
 
-
     public function request_resign_edit($id)
     {
         $request_resign = RequestResign::findOrFail($id);
@@ -3043,9 +3048,10 @@ class TimeManagementController extends Controller
         return view('time_management/request_resign/update', compact('request_resign'));
     }
 
+
+    // Modified request_resign_store function
     public function request_resign_store(Request $request)
     {
-
         // Validate request
         $validated = $request->validate([
             'resign_type' => 'required',
@@ -3071,8 +3077,6 @@ class TimeManagementController extends Controller
         if ($request->hasFile('file_path')) {
             $file = $request->file('file_path');
 
-
-
             // Create filename using resignation ID
             $fileName = 'request_resign_' . $resignation->id . '_' . $request->user_id . '.' . $file->getClientOriginalExtension();
 
@@ -3083,12 +3087,38 @@ class TimeManagementController extends Controller
             $resignation->save();
         }
 
-        // Send email to user
-        Mail::to(Auth::user()->email)->send(new ResignationRequestMail(Auth::user(), $validated['resign_date']));
+        // Get user information
+        $user = User::findOrFail($request->user_id);
 
-        // Create notification
+        // Send email to user
+        Mail::to($user->email)->send(new ResignationRequestMail($user, $validated['resign_date']));
+
+        // Find HR personnel that are active
+        $hr_personnel = User::whereHas('department', function ($query) {
+            $query->where('department', 'Human Resources');
+        })
+            ->where('employee_status', '!=', 'Inactive')
+            ->get();
+
+        // Send email to all active HR personnel
+        foreach ($hr_personnel as $hr) {
+            Mail::to($hr->email)->send(new ResignationRequestHRMail($user, $resignation));
+
+            // Create notification for each HR personnel
+            Notification::create([
+                'message' => 'Employee ' . $user->name . ' has submitted a resignation request.',
+                'type' => 'resign_hr',
+                'users_id' => $hr->id, // Set the specific HR personnel ID
+                'maker_id' => $request->user_id,
+                'status' => 'Unread',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        }
+
+        // Create notification for user
         Notification::create([
-            'message' => 'You have submitted a resignation request. Please wait for management’s decision.',
+            'message' => 'You have submitted a resignation request. Please wait for management`s decision.',
             'type' => 'resign',
             'users_id' => $request->user_id,
             'maker_id' => $request->user_id,
@@ -3097,22 +3127,22 @@ class TimeManagementController extends Controller
             'updated_at' => now(),
         ]);
 
+        // Note: HR notifications are now created in the loop above for each HR personnel
+
         return redirect()->route('request.resign.index2', ['id' => $request->user_id])
             ->with('success', 'Resignation request submitted successfully.');
     }
 
+    // Modified request_resign_update function
     public function request_resign_update(Request $request, $id)
     {
         // Validate request
-
         $validated = $request->validate([
             'resign_type' => 'required',
             'resign_date' => 'required|date',
             'resign_reason' => 'required',
             'file_reason' => 'nullable|file|mimes:jpeg,png,jpg|max:2048',
         ]);
-
-
 
         $temp = ($validated['resign_type'] == 'Other' && $request->other_reason != null)
             ? $request->other_reason
@@ -3148,9 +3178,12 @@ class TimeManagementController extends Controller
             $request_resign->save();
         }
 
-        // Create notification
+        // Get user information
+        $user = User::findOrFail($request_resign->user_id);
+
+        // Create notification for user
         Notification::create([
-            'message' => 'Your resignation request has been updated. Please wait for  management’s decision.',
+            'message' => 'Your resignation request has been updated. Please wait for management`s decision.',
             'type' => 'resign',
             'users_id' => $request_resign->user_id,
             'status' => 'Unread',
@@ -3158,25 +3191,83 @@ class TimeManagementController extends Controller
             'updated_at' => now(),
         ]);
 
-        // Send email notification
-        $user = User::findOrFail($request_resign->user_id);
+        // Note: HR notifications are now created in the loop above for each HR personnel
+
+        // Send email notification to user
         Mail::to($user->email)->send(new ResignationUpdatedMail($user, $request_resign));
+
+        // Find HR personnel that are active
+        $hr_personnel = User::whereHas('department', function ($query) {
+            $query->where('department', 'Human Resources');
+        })
+            ->where('employee_status', '!=', 'Inactive')
+            ->get();
+
+        // Send email to all active HR personnel
+        foreach ($hr_personnel as $hr) {
+            Mail::to($hr->email)->send(new ResignationUpdatedHRMail($user, $request_resign));
+
+            // Create notification for each HR personnel
+            Notification::create([
+                'message' => 'Employee ' . $user->name . ' has updated their resignation request.',
+                'type' => 'resign_hr',
+                'users_id' => $hr->id, // Set the specific HR personnel ID
+                'maker_id' => $request_resign->user_id,
+                'status' => 'Unread',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        }
 
         return redirect()->route('request.resign.index2', ['id' => $request_resign->user_id])
             ->with('success', 'Resignation request updated successfully.');
     }
 
-
-
+    // Modified request_resign_destroy function
     public function request_resign_destroy($id)
     {
         // Find resignation request
         $resignRequest = RequestResign::findOrFail($id);
         $userID = $resignRequest->user_id;
 
-        // Send email notification before deletion
+        // Get user information
         $user = User::findOrFail($userID);
+
+        // Store user information and resignation details before deletion
+        $resignDetails = [
+            'user' => $user,
+            'resign_type' => $resignRequest->resign_type,
+            'resign_date' => $resignRequest->resign_date,
+            'resign_reason' => $resignRequest->resign_reason
+        ];
+
+        // Send email notification to user before deletion
         Mail::to($user->email)->send(new ResignationDeletedMail($user));
+
+        // Find HR personnel that are active
+        $hr_personnel = User::whereHas('department', function ($query) {
+            $query->where('department', 'Human Resources');
+        })
+            ->where('employee_status', '!=', 'Inactive')
+            ->get();
+
+        // Send email to all active HR personnel
+        foreach ($hr_personnel as $hr) {
+            Mail::to($hr->email)->send(new ResignationCancelledHRMail($resignDetails));
+
+            // Create notification for each HR personnel
+            Notification::create([
+                'message' => 'Employee ' . $user->name . ' has cancelled their resignation request.',
+                'type' => 'resign_hr',
+                'users_id' => $hr->id, // Set the specific HR personnel ID
+                'maker_id' => $userID,
+                'status' => 'Unread',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        }
+
+        // Note: HR notifications are now created in the loop above for each HR personnel
 
         // Delete request
         $resignRequest->delete();
@@ -3184,6 +3275,7 @@ class TimeManagementController extends Controller
         return redirect()->route('request.resign.index2', ['id' => $userID])
             ->with('success', 'Resignation request has been cancelled successfully.');
     }
+
 
 
 
@@ -5638,13 +5730,13 @@ class TimeManagementController extends Controller
         // Get the user who made the request
         $user = User::find($request->user_id);
 
-        $hrDepartment = EmployeeDepartment::where('department', 'Human Resources')->first();
 
-        $hr_personnel = User::where('department_id', $hrDepartment->id)
+
+        $hr_personnel = User::whereHas('department', function ($query) {
+            $query->where('department', 'Human Resources');
+        })
             ->where('employee_status', '!=', 'Inactive')
             ->get();
-
-
 
         // Create notifications for HR personnel
         foreach ($hr_personnel as $hr) {

@@ -1,0 +1,220 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+
+
+class recruitment_applicant extends Model
+{
+    protected $table = 'recruitment_applicant';
+
+    protected $fillable = [
+        'recruitment_demand_id', isi dnegan 12
+        'name', terserah random generate
+        'email', random email jgn paaki yang exsit pakai terserah dah 
+        'phone_number', nomor telepon indonesia
+        'ID_number', nomor ktp indonesia
+        'birth_date', 
+        'birth_place',
+        'religion', Islam, Katholik Kristen Buddha hindu
+        'gender', Male / Female
+        'ID_address', alamart terserah
+        'domicile_address', alamat terseraj
+        'height', tinggi badan terserah
+        'weight', tinggi bada terserah
+        'blood_type', A/ B/ AB/ O
+        'bpjs_employment', terseah angka
+        'bpjs_health', terserah angka
+       
+        'sim', A,C / A / A,B Gitu 
+        'sim_number', bentuknay json {"A":"1231-323-3232","C":"1231-323-3232"} / {"A":"1231-323-3232"} / {"A":"1231-323-3232","B":"1231-323-3232"}
+        'emergency_contact', bebas no tlp indonesia
+        'expected_salary', bebas berapa juta gitu misal 5000000
+        'expected_facility', bebas text jgn terlalu panjang
+        'expected_benefit',bebas text jgn terlalu panjang
+
+        'created_at',
+        'updated_at'
+    ];
+}
+
+
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+
+class recruitment_applicant_work_experience extends Model
+{
+    use HasFactory;
+
+    // Define the table name if it's not the plural of the model name
+    protected $table = 'recruitment_applicant_work_experience';
+
+    // Define which fields can be mass-assigned
+    protected $fillable = [
+        'applicant_id', cocokkan dengan id di atas
+        'company_name', bebeas
+        'position', bebas
+        'working_start', bebas mulai nya
+        'working_end', bebas akhirnya
+        'company_address', bebeas
+        'company_phone', bebas
+        'salary', bebas
+        'supervisor_name', bebas
+        'supervisor_phone', bebas
+        'job_desc', bebas
+        'reason', bebas ini alasan dia keluar
+        'benefit', bebas
+        'facility', bebas
+        'created_at',
+        'updated_at',
+    ];
+}
+
+
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+
+class recruitment_applicant_education extends Model
+{
+    use HasFactory;
+
+    // Define the table name if it's not the plural of the model name
+    protected $table = 'recruitment_applicant_education';
+
+    // Define which fields can be mass-assigned
+    protected $fillable = [
+        'applicant_id', seauikan dengan yang diaats
+        'degree', isi antara SMK/SMA/S1/S2
+        'educational_place', Bebas
+        'educational_city', isi denagn Jawa Timur
+        'educational_province', isi denagn Kota Surabaya aja
+        'start_education', bebas ya sesauikan kalau biasanya sma kan 3 tahun kalau kuliah 4 athun
+        'end_education', bebas
+        'grade', kalau grade SMA/ SMK ya antara 0-100 tp kalau S1/S2 ya antara gpa 0 - 4.0
+        'major', bebas
+        'created_at',
+        'updated_at',
+    ];
+}
+
+
+
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+
+class recruitment_applicant_family extends Model
+{
+    use HasFactory;
+
+    // Define the table name if it's not the plural of the model name
+    protected $table = 'recruitment_applicant_family';
+
+    // Define which fields can be mass-assigned
+    protected $fillable = [
+        'applicant_id', sesuaikan di atas applicantnay
+        'name', bebas
+        'relation', pilih antara Father/Mother/Wife/Husband?Child
+        'phone_number', bebas no tlp indonesia
+        'gender', Male/Female
+        'created_at',
+        'updated_at',
+    ];
+}
+
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+
+class recruitment_applicant_language extends Model
+{
+    use HasFactory;
+
+    // Define the table name if it's not the plural of the model name
+    protected $table = 'recruitment_applicant_language';
+
+    // Define which fields can be mass-assigned
+    protected $fillable = [
+        'applicant_id', sesauikan yang diaatas
+        'language', pilih antara English/Mandarin/Indonesian
+        'verbal', pilih Antara Active/Passive
+        'written', pilih natara Active/Passive
+        'created_at',
+        'updated_at',
+    ];
+}
+
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+
+class recruitment_applicant_training extends Model
+{
+    use HasFactory;
+
+    // Define the table name if it's not the plural of the model name
+    protected $table = 'recruitment_applicant_training';
+
+    // Define which fields can be mass-assigned
+    protected $fillable = [
+        'applicant_id', sesauikan diatas applicant_id
+        'training_name', bebas terserah dah
+        'training_city', isi Jawa Timur
+        'training_province', isi Kota Surabaya
+        'start_date', bebas dah
+        'end_date', bebas dah
+        'created_at',
+        'updated_at',
+    ];
+}
+
+
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+
+class recruitment_applicant_organization extends Model
+{
+    use HasFactory;
+
+    // Define the table name if it's not the plural of the model name
+    protected $table = 'recruitment_applicant_organization';
+
+    // Define which fields can be mass-assigned
+    protected $fillable = [
+        'applicant_id', sesauikan denagn id diatas
+        'organization_name', bebas
+        'activity_type', isi bebas aktivitas dalam organisasi
+        'position', bebas isinya
+        'city', isi denan Kota Surabaya
+        'province', isi dengan Jawa Timur
+        'start_date', bebas
+        'end_date', bebas
+        'created_at',
+        'updated_at',
+    ];
+}
+
+

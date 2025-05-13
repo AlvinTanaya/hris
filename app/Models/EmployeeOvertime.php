@@ -19,7 +19,6 @@ class EmployeeOvertime extends Model
         'end_time',
         'total_hours',
         'reason',
-        'overtime_type',
         'approval_status',
         'declined_reason',
         'created_at',

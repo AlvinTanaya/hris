@@ -170,7 +170,7 @@
 
                     <div class="table-responsive">
                     <table id="evaluations-table" class="table table-bordered table-striped mb-2 pt-3 align-middle align-items-center table-hover">
-    <thead class="table-dark">
+                    <thead class="table-dark">
         <tr>
             <th>No</th>
             <th>Employee Name</th>
@@ -178,7 +178,7 @@
             <th>Department</th>
             <th>Year</th>
             <th>Months Evaluated</th>
-            <th>Average Score</th>
+            <th>Total Score</th>
             <th>Total Deduction</th>
             <th>Final Score</th>
             <th>Grade</th>
@@ -191,11 +191,11 @@
             <td>{{ $key + 1 }}</td>
             <td>{{ $evaluation->user->name ?? 'N/A' }}</td>
             <td>{{ $evaluation->user->historical_position ? $evaluation->user->historical_position->position : 'N/A' }}</td>
-<td>{{ $evaluation->user->historical_department ? $evaluation->user->historical_department->department : 'N/A' }}</td>
+            <td>{{ $evaluation->user->historical_department ? $evaluation->user->historical_department->department : 'N/A' }}</td>
             <td>{{ $evaluation->year }}</td>
             <td>{{ $evaluation->month_count }}</td>
-            <td class="fw-bold">{{ number_format($evaluation->average_score, 2) }}</td>
-            <td class="text-danger">{{ $evaluation->total_reduction }}</td>
+            <td class="fw-bold">{{ number_format($evaluation->total_score, 2) }}</td>
+            <td class="text-danger">{{ number_format($evaluation->total_reduction, 2) }}</td>
             <td class="fw-bold text-primary">
                 {{ number_format($evaluation->final_score, 2) }}
             </td>

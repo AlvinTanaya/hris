@@ -877,290 +877,418 @@
 
 @push('scripts')
 <script>
-    function handleCalculateClick(buttonElement) {
-        console.log('Calculate button handler executed');
-        const $button = $(buttonElement);
-        const selectedYear = $('#year').val();
+    $(document).ready(function() {
 
-        // Validate weights first
-        if (!validateWeights()) {
-            Swal.fire({
-                title: 'Invalid Weights',
-                text: 'The total weight must equal 100%. Please adjust your weights.',
-                icon: 'error',
-                confirmButtonText: 'OK'
-            });
-            return;
+
+        
+    // Initialize an empty table with proper configuration
+    const finalTable = $('#finalTable').DataTable({
+        responsive: true,
+        dom: '<"d-flex justify-content-between align-items-center mb-3"<"d-flex align-items-center"l><"d-flex"f>><"table-responsive"t><"d-flex justify-content-between align-items-center"<"d-flex align-items-center"i><"d-flex align-items-center"p>>',
+        pageLength: 10,
+        lengthMenu: [10, 25, 50, 100, -1],
+
+        // Language settings
+        language: {
+            emptyTable: "No data available. Click 'Calculate' to load evaluation data.",
+            zeroRecords: "No matching records found",
+            search: "_INPUT_",
+            searchPlaceholder: "Search...",
+            lengthMenu: "Show _MENU_ entries",
+            info: "Showing _START_ to _END_ of _TOTAL_ entries",
+            infoEmpty: "Showing 0 to 0 of 0 entries",
+            infoFiltered: "(filtered from _MAX_ total entries)"
+        },
+
+        // Column definitions
+        columnDefs: [
+            {
+                targets: 0, // # column
+                orderable: false,
+                className: 'text-center',
+                width: '40px',
+                responsivePriority: 1
+            },
+            {
+                targets: [5, 7, 9], // Grade columns
+                className: 'text-center'
+            },
+            {
+                targets: [6, 8, 10], // Score columns
+                className: 'text-center'
+            },
+            {
+                targets: [11, 12], // Final score/grade columns
+                className: 'text-center fw-bold'
+            }
+        ],
+        order: [[11, 'desc']] // Default sort by final score descending
+    });
+
+    // Initially hide the results card
+    $('#resultsCard').hide();
+
+    // Initialize weight validation
+    validateWeights();
+
+    // Weight input validation
+    $('.weight-input').on('input', function() {
+        validateWeights();
+    });
+
+    // Calculate button handler
+    $('#calculateBtn').on('click', function() {
+        handleCalculateClick(this);
+    });
+
+    // Save results button click handler
+    $('#saveResultsBtn').click(function() {
+        saveResults(this);
+    });
+
+    // Initialize year dropdown change handler
+    $('#year').on('change', function() {
+        window.location.href = "{{ route('evaluation.report.final.calculate.index') }}?year=" + $(this).val();
+    });
+});
+
+/**
+ * Function to collect all user IDs from the DataTable
+ * Ensures all IDs are collected regardless of pagination
+ */
+function getUserIds() {
+    let userIds = [];
+
+    // Check if we have access to the correct DataTable
+    if ($.fn.DataTable.isDataTable('#finalTable')) {
+        const table = $('#finalTable').DataTable();
+
+        // Collect all user IDs from all rows programmatically
+        table.rows().every(function() {
+            const $row = $(this.node());
+            const userId = $row.data('user-id');
+            if (userId) {
+                userIds.push(userId);
+            }
+        });
+
+        console.log(`Successfully retrieved ${userIds.length} user IDs from DataTable API`);
+
+        // Store user IDs for future use
+        $('#finalTable').data('all-user-ids', userIds);
+        $('#allUserIds').val(JSON.stringify(userIds));
+
+        return userIds;
+    }
+
+    // Fallback method if DataTable is not available
+    $('#finalTable tbody tr').each(function() {
+        const userId = $(this).data('user-id');
+        if (userId) {
+            userIds.push(userId);
         }
+    });
 
-        // Change button state to loading
-        $button.prop('disabled', true)
-            .html('<i class="fas fa-spinner fa-spin me-2"></i>Processing data...');
+    console.log(`Retrieved ${userIds.length} user IDs with DOM fallback method`);
+    return userIds;
+}
 
-        // Show loading overlay
+/**
+ * Function to handle Calculate button click
+ * Fetches data and calculates final scores
+ */
+function handleCalculateClick(buttonElement) {
+    console.log('Running calculations');
+    const $button = $(buttonElement);
+    const selectedYear = $('#year').val();
+
+    // Validate weights first
+    if (!validateWeights()) {
         Swal.fire({
-            title: 'Loading Data',
-            text: 'Fetching evaluation data, please wait...',
-            allowOutsideClick: false,
-            didOpen: () => {
-                Swal.showLoading();
-            }
+            title: 'Invalid Weights',
+            text: 'Total weight must be 100%. Please adjust the weight values.',
+            icon: 'error',
+            confirmButtonText: 'OK'
         });
-
-        // Get the user IDs
-        const userIds = [];
-        $('#finalTable tbody tr').each(function() {
-            userIds.push($(this).data('user-id'));
-        });
-
-        // Fetch data via AJAX
-        $.ajax({
-            url: "{{ route('evaluation.report.final.calculate.getData') }}",
-            method: "POST",
-            data: {
-                userIds: userIds,
-                year: selectedYear,
-                _token: "{{ csrf_token() }}"
-            },
-            success: function(response) {
-                console.log('Data received successfully:', response);
-
-                // Close the loading overlay first
-                Swal.close();
-
-                // Store the fetched data
-                evaluationData = response;
-
-                // Update each row with the fetched data
-                $('#finalTable tbody tr').each(function() {
-                    const $row = $(this);
-                    const userId = $row.data('user-id');
-
-                    // Set the performance data with enhanced UI
-                    if (response.performance && response.performance[userId]) {
-                        const perfData = response.performance[userId];
-                        $row.data('performance', perfData.grade);
-                        $row.data('performance-score', perfData.score);
-
-                        // Store original display format
-                        const originalHtml = `
-                            <span class="badge rounded-pill grade-${perfData.grade.toLowerCase().charAt(0)}">${perfData.grade}</span>
-                            <span class="small">(${perfData.score})</span>
-                        `;
-
-                        $row.find('td:eq(5)')
-                            .attr('data-original', originalHtml)
-                            .html(originalHtml);
-                    }
-
-                    // Set the discipline data with enhanced UI
-                    if (response.discipline && response.discipline[userId]) {
-                        const discData = response.discipline[userId];
-                        $row.data('discipline', discData.grade);
-                        $row.data('discipline-score', discData.score);
-
-                        // Store original display format
-                        const originalHtml = `
-                            <span class="badge rounded-pill grade-${discData.grade.toLowerCase().charAt(0)}">${discData.grade}</span>
-                            <span class="small">(${discData.score})</span>
-                        `;
-
-                        $row.find('td:eq(6)')
-                            .attr('data-original', originalHtml)
-                            .html(originalHtml);
-                    }
-
-                    // Set the e-learning data with enhanced UI
-                    if (response.elearning && response.elearning[userId]) {
-                        const eLearnData = response.elearning[userId];
-                        $row.data('elearning', eLearnData.grade);
-                        $row.data('elearning-score', eLearnData.score);
-
-                        // Store original display format
-                        const originalHtml = `
-                            <span class="badge rounded-pill grade-${eLearnData.grade.toLowerCase().charAt(0)}">${eLearnData.grade}</span>
-                            <span class="small">(${eLearnData.score})</span>
-                        `;
-
-                        $row.find('td:eq(7)')
-                            .attr('data-original', originalHtml)
-                            .html(originalHtml);
-                    }
-                });
-
-                // Calculate final scores and display weighted scores
-                calculateFinalScores(true);
-
-                // Show the filter section and results card
-                $('#filterSection').show();
-                $('#resultsCard').show();
-
-                // Force refresh the DataTable
-                if ($.fn.DataTable.isDataTable('#finalTable')) {
-                    $('#finalTable').DataTable().draw();
-                }
-
-                // Populate filters - clear existing options first
-                $('#filterEmployee, #filterDepartment, #filterPosition').find('option:not(:first)').remove();
-                populateFilters();
-
-                // Reset button and show success
-                $button.prop('disabled', false)
-                    .html('<i class="fas fa-calculator me-2"></i>Calculate Final Scores');
-
-                // Show success message
-                setTimeout(() => {
-                    Swal.fire({
-                        title: 'Calculation Complete',
-                        text: 'The final scores have been calculated successfully.',
-                        icon: 'success',
-                        confirmButtonText: 'Great!',
-                        timer: 2000,
-                        timerProgressBar: true
-                    });
-                }, 300);
-            },
-            error: function(xhr) {
-                console.error("Error fetching data:", xhr);
-
-                // Close the loading overlay first
-                Swal.close();
-
-                // Reset button state
-                $button.prop('disabled', false)
-                    .html('<i class="fas fa-calculator me-2"></i>Calculate Final Scores');
-
-                // Show error message
-                setTimeout(() => {
-                    Swal.fire({
-                        title: 'Error',
-                        text: 'Failed to fetch evaluation data. Please try again.',
-                        icon: 'error',
-                        confirmButtonText: 'OK'
-                    });
-                }, 300);
-            }
-        });
+        return;
     }
 
-    // Modified populateFilters function with improved filtering
-    function populateFilters() {
-        console.log('Populating filters');
+    // Change button status to loading
+    $button.prop('disabled', true)
+        .html('<i class="fas fa-spinner fa-spin me-2"></i>Processing data...');
 
-        // Get unique values from the table
-        const departments = [];
-        const positions = [];
-        const employees = [];
-
-        $('#finalTable tbody tr').each(function() {
-            const dept = $(this).data('department');
-            const pos = $(this).data('position');
-            const empId = $(this).data('employee-id');
-            const empName = $(this).data('name');
-
-            if (dept && !departments.includes(dept)) departments.push(dept);
-            if (pos && !positions.includes(pos)) positions.push(pos);
-            if (empId && empName) {
-                // Check if employee already exists in the array
-                const exists = employees.some(e => e.id === empId);
-                if (!exists) {
-                    employees.push({
-                        id: empId,
-                        name: empName
-                    });
-                }
-            }
-        });
-
-        // Clear existing options first (except the first "All" option)
-        $('#filterEmployee').find('option').not(':first').remove();
-        $('#filterDepartment').find('option').not(':first').remove();
-        $('#filterPosition').find('option').not(':first').remove();
-
-        // Populate department filter
-        departments.sort().forEach(dept => {
-            $('#filterDepartment').append(`<option value="${dept}">${dept}</option>`);
-        });
-
-        // Populate position filter
-        positions.sort().forEach(pos => {
-            $('#filterPosition').append(`<option value="${pos}">${pos}</option>`);
-        });
-
-        // Populate employee filter
-        employees.sort((a, b) => a.name.localeCompare(b.name)).forEach(emp => {
-            $('#filterEmployee').append(`<option value="${emp.id}">${emp.name} (${emp.id})</option>`);
-        });
-
-        // Reset filters button
-        $('#resetFilters').on('click', function() {
-            $('#filterEmployee, #filterDepartment, #filterPosition').val('');
-            applyFilters();
-        });
-
-        // Apply filters button
-        $('#applyFilters').on('click', applyFilters);
-    }
-
-    function applyFilters() {
-        const departmentFilter = $('#filterDepartment').val();
-        const positionFilter = $('#filterPosition').val();
-        const employeeFilter = $('#filterEmployee').val();
-
-        $('#finalTable tbody tr').each(function() {
-            const $row = $(this);
-
-            // Skip rows that don't have the data attributes we need
-            if (!$row.data('user-id')) {
-                $row.hide(); // Hide any empty or non-data rows
-                return true; // continue to next row
-            }
-
-            const department = $row.data('department');
-            const position = $row.data('position');
-            const employeeId = $row.data('employee-id');
-            const employeeName = $row.data('name').toLowerCase();
-
-            // Check if we're filtering by employee ID or name
-            let employeeMatch = true;
-            if (employeeFilter) {
-                const filterText = employeeFilter.toLowerCase();
-                employeeMatch = employeeId === employeeFilter ||
-                    employeeName.includes(filterText);
-            }
-
-            const departmentMatch = !departmentFilter || department === departmentFilter;
-            const positionMatch = !positionFilter || position === positionFilter;
-
-            $row.toggle(departmentMatch && positionMatch && employeeMatch);
-        });
-    }
-    // Validate that weights add up to 100%
-
-    function validateWeights() {
-        const performanceWeight = parseInt($('#performanceWeight').val());
-        const disciplineWeight = parseInt($('#disciplineWeight').val());
-        const elearningWeight = parseInt($('#elearningWeight').val());
-
-        const totalWeight = performanceWeight + disciplineWeight + elearningWeight;
-        $('#totalWeight').text(totalWeight + '%');
-
-        // Update header weights
-        $('#perfHeaderWeight').text(performanceWeight + '%');
-        $('#discHeaderWeight').text(disciplineWeight + '%');
-        $('#elHeaderWeight').text(elearningWeight + '%');
-
-        if (totalWeight === 100) {
-            $('#weightValidation').removeClass('alert-danger').addClass('alert-info');
-            return true;
-        } else {
-            $('#weightValidation').removeClass('alert-info').addClass('alert-danger');
-            return false;
+    // Show loading overlay
+    Swal.fire({
+        title: 'Processing Data',
+        html: 'Calculating employee evaluations...<br><small class="text-muted">This process may take a moment</small>',
+        allowOutsideClick: false,
+        didOpen: () => {
+            Swal.showLoading();
         }
+    });
+
+    // Get all user IDs using the enhanced function
+    const userIds = getUserIds();
+
+    // Make sure we have user IDs to process
+    if (!userIds.length) {
+        Swal.fire({
+            title: 'Error',
+            text: 'No user data found. Please refresh the page and try again.',
+            icon: 'error',
+            confirmButtonText: 'OK'
+        });
+        $button.prop('disabled', false)
+            .html('<i class="fas fa-calculator me-2"></i>Calculate Final Scores');
+        return;
     }
-    // Add a new function to create the calculation breakdown table
-    function createCalculationBreakdown(performanceGrade, disciplineGrade, elearningGrade, weights) {
-        // Define grade values according to the grading guide
+
+    console.log('User IDs to process:', userIds.length, userIds);
+
+    // Fetch data via AJAX with enhanced error handling
+    $.ajax({
+        url: "{{ route('evaluation.report.final.calculate.getData') }}",
+        method: "POST",
+        timeout: 900000, // 15 minutes
+        data: {
+            userIds: userIds,
+            year: selectedYear,
+            _token: $('meta[name="csrf-token"]').attr('content')
+        },
+        success: function(response) {
+            handleFetchSuccess(response);
+        },
+        error: function(xhr) {
+            handleFetchError(xhr);
+        }
+    });
+}
+
+function handleFetchSuccess(response) {
+    console.log('Data successfully received:', response);
+    Swal.close();
+
+    // Store evaluation data
+    evaluationData = response;
+
+    // Store total number of users for verification
+    const totalUsers = Object.keys(response.performance || {}).length;
+    console.log(`Total users in response: ${totalUsers}`);
+
+    // Destroy existing DataTable if it exists
+    if ($.fn.DataTable.isDataTable('#finalTable')) {
+        $('#finalTable').DataTable().destroy();
+    }
+
+    // Clear table body to rebuild it properly
+    const $tableBody = $('#finalTable tbody');
+
+    // Check if we have data
+    if (totalUsers === 0) {
+        Swal.fire({
+            title: 'No Data Found',
+            text: 'No evaluation data found for the selected year.',
+            icon: 'warning',
+            confirmButtonText: 'OK'
+        });
+        $('#calculateBtn').prop('disabled', false)
+            .html('<i class="fas fa-calculator me-2"></i>Calculate Final Scores');
+        return;
+    }
+
+    // Update all rows with new data and hide those without data
+    const rowsToShow = [];
+    $tableBody.find('tr').each(function() {
+        const $row = $(this);
+        const userId = $row.data('user-id');
+
+        if (!userId) return;
+
+        let hasData = false;
+
+        // Performance Data
+        if (response.performance && response.performance[userId]) {
+            hasData = true;
+            const perfData = response.performance[userId];
+            $row.data('performance', perfData.grade);
+            $row.data('performance-score', perfData.score);
+            const originalHtml = `<span class="badge rounded-pill grade-${perfData.grade.toLowerCase().charAt(0)}">${perfData.grade}</span><span class="small">(${perfData.score})</span>`;
+            $row.find('td:eq(5)').attr('data-original', originalHtml).html(originalHtml);
+        } else {
+            // If no performance data, clear the column
+            $row.data('performance', 'F');
+            $row.data('performance-score', 0);
+            $row.find('td:eq(5)').html('<span class="badge rounded-pill grade-f">F</span><span class="small">(0)</span>');
+        }
+
+        // Discipline Data
+        if (response.discipline && response.discipline[userId]) {
+            hasData = true;
+            const discData = response.discipline[userId];
+            $row.data('discipline', discData.grade);
+            $row.data('discipline-score', discData.score);
+            const originalHtml = `<span class="badge rounded-pill grade-${discData.grade.toLowerCase().charAt(0)}">${discData.grade}</span><span class="small">(${discData.score})</span>`;
+            $row.find('td:eq(7)').attr('data-original', originalHtml).html(originalHtml);
+        } else {
+            // If no discipline data, clear the column
+            $row.data('discipline', 'F');
+            $row.data('discipline-score', 0);
+            $row.find('td:eq(7)').html('<span class="badge rounded-pill grade-f">F</span><span class="small">(0)</span>');
+        }
+
+        // E-learning Data
+        if (response.elearning && response.elearning[userId]) {
+            hasData = true;
+            const eLearnData = response.elearning[userId];
+            $row.data('elearning', eLearnData.grade);
+            $row.data('elearning-score', eLearnData.score);
+            const originalHtml = `<span class="badge rounded-pill grade-${eLearnData.grade.toLowerCase().charAt(0)}">${eLearnData.grade}</span><span class="small">(${eLearnData.score})</span>`;
+            $row.find('td:eq(9)').attr('data-original', originalHtml).html(originalHtml);
+        } else {
+            // If no e-learning data, clear the column
+            $row.data('elearning', 'F');
+            $row.data('elearning-score', 0);
+            $row.find('td:eq(9)').html('<span class="badge rounded-pill grade-f">F</span><span class="small">(0)</span>');
+        }
+
+        // If the employee has at least one evaluation data, add to the list of rows to show
+        if (hasData) {
+            rowsToShow.push(userId);
+            $row.removeClass('d-none').show();
+        } else {
+            // For rows without evaluation data, mark with permanent-hide class
+            $row.addClass('d-none permanent-hide').hide();
+        }
+    });
+
+    console.log(`Showing ${rowsToShow.length} employees with evaluation data`);
+
+    // Calculate final scores for all employees (including hidden ones, for data completeness)
+    calculateFinalScores(true);
+
+    // CRITICAL FIX: Remove rows without data from DOM before DataTable initialization
+    // This ensures DataTable only counts visible rows
+    $tableBody.find('tr.permanent-hide').detach();
+
+    // Reinitialize DataTable with fixed configuration
+    $('#finalTable').DataTable({
+        responsive: true,
+        pageLength: 10,
+        lengthMenu: [10, 25, 50, 100, -1],
+        dom: '<"d-flex justify-content-between align-items-center mb-3"<"d-flex align-items-center"l><"d-flex"f>><"table-responsive"t><"d-flex justify-content-between align-items-center"<"d-flex align-items-center"i><"d-flex align-items-center"p>>',
+        order: [[11, 'desc']], // Sort by final score by default
+        
+        // Language settings with correct count
+        language: {
+            emptyTable: "No data available. Click 'Calculate' to load evaluation data.",
+            zeroRecords: "No matching records found",
+            search: "_INPUT_",
+            searchPlaceholder: "Search...",
+            lengthMenu: "Show _MENU_ entries",
+            info: "Showing _START_ to _END_ of _TOTAL_ entries",
+            infoEmpty: "Showing 0 to 0 of 0 entries",
+            infoFiltered: "(filtered from _MAX_ total entries)"
+        }
+    });
+
+    // Show filter section and results
+    $('#filterSection').show();
+    $('#resultsCard').show();
+
+    // Populate filters with current data
+    populateFilters();
+
+    // Reset button status
+    $('#calculateBtn').prop('disabled', false)
+        .html('<i class="fas fa-calculator me-2"></i>Calculate Final Scores');
+
+    // Show success message
+    setTimeout(() => {
+        Swal.fire({
+            title: 'Calculation Complete',
+            text: 'Final scores have been successfully calculated.',
+            icon: 'success',
+            confirmButtonText: 'Great!',
+            timer: 2000,
+            timerProgressBar: true
+        });
+    }, 300);
+}
+
+
+
+/**
+ * Function to handle AJAX errors
+ */
+function handleFetchError(xhr) {
+    console.error("Error fetching data:", xhr);
+
+    // Close loading overlay
+    Swal.close();
+
+    // Reset button status
+    $('#calculateBtn').prop('disabled', false)
+        .html('<i class="fas fa-calculator me-2"></i>Calculate Final Scores');
+
+    // Show error message
+    setTimeout(() => {
+        Swal.fire({
+            title: 'Error',
+            text: 'Failed to retrieve evaluation data. Please try again.',
+            icon: 'error',
+            confirmButtonText: 'OK'
+        });
+    }, 300);
+}
+
+/**
+ * Function to validate weights
+ */
+function validateWeights() {
+    const performanceWeight = parseInt($('#performanceWeight').val());
+    const disciplineWeight = parseInt($('#disciplineWeight').val());
+    const elearningWeight = parseInt($('#elearningWeight').val());
+
+    const totalWeight = performanceWeight + disciplineWeight + elearningWeight;
+    $('#totalWeight').text(totalWeight + '%');
+
+    // Update header weights
+    $('#perfHeaderWeight').text(performanceWeight + '%');
+    $('#discHeaderWeight').text(disciplineWeight + '%');
+    $('#elHeaderWeight').text(elearningWeight + '%');
+
+    if (totalWeight === 100) {
+        $('#weightValidation').removeClass('alert-danger').addClass('alert-info');
+        return true;
+    } else {
+        $('#weightValidation').removeClass('alert-info').addClass('alert-danger');
+        return false;
+    }
+}
+
+/**
+ * Function to calculate final scores
+ * Enhancement: All data is calculated even if not displayed
+ */
+function calculateFinalScores(animate = false) {
+    const performanceWeight = parseInt($('#performanceWeight').val()) / 100;
+    const disciplineWeight = parseInt($('#disciplineWeight').val()) / 100;
+    const elearningWeight = parseInt($('#elearningWeight').val()) / 100;
+
+    $('#finalTable tbody tr').each(function() {
+        const $row = $(this);
+
+        // Get grades
+        const performanceGrade = $row.data('performance') || 'F';
+        const disciplineGrade = $row.data('discipline') || 'F';
+        const elearningGrade = $row.data('elearning') || 'F';
+
+        // Get original scores
+        const performanceScore = parseFloat($row.data('performance-score')) || 0;
+        const disciplineScore = parseFloat($row.data('discipline-score')) || 0;
+        const elearningScore = parseFloat($row.data('elearning-score')) || 0;
+
+        // Convert grade to numeric value
         const gradeValues = {
             'A': 5.0,
             'A-': 4.75,
@@ -1178,390 +1306,380 @@
             'F': 0.5
         };
 
-        // Get numeric values for grades
-        const perfScore = gradeValues[performanceGrade] || 0;
-        const discScore = gradeValues[disciplineGrade] || 0;
-        const elScore = gradeValues[elearningGrade] || 0;
+        const performanceGradeValue = gradeValues[performanceGrade] || 0;
+        const disciplineGradeValue = gradeValues[disciplineGrade] || 0;
+        const elearningGradeValue = gradeValues[elearningGrade] || 0;
 
         // Calculate weighted scores
-        const perfWeighted = perfScore * weights.performance;
-        const discWeighted = discScore * weights.discipline;
-        const elWeighted = elScore * weights.elearning;
+        const weightedPerformance = performanceGradeValue * performanceWeight;
+        const weightedDiscipline = disciplineGradeValue * disciplineWeight;
+        const weightedElearning = elearningGradeValue * elearningWeight;
 
         // Calculate final score
-        const finalScore = perfWeighted + discWeighted + elWeighted;
+        const finalScore = weightedPerformance + weightedDiscipline + weightedElearning;
+        const finalGrade = getGradeFromScore(finalScore);
 
-        // Create the table HTML
-        return `
-    <div class="calculation-table">
-        <table class="table table-sm table-bordered">
-            <thead class="table-light">
-                <tr>
-                    <th>Category</th>
-                    <th>Grade</th>
-                    <th>Value</th>
-                    <th>Weight</th>
-                    <th>Score</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr>
-                    <td>Performance</td>
-                    <td><span class="badge grade-${performanceGrade.toLowerCase().charAt(0)}">${performanceGrade}</span></td>
-                    <td>${perfScore.toFixed(2)}</td>
-                    <td>${(weights.performance * 100)}%</td>
-                    <td>${perfWeighted.toFixed(2)}</td>
-                </tr>
-                <tr>
-                    <td>Discipline</td>
-                    <td><span class="badge grade-${disciplineGrade.toLowerCase().charAt(0)}">${disciplineGrade}</span></td>
-                    <td>${discScore.toFixed(2)}</td>
-                    <td>${(weights.discipline * 100)}%</td>
-                    <td>${discWeighted.toFixed(2)}</td>
-                </tr>
-                <tr>
-                    <td>E-Learning</td>
-                    <td><span class="badge grade-${elearningGrade.toLowerCase().charAt(0)}">${elearningGrade}</span></td>
-                    <td>${elScore.toFixed(2)}</td>
-                    <td>${(weights.elearning * 100)}%</td>
-                    <td>${elWeighted.toFixed(2)}</td>
-                </tr>
-                <tr class="table-active fw-bold">
-                    <td colspan="4" class="text-end">Final Score:</td>
-                    <td>${finalScore.toFixed(2)}</td>
-                </tr>
-            </tbody>
-        </table>
-    </div>`;
-    }
-
-    // Add CSS for the calculation table
-    const calculationTableCSS = `
-        <style>
-            .calculation-table {
-                padding: 10px;
-                border-radius: 0.5rem;
-                background-color: #f8f9fa;
-                box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-                max-width: 100%;
-                margin-top: 10px;
-            }
-            
-            .calculation-table table {
-                margin-bottom: 0;
-                font-size: 0.85rem;
-            }
-            
-            .calculation-table th, 
-            .calculation-table td {
-                text-align: center;
-                vertical-align: middle;
-                padding: 0.5rem;
-            }
-            
-            .calculation-table tr:hover {
-                background-color: rgba(0,0,0,0.02);
-            }
-            
-            /* Add a subtle hover effect to calculation button */
-            .btn-calculation {
-                border-radius: 0.5rem;
-            }
-            
-            .btn-calculation:hover {
-                background-color: #edf2ff;
-                color: #0d6efd;
-                box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-            }
-        </style>`;
-
-    // Add the CSS to the document
-    $('head').append(calculationTableCSS);
-
-
-    function calculateFinalScores(animate = false) {
-        const performanceWeight = parseInt($('#performanceWeight').val()) / 100;
-        const disciplineWeight = parseInt($('#disciplineWeight').val()) / 100;
-        const elearningWeight = parseInt($('#elearningWeight').val()) / 100;
-
-        $('#finalTable tbody tr').each(function() {
-            const $row = $(this);
-
-            // Get original scores
-            const performanceScore = parseFloat($row.data('performance-score')) || 0;
-            const disciplineScore = parseFloat($row.data('discipline-score')) || 0;
-            const elearningScore = parseFloat($row.data('elearning-score')) || 0;
-
-            // Get grades
-            const performanceGrade = $row.data('performance') || 'F';
-            const disciplineGrade = $row.data('discipline') || 'F';
-            const elearningGrade = $row.data('elearning') || 'F';
-
-            // Convert grades to numeric values
-            const gradeValues = {
-                'A': 5.0,
-                'A-': 4.75,
-                'B+': 4.3,
-                'B': 4.0,
-                'B-': 3.75,
-                'C+': 3.3,
-                'C': 3.0,
-                'C-': 2.75,
-                'D+': 2.3,
-                'D': 2.0,
-                'D-': 1.75,
-                'E+': 1.3,
-                'E': 1.0,
-                'F': 0.5
-            };
-
-            const performanceGradeValue = gradeValues[performanceGrade] || 0;
-            const disciplineGradeValue = gradeValues[disciplineGrade] || 0;
-            const elearningGradeValue = gradeValues[elearningGrade] || 0;
-
-            // Calculate weighted scores
-            const weightedPerformance = performanceGradeValue * performanceWeight;
-            const weightedDiscipline = disciplineGradeValue * disciplineWeight;
-            const weightedElearning = elearningGradeValue * elearningWeight;
-
-            // Calculate final score
-            const finalScore = weightedPerformance + weightedDiscipline + weightedElearning;
-            const finalGrade = getGradeFromScore(finalScore);
-
-            // Update display for Performance
-            $row.find('td:eq(5)').html(`
+        // Update display for Performance
+        $row.find('td:eq(5)').html(`
             <span class="badge rounded-pill grade-${performanceGrade.toLowerCase().charAt(0)}">${performanceGrade}</span>
             <span class="small">(${performanceScore})</span>
         `);
-            $row.find('td:eq(6)').html(`
+        $row.find('td:eq(6)').html(`
             <div class="fw-bold">${performanceGradeValue.toFixed(2)}</div>
             <div class="text-muted small">${(performanceWeight * 100)}%</div>
             <div class="text-primary fw-bold mt-1">${weightedPerformance.toFixed(2)}</div>
         `);
 
-            // Update display for Discipline
-            $row.find('td:eq(7)').html(`
+        // Update display for Discipline
+        $row.find('td:eq(7)').html(`
             <span class="badge rounded-pill grade-${disciplineGrade.toLowerCase().charAt(0)}">${disciplineGrade}</span>
             <span class="small">(${disciplineScore})</span>
         `);
-            $row.find('td:eq(8)').html(`
+        $row.find('td:eq(8)').html(`
             <div class="fw-bold">${disciplineGradeValue.toFixed(2)}</div>
             <div class="text-muted small">${(disciplineWeight * 100)}%</div>
             <div class="text-warning fw-bold mt-1">${weightedDiscipline.toFixed(2)}</div>
         `);
 
-            // Update display for E-Learning
-            $row.find('td:eq(9)').html(`
+        // Update display for E-Learning
+        $row.find('td:eq(9)').html(`
             <span class="badge rounded-pill grade-${elearningGrade.toLowerCase().charAt(0)}">${elearningGrade}</span>
             <span class="small">(${elearningScore})</span>
         `);
-            $row.find('td:eq(10)').html(`
+        $row.find('td:eq(10)').html(`
             <div class="fw-bold">${elearningGradeValue.toFixed(2)}</div>
             <div class="text-muted small">${(elearningWeight * 100)}%</div>
             <div class="text-info fw-bold mt-1">${weightedElearning.toFixed(2)}</div>
         `);
 
-            // Display final score and grade
-            $row.find('.final-score').text(finalScore.toFixed(2));
-            $row.find('.final-grade').html(`<span class="badge grade-${finalGrade.toLowerCase().charAt(0)}">${finalGrade}</span>`);
+        // Display final score and grade
+        $row.find('.final-score').text(finalScore.toFixed(2));
+        $row.find('.final-grade').html(`<span class="badge grade-${finalGrade.toLowerCase().charAt(0)}">${finalGrade}</span>`);
 
-            if (animate) {
-                $row.find('.final-score, .final-grade').addClass('highlight-animation');
-                setTimeout(() => {
-                    $row.find('.final-score, .final-grade').removeClass('highlight-animation');
-                }, 1200);
-            }
-        });
-
-        // Sort table by final score (descending)
-        if ($.fn.DataTable.isDataTable('#finalTable')) {
-            $('#finalTable').DataTable().order([11, 'desc']).draw(); // Update column index for final score
+        // Add animation effect if requested
+        if (animate) {
+            $row.find('.final-score, .final-grade').addClass('highlight-animation');
+            setTimeout(() => {
+                $row.find('.final-score, .final-grade').removeClass('highlight-animation');
+            }, 1200);
         }
-    }
-
-    // Helper function to get grade from score
-    function getGradeFromScore(score) {
-        if (score >= 5.0) return 'A';
-        if (score >= 4.6) return 'A-';
-        if (score >= 4.1) return 'B+';
-        if (score >= 4.0) return 'B';
-        if (score >= 3.6) return 'B-';
-        if (score >= 3.1) return 'C+';
-        if (score >= 3.0) return 'C';
-        if (score >= 2.6) return 'C-';
-        if (score >= 2.1) return 'D+';
-        if (score >= 2.0) return 'D';
-        if (score >= 1.6) return 'D-';
-        if (score >= 1.1) return 'E+';
-        if (score >= 1.0) return 'E';
-        return 'F';
-    }
-
-
-    // Helper function for score coloring
-    function getScoreColorClass(score) {
-        if (score >= 4.6) return 'bg-success';
-        if (score >= 3.6) return 'bg-primary';
-        if (score >= 2.6) return 'bg-info';
-        if (score >= 1.6) return 'bg-warning';
-        return 'bg-danger';
-    }
-
-    // Weight input validation
-    $('.weight-input').on('input', function() {
-        validateWeights();
     });
 
-    // Initialize the page
-    $(document).ready(function() {
-        // Initialize year dropdown change handler
-        $('#year').on('change', function() {
-            window.location.href = "{{ route('evaluation.report.final.calculate.index') }}?year=" + $(this).val();
-        });
+    // Sort table by final score (descending)
+    if ($.fn.DataTable.isDataTable('#finalTable')) {
+        $('#finalTable').DataTable().order([11, 'desc']).draw();
+    }
+}
 
-        $('#finalTable').DataTable({
-            responsive: true,
-            dom: '<"d-flex justify-content-between align-items-center mb-3"<"d-flex align-items-center"l><"d-flex"f>><"table-responsive"t><"d-flex justify-content-between align-items-center"<"d-flex align-items-center"i><"d-flex align-items-center"p>>',
-            columnDefs: [{
-                    targets: 0, // # column
-                    orderable: false,
-                    className: 'text-center',
-                    width: '40px', // Explicitly set the width for the # column
-                    responsivePriority: 1 // Ensure it stays visible on smaller screens
-                },
-                {
-                    targets: [5, 7, 9], // Grade columns
-                    className: 'text-center'
-                },
-                {
-                    targets: [6, 8, 10], // Score columns
-                    className: 'text-center'
-                },
-                {
-                    targets: [11, 12], // Final score/grade columns
-                    className: 'text-center fw-bold'
-                }
-            ],
-            order: [
-                [11, 'desc']
-            ], // Default sort by final score descending
-            language: {
-                search: "_INPUT_",
-                searchPlaceholder: "Search...",
-                lengthMenu: "Show _MENU_ entries",
-                info: "Showing _START_ to _END_ of _TOTAL_ entries",
-                infoEmpty: "Showing 0 to 0 of 0 entries",
-                infoFiltered: "(filtered from _MAX_ total entries)",
-                paginate: {
-                    first: "First",
-                    last: "Last",
-                    next: "Next",
-                    previous: "Previous"
-                }
-            },
-            drawCallback: function() {
-                // Highlight final score cells based on grade
-                this.api().cells('.final-score').every(function() {
-                    var score = parseFloat(this.data());
-                    var colorClass = getScoreColorClass(score);
-                    $(this.node()).removeClass('bg-success bg-primary bg-info bg-warning bg-danger')
-                        .addClass(colorClass + ' text-white');
-                });
-            }
-        });
+/**
+ * Function to save results
+ * FIXED: Now saves ALL employees regardless of current page/pagination
+ */
+function saveResults(buttonElement) {
+    const $button = $(buttonElement);
 
-        // Helper function for score coloring
-        function getScoreColorClass(score) {
-            if (score >= 4.6) return 'bg-success';
-            if (score >= 3.6) return 'bg-primary';
-            if (score >= 2.6) return 'bg-info';
-            if (score >= 1.6) return 'bg-warning';
-            return 'bg-danger';
+    // Disable button to prevent double submission
+    $button.prop('disabled', true);
+    $button.html('<i class="fas fa-spinner fa-spin"></i> Saving...');
+
+    // Show loading overlay
+    Swal.fire({
+        title: 'Saving Data',
+        text: 'Saving evaluation data to server...',
+        allowOutsideClick: false,
+        didOpen: () => {
+            Swal.showLoading();
         }
+    });
 
-        // Initialize weight validation
-        validateWeights();
+    // Collect data from ALL rows across ALL pages of the DataTable
+    let evaluationData = [];
+    
+    // Get DataTable instance
+    let table = null;
+    if ($.fn.DataTable.isDataTable('#finalTable')) {
+        // Use DataTable API to access ALL rows, not just current page
+        table = $('#finalTable').DataTable();
+        
+        // Critical fix: Use rows().nodes() to get ALL rows in the DataTable across all pages
+        table.rows().every(function() {
+            const $row = $(this.node());
+            const userId = $row.data('user-id');
+            
+            if (!userId || $row.hasClass('permanent-hide')) return; // Skip invalid rows
+            
+            // Get grades from badges in each column
+            const performanceGrade = $row.find('td:eq(5) .badge').text().trim() || 'F';
+            const disciplineGrade = $row.find('td:eq(7) .badge').text().trim() || 'F';
+            const elearningGrade = $row.find('td:eq(9) .badge').text().trim() || 'F';
 
-        // Save Results button click handler
-        $('#saveResultsBtn').click(function() {
-            // Disable the button to prevent multiple submissions
-            $(this).prop('disabled', true);
-            $(this).html('<i class="fas fa-spinner fa-spin"></i> Saving...');
+            // Get weighted scores (be careful to get the numbers correctly)
+            const performanceScore = parseFloat($row.find('td:eq(6) .text-primary').text().trim()) || 0;
+            const disciplineScore = parseFloat($row.find('td:eq(8) .text-warning').text().trim()) || 0;
+            const elearningScore = parseFloat($row.find('td:eq(10) .text-info').text().trim()) || 0;
 
-            // Collect data from the table
-            let evaluationData = [];
-            $('#finalTable tbody tr').each(function() {
-                const row = $(this);
-                const userId = row.data('user-id');
+            // Get final score and grade
+            const finalScore = parseFloat($row.find('.final-score').text().trim()) || 0;
+            const finalGrade = $row.find('.final-grade .badge').text().trim() || 'F';
 
-                // Get the grade from the badge in the respective columns
-                const performanceGrade = row.find('td:eq(5) .badge').text().trim() || '';
-                const disciplineGrade = row.find('td:eq(7) .badge').text().trim() || '';
-                const elearningGrade = row.find('td:eq(9) .badge').text().trim() || '';
-                
-                // Get the weighted scores (highlighted in the image with red circles)
-                const performanceScore = parseFloat(row.find('td:eq(6) .text-primary').text().trim()) || 0;
-                const disciplineScore = parseFloat(row.find('td:eq(8) .text-warning').text().trim()) || 0;
-                const elearningScore = parseFloat(row.find('td:eq(10) .text-info').text().trim()) || 0;
-                
-                // Get the final score and grade
-                const finalScore = parseFloat(row.find('.final-score').text().trim()) || 0;
-                const finalGrade = row.find('.final-grade .badge').text().trim() || '';
-
-                evaluationData.push({
-                    user_id: userId,
-                    year: $('#selectedYear').val(),
-                    performance: performanceGrade,
-                    performance_score: performanceScore,
-                    discipline: disciplineGrade,
-                    discipline_score: disciplineScore,
-                    elearning: elearningGrade,
-                    elearning_score: elearningScore,
-                    final_score: finalScore,
-                    final_grade: finalGrade
-                });
-            });
-
-            // Send data via AJAX
-            $.ajax({
-                url: '/evaluation/report/final/calculate/save',
-                method: 'POST',
-                data: {
-                    _token: $('meta[name="csrf-token"]').attr('content'),
-                    evaluations: evaluationData
-                },
-                dataType: 'json',
-                success: function(response) {
-                    // Re-enable the button
-                    $('#saveResultsBtn').prop('disabled', false).html('<i class="fas fa-save"></i> Save Results');
-
-                    // Show success message
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'Success!',
-                        text: 'Evaluation results have been saved successfully.',
-                        timer: 3000
-                    });
-                },
-                error: function(xhr) {
-                    // Re-enable the button
-                    $('#saveResultsBtn').prop('disabled', false).html('<i class="fas fa-save"></i> Save Results');
-
-                    // Show error message
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Error!',
-                        text: 'Failed to save evaluation results. Please try again.',
-                    });
-
-                    console.error('Error saving results:', xhr.responseText);
-                }
+            // Add to collection
+            evaluationData.push({
+                user_id: userId,
+                year: $('#year').val(),
+                performance: performanceGrade,
+                performance_score: performanceScore,
+                discipline: disciplineGrade,
+                discipline_score: disciplineScore,
+                elearning: elearningGrade,
+                elearning_score: elearningScore,
+                final_score: finalScore,
+                final_grade: finalGrade
             });
         });
- 
+    } else {
+        // Fallback to DOM method if DataTable is not available
+        $('#finalTable tbody tr').not('.permanent-hide').not('.d-none').each(function() {
+            const $row = $(this);
+            const userId = $row.data('user-id');
 
+            if (!userId) return; // Skip rows without user ID
 
+            // Get grades from badges in each column
+            const performanceGrade = $row.find('td:eq(5) .badge').text().trim() || 'F';
+            const disciplineGrade = $row.find('td:eq(7) .badge').text().trim() || 'F';
+            const elearningGrade = $row.find('td:eq(9) .badge').text().trim() || 'F';
+
+            // Get weighted scores
+            const performanceScore = parseFloat($row.find('td:eq(6) .text-primary').text().trim()) || 0;
+            const disciplineScore = parseFloat($row.find('td:eq(8) .text-warning').text().trim()) || 0;
+            const elearningScore = parseFloat($row.find('td:eq(10) .text-info').text().trim()) || 0;
+
+            // Get final score and grade
+            const finalScore = parseFloat($row.find('.final-score').text().trim()) || 0;
+            const finalGrade = $row.find('.final-grade .badge').text().trim() || 'F';
+
+            // Add to collection
+            evaluationData.push({
+                user_id: userId,
+                year: $('#year').val(),
+                performance: performanceGrade,
+                performance_score: performanceScore,
+                discipline: disciplineGrade,
+                discipline_score: disciplineScore,
+                elearning: elearningGrade,
+                elearning_score: elearningScore,
+                final_score: finalScore,
+                final_grade: finalGrade
+            });
+        });
+    }
+
+    console.log(`Saving evaluation data for ${evaluationData.length} employees across all pages`);
+    
+    // Debugging: Log the first few records to verify data
+    if (evaluationData.length > 0) {
+        console.log('Sample data being saved:', evaluationData.slice(0, 2));
+    }
+
+    // Send data via AJAX
+    $.ajax({
+        url: '/evaluation/report/final/calculate/save',
+        method: 'POST',
+        data: {
+            _token: $('meta[name="csrf-token"]').attr('content'),
+            evaluations: evaluationData
+        },
+        dataType: 'json',
+        success: function(response) {
+            // Close loading overlay
+            Swal.close();
+
+            // Enable button again
+            $button.prop('disabled', false).html('<i class="fas fa-save"></i> Save Results');
+
+            // Show success message
+            Swal.fire({
+                icon: 'success',
+                title: 'Success!',
+                text: `Evaluation results for ${evaluationData.length} employees have been successfully saved.`,
+                timer: 3000
+            });
+        },
+        error: function(xhr) {
+            // Close loading overlay
+            Swal.close();
+
+            // Enable button again
+            $button.prop('disabled', false).html('<i class="fas fa-save"></i> Save Results');
+
+            // Show error message
+            Swal.fire({
+                icon: 'error',
+                title: 'Error!',
+                text: 'Failed to save evaluation results. Please try again.',
+            });
+
+            console.error('Error saving results:', xhr.responseText);
+        }
     });
+}
+/**
+ * Function to get grade from score
+ */
+function getGradeFromScore(score) {
+    if (score >= 5.0) return 'A';
+    if (score >= 4.6) return 'A-';
+    if (score >= 4.1) return 'B+';
+    if (score >= 4.0) return 'B';
+    if (score >= 3.6) return 'B-';
+    if (score >= 3.1) return 'C+';
+    if (score >= 3.0) return 'C';
+    if (score >= 2.6) return 'C-';
+    if (score >= 2.1) return 'D+';
+    if (score >= 2.0) return 'D';
+    if (score >= 1.6) return 'D-';
+    if (score >= 1.1) return 'E+';
+    if (score >= 1.0) return 'E';
+    return 'F';
+}
+
+/**
+ * Function to populate filters
+ */
+function populateFilters() {
+    console.log('Populating filters');
+
+    // Get unique values from visible rows only
+    const departments = new Set();
+    const positions = new Set();
+    const employees = new Map(); // Use Map to avoid duplicates based on employee ID
+
+    // PERBAIKAN: Hanya gunakan baris yang terlihat (tidak memiliki kelas d-none)
+    $('#finalTable tbody tr').not('.d-none').each(function() {
+        const $row = $(this);
+        
+        const dept = $row.data('department');
+        const pos = $row.data('position');
+        const empId = $row.data('employee-id');
+        const empName = $row.data('name');
+
+        if (dept) departments.add(dept);
+        if (pos) positions.add(pos);
+        if (empId && empName) {
+            employees.set(empId, empName);
+        }
+    });
+
+    // Clear existing options first (except the first "All" option)
+    $('#filterEmployee').find('option').not(':first').remove();
+    $('#filterDepartment').find('option').not(':first').remove();
+    $('#filterPosition').find('option').not(':first').remove();
+
+    // Fill department filter
+    Array.from(departments).sort().forEach(dept => {
+        $('#filterDepartment').append(`<option value="${dept}">${dept}</option>`);
+    });
+
+    // Fill position filter
+    Array.from(positions).sort().forEach(pos => {
+        $('#filterPosition').append(`<option value="${pos}">${pos}</option>`);
+    });
+
+    // Fill employee filter - sort by name
+    Array.from(employees.entries())
+        .sort((a, b) => a[1].localeCompare(b[1]))
+        .forEach(([id, name]) => {
+            $('#filterEmployee').append(`<option value="${id}">${name} (${id})</option>`);
+        });
+
+    // Reset filter button
+    $('#resetFilters').off('click').on('click', function() {
+        $('#filterEmployee, #filterDepartment, #filterPosition').val('');
+        applyFilters();
+    });
+
+    // Apply filter button
+    $('#applyFilters').off('click').on('click', applyFilters);
+}
+
+/**
+ * Function to apply filters
+ */
+function applyFilters() {
+    const departmentFilter = $('#filterDepartment').val();
+    const positionFilter = $('#filterPosition').val();
+    const employeeFilter = $('#filterEmployee').val();
+
+    // Get DataTable instance if available
+    let table = null;
+    if ($.fn.DataTable.isDataTable('#finalTable')) {
+        table = $('#finalTable').DataTable();
+    }
+    
+    // Destroy the existing DataTable to rebuild it
+    if (table) {
+        table.destroy();
+    }
+    
+    // Apply filters directly to DOM first
+    let filteredRowCount = 0;
+    $('#finalTable tbody tr').each(function() {
+        const $row = $(this);
+        
+        // Skip permanently hidden rows
+        if ($row.hasClass('permanent-hide')) {
+            return;
+        }
+        
+        const department = $row.data('department');
+        const position = $row.data('position');
+        const employeeId = $row.data('employee-id');
+        
+        // Check filter matches
+        const departmentMatch = !departmentFilter || department === departmentFilter;
+        const positionMatch = !positionFilter || position === positionFilter;
+        const employeeMatch = !employeeFilter || employeeId === employeeFilter;
+        
+        // Show/hide based on filter matches
+        if (departmentMatch && positionMatch && employeeMatch) {
+            $row.removeClass('filter-hide').show();
+            filteredRowCount++;
+        } else {
+            $row.addClass('filter-hide').hide();
+        }
+    });
+    
+    // Reinitialize DataTable on filtered rows
+    $('#finalTable').DataTable({
+        responsive: true,
+        pageLength: 10,
+        lengthMenu: [10, 25, 50, 100, -1],
+        dom: '<"d-flex justify-content-between align-items-center mb-3"<"d-flex align-items-center"l><"d-flex"f>><"table-responsive"t><"d-flex justify-content-between align-items-center"<"d-flex align-items-center"i><"d-flex align-items-center"p>>',
+        order: [[11, 'desc']] // Sort by final score by default
+    });
+    
+    // Update filter UI feedback
+    updateFilterCounters(filteredRowCount);
+}
+
+/**
+ * Function to update filter counters
+ */
+function updateFilterCounters(filteredCount) {
+    const totalRows = $('#finalTable tbody tr').not('.permanent-hide').length;
+    const visibleRows = filteredCount || $('#finalTable tbody tr').not('.permanent-hide').not('.filter-hide').length;
+    
+    $('#filterCount').text(`Showing ${visibleRows} of ${totalRows} employees`);
+    
+    // Show reset button only when filters are active
+    if (visibleRows < totalRows) {
+        $('#resetFilters').show();
+    } else {
+        $('#resetFilters').hide();
+    }
+}
+
+
+
 </script>
-
 @endpush

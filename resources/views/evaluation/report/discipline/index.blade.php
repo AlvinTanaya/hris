@@ -90,11 +90,11 @@
                 </div>
                 <div class="col-md-6">
                     <div class="d-flex justify-content-start gap-2">
-                        <button type="button" class="btn btn-primary" id="btnFilter">
-                            <i class="fa fa-filter"></i> Apply Filter
-                        </button>
                         <button type="button" class="btn btn-success" id="btnExport">
                             <i class="fa fa-file-excel"></i> Export Excel
+                        </button>
+                        <button type="button" class="btn btn-primary" id="btnFilter">
+                            <i class="fa fa-filter"></i> Apply Filter
                         </button>
                     </div>
                 </div>
@@ -350,6 +350,8 @@
             }
         }
 
+
+
         function loadDisciplineData(tabMonth = null) {
             // Get active tab month if not specified
             const month = tabMonth || $('.nav-link.active').attr('id').replace('tab-', '');
@@ -373,6 +375,7 @@
             $.ajax({
                 url: '{{ route("evaluation.report.discipline.data") }}',
                 type: 'GET',
+                timeout: 900000, // 15 minutes in milliseconds (15 * 60 * 1000)
                 data: {
                     month: month,
                     year: year,
@@ -400,9 +403,11 @@
             });
         }
 
+
+
         function renderTable(data, month) {
-    if (!data.length) {
-        $(`#discipline-data-${month}`).html(`
+            if (!data.length) {
+                $(`#discipline-data-${month}`).html(`
             <tr>
                 <td colspan="${month === 'final' ? '23' : '22'}" class="text-center">
                     <div class="alert alert-info mb-0">
@@ -412,33 +417,33 @@
                 </td>
             </tr>
         `);
-        return;
-    }
+                return;
+            }
 
-    let html = '';
-    data.forEach(function(item) {
-        // Apply background color based on total score
-        let rowClass = '';
-        if (item.total_score !== '' && item.total_score < 105) {
-            rowClass = 'table-danger';
-        } else if (item.total_score !== '' && item.total_score < 110) {
-            rowClass = 'table-warning';
-        }
-        
-        // Calculate reduction (pengurangan) - ADD THIS CODE HERE
-// Inside your renderTable function where you calculate the reduction
-let reduction = '';
-if (item.working_days && item.presence) {
-    const workingDays = parseInt(item.working_days);
-    const presence = parseInt(item.presence);
-    const diff = workingDays - presence; // Note: This should be workingDays - presence
-    if (diff > 0) {
-        reduction = `${diff}`; // Use negative sign to indicate reduction
-    }
-}
+            let html = '';
+            data.forEach(function(item) {
+                // Apply background color based on total score
+                let rowClass = '';
+                if (item.total_score !== '' && item.total_score < 105) {
+                    rowClass = 'table-danger';
+                } else if (item.total_score !== '' && item.total_score < 110) {
+                    rowClass = 'table-warning';
+                }
 
-// Then add this value to your HTML table row:
-html += `<tr class="${rowClass}">
+                // Calculate reduction (pengurangan) - ADD THIS CODE HERE
+                // Inside your renderTable function where you calculate the reduction
+                let reduction = '';
+                if (item.working_days && item.presence) {
+                    const workingDays = parseInt(item.working_days);
+                    const presence = parseInt(item.presence);
+                    const diff = workingDays - presence; // Note: This should be workingDays - presence
+                    if (diff > 0) {
+                        reduction = `${diff}`; // Use negative sign to indicate reduction
+                    }
+                }
+
+                // Then add this value to your HTML table row:
+                html += `<tr class="${rowClass}">
     <td>${item.employee_id}</td>
     <td>${item.name}</td>
     <td>${item.position || ''}</td>
@@ -461,7 +466,7 @@ html += `<tr class="${rowClass}">
     <td>${item.st_score || ''}</td>
     <td>${item.sp_score || ''}</td>
     <td class="fw-bold">${item.total_score || ''}</td>`;
-       
+
                 // Add grade column for final view
                 if (month === 'final') {
                     let gradeClass = '';

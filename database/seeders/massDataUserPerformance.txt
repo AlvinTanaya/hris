@@ -1,0 +1,413 @@
+buatkan aku seeder 1 class laravel saja dari penjeasan aku dibawah itu, 
+
+tolong yang pelru di seed kan adalah clas dibawah ini lainnay jgnan di seedkan cukup ambil datanya aja
+WarningLetter
+EvaluationPerformance
+EvaluationPerformanceDetail
+EvaluationPerformanceMessage
+EvaluationPerformanceReduction
+
+nah kosnepnya ini adalah penilian karyawan nah prosesnay gini pertama kamu buat crtieria nay dulu atau tipenya, lalau ngatur bobotnya kan itu ada dibagi menjadi posisiotn jadi posiii terntetu itu crtirai bobotnya gk sama denagn positi lain jadi kamu haru sklop dengan psoiton di users
+nah seteah buat itu kan kamu menilai tuh pada  EvaluationPerformance dan detailnay disimpan di EvaluationPerformanceDetail nah kemudian waktu menilai juga bisa penilai itu mnagsih message yang di store di EvaluationPerformanceMessage, nah waktu penilaian itu juga ngecek pengurangan yang dikaitkan denagn warning letter nah warning letter pertama buat rule nya kemudian kamu assign kan watrnign letternya nah pada warning letter itu ada keunikan dimana warning letternya itu ada durasi atau length expired nah kalau null artinya dia itu bisa bebeas ngasih terus menerus gk ada waktu kyk gk boleh nagasih gitu
+misal tipe id 1 itu expired_legthnya null artinya msai aku dpt pelangkgran id 1 pada tgl kesarakng besok dikasih lagi boleh, nap tp kalau ada length misal 6 aritnya itu 6 bullan maka waktu aku dikasih warning lateet sampai aku 6 bulan kedepan itu gk boleh dikasih warning letter denagn tipe itu lagi sampai batas epirednya dah lewat baru boleh dikasih lagi
+nah kamu cocokan kan data warning leter denagn rule reducitonnya aku diminus berapa kemudian itu di stroe di EvaluationPerformanceReduction seta ttoalnay itu distore id EvaluationPerformance baigain total reduciton jadi misal aku menerima 2 tipe warning letter pada bulan 4 ya dikurangi gitu totoalnya gitu
+
+nah itu penilaiannya dilakuakn perbulan meskipun di database itu date itu cuma aku ambil bulan dan tahunnya harinya gk asalah pokok penilaian bulan itunah akau mau datanya itu tersebar dari 2023-2025 bulan 8 mentoknya jgnan lebi hjgn kurang 
+sekali lagi yang perlu di seed adalah ini
+WarningLetter
+EvaluationPerformance
+EvaluationPerformanceDetail
+EvaluationPerformanceMessage
+EvaluationPerformanceReduction
+
+aku udah ada data sedkit banget tp dah benaer jadi aku ingin kamu create tambahakan saja gitu yang di beda bulan gitu kalau penilain 
+jadi pastikan itu datanya klop ya dan masuk akala seuai perturan watning letter aku jelaskan dan klop itu maksdunya misal pada redcution ada reduciton dan tenut pasti ada warning letternya jangan sampai ada redcuton tp gk ada bukti warning letter serta jangan kebalikan juga ada warning letter tp gk ada reductionnay
+
+ wh aku jelasin lagi pada bgain SELECT * FROM rule_evaluation_weight_performance itu setiap oisii punya criteria masing masing dan bobot amasing masing dari ada psiiton yang misal criterianya tidak sam dengan posisiton lain misal nih posisi 3 itu criterinya ada 7 denagn bobot masing masing macam macam nah posiiton 5 itu ternya cuma  6 saja criterianya denagn bobotnay beda beda pukla gk sama gitu dan user waktu nilian itu plih valunay 1/2/3/4/5 dan dan nanati itu valur*denagn bobotnay menjadi total_score pada employee_evaluation_performance
+
+
+class User extends Authenticatable
+{
+    protected $table = 'users';
+
+    protected $fillable = [
+
+        'name', terserah random generate
+      'position_id',
+           ini itu diambil dari tabel ini
+           Tabel employee_positions
+            id	position	ranking
+            1	Director	1	
+            2	General Manager	2
+            3	Manager	3
+            4	Supervisor	4
+            5	Staff	5
+
+
+        'department_id',
+            ini itu diambil dari tabel ini
+
+            Tabel employee_departments
+        id	department	
+        1	Director	
+        2	General Manager	
+        3	Human Resources	
+        4	Finance and Accounting	
+        5	Administration	
+        6	Checker	
+        7	Marketing	
+        8	Driver	
+        9	Internal Audit	
+        10	Audit	
+        11	Information Technology	
+        12	Cleaning	
+        13	Security	
+
+        'employee_status', nah ini ada 4 opsi 'Full Time', 'Contract', 'Part Time', 'Inactive' usahaain banayk kamu generaate yang full time terutama ini khusu untuk yang jawban manager gitu, lalau kedua itu utamakan yang contract, lalau partiem dan terakhir kasih sedkit mungkin 1-5 user itu Inactive
+        Nah khuss untuk yanh part time dan contract col dibawah ini wajib diisi kalau Full time dan inactive gk usag
+        'contract_start_date',
+        'contract_end_date',
+
+        'join_date'
+
+        'birth_date', 
+        'birth_place',
+
+ 'exit_date', isin tgl kalau statusnya yang inactive
+
+    ];
+}
+
+
+
+ini adalah tipe criteria untk evaluasi karywan
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+
+class RuleEvaluationCriteriaPerformance extends Model
+{
+    use HasFactory;
+
+    protected $table = 'rule_evaluation_criteria_performance';
+
+    protected $fillable = [
+        'id',
+        'type', ini itu anggep seperti nama
+        'created_at',
+        'updated_at'
+    ];
+}
+
+i0ni untuk mengatur bobot tiap role posiiton
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+
+class RuleEvaluationWeightPerformance extends Model
+{
+    use HasFactory;
+
+    protected $table = 'rule_evaluation_weight_performance';
+
+    protected $fillable = [
+        'id',
+        'position_id', sesuaikan denagn tabel employee position
+        'criteria_id', sesuaikan denagn id criteria diatas
+        'weight', ini bobotnya 
+        'status', Active/Inactive ambil Yang Active
+        'created_at',
+        'updated_at'
+    ];
+
+    public function position()
+    {
+        return $this->belongsTo(EmployeePosition::class, 'position_id');
+    }
+
+    /**
+     * Get the criteria associated with the weight performance.
+     */
+    public function criteria()
+    {
+        return $this->belongsTo(RuleEvaluationCriteriaPerformance::class, 'criteria_id');
+    }
+}
+
+
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+
+class RuleEvaluationReductionPerformance extends Model
+{
+    use HasFactory;
+
+    protected $table = 'rule_evaluation_reduction_performance';
+
+    protected $fillable = [
+        'id',
+        'type_id', ini diambil dari tipe warning letter Rule
+        'weight', bobot pengurangannya
+        'status', Active/Inactive ambil Yang Active
+        'created_at',
+        'updated_at'
+    ];
+
+    // Add relationship to WarningLetterRule
+    public function warningLetterRule()
+    {
+        return $this->belongsTo(WarningLetterRule::class, 'type_id');
+    }
+}
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+
+class WarningLetterRule extends Model
+{
+    use HasFactory;
+
+    // Define the table name if it's not the plural of the model name
+    protected $table = 'rule_warning_letter';
+
+    // Define which fields can be mass-assigned
+    protected $fillable = [
+        'id', 
+        'name', nama
+        'description', discription
+        'expired_length', lama expired (int) ini i=dihiutng perbulan jadi misal valuenya 6 ya 6 bulan
+        'created_at',
+        'updated_at',
+    ];
+}
+
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+
+class WarningLetter extends Model
+{
+    use HasFactory;
+
+    // Define the table name if it's not the plural of the model name
+    protected $table = 'employee_warning_letter';
+
+    // Define which fields can be mass-assigned
+    protected $fillable = [
+        'id',
+        'user_id', id dari users
+        'maker_id', id dari pembuatnya (isiskan antara id 11/21 saja banyakni yang 11)
+        'type_id', id dari warning letter rule
+        'warning_letter_number', nomer surat ada caranya (kalau Verbakl gk perlu ada nomer surat)
+            protected function generateWarningLetterNumber($typeName, $typeId)
+    {
+        $now = now();
+
+        // Get count of this type for numbering
+        $count = WarningLetter::where('type_id', $typeId)->count() + 1;
+
+        // Format: no.{count}/TJI/{type}/{month}/{date}-{dailyCount}
+        $monthRoman = $this->convertToRoman($now->month);
+        $datePart = $now->format('dmy');
+
+        // Get daily count for this type
+        $dailyCount = WarningLetter::where('type_id', $typeId)
+            ->whereDate('created_at', $now->toDateString())
+            ->count() + 1;
+
+        return "no.{$count}/TJI/{$typeName}/{$monthRoman}/{$datePart}-{$dailyCount}";
+    }
+
+
+        'reason_warning', asalan kasih surat / peringatan
+        'created_at',
+        'updated_at',
+        'expired_at', batas waktu nah gini konsepnya kan pada rule ada expired_length nah itu kamu wajib dulu jadi semacam inteval misal naih aku dapat pelanggaran id no 1 kmu lihat tuh intervalnay kalau misal aku dapet null itu berarti gk ada durasi gk boleh kena lagi gitu kalau misal ada  bualngitu berarti dari waktu craeted at itu gk boleh ada pelanggaran di waktunya sama giut
+    ];
+
+    /**
+     * Get the warning letter rule associated with this warning letter.
+     */
+    public function rule(): BelongsTo
+    {
+        return $this->belongsTo(WarningLetterRule::class, 'type_id');
+    }
+
+    /**
+     * Get the employee who received this warning letter.
+     */
+    public function employee(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'user_id');
+    }
+
+    /**
+     * Get the maker (issuer) of this warning letter.
+     */
+    public function maker(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'maker_id');
+    }
+
+    // In WarningLetter.php
+    public function evaluationReductions()
+    {
+        return $this->hasMany(EvaluationPerformanceReduction::class, 'warning_letter_id');
+    }
+}
+
+
+
+
+
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+
+class EvaluationPerformance extends Model
+{
+    use HasFactory;
+    
+    protected $table = 'employee_evaluation_performance';
+    
+    protected $fillable = [
+        'user_id', id dari users
+        'evaluator_id', id penilai dari users 
+        'date', tgl
+        'total_score', total_score
+        'total_reduction' total_reduction
+    ];
+    
+    public function details()
+    {
+        return $this->hasMany(EvaluationPerformanceDetail::class, 'evaluation_id');
+    }
+    
+    public function messages()
+    {
+        return $this->hasMany(EvaluationPerformanceMessage::class, 'evaluation_id');
+    }
+    
+    public function reductions()
+    {
+        return $this->hasMany(EvaluationPerformanceReduction::class, 'evaluation_id');
+    }
+    
+    public function user()
+    {
+        return $this->belongsTo(User::class, 'user_id');
+    }
+    
+    public function evaluator()
+    {
+        return $this->belongsTo(User::class, 'evaluator_id');
+    }
+}
+
+
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+
+class EvaluationPerformanceDetail extends Model
+{
+    use HasFactory;
+    
+    protected $table = 'employee_evaluation_performance_detail';
+    
+    protected $fillable = [
+        'evaluation_id', id dari EvaluationPerformance
+        'weight_performance_id', id pada RuleEvaluationWeightPerformanc
+              'weight', nilai weight/bobot dari RuleEvaluationWeightPerformanc
+        'value', nilai value dari penilai dari rang 1/2/3/4/5
+    ];
+    
+    public function evaluation()
+    {
+        return $this->belongsTo(EvaluationPerformance::class, 'evaluation_id');
+    }
+    
+    public function weightPerformance()
+    {
+        return $this->belongsTo(RuleEvaluationWeightPerformance::class, 'weight_performance_id');
+    }
+}
+
+
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+
+class EvaluationPerformanceMessage extends Model
+{
+    use HasFactory;
+    
+    protected $table = 'employee_evaluation_performance_message';
+    
+    protected $fillable = [
+        'evaluation_id', id pada EvaluationPerformance
+        'message' isi peasannya
+    ];
+    
+    public function evaluation()
+    {
+        return $this->belongsTo(EvaluationPerformance::class, 'evaluation_id');
+    }
+}
+
+
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+
+class EvaluationPerformanceReduction extends Model
+{
+    use HasFactory;
+    
+    protected $table = 'employee_evaluation_performance_reductions';
+    
+    protected $fillable = [
+        'evaluation_id', id pada EvaluationPerformance
+        'warning_letter_id', id pada Warning letter
+        'reduction_amount' nilai value dari pengurngan yang ada di tabel RuleEvaluationReductionPerformance
+    ];
+    
+    public function evaluation()
+    {
+        return $this->belongsTo(EvaluationPerformance::class, 'evaluation_id');
+    }
+    
+    public function warningLetter()
+    {
+        return $this->belongsTo(WarningLetter::class, 'warning_letter_id');
+    }
+}
