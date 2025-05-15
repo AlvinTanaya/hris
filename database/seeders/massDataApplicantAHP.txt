@@ -27,7 +27,7 @@ class recruitment_applicant extends Model
         'blood_type', A/ B/ AB/ O
         'bpjs_employment', terseah angka
         'bpjs_health', terserah angka
-        'distance' random 2-11 
+       
         'sim', A,C / A / A,B Gitu 
         'sim_number', bentuknay json {"A":"1231-323-3232","C":"1231-323-3232"} / {"A":"1231-323-3232"} / {"A":"1231-323-3232","B":"1231-323-3232"}
         'emergency_contact', bebas no tlp indonesia
@@ -37,42 +37,6 @@ class recruitment_applicant extends Model
 
         'created_at',
         'updated_at'
-    ];
-}
-
-
-<?php
-
-namespace App\Models;
-
-use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Model;
-
-class recruitment_applicant_work_experience extends Model
-{
-    use HasFactory;
-
-    // Define the table name if it's not the plural of the model name
-    protected $table = 'recruitment_applicant_work_experience';
-
-    // Define which fields can be mass-assigned
-    protected $fillable = [
-        'applicant_id', cocokkan dengan id di atas
-        'company_name', bebeas
-        'position', bebas
-        'working_start', bebas mulai nya
-        'working_end', bebas akhirnya
-        'company_address', bebeas
-        'company_phone', bebas
-        'salary', bebas
-        'supervisor_name', bebas
-        'supervisor_phone', bebas
-        'job_desc', bebas
-        'reason', bebas ini alasan dia keluar
-        'benefit', bebas
-        'facility', bebas
-        'created_at',
-        'updated_at',
     ];
 }
 
@@ -160,61 +124,7 @@ class recruitment_applicant_language extends Model
     ];
 }
 
-<?php
-
-namespace App\Models;
-
-use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Model;
-
-class recruitment_applicant_training extends Model
-{
-    use HasFactory;
-
-    // Define the table name if it's not the plural of the model name
-    protected $table = 'recruitment_applicant_training';
-
-    // Define which fields can be mass-assigned
-    protected $fillable = [
-        'applicant_id', sesauikan diatas applicant_id
-        'training_name', bebas terserah dah
-        'training_city', isi Jawa Timur
-        'training_province', isi Kota Surabaya
-        'start_date', bebas dah
-        'end_date', bebas dah
-        'created_at',
-        'updated_at',
-    ];
-}
 
 
-<?php
-
-namespace App\Models;
-
-use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Model;
-
-class recruitment_applicant_organization extends Model
-{
-    use HasFactory;
-
-    // Define the table name if it's not the plural of the model name
-    protected $table = 'recruitment_applicant_organization';
-
-    // Define which fields can be mass-assigned
-    protected $fillable = [
-        'applicant_id', sesauikan denagn id diatas
-        'organization_name', bebas
-        'activity_type', isi bebas aktivitas dalam organisasi
-        'position', bebas isinya
-        'city', isi denan Kota Surabaya
-        'province', isi dengan Jawa Timur
-        'start_date', bebas
-        'end_date', bebas
-        'created_at',
-        'updated_at',
-    ];
-}
 
 

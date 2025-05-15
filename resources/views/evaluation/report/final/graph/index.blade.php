@@ -870,37 +870,21 @@
         function createScoreComparisonChart(canvasId, label, data, scoreKey, backgroundColor, borderColor) {
             const ctx = document.getElementById(canvasId).getContext('2d');
 
-            // Group by year and employee
-            const yearGroups = {};
             const years = [...new Set(data.map(item => item.year))].sort();
 
-            years.forEach(year => {
-                yearGroups[year] = data.filter(item => item.year == year);
-            });
-
-            // Create datasets for each year
-            const datasets = [];
-
-            years.forEach((year, yearIndex) => {
-                // Generate a color for this year
-                const hue = (yearIndex * 137) % 360;
-                const bgColor = yearIndex === 0 ? backgroundColor : `hsla(${hue}, 70%, 60%, 0.7)`;
-                const bdColor = yearIndex === 0 ? borderColor : `hsl(${hue}, 70%, 50%)`;
-
-                datasets.push({
+            const datasets = years.map((year, index) => {
+                const yearData = data.filter(item => item.year === year);
+                return {
                     label: `Year ${year}`,
-                    data: yearGroups[year].map(item => item[scoreKey]),
-                    backgroundColor: bgColor,
-                    borderColor: bdColor,
-                    borderWidth: 1,
-                    borderRadius: 4,
-                    hoverBackgroundColor: `hsla(${hue}, 70%, 50%, 0.9)`,
-                    hoverBorderColor: bdColor
-                });
+                    data: yearData.map(item => item[scoreKey]),
+                    backgroundColor: `hsl(${(index * 60) % 360}, 70%, 60%)`
+                };
             });
 
-            // Get employee names (using the first year's data for labels)
-            const employeeLabels = yearGroups[years[0]] ? yearGroups[years[0]].map(item => item.employee_name) : [];
+            // Ambil label dari nama karyawan di tahun pertama (asumsi urutan tetap)
+            const employeeLabels = data
+                .filter(item => item.year === years[0])
+                .map(item => item.employee_name);
 
             return new Chart(ctx, {
                 type: 'bar',
@@ -910,63 +894,43 @@
                 },
                 options: {
                     responsive: true,
-                    maintainAspectRatio: false,
+                    maintainAspectRatio: false, // Memastikan chart mengisi ruang yang disediakan
                     scales: {
                         y: {
                             beginAtZero: true,
-                            grid: {
+                            title: {
                                 display: true,
-                                drawBorder: false
-                            },
-                            ticks: {
-                                precision: 0
+                                text: 'Score'
                             }
                         },
                         x: {
-                            grid: {
-                                display: false
+                            title: {
+                                display: true,
+                                text: 'Employees'
+                            },
+                            ticks: {
+                                display: true,
+                                autoSkip: false,
+                                color: '#000000',
+                                font: {
+                                    weight: 'bold',
+                                    size: 12 // Ukuran font yang lebih besar
+                                },
+                                maxRotation: 0, // Mencegah rotasi label
+                                minRotation: 0,
+                                padding: 10 // Tambahkan padding untuk menjauhkan label dari axis
                             }
                         }
                     },
                     plugins: {
                         tooltip: {
-                            enabled: true,
-                            backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                            titleFont: {
-                                size: 14,
-                                weight: 'bold'
-                            },
-                            bodyFont: {
-                                size: 13
-                            },
-                            padding: 12,
-                            displayColors: true,
                             callbacks: {
-                                title: function(tooltipItems) {
-                                    return tooltipItems[0].label;
-                                },
-                                label: function(context) {
-                                    const datasetLabel = context.dataset.label || '';
-                                    const value = context.raw !== null ? context.raw : 0;
-                                    return `${datasetLabel}: ${value.toFixed(2)}`;
-                                }
+                                label: ctx => ` ${ctx.dataset.label}: ${ctx.raw}`
                             }
                         },
                         legend: {
-                            position: 'top',
-                            labels: {
-                                font: {
-                                    size: 12
-                                },
-                                padding: 20,
-                                usePointStyle: true,
-                                pointStyle: 'rectRounded'
-                            }
+                            position: 'top'
                         }
-                    },
-                    interaction: {
-                        intersect: false,
-                        mode: 'index'
                     }
                 }
             });

@@ -5,7 +5,7 @@
 
 
 <h1 class="page-title text-warning mb-5">
-    <i class="fas fa-calculator"></i> AHP Recommendation System
+    <i class="fas fa-calculator"></i>Classic (Thomas L. Saaty.) AHP Recommendation System
 </h1>
 <div class="container mb-4 p-0 mx-auto" id="container-body">
     <!-- Criteria Percentage Form -->
@@ -3853,7 +3853,8 @@
         });
 
 
-        // Modified function to process criteria and calculate rankings
+
+        // Function to process criteria and calculate rankings
         function processCriteriaAndCalculate() {
             $calculateBtn.prop('disabled', true);
             $calculateBtn.html('<span class="spinner-border" role="status" aria-hidden="true"></span> Loading...');
@@ -3938,31 +3939,26 @@
             });
         }
 
-        // Modified function to create progress bar with correct score display
-        function createProgressBar(score, isWeightedScore = true) {
-            // Ensure score is a number and apply correct scaling
+        function createProgressBar(score) {
+            // Ensure score is a number
             const numScore = parseFloat(score) || 0;
-
-            // If this is a raw weighted score (not already in percentage), multiply by 100
-            const displayScore = isWeightedScore ? numScore * 100 : numScore;
 
             // Determine color class based on score
             let colorClass = 'bg-danger';
-            if (displayScore >= 70) colorClass = 'bg-success';
-            else if (displayScore >= 40) colorClass = 'bg-warning';
+            if (numScore >= 70) colorClass = 'bg-success';
+            else if (numScore >= 40) colorClass = 'bg-warning';
 
             return `
-    <div class="progress my-1" style="height: 8px;" data-bs-toggle="tooltip" title="${displayScore.toFixed(1)}%">
-        <div class="progress-bar ${colorClass}" role="progressbar" 
-            style="width: ${displayScore}%" aria-valuenow="${displayScore}" 
-            aria-valuemin="0" aria-valuemax="100">
+        <div class="progress my-1" style="height: 8px;" data-bs-toggle="tooltip" title="${numScore.toFixed(1)}%">
+            <div class="progress-bar ${colorClass}" role="progressbar" 
+                style="width: ${numScore}%" aria-valuenow="${numScore}" 
+                aria-valuemin="0" aria-valuemax="100">
+            </div>
         </div>
-    </div>
-    <div class="text-end small">${displayScore.toFixed(1)}%</div>
+        <div class="text-end small">${numScore.toFixed(1)}%</div>
     `;
         }
-
-        // Improved function to display rankings in the table with correct scoring
+        // Improved function to display rankings in the table
         function displayRankings(rankings) {
             let html = '';
 
@@ -3994,7 +3990,7 @@
                     <td>N/A</td>
                     <td>N/A</td>
                 </tr>
-                `;
+            `;
                         return;
                     }
 
@@ -4004,29 +4000,37 @@
                         moment().diff(moment(item.applicant.birth_date), 'years') :
                         null;
                     const ageDisplay = age !== null ? `${age} Year` : "N/A";
-                    const ageScore = item.breakdown?.age?.weighted_score || 0;
+                    const ageScore = item.breakdown?.age?.weighted_score ?
+                        (item.breakdown.age.weighted_score * 100).toFixed(1) : 0;
 
                     // Expected Salary (formatted as Rp X.XXX.XXX)
                     const salary = item.applicant.expected_salary;
                     const salaryDisplay = salary ?
                         `Rp ${Number(salary).toLocaleString('id-ID')}` :
                         "N/A";
-                    const salaryScore = item.breakdown?.expected_salary?.weighted_score || 0;
+                    const salaryScore = item.breakdown?.expected_salary?.weighted_score ?
+                        (item.breakdown.expected_salary.weighted_score * 100).toFixed(1) : 0;
 
                     // Distance
                     const distance = item.applicant.distance;
                     const distanceDisplay = distance ? `${distance} KM` : "N/A";
-                    const distanceScore = item.breakdown?.distance?.weighted_score || 0;
+                    const distanceScore = item.breakdown?.distance?.weighted_score ?
+                        (item.breakdown.distance.weighted_score * 100).toFixed(1) : 0;
 
                     // Other breakdown scores - handle all possible missing data
-                    const educationScore = item.breakdown?.education?.weighted_score || 0;
-                    const experienceScore = item.breakdown?.experience_duration?.weighted_score || 0;
-                    const languageScore = item.breakdown?.language?.weighted_score || 0;
-                    const organizationScore = item.breakdown?.organization?.weighted_score || 0;
-                    const trainingScore = item.breakdown?.training?.weighted_score || 0;
+                    const educationScore = item.breakdown?.education?.weighted_score ?
+                        (item.breakdown.education.weighted_score * 100).toFixed(1) : 0;
+                    const experienceScore = item.breakdown?.experience_duration?.weighted_score ?
+                        (item.breakdown.experience_duration.weighted_score * 100).toFixed(1) : 0;
+                    const languageScore = item.breakdown?.language?.weighted_score ?
+                        (item.breakdown.language.weighted_score * 100).toFixed(1) : 0;
+                    const organizationScore = item.breakdown?.organization?.weighted_score ?
+                        (item.breakdown.organization.weighted_score * 100).toFixed(1) : 0;
+                    const trainingScore = item.breakdown?.training?.weighted_score ?
+                        (item.breakdown.training.weighted_score * 100).toFixed(1) : 0;
 
-                    // Total Score - keep as actual AHP score without additional normalization
-                    const totalScore = item.score || 0;
+                    // Total Score
+                    const totalScore = item.score ? (item.score * 100).toFixed(2) : 0;
 
                     // --- Generate HTML Row ---
                     html += `
@@ -4073,7 +4077,7 @@
                     </div>
                 </td>
             </tr>
-            `;
+        `;
                 } catch (error) {
                     console.error("Error processing applicant:", error);
                     html += `
@@ -4081,7 +4085,7 @@
                 <td>${index + 1}</td>
                 <td colspan="11" class="text-danger">Error loading data: ${error.message}</td>
             </tr>
-            `;
+        `;
                 }
             });
 
@@ -4092,7 +4096,6 @@
             initializeDataTable();
         }
 
-
         /**
          * Function to initialize tooltip components after table renders
          */
@@ -4102,9 +4105,6 @@
                 return new bootstrap.Tooltip(tooltipTriggerEl);
             });
         }
-
-
-
 
         // Fungsi untuk memformat konten modal
         function formatApplicantModalContent(response) {

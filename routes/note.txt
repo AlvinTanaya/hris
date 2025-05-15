@@ -13,8 +13,10 @@ This way, your contract check runs once per day, emails are queued, and the queu
 Would you like me to help you set up any specific part of this configuration?
 
 
+UAT
 
-
+no Nama/deskripsi activity hasil_diharapkan         hasil_aktual success/nggak
+1 perekrutan      user dafat  data user masuk tabel  data masuk   passs V 
 
 
 
@@ -25,5 +27,5 @@ reporting excel V
 reporting dicipline dinal dia exceed (liaht export final) VV
 
 
-reporting final aneh
-seed data salary
+reporting final anehB
+seed data salary V
