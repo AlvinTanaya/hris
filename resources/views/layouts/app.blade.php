@@ -826,8 +826,13 @@
                         </a>
                         <a href="{{ url('/recruitment/ahp_recruitment/index/') }}" class="nav-link">
                             <i class="fas fa-user-check"></i>
-                            <span>AHP Recomendation</span>
+                            <span>AHP Recommendation</span>
                         </a>
+                        <a href="{{ url('/recruitment/weight_calculation/index') }}" class="nav-link">
+                            <i class="fa-solid fa-weight-scale"></i>
+                            <span>Weight Based Recommendation</span>
+                        </a>
+
                         <a href="{{ url('/recruitment/interview/index') }}" class="nav-link">
                             <i class="fas fa-comments"></i>
                             <span>Interview</span>

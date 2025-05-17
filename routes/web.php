@@ -144,8 +144,15 @@ Route::middleware('auth')->group(function () {
     //AHP Recruitment 
     Route::get('/recruitment/ahp_recruitment/index', [RecruitmentController::class, 'index_ahp'])->name('recruitment.ahp');
     Route::post('/ahp/calculate', [RecruitmentController::class, 'calculate'])->name('ahp.calculate');
-    Route::post('/ahp/calculate-weights', [RecruitmentController::class, 'calculateWeights']);
-    Route::post('/ahp/calculate-rankings', [RecruitmentController::class, 'calculateRankings']);
+
+
+    //AHP Modified Recruitment 
+    Route::get('/recruitment/weight_calculation/index', [RecruitmentController::class, 'weight_calculation_index'])->name('weight.calculation..index');
+    Route::post('/recruitment/weight_calculation/weight_calculate', [RecruitmentController::class, 'weight_calculate'])->name('weight.calculate');
+
+
+
+
     //Interview
     Route::get('/recruitment/interview/index', [RecruitmentController::class, 'index_interview'])->name('recruitment.index.interview');
     Route::get('/recruitment/interview/applicant/{id}', [RecruitmentController::class, 'applicant_list'])->name('recruitment.applicant');

@@ -527,32 +527,11 @@ class RecruitmentController extends Controller
         'distance' => 'Distance',
         'education' => 'Education',
         'experience_duration' => 'Experience',
-        'language' => 'Language',
         'organization' => 'Organization',
         'training' => 'Training',
     ];
 
-
-    public function index_ahp()
-    {
-        // Retrieve all recruitment applicants and pluck their unique recruitment_demand_ids  
-        $recruitmentDemandIds = recruitment_applicant::pluck('recruitment_demand_id')->unique();
-
-        // Filter recruitment_demand based on the unique recruitment_demand_ids  
-        $demands =  recruitment_demand::with(['departmentRelation', 'positionRelation'])->whereIn('id', $recruitmentDemandIds)
-            ->where('status_demand', 'Approved')
-            ->whereColumn('qty_needed', '>', 'qty_fullfil')
-            ->get();
-
-
-
-        // Return the filtered recruitment_demand data to the view  
-        return view('recruitment/ahp_recruitment/index', [
-            'demands' => $demands,
-            'criteria' => $this->criteria
-        ]);
-    }
-
+    
     public function ahp_schedule_interview(Request $request, $id)
     {
         $request->validate([
@@ -580,659 +559,31 @@ class RecruitmentController extends Controller
     }
 
 
-
-
-
-
-    private function calculateExperienceDurationScore($applicantId, $config = null)
+    public function weight_calculation_index()
     {
-        // Ensure the applicantId is valid
-        if (empty($applicantId) || !is_numeric($applicantId)) {
-            return 0;
-        }
+        // Retrieve all recruitment applicants and pluck their unique recruitment_demand_ids  
+        $recruitmentDemandIds = recruitment_applicant::pluck('recruitment_demand_id')->unique();
 
-        $experiences = recruitment_applicant_work_experience::where('applicant_id', $applicantId)->get();
+        // Filter recruitment_demand based on the unique recruitment_demand_ids  
+        $demands =  recruitment_demand::with(['departmentRelation', 'positionRelation'])->whereIn('id', $recruitmentDemandIds)
+            ->where('status_demand', 'Approved')
+            ->whereColumn('qty_needed', '>', 'qty_fullfil')
+            ->get();
 
-        if ($experiences->isEmpty()) {
-            return 0; // Default low score for no experience
-        }
 
-        $totalDuration = 0;
-        $count = $experiences->count();
 
-        foreach ($experiences as $exp) {
-            if (empty($exp->working_start)) {
-                continue; // Skip invalid entries
-            }
-
-            try {
-                $startDate = Carbon::parse($exp->working_start);
-                $endDate = $exp->working_end ? Carbon::parse($exp->working_end) : Carbon::now();
-                $totalDuration += $startDate->diffInYears($endDate);
-            } catch (\Exception $e) {
-                // Skip this entry if date parsing fails
-                continue;
-            }
-        }
-
-        // Default configuration if none provided
-        if (empty($config)) {
-            $periodRanges = [
-                ['min' => 5, 'max' => 8, 'rank' => 1],
-                ['min' => 3, 'max' => 5, 'rank' => 2],
-                ['min' => 1, 'max' => 3, 'rank' => 3],
-                ['min' => 0, 'max' => 1, 'rank' => 4]
-            ];
-
-            $amountRanges = [
-                ['min' => 6, 'max' => 7, 'rank' => 1],
-                ['min' => 4, 'max' => 5, 'rank' => 2],
-                ['min' => 2, 'max' => 3, 'rank' => 3],
-                ['min' => 0, 'max' => 1, 'rank' => 4]
-            ];
-
-            $periodScore = $this->getScoreFromRanges($totalDuration, $periodRanges);
-            $amountScore = $this->getScoreFromRanges($count, $amountRanges);
-
-            return ($periodScore * 0.7) + ($amountScore * 0.3);
-        }
-
-        // Use provided configuration
-        $periodScore = isset($config['period']) ? $this->getScoreFromRanges($totalDuration, $config['period']) : 0;
-        $amountScore = isset($config['amount']) ? $this->getScoreFromRanges($count, $config['amount']) : 0;
-
-        $periodWeight = isset($config['weights']['period']) ? ($config['weights']['period'] / 100) : 0.7;
-        $amountWeight = isset($config['weights']['amount']) ? ($config['weights']['amount'] / 100) : 0.3;
-
-        return ($periodScore * $periodWeight) + ($amountScore * $amountWeight);
+        // Return the filtered recruitment_demand data to the view  
+        return view('recruitment/weight_calculation/index', [
+            'demands' => $demands,
+            'criteria' => $this->criteria
+        ]);
     }
 
-    private function calculateTrainingScore($applicantId, $config = null)
+    public function weight_calculate(Request $request)
     {
-        // Ensure the applicantId is valid
-        if (empty($applicantId) || !is_numeric($applicantId)) {
-            return 0;
-        }
+        // Remove debugging statement
+        // dd($request->all());
 
-        $trainings = recruitment_applicant_training::where('applicant_id', $applicantId)->get();
-
-        if ($trainings->isEmpty()) {
-            return 0;
-        }
-
-        $count = $trainings->count();
-        $totalDuration = 0;
-
-        foreach ($trainings as $training) {
-            if ($training->start_date && $training->end_date) {
-                try {
-                    $startDate = Carbon::parse($training->start_date);
-                    $endDate = Carbon::parse($training->end_date);
-                    $totalDuration += $startDate->diffInMonths($endDate);
-                } catch (\Exception $e) {
-                    // Skip this entry if date parsing fails
-                    continue;
-                }
-            }
-        }
-
-        // Convert duration to years for scoring
-        $durationInYears = $totalDuration / 12;
-
-        // Default configuration if none provided
-        if (empty($config)) {
-            $periodRanges = [
-                ['min' => 5.1, 'max' => 8, 'rank' => 1],
-                ['min' => 3.1, 'max' => 5, 'rank' => 2],
-                ['min' => 1.1, 'max' => 3, 'rank' => 3],
-                ['min' => 0, 'max' => 1, 'rank' => 4]
-            ];
-
-            $amountRanges = [
-                ['min' => 6, 'max' => 7, 'rank' => 1],
-                ['min' => 4, 'max' => 5, 'rank' => 2],
-                ['min' => 2, 'max' => 3, 'rank' => 3],
-                ['min' => 0, 'max' => 1, 'rank' => 4]
-            ];
-
-            $periodScore = $this->getScoreFromRanges($durationInYears, $periodRanges);
-            $amountScore = $this->getScoreFromRanges($count, $amountRanges);
-
-            return ($periodScore * 0.7) + ($amountScore * 0.3);
-        }
-
-        // Use provided configuration
-        $periodScore = isset($config['period']) ? $this->getScoreFromRanges($durationInYears, $config['period']) : 0;
-        $amountScore = isset($config['amount']) ? $this->getScoreFromRanges($count, $config['amount']) : 0;
-
-        $periodWeight = isset($config['weights']['period']) ? ($config['weights']['period'] / 100) : 0.7;
-        $amountWeight = isset($config['weights']['amount']) ? ($config['weights']['amount'] / 100) : 0.3;
-
-        return ($periodScore * $periodWeight) + ($amountScore * $amountWeight);
-    }
-
-    private function calculateOrganizationScore($applicantId, $config = null)
-    {
-        // Ensure the applicantId is valid
-        if (empty($applicantId) || !is_numeric($applicantId)) {
-            return 0;
-        }
-
-        $organizations = recruitment_applicant_organization::where('applicant_id', $applicantId)->get();
-
-        if ($organizations->isEmpty()) {
-            return 0;
-        }
-
-        $count = $organizations->count();
-        $totalDuration = 0;
-
-        foreach ($organizations as $org) {
-            if ($org->start_date) {
-                try {
-                    $startDate = Carbon::parse($org->start_date);
-                    $endDate = $org->end_date ? Carbon::parse($org->end_date) : Carbon::now();
-                    $totalDuration += $startDate->diffInMonths($endDate);
-                } catch (\Exception $e) {
-                    // Skip this entry if date parsing fails
-                    continue;
-                }
-            }
-        }
-
-        // Convert duration to years for scoring
-        $durationInYears = $totalDuration / 12;
-
-        // Default configuration if none provided
-        if (empty($config)) {
-            $periodRanges = [
-                ['min' => 5.1, 'max' => 8, 'rank' => 1],
-                ['min' => 3.1, 'max' => 5, 'rank' => 2],
-                ['min' => 1.1, 'max' => 3, 'rank' => 3],
-                ['min' => 0, 'max' => 1, 'rank' => 4]
-            ];
-
-            $amountRanges = [
-                ['min' => 6, 'max' => 7, 'rank' => 1],
-                ['min' => 4, 'max' => 5, 'rank' => 2],
-                ['min' => 2, 'max' => 3, 'rank' => 3],
-                ['min' => 0, 'max' => 1, 'rank' => 4]
-            ];
-
-            $periodScore = $this->getScoreFromRanges($durationInYears, $periodRanges);
-            $amountScore = $this->getScoreFromRanges($count, $amountRanges);
-
-            return ($periodScore * 0.4) + ($amountScore * 0.6);
-        }
-
-        // Use provided configuration
-        $periodScore = isset($config['period']) ? $this->getScoreFromRanges($durationInYears, $config['period']) : 0;
-        $amountScore = isset($config['amount']) ? $this->getScoreFromRanges($count, $config['amount']) : 0;
-
-        $periodWeight = isset($config['weights']['period']) ? ($config['weights']['period'] / 100) : 0.4;
-        $amountWeight = isset($config['weights']['amount']) ? ($config['weights']['amount'] / 100) : 0.6;
-
-        return ($periodScore * $periodWeight) + ($amountScore * $amountWeight);
-    }
-
-    private function calculateLanguageScore($applicantId, $config = null)
-    {
-        // Ensure the applicantId is valid
-        if (empty($applicantId) || !is_numeric($applicantId)) {
-            return 0;
-        }
-
-        $languages = recruitment_applicant_language::where('applicant_id', $applicantId)->get();
-
-        if ($languages->isEmpty()) {
-            return 0; // Default score for no languages
-        }
-
-        $verbalWeight = 0.7; // Default 70% weight for verbal skills
-        $writtenWeight = 0.3; // Default 30% weight for written skills
-
-        // Override weights if configured
-        if ($config && isset($config['weights'])) {
-            $verbalWeight = $config['weights']['verbal'] / 100;
-            $writtenWeight = $config['weights']['written'] / 100;
-        }
-
-        $score = 0;
-        $count = 0;
-
-        foreach ($languages as $language) {
-            $verbalScore = ($language->verbal === 'Active') ? 1 : 0.5;
-            $writtenScore = ($language->written === 'Active') ? 1 : 0.5;
-
-            // Weighted score for this language
-            $languageScore = ($verbalScore * $verbalWeight) + ($writtenScore * $writtenWeight);
-            $score += $languageScore;
-            $count++;
-        }
-
-        // Return average language score
-        return $count > 0 ? min(1.0, $score / $count) : 0.2;
-    }
-
-    private function calculateExpectedSalaryScore($salary, $config = null)
-    {
-        // Return 0 if salary is empty or invalid
-        if (empty($salary) || !is_numeric($salary)) {
-            return 0;
-        }
-
-        // Convert salary to float to ensure it's numeric
-        $salary = (float)$salary;
-
-        // If no config is provided or ranges are empty, use default calculation
-        if (empty($config) || empty($config['ranges'])) {
-            return match (true) {
-                $salary >= 5000001 && $salary <= 8000000 => 1.0,  // Best range
-                $salary >= 2000001 && $salary <= 5000000 => 0.8,
-                $salary >= 8000001 && $salary <= 10000000 => 0.6,
-                $salary >= 0 && $salary <= 2000000 => 0.4,
-                $salary >= 10000001 && $salary <= 15000000 => 0.2,
-                default => 0
-            };
-        }
-
-        return $this->getScoreFromRanges($salary, $config['ranges']);
-    }
-
-    // Improved getScoreFromRanges function to handle all edge cases
-    public function getScoreFromRanges($value, $ranges)
-    {
-        // If value is not numeric, return 0
-        if (!is_numeric($value)) {
-            return 0;
-        }
-
-        // Convert to float to ensure proper comparison
-        $value = (float)$value;
-
-        if (empty($ranges)) {
-            return 0;
-        }
-
-        // Sort ranges by rank
-        $ranges = collect($ranges)->sortBy('rank')->values()->all();
-        $totalRanges = count($ranges);
-
-        foreach ($ranges as $range) {
-            // Konversi eksplisit ke float jika perlu
-            $min = isset($range['min']) ? (float)$range['min'] : 0;
-            $max = isset($range['max']) ? (float)$range['max'] : 0;
-
-            // Ensure rank is valid
-            $rank = isset($range['rank']) ? (int)$range['rank'] : $totalRanges;
-
-            // Skip invalid ranges
-            if (!is_numeric($min) || !is_numeric($max) || !is_numeric($rank)) {
-                continue;
-            }
-
-            // Untuk semua range, gunakan upper bound inklusif
-            if ($value >= $min && $value <= $max) {
-                return 1 - (($rank - 1) / $totalRanges);
-            }
-        }
-
-        // Value is outside all defined ranges
-        return 1 / ($totalRanges + 1);
-    }
-
-
-    // Improved helper functions for all criteria calculations
-    private function calculateAgeScore($birthDate, $config = null)
-    {
-        // Return 0 if birthDate is empty, null, or invalid
-        if (empty($birthDate) || !Carbon::hasFormat($birthDate, 'Y-m-d')) {
-            return 0;
-        }
-
-        $age = Carbon::parse($birthDate)->age;
-
-        // Return 0 if age calculation results in 0 or negative
-        if ($age <= 0) {
-            return 0;
-        }
-
-        // If no config is provided or ranges are empty, use default calculation
-        if (empty($config) || empty($config['ranges'])) {
-            return match (true) {
-                $age <= 17 => 1.0,  // Very young, highest score
-                $age <= 25 => 0.9,
-                $age <= 30 => 0.8,
-                $age <= 35 => 0.7,
-                $age <= 40 => 0.6,
-                $age <= 50 => 0.5,
-                $age <= 60 => 0.4,
-                $age <= 70 => 0.3,
-                $age <= 80 => 0.2,
-                $age <= 90 => 0.1,
-                default => 0
-            };
-        }
-
-        return $this->getScoreFromRanges($age, $config['ranges']);
-    }
-
-
-
-    private function calculateDistanceScore($distance, $config = null)
-    {
-        // Return 0 if distance is empty or invalid
-        if (empty($distance) || !is_numeric($distance)) {
-            return 0;
-        }
-
-        // Convert distance to float to ensure it's numeric
-        $distance = (float)$distance;
-
-        // If no config is provided or ranges are empty, use default calculation
-        if (empty($config) || empty($config['ranges'])) {
-            return match (true) {
-                $distance >= 0 && $distance <= 3 => 1.0,  // Best range (closest)
-                $distance >= 3.1 && $distance <= 5 => 0.75,
-                $distance >= 5.1 && $distance <= 8 => 0.5,
-                $distance >= 10.1 && $distance <= 15 => 0.25,
-                default => 0
-            };
-        }
-
-        return $this->getScoreFromRanges($distance, $config['ranges']);
-    }
-
-    private function calculateEducationScore($education, $config = null)
-    {
-        // Return 0 if education is null or empty
-        if (!$education) {
-            return 0; // No education data
-        }
-
-        // Check if the degree property exists
-        if (!isset($education->degree) || empty($education->degree)) {
-            return 0; // Missing degree information
-        }
-
-        // Equal intervals for 5 levels (0.2 increment each)
-        $defaultLevelScores = [
-            'SMA' => 0.2,  // 20%
-            'SMK' => 0.4,  // 40%
-            'D3' => 0.6,   // 60%
-            'S1' => 0.8,   // 80%
-            'S2' => 1.0    // 100%
-        ];
-
-        $levelScore = 0;
-        $gradeScore = 0;
-        $levelWeight = 0.7; // 70% weight for level
-        $gradeWeight = 0.3; // 30% weight for grade
-
-        // Use configuration if available
-        if ($config && isset($config['levels']['list']) && !empty($config['levels']['list'])) {
-            $levels = collect($config['levels']['list'])
-                ->whereIn('name', array_keys($defaultLevelScores))
-                ->sortBy('rank')
-                ->values()
-                ->all();
-
-            $totalLevels = count($levels);
-
-            if ($totalLevels > 0) {
-                // Find the education level in configured levels
-                foreach ($levels as $level) {
-                    if ($level['name'] === $education->degree) {
-                        $levelScore = 1 - (($level['rank'] - 1) / $totalLevels);
-                        break;
-                    }
-                }
-            }
-
-            // If not found in configured levels, use default or zero
-            if ($levelScore === 0) {
-                $levelScore = $defaultLevelScores[$education->degree] ?? 0;
-            }
-
-            // Override weights if configured
-            if (isset($config['weights'])) {
-                $levelWeight = $config['weights']['level'] / 100;
-                $gradeWeight = $config['weights']['grade'] / 100;
-            }
-        } else {
-            // Use default level scores
-            $levelScore = $defaultLevelScores[$education->degree] ?? 0;
-        }
-
-        // Calculate grade score with better validation
-        if (isset($education->grade) && $education->grade !== null && is_numeric($education->grade)) {
-            if (in_array($education->degree, ['SMK', 'SMA'])) {
-                $gradeScore = min(1, max(0, $education->grade / 100));
-            } else {
-                $gradeScore = min(1, max(0, $education->grade / 4));
-            }
-        }
-
-        // Combined weighted score
-        return ($levelScore * $levelWeight) + ($gradeScore * $gradeWeight);
-    }
-
-    // Modified calculateApplicantScoresAHP function to ensure consistent data structure// Fixed calculateApplicantScoresAHP function to preserve actual AHP scores
-    private function calculateApplicantScoresAHP($applicants, $weights, $criteriaConfigs)
-    {
-        // Langkah 1: Hitung nilai untuk setiap kriteria pelamar
-        $applicantCriteriaMatrix = [];
-
-        foreach ($applicants as $applicant) {
-            $criteriaValues = [];
-
-            // Hitung nilai untuk setiap kriteria
-            foreach ($weights as $criterion => $weight) {
-                $rawScore = 0; // Default value
-
-                switch ($criterion) {
-                    case 'age':
-                        $rawScore = $this->calculateAgeScore(
-                            $applicant->birth_date,
-                            $criteriaConfigs[$criterion] ?? null
-                        );
-                        break;
-                    case 'expected_salary':
-                        $rawScore = $this->calculateExpectedSalaryScore(
-                            $applicant->expected_salary ?? 0,
-                            $criteriaConfigs[$criterion] ?? null
-                        );
-                        break;
-                    case 'distance':
-                        $rawScore = $this->calculateDistanceScore(
-                            $applicant->distance ?? 0,
-                            $criteriaConfigs[$criterion] ?? null
-                        );
-                        break;
-                    case 'education':
-                        $education = recruitment_applicant_education::where('applicant_id', $applicant->id)
-                            ->orderBy('end_education', 'desc')
-                            ->first();
-                        $rawScore = $this->calculateEducationScore(
-                            $education,
-                            $criteriaConfigs[$criterion] ?? null
-                        );
-                        break;
-                    case 'experience_duration':
-                        $rawScore = $this->calculateExperienceDurationScore(
-                            $applicant->id,
-                            $criteriaConfigs[$criterion] ?? null
-                        );
-                        break;
-                    case 'training':
-                        $rawScore = $this->calculateTrainingScore(
-                            $applicant->id,
-                            $criteriaConfigs[$criterion] ?? null
-                        );
-                        break;
-                    case 'language':
-                        $rawScore = $this->calculateLanguageScore(
-                            $applicant->id,
-                            $criteriaConfigs[$criterion] ?? null
-                        );
-                        break;
-                    case 'organization':
-                        $rawScore = $this->calculateOrganizationScore(
-                            $applicant->id,
-                            $criteriaConfigs[$criterion] ?? null
-                        );
-                        break;
-                }
-
-                // Ensure we have a valid numeric value
-                $criteriaValues[$criterion] = is_numeric($rawScore) ? (float)$rawScore : 0;
-            }
-
-            $applicantCriteriaMatrix[$applicant->id] = $criteriaValues;
-        }
-
-        // Langkah 2: Buat matriks perbandingan berpasangan untuk setiap kriteria
-        $criteriaWeights = [];
-
-        foreach ($weights as $criterion => $weight) {
-            if (count($applicants) < 2) {
-                // Jika hanya ada satu pelamar, tidak perlu perbandingan berpasangan
-                $criteriaWeights[$criterion] = [$applicants[0]->id => 1];
-                continue;
-            }
-
-            // Buat matriks perbandingan berpasangan untuk kriteria ini
-            $pairwiseMatrix = [];
-            $applicantIds = [];
-
-            foreach ($applicants as $applicant) {
-                $applicantIds[] = $applicant->id;
-                $pairwiseMatrix[$applicant->id] = [];
-            }
-
-            // Isi matriks perbandingan berpasangan
-            foreach ($applicantIds as $id1) {
-                foreach ($applicantIds as $id2) {
-                    // Diagonal utama selalu bernilai 1
-                    if ($id1 == $id2) {
-                        $pairwiseMatrix[$id1][$id2] = 1;
-                        continue;
-                    }
-
-                    // Jika nilai telah dihitung untuk pasangan sebaliknya, gunakan kebalikannya
-                    if (isset($pairwiseMatrix[$id2][$id1])) {
-                        $pairwiseMatrix[$id1][$id2] = 1 / $pairwiseMatrix[$id2][$id1];
-                        continue;
-                    }
-
-                    // Dapatkan nilai kriteria untuk kedua pelamar
-                    $value1 = $applicantCriteriaMatrix[$id1][$criterion] ?? 0;
-                    $value2 = $applicantCriteriaMatrix[$id2][$criterion] ?? 0;
-
-                    // Handle kasus khusus untuk nilai 0
-                    if ($value1 == 0 && $value2 == 0) {
-                        $pairwiseMatrix[$id1][$id2] = 1; // Keduanya sama
-                    } elseif ($value1 == 0) {
-                        $pairwiseMatrix[$id1][$id2] = 1 / 9; // Nilai minimum untuk skala Saaty
-                    } elseif ($value2 == 0) {
-                        $pairwiseMatrix[$id1][$id2] = 9; // Nilai maksimum untuk skala Saaty
-                    } else {
-                        // Hitung rasio dan konversi ke skala Saaty (1-9)
-                        $ratio = $value1 / $value2;
-
-                        // Konversi rasio ke skala Saaty
-                        if ($ratio >= 1) {
-                            $pairwiseMatrix[$id1][$id2] = min(9, round($ratio, 2));
-                        } else {
-                            $pairwiseMatrix[$id1][$id2] = max(1 / 9, round($ratio, 2));
-                        }
-                    }
-                }
-            }
-
-            // Langkah 3: Normalisasi matriks perbandingan berpasangan
-            $normalizedMatrix = [];
-            $columnSums = [];
-
-            // Hitung jumlah setiap kolom
-            foreach ($applicantIds as $id2) {
-                $columnSums[$id2] = 0;
-                foreach ($applicantIds as $id1) {
-                    $columnSums[$id2] += $pairwiseMatrix[$id1][$id2];
-                }
-            }
-
-            // Normalisasi matriks
-            foreach ($applicantIds as $id1) {
-                $normalizedMatrix[$id1] = [];
-
-                foreach ($applicantIds as $id2) {
-                    if ($columnSums[$id2] > 0) {
-                        $normalizedMatrix[$id1][$id2] = $pairwiseMatrix[$id1][$id2] / $columnSums[$id2];
-                    } else {
-                        $normalizedMatrix[$id1][$id2] = 0;
-                    }
-                }
-            }
-
-            // Langkah 4: Hitung vektor prioritas (bobot lokal) untuk setiap pelamar
-            $priorityVector = [];
-
-            foreach ($applicantIds as $id) {
-                $rowSum = 0;
-                foreach ($applicantIds as $otherId) {
-                    $rowSum += $normalizedMatrix[$id][$otherId];
-                }
-                $priorityVector[$id] = $rowSum / count($applicantIds);
-            }
-
-            // Menyimpan bobot prioritas untuk kriteria ini
-            $criteriaWeights[$criterion] = $priorityVector;
-        }
-
-        // Langkah 5: Hitung skor akhir menggunakan bobot kriteria global
-        $finalScores = [];
-
-        foreach ($applicants as $applicant) {
-            $finalScore = 0;
-            $breakdownScores = [];
-
-            foreach ($weights as $criterion => $weight) {
-                // Get the raw unweighted score (from our calculation functions)
-                $rawScore = $applicantCriteriaMatrix[$applicant->id][$criterion] ?? 0;
-
-                // Get the normalized score (from AHP comparison)
-                $normalizedScore = $criteriaWeights[$criterion][$applicant->id] ?? 0;
-
-                // Calculate the weighted score - keep the actual AHP scores
-                $weightedScore = $normalizedScore * $weight;
-
-                // Add to final score
-                $finalScore += $weightedScore;
-
-                // Store the breakdown with CONSISTENT structure
-                $breakdownScores[$criterion] = [
-                    'raw_score' => $rawScore,
-                    'normalized_score' => $normalizedScore,
-                    'weighted_score' => $weightedScore,  // This is already the actual AHP weighted score
-                    'weight' => $weight
-                ];
-            }
-
-            $finalScores[] = [
-                'applicant' => $applicant,
-                'score' => $finalScore,  // This is the actual AHP final score without normalization to 100%
-                'breakdown' => $breakdownScores
-            ];
-        }
-
-        // Sort by score descending - we preserve the actual AHP scores
-        return collect($finalScores)->sortByDesc('score')->values();
-    }
-
-    // Fungsi calculate yang memanggil AHP
-    public function calculate(Request $request)
-    {
         try {
             // Validate the request - basic validation first
             $validationRules = [
@@ -1248,7 +599,6 @@ class RecruitmentController extends Controller
                 'education',
                 'experience_duration',
                 'organization',
-                'language',
                 'training'
             ];
 
@@ -1293,14 +643,7 @@ class RecruitmentController extends Controller
                 ], 200);
             }
 
-            // DEBUG: Generate matrix data for debugging
-            $debugMatrices = $this->debugMatrices($applicants, $weights, $criteriaConfigs);
-
-            // You can either dd() here to see all matrices:
-            dd($debugMatrices);
-
-            // Or continue with your normal AHP calculation:
-            $rankings = $this->calculateApplicantScoresAHP($applicants, $weights, $criteriaConfigs);
+            $rankings = $this->calculateWeightApplicantScores($applicants, $weights, $criteriaConfigs);
 
             return response()->json([
                 'success' => true,
@@ -1320,220 +663,890 @@ class RecruitmentController extends Controller
         }
     }
 
-
-    // Add this function to your class to display matrices in a readable format
-    private function debugMatrices($applicants, $weights, $criteriaConfigs)
+    private function calculateWeightApplicantScores($applicants, $weights, $criteriaConfigs)
     {
-        // Store all matrices for debugging
-        $debugData = [
-            'criteria_weights' => $weights,
-            'criteria_matrix' => [],
-            'applicant_criteria_values' => [],
-            'pairwise_matrices' => [],
-            'normalized_matrices' => [],
-            'priority_vectors' => []
-        ];
+        $scores = [];
 
-        // Step 1: Collect raw applicant criteria values
         foreach ($applicants as $applicant) {
-            $criteriaValues = [];
+            $criteriaScores = [];
 
+            // Only calculate scores for criteria that have weights
             foreach ($weights as $criterion => $weight) {
-                $rawScore = 0;
-
                 switch ($criterion) {
                     case 'age':
-                        $rawScore = $this->calculateAgeScore(
+                        $criteriaScores['age'] = $this->calculateAgeScore(
                             $applicant->birth_date,
-                            $criteriaConfigs[$criterion] ?? null
+                            $criteriaConfigs['age'] ?? null
                         );
                         break;
                     case 'expected_salary':
-                        $rawScore = $this->calculateExpectedSalaryScore(
+                        $criteriaScores['expected_salary'] = $this->calculateExpectedSalaryScore(
                             $applicant->expected_salary ?? 0,
-                            $criteriaConfigs[$criterion] ?? null
+                            $criteriaConfigs['expected_salary'] ?? null
                         );
                         break;
                     case 'distance':
-                        $rawScore = $this->calculateDistanceScore(
+                        $criteriaScores['distance'] = $this->calculateDistanceScore(
                             $applicant->distance ?? 0,
-                            $criteriaConfigs[$criterion] ?? null
+                            $criteriaConfigs['distance'] ?? null
                         );
                         break;
                     case 'education':
                         $education = recruitment_applicant_education::where('applicant_id', $applicant->id)
                             ->orderBy('end_education', 'desc')
                             ->first();
-                        $rawScore = $this->calculateEducationScore(
+                        $criteriaScores['education'] = $this->calculateEducationScore(
                             $education,
-                            $criteriaConfigs[$criterion] ?? null
+                            $criteriaConfigs['education'] ?? null
                         );
                         break;
                     case 'experience_duration':
-                        $rawScore = $this->calculateExperienceDurationScore(
+                        $criteriaScores['experience_duration'] = $this->calculateExperienceDurationScore(
                             $applicant->id,
-                            $criteriaConfigs[$criterion] ?? null
+                            $criteriaConfigs['experience_duration'] ?? null
                         );
                         break;
                     case 'training':
-                        $rawScore = $this->calculateTrainingScore(
+                        $criteriaScores['training'] = $this->calculateTrainingScore(
                             $applicant->id,
-                            $criteriaConfigs[$criterion] ?? null
+                            $criteriaConfigs['training'] ?? null
                         );
                         break;
-                    case 'language':
-                        $rawScore = $this->calculateLanguageScore(
-                            $applicant->id,
-                            $criteriaConfigs[$criterion] ?? null
-                        );
-                        break;
+      
                     case 'organization':
-                        $rawScore = $this->calculateOrganizationScore(
+                        $criteriaScores['organization'] = $this->calculateOrganizationScore(
                             $applicant->id,
-                            $criteriaConfigs[$criterion] ?? null
+                            $criteriaConfigs['organization'] ?? null
                         );
                         break;
                 }
-
-                $rawScore = is_numeric($rawScore) ? (float)$rawScore : 0;
-                $criteriaValues[$criterion] = $rawScore;
             }
 
-            $debugData['applicant_criteria_values'][$applicant->id] = [
-                'name' => $applicant->name,
-                'values' => $criteriaValues
+            // Calculate weighted sum
+            $totalScore = 0;
+            foreach ($weights as $criterion => $weight) {
+                if (isset($criteriaScores[$criterion])) {
+                    $totalScore += $criteriaScores[$criterion] * $weight;
+                }
+            }
+
+            $scores[] = [
+                'applicant' => $applicant,
+                'score' => $totalScore,
+                'breakdown' => $criteriaScores
             ];
         }
 
-        // Step 2: Build the criteria pairwise comparison matrix
-        // This would be manually entered or calculated elsewhere
-        // Here we're just showing a placeholder structure
-        $criteria = array_keys($weights);
-        foreach ($criteria as $c1) {
-            $debugData['criteria_matrix'][$c1] = [];
-            foreach ($criteria as $c2) {
-                // This should be replaced with your actual criteria matrix values
-                if ($c1 === $c2) {
-                    $debugData['criteria_matrix'][$c1][$c2] = 1;
+        return collect($scores)->sortByDesc('score')->values();
+    }
+
+    // New helper function to handle range calculations consistently
+    public function getScoreFromRanges($value, $ranges)
+    {
+        // Tambahkan debugging untuk tipe data
+        //dd(gettype($value), $value, $ranges);
+
+        if (empty($ranges)) {
+            return 0;
+        }
+
+        // Sort ranges by rank
+        $ranges = collect($ranges)->sortBy('rank')->values()->all();
+        $totalRanges = count($ranges);
+
+        foreach ($ranges as $range) {
+            // Konversi eksplisit ke float jika perlu
+            $min = floatval($range['min']);
+            $max = floatval($range['max']);
+            $value = floatval($value);
+
+            // Untuk semua range, gunakan upper bound inklusif
+            if ($value >= $min && $value <= $max) {
+                // dd($min, $value, $max, $range['rank'], $totalRanges);
+                return 1 - (($range['rank'] - 1) / $totalRanges);
+            }
+        }
+
+        // Value is outside all defined ranges
+        return 1 / ($totalRanges + 1);
+    }
+
+    private function calculateAgeScore($birthDate, $config = null)
+    {
+        // Return 0 if birthDate is empty, null, or invalid
+        if (empty($birthDate) || !Carbon::hasFormat($birthDate, 'Y-m-d')) {
+            return 0;
+        }
+
+        $age = Carbon::parse($birthDate)->age;
+
+        // Return 0 if age calculation results in 0 or negative
+        if ($age <= 0) {
+            return 0;
+        }
+
+        // If no config is provided or ranges are empty, use default calculation
+        if (empty($config) || empty($config['ranges'])) {
+            return match (true) {
+                $age <= 17 => 1.0,  // Very young, highest score
+                $age <= 25 => 0.9,
+                $age <= 30 => 0.8,
+                $age <= 35 => 0.7,
+                $age <= 40 => 0.6,
+                $age <= 50 => 0.5,
+                $age <= 60 => 0.4,
+                $age <= 70 => 0.3,
+                $age <= 80 => 0.2,
+                $age <= 90 => 0.1,
+                default => 0
+            };
+        }
+
+        return $this->getScoreFromRanges($age, $config['ranges']);
+    }
+
+    private function calculateExpectedSalaryScore($salary, $config = null)
+    {
+        // Return 0 if salary is empty or invalid
+        if (empty($salary) || !is_numeric($salary)) {
+            return 0;
+        }
+
+        // If no config is provided or ranges are empty, use default calculation
+        if (empty($config) || empty($config['ranges'])) {
+            return match (true) {
+                $salary >= 5000001 && $salary <= 8000000 => 1.0,  // Best range
+                $salary >= 2000001 && $salary <= 5000000 => 0.8,
+                $salary >= 8000001 && $salary <= 10000000 => 0.6,
+                $salary >= 0 && $salary <= 2000000 => 0.4,
+                $salary >= 10000001 && $salary <= 15000000 => 0.2,
+                default => 0
+            };
+        }
+
+        return $this->getScoreFromRanges($salary, $config['ranges']);
+    }
+
+    private function calculateDistanceScore($distance, $config = null)
+    {
+        // Return 0 if distance is empty or invalid
+        if (empty($distance) || !is_numeric($distance)) {
+            return 0;
+        }
+
+        // If no config is provided or ranges are empty, use default calculation
+        if (empty($config) || empty($config['ranges'])) {
+            return match (true) {
+                $distance >= 0 && $distance <= 3 => 1.0,  // Best range (closest)
+                $distance >= 3.1 && $distance <= 5 => 0.75,
+                $distance >= 5.1 && $distance <= 8 => 0.5,
+                $distance >= 10.1 && $distance <= 15 => 0.25,
+                default => 0
+            };
+        }
+
+        return $this->getScoreFromRanges($distance, $config['ranges']);
+    }
+
+
+    private function calculateEducationScore($education, $config = null)
+    {
+        if (!$education) {
+            return 0; // No education data
+        }
+
+        // Equal intervals for 5 levels (0.2 increment each)
+        $defaultLevelScores = [
+            'SMA' => 0.2,  // 20%
+            'SMK' => 0.4,  // 40%
+            'D3' => 0.6,   // 60%
+            'S1' => 0.8,   // 80%
+            'S2' => 1.0    // 100%
+        ];
+
+        $levelScore = 0;
+        $gradeScore = 0;
+        $levelWeight = 0.7; // 70% weight for level
+        $gradeWeight = 0.3; // 30% weight for grade
+
+        // Use configuration if available
+        if ($config && isset($config['levels']['list']) && !empty($config['levels']['list'])) {
+            $levels = collect($config['levels']['list'])
+                ->whereIn('name', array_keys($defaultLevelScores))
+                ->sortBy('rank')
+                ->values()
+                ->all();
+
+            $totalLevels = count($levels);
+
+            // Find the education level in configured levels
+            foreach ($levels as $level) {
+                if ($level['name'] === $education->degree) {
+                    $levelScore = 1 - (($level['rank'] - 1) / $totalLevels);
+                    break;
+                }
+            }
+
+            // If not found in configured levels, use default or zero
+            if ($levelScore === 0) {
+                $levelScore = $defaultLevelScores[$education->degree] ?? 0;
+            }
+
+            // Override weights if configured
+            if (isset($config['weights'])) {
+                $levelWeight = $config['weights']['level'] / 100;
+                $gradeWeight = $config['weights']['grade'] / 100;
+            }
+        } else {
+            // Use default level scores
+            $levelScore = $defaultLevelScores[$education->degree] ?? 0;
+        }
+
+        // Calculate grade score (same as before)
+        if ($education->grade !== null) {
+            if (in_array($education->degree, ['SMK', 'SMA'])) {
+                $gradeScore = min(1, max(0, $education->grade / 100));
+            } else {
+                $gradeScore = min(1, max(0, $education->grade / 4));
+            }
+        }
+
+        // Combined weighted score
+        return ($levelScore * $levelWeight) + ($gradeScore * $gradeWeight);
+    }
+
+    private function calculateExperienceDurationScore($applicantId, $config = null)
+    {
+        $experiences = recruitment_applicant_work_experience::where('applicant_id', $applicantId)->get();
+
+        if ($experiences->isEmpty()) {
+            return 0; // Default low score for no experience
+        }
+
+        $totalDuration = 0;
+        $count = $experiences->count();
+
+        foreach ($experiences as $exp) {
+            $startDate = Carbon::parse($exp->working_start);
+            $endDate = $exp->working_end ? Carbon::parse($exp->working_end) : Carbon::now();
+            $totalDuration += $startDate->diffInYears($endDate);
+        }
+
+        // Default configuration if none provided
+        if (empty($config)) {
+            $periodRanges = [
+                ['min' => 5, 'max' => 8, 'rank' => 1],
+                ['min' => 3, 'max' => 5, 'rank' => 2],
+                ['min' => 1, 'max' => 3, 'rank' => 3],
+                ['min' => 0, 'max' => 1, 'rank' => 4]
+            ];
+
+            $amountRanges = [
+                ['min' => 6, 'max' => 7, 'rank' => 1],
+                ['min' => 4, 'max' => 5, 'rank' => 2],
+                ['min' => 2, 'max' => 3, 'rank' => 3],
+                ['min' => 0, 'max' => 1, 'rank' => 4]
+            ];
+
+            $periodScore = $this->getScoreFromRanges($totalDuration, $periodRanges);
+            $amountScore = $this->getScoreFromRanges($count, $amountRanges);
+
+            return ($periodScore * 0.7) + ($amountScore * 0.3);
+        }
+
+        // Use provided configuration
+        $periodScore = isset($config['period']) ? $this->getScoreFromRanges($totalDuration, $config['period']) : 0;
+        $amountScore = isset($config['amount']) ? $this->getScoreFromRanges($count, $config['amount']) : 0;
+
+        $periodWeight = isset($config['weights']['period']) ? ($config['weights']['period'] / 100) : 0.7;
+        $amountWeight = isset($config['weights']['amount']) ? ($config['weights']['amount'] / 100) : 0.3;
+
+        return ($periodScore * $periodWeight) + ($amountScore * $amountWeight);
+    }
+
+    private function calculateTrainingScore($applicantId, $config = null)
+    {
+        $trainings = recruitment_applicant_training::where('applicant_id', $applicantId)->get();
+
+        if ($trainings->isEmpty()) {
+            return 0;
+        }
+
+        $count = $trainings->count();
+        $totalDuration = 0;
+
+        foreach ($trainings as $training) {
+            if ($training->start_date && $training->end_date) {
+                $startDate = Carbon::parse($training->start_date);
+                $endDate = Carbon::parse($training->end_date);
+                $totalDuration += $startDate->diffInMonths($endDate);
+            }
+        }
+
+        // Convert duration to years for scoring
+        $durationInYears = $totalDuration / 12;
+
+        // Default configuration if none provided
+        if (empty($config)) {
+            $periodRanges = [
+                ['min' => 5.1, 'max' => 8, 'rank' => 1],
+                ['min' => 3.1, 'max' => 5, 'rank' => 2],
+                ['min' => 1.1, 'max' => 3, 'rank' => 3],
+                ['min' => 0, 'max' => 1, 'rank' => 4]
+            ];
+
+            $amountRanges = [
+                ['min' => 6, 'max' => 7, 'rank' => 1],
+                ['min' => 4, 'max' => 5, 'rank' => 2],
+                ['min' => 2, 'max' => 3, 'rank' => 3],
+                ['min' => 0, 'max' => 1, 'rank' => 4]
+            ];
+
+            $periodScore = $this->getScoreFromRanges($durationInYears, $periodRanges);
+            $amountScore = $this->getScoreFromRanges($count, $amountRanges);
+
+            return ($periodScore * 0.7) + ($amountScore * 0.3);
+        }
+
+        // Use provided configuration
+        $periodScore = isset($config['period']) ? $this->getScoreFromRanges($durationInYears, $config['period']) : 0;
+        $amountScore = isset($config['amount']) ? $this->getScoreFromRanges($count, $config['amount']) : 0;
+
+        $periodWeight = isset($config['weights']['period']) ? ($config['weights']['period'] / 100) : 0.7;
+        $amountWeight = isset($config['weights']['amount']) ? ($config['weights']['amount'] / 100) : 0.3;
+
+        return ($periodScore * $periodWeight) + ($amountScore * $amountWeight);
+    }
+
+    private function calculateOrganizationScore($applicantId, $config = null)
+    {
+        $organizations = recruitment_applicant_organization::where('applicant_id', $applicantId)->get();
+
+        if ($organizations->isEmpty()) {
+            return 0;
+        }
+
+        $count = $organizations->count();
+        $totalDuration = 0;
+
+        foreach ($organizations as $org) {
+            if ($org->start_date) {
+                $startDate = Carbon::parse($org->start_date);
+                $endDate = $org->end_date ? Carbon::parse($org->end_date) : Carbon::now();
+                $totalDuration += $startDate->diffInMonths($endDate);
+            }
+        }
+
+        // Convert duration to years for scoring
+        $durationInYears = $totalDuration / 12;
+
+        // Default configuration if none provided
+        if (empty($config)) {
+            $periodRanges = [
+                ['min' => 5.1, 'max' => 8, 'rank' => 1],
+                ['min' => 3.1, 'max' => 5, 'rank' => 2],
+                ['min' => 1.1, 'max' => 3, 'rank' => 3],
+                ['min' => 0, 'max' => 1, 'rank' => 4]
+            ];
+
+            $amountRanges = [
+                ['min' => 6, 'max' => 7, 'rank' => 1],
+                ['min' => 4, 'max' => 5, 'rank' => 2],
+                ['min' => 2, 'max' => 3, 'rank' => 3],
+                ['min' => 0, 'max' => 1, 'rank' => 4]
+            ];
+
+            $periodScore = $this->getScoreFromRanges($durationInYears, $periodRanges);
+            $amountScore = $this->getScoreFromRanges($count, $amountRanges);
+
+            return ($periodScore * 0.4) + ($amountScore * 0.6);
+        }
+
+        // Use provided configuration
+        $periodScore = isset($config['period']) ? $this->getScoreFromRanges($durationInYears, $config['period']) : 0;
+        $amountScore = isset($config['amount']) ? $this->getScoreFromRanges($count, $config['amount']) : 0;
+
+        $periodWeight = isset($config['weights']['period']) ? ($config['weights']['period'] / 100) : 0.4;
+        $amountWeight = isset($config['weights']['amount']) ? ($config['weights']['amount'] / 100) : 0.6;
+
+        return ($periodScore * $periodWeight) + ($amountScore * $amountWeight);
+    }
+
+
+
+
+
+    public function index_ahp()
+    {
+        // Retrieve all recruitment applicants and pluck their unique recruitment_demand_ids  
+        $recruitmentDemandIds = recruitment_applicant::pluck('recruitment_demand_id')->unique();
+
+        // Filter recruitment_demand based on the unique recruitment_demand_ids  
+        $demands =  recruitment_demand::with(['departmentRelation', 'positionRelation'])->whereIn('id', $recruitmentDemandIds)
+            ->where('status_demand', 'Approved')
+            ->whereColumn('qty_needed', '>', 'qty_fullfil')
+            ->get();
+
+
+
+        // Return the filtered recruitment_demand data to the view  
+        return view('recruitment/ahp_recruitment/index', [
+            'demands' => $demands,
+            'criteria' => $this->criteria
+        ]);
+    }
+    public function calculate(Request $request)
+    {
+        try {
+            $request->validate([
+                'demandId' => 'required|exists:recruitment_demand,id',
+                'ahpData' => 'required|array'
+            ]);
+
+            $ahpData = $request->input('ahpData');
+
+            //dd( $ahpData);
+
+            // Validate AHP data structure
+            $this->validateAHPData($ahpData);
+
+            // Calculate main criteria weights
+            $mainWeights = $this->calculateMainCriteriaWeights($ahpData['mainComparisons']);
+
+            // dd( $mainWeights);
+
+            // Calculate sub-criteria weights
+            $subWeights = [];
+            foreach ($ahpData['subCriteria'] as $criteria => $config) {
+                if (!empty($config['comparisons'])) {
+                    $subWeights[$criteria] = $this->calculateSubCriteriaWeights($config);
+                }
+            }
+
+            // dd( $subWeights);
+
+            // Get applicants for this demand
+            $applicants = recruitment_applicant::where('recruitment_demand_id', $request->demandId)
+                ->where('status_applicant', 'Pending')
+                ->whereNull('interview_date')
+                ->with(['education', 'training', 'work_experience', 'organization'])
+                ->get();
+
+            if ($applicants->isEmpty()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No applicants found for this demand'
+                ], 404);
+            }
+
+            // Calculate scores for each applicant
+            $rankings = $this->calculateApplicantScores($applicants, $ahpData, $mainWeights, $subWeights);
+
+            return response()->json([
+                'success' => true,
+                'rankings' => $rankings,
+                'weights' => [
+                    'main' => $mainWeights,
+                    'sub' => $subWeights
+                ]
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString() // Include for debugging
+            ], 500);
+        }
+    }
+
+
+
+    protected function validateAHPData(array $ahpData)
+    {
+        if (empty($ahpData['mainCriteria']) || !is_array($ahpData['mainCriteria'])) {
+            throw new \InvalidArgumentException('Invalid AHP data structure: mainCriteria missing');
+        }
+
+        if (empty($ahpData['subCriteria']) || !is_array($ahpData['subCriteria'])) {
+            throw new \InvalidArgumentException('Invalid AHP data structure: subCriteria missing');
+        }
+
+        if (empty($ahpData['mainComparisons']) || !is_array($ahpData['mainComparisons'])) {
+            throw new \InvalidArgumentException('Invalid AHP data structure: mainComparisons missing');
+        }
+
+        foreach ($ahpData['mainCriteria'] as $key => $name) {
+            if (!isset($ahpData['subCriteria'][$key])) {
+                throw new \InvalidArgumentException("Missing sub-criteria configuration for: $key");
+            }
+        }
+    }
+
+    protected function calculateMainCriteriaWeights(array $comparisons)
+    {
+        $criteria = array_keys($comparisons);
+        $n = count($criteria);
+
+        // Build pairwise comparison matrix
+        $matrix = [];
+        for ($i = 0; $i < $n; $i++) {
+            $matrix[$i] = [];
+            for ($j = 0; $j < $n; $j++) {
+                if ($i == $j) {
+                    $matrix[$i][$j] = 1; // Diagonal is 1
+                } elseif (isset($comparisons[$criteria[$i]][$criteria[$j]])) {
+                    $matrix[$i][$j] = $comparisons[$criteria[$i]][$criteria[$j]];
+                } elseif (isset($comparisons[$criteria[$j]][$criteria[$i]])) {
+                    // Get the reciprocal value
+                    $matrix[$i][$j] = 1 / $comparisons[$criteria[$j]][$criteria[$i]];
                 } else {
-                    // Placeholder - in your real code this would come from user input or calculation
-                    $debugData['criteria_matrix'][$c1][$c2] = 0; // Placeholder
+                    // If comparison not provided, assume equal importance (1)
+                    $matrix[$i][$j] = 1;
                 }
             }
         }
 
-        // Step 3: Calculate pairwise matrices for each criterion
-        foreach ($weights as $criterion => $weight) {
-            $pairwiseMatrix = [];
-            $normalizedMatrix = [];
-            $priorityVector = [];
+        // Calculate weights using eigenvector method
+        $weights = $this->calculateEigenvector($matrix);
 
-            $applicantIds = [];
-            foreach ($applicants as $applicant) {
-                $applicantIds[] = $applicant->id;
-                $pairwiseMatrix[$applicant->id] = [];
+        // Check consistency
+        $consistency = $this->checkConsistency($matrix, $weights);
+
+        if ($consistency > 0.1) {
+            throw new \RuntimeException("Inconsistent comparisons for main criteria (CR = $consistency). Please review your pairwise comparisons.");
+        }
+
+        // Combine with criteria names
+        $result = [];
+        foreach ($criteria as $i => $c) {
+            $result[$c] = $weights[$i];
+        }
+
+        return $result;
+    }
+
+    protected function calculateSubCriteriaWeights(array $config)
+    {
+        $comparisons = $config['comparisons'];
+
+        if (isset($config['ranges'])) {
+            // Range-based criteria (age, salary, distance, etc.)
+            $items = array_map(function ($range) {
+                return $range['label'];
+            }, $config['ranges']);
+        } elseif (isset($config['levels'])) {
+            // Education levels
+            $items = $config['levels'];
+        } elseif (isset($config['periods'])) {
+            // Experience periods
+            $items = $config['periods'];
+        } else {
+            throw new \InvalidArgumentException('Invalid sub-criteria configuration');
+        }
+
+        $n = count($items);
+        $matrix = [];
+
+        // For debugging - see what items we're working with
+        // logger()->debug('Items for comparison: ' . implode(', ', $items));
+        // logger()->debug('Comparisons: ' . json_encode($comparisons));
+
+        // Build pairwise comparison matrix
+        for ($i = 0; $i < $n; $i++) {
+            $matrix[$i] = [];
+            for ($j = 0; $j < $n; $j++) {
+                if ($i == $j) {
+                    $matrix[$i][$j] = 1;
+                } elseif (isset($comparisons[$items[$i]][$items[$j]])) {
+                    $matrix[$i][$j] = $comparisons[$items[$i]][$items[$j]];
+                } elseif (isset($comparisons[$items[$j]][$items[$i]])) {
+                    // Reciprocal value
+                    $matrix[$i][$j] = 1 / $comparisons[$items[$j]][$items[$i]];
+                } else {
+                    // If this happens frequently, there might be a label mismatch issue
+                    $matrix[$i][$j] = 1;
+                    // For debugging
+                    // logger()->warning("Missing comparison between {$items[$i]} and {$items[$j]}");
+                }
+            }
+        }
+
+        // For debugging - print the entire matrix
+        // logger()->debug('Comparison matrix: ' . json_encode($matrix));
+
+        $weights = $this->calculateEigenvector($matrix);
+
+        // Check consistency
+        $consistency = $this->checkConsistency($matrix, $weights);
+
+        if ($consistency > 0.1) {
+            throw new \RuntimeException("Inconsistent comparisons for sub-criteria (CR = $consistency). Please review your pairwise comparisons.");
+        }
+
+        // Combine with item names
+        $result = [];
+        foreach ($items as $i => $item) {
+            $result[$item] = $weights[$i];
+        }
+
+        return $result;
+    }
+    protected function calculateEigenvector(array $matrix)
+    {
+        $n = count($matrix);
+
+        // Step 1: Normalize the matrix
+        $normalized = [];
+        $columnSums = array_fill(0, $n, 0);
+
+        // Calculate column sums
+        for ($j = 0; $j < $n; $j++) {
+            for ($i = 0; $i < $n; $i++) {
+                $columnSums[$j] += $matrix[$i][$j];
+            }
+        }
+
+        // Normalize each element
+        for ($i = 0; $i < $n; $i++) {
+            $normalized[$i] = [];
+            for ($j = 0; $j < $n; $j++) {
+                $normalized[$i][$j] = $matrix[$i][$j] / $columnSums[$j];
+            }
+        }
+
+        // Step 2: Calculate row averages (eigenvector approximation)
+        $weights = [];
+        for ($i = 0; $i < $n; $i++) {
+            $rowSum = array_sum($normalized[$i]);
+            $weights[$i] = $rowSum / $n;
+        }
+
+        return $weights;
+    }
+
+    protected function checkConsistency(array $matrix, array $weights)
+    {
+        $n = count($matrix);
+
+        if ($n <= 2) {
+            return 0; // Consistency ratio is 0 for 2x2 matrix
+        }
+
+        // Step 1: Calculate consistency vector (Aw)
+        $consistencyVector = [];
+        for ($i = 0; $i < $n; $i++) {
+            $sum = 0;
+            for ($j = 0; $j < $n; $j++) {
+                $sum += $matrix[$i][$j] * $weights[$j];
+            }
+            $consistencyVector[$i] = $sum;
+        }
+
+        // Step 2: Calculate lambda max
+        $lambdaSum = 0;
+        for ($i = 0; $i < $n; $i++) {
+            $lambdaSum += $consistencyVector[$i] / $weights[$i];
+        }
+        $lambdaMax = $lambdaSum / $n;
+
+        // Step 3: Calculate consistency index (CI)
+        $ci = ($lambdaMax - $n) / ($n - 1);
+
+        // Step 4: Get random index (RI) based on matrix size
+        $riValues = [
+            1 => 0,
+            2 => 0,
+            3 => 0.58,
+            4 => 0.9,
+            5 => 1.12,
+            6 => 1.24,
+            7 => 1.32,
+            8 => 1.41,
+            9 => 1.45,
+            10 => 1.49
+        ];
+
+        $ri = $riValues[$n] ?? 1.49;
+
+        // Step 5: Calculate consistency ratio (CR)
+        return $ci / $ri;
+    }
+
+    protected function calculateApplicantScores($applicants, $ahpData, $mainWeights, $subWeights)
+    {
+        $rankings = [];
+
+        foreach ($applicants as $applicant) {
+            $totalScore = 0;
+            $criteriaScores = [];
+
+            foreach ($ahpData['mainCriteria'] as $criteria => $name) {
+                if (!isset($mainWeights[$criteria])) {
+                    continue; // Skip if no weight for this criteria
+                }
+
+                $subConfig = $ahpData['subCriteria'][$criteria];
+                $value = $this->getApplicantValue($applicant, $criteria, $subConfig);
+
+                if ($value === null) {
+                    $criteriaScores[$criteria] = 0;
+                    continue;
+                }
+
+                // Find matching sub-criteria weight
+                $subScore = 0;
+                foreach ($subWeights[$criteria] as $range => $weight) {
+                    if ($this->valueMatchesRange($value, $range, $subConfig)) {
+                        $subScore = $weight;
+                        break;
+                    }
+                }
+
+                $criteriaScore = $subScore * $mainWeights[$criteria];
+                $criteriaScores[$criteria] = $criteriaScore;
+                $totalScore += $criteriaScore;
             }
 
-            // Fill the pairwise comparison matrix for this criterion
-            foreach ($applicantIds as $id1) {
-                foreach ($applicantIds as $id2) {
-                    if ($id1 == $id2) {
-                        $pairwiseMatrix[$id1][$id2] = 1;
-                        continue;
-                    }
+            $rankings[] = [
+                'id' => $applicant->id,
+                'name' => $applicant->name,
+                'total_score' => $totalScore,
+                'criteria_scores' => $criteriaScores,
+                'details' => $this->getApplicantDetails($applicant, $ahpData)
+            ];
+        }
 
-                    if (isset($pairwiseMatrix[$id2][$id1])) {
-                        $pairwiseMatrix[$id1][$id2] = 1 / $pairwiseMatrix[$id2][$id1];
-                        continue;
-                    }
+        // Sort by total score descending
+        usort($rankings, function ($a, $b) {
+            return $b['total_score'] <=> $a['total_score'];
+        });
 
-                    $value1 = $debugData['applicant_criteria_values'][$id1]['values'][$criterion] ?? 0;
-                    $value2 = $debugData['applicant_criteria_values'][$id2]['values'][$criterion] ?? 0;
+        return $rankings;
+    }
 
-                    if ($value1 == 0 && $value2 == 0) {
-                        $pairwiseMatrix[$id1][$id2] = 1;
-                    } elseif ($value1 == 0) {
-                        $pairwiseMatrix[$id1][$id2] = 1 / 9;
-                    } elseif ($value2 == 0) {
-                        $pairwiseMatrix[$id1][$id2] = 9;
-                    } else {
-                        $ratio = $value1 / $value2;
-                        if ($ratio >= 1) {
-                            $pairwiseMatrix[$id1][$id2] = min(9, round($ratio, 2));
-                        } else {
-                            $pairwiseMatrix[$id1][$id2] = max(1 / 9, round($ratio, 2));
+    protected function valueMatchesRange($value, $range, $subConfig)
+    {
+        if (isset($subConfig['ranges'])) {
+            // Find the range that matches this label
+            foreach ($subConfig['ranges'] as $r) {
+                if ($r['label'] === $range) {
+                    return $value >= $r['min'] && $value <= $r['max'];
+                }
+            }
+            return false;
+        }
+
+        // For education/experience, exact match
+        return $value === $range;
+    }
+
+    protected function getApplicantValue($applicant, $criteria, $subConfig)
+    {
+        switch ($criteria) {
+            case 'age':
+                if (!$applicant->birth_date) return null;
+                $birthDate = new \DateTime($applicant->birth_date);
+                $now = new \DateTime();
+                $age = $now->diff($birthDate)->y;
+                return $age;
+
+            case 'expected_salary':
+                return $applicant->expected_salary;
+
+            case 'distance':
+                return $applicant->distance;
+
+            case 'education':
+                if ($applicant->education->isEmpty()) return null;
+                // Get highest education level
+                $levels = array_flip($subConfig['levels']);
+                $maxLevel = null;
+                foreach ($applicant->education as $edu) {
+                    if (isset($levels[$edu->degree])) {
+                        if ($maxLevel === null || $levels[$edu->degree] > $levels[$maxLevel]) {
+                            $maxLevel = $edu->degree;
                         }
                     }
                 }
-            }
+                return $maxLevel;
 
-            // Calculate column sums for normalization
-            $columnSums = [];
-            foreach ($applicantIds as $id2) {
-                $columnSums[$id2] = 0;
-                foreach ($applicantIds as $id1) {
-                    $columnSums[$id2] += $pairwiseMatrix[$id1][$id2];
+            case 'experience_duration':
+                if ($applicant->work_experience->isEmpty()) return '<1 year';
+                $totalMonths = 0;
+                foreach ($applicant->work_experience as $exp) {
+                    $start = new \DateTime($exp->working_start);
+                    $end = $exp->working_end ? new \DateTime($exp->working_end) : new \DateTime();
+                    $totalMonths += $end->diff($start)->m + ($end->diff($start)->y * 12);
                 }
-            }
+                $totalYears = $totalMonths / 12;
 
-            // Normalize the matrix
-            foreach ($applicantIds as $id1) {
-                $normalizedMatrix[$id1] = [];
-                foreach ($applicantIds as $id2) {
-                    if ($columnSums[$id2] > 0) {
-                        $normalizedMatrix[$id1][$id2] = $pairwiseMatrix[$id1][$id2] / $columnSums[$id2];
-                    } else {
-                        $normalizedMatrix[$id1][$id2] = 0;
-                    }
-                }
-            }
+                if ($totalYears < 1) return '<1 year';
+                if ($totalYears <= 2) return '1-2 years';
+                if ($totalYears <= 5) return '3-5 years';
+                return '5+ years';
 
-            // Calculate priority vector (row averages)
-            foreach ($applicantIds as $id) {
-                $rowSum = 0;
-                foreach ($applicantIds as $otherId) {
-                    $rowSum += $normalizedMatrix[$id][$otherId];
-                }
-                $priorityVector[$id] = $rowSum / count($applicantIds);
-            }
+            case 'organization':
+                return $applicant->organization->count();
 
-            $debugData['pairwise_matrices'][$criterion] = $pairwiseMatrix;
-            $debugData['normalized_matrices'][$criterion] = $normalizedMatrix;
-            $debugData['priority_vectors'][$criterion] = $priorityVector;
-            $debugData['column_sums'][$criterion] = $columnSums;
+            case 'training':
+                return $applicant->training->count();
+
+            default:
+                return null;
         }
-
-        // Step 4: Calculate final scores
-        $finalScores = [];
-        foreach ($applicants as $applicant) {
-            $finalScore = 0;
-            $breakdownScores = [];
-
-            foreach ($weights as $criterion => $weight) {
-                $priorityValue = $debugData['priority_vectors'][$criterion][$applicant->id] ?? 0;
-                $weightedScore = $priorityValue * $weight;
-                $finalScore += $weightedScore;
-
-                $breakdownScores[$criterion] = [
-                    'raw_score' => $debugData['applicant_criteria_values'][$applicant->id]['values'][$criterion],
-                    'normalized_score' => $priorityValue,
-                    'weighted_score' => $weightedScore,
-                    'weight' => $weight
-                ];
-            }
-
-            $finalScores[$applicant->id] = [
-                'name' => $applicant->name,
-                'score' => $finalScore,
-                'breakdown' => $breakdownScores
-            ];
-        }
-
-        $debugData['final_scores'] = $finalScores;
-
-        // Output in debug format
-        return $debugData;
     }
+
+    protected function getApplicantDetails($applicant, $ahpData)
+    {
+        $details = [];
+
+        foreach ($ahpData['mainCriteria'] as $criteria => $name) {
+            $subConfig = $ahpData['subCriteria'][$criteria];
+            $value = $this->getApplicantValue($applicant, $criteria, $subConfig);
+
+            if ($value === null) {
+                $details[$criteria] = 'N/A';
+                continue;
+            }
+
+            switch ($criteria) {
+                case 'age':
+                    $details[$criteria] = $value . ' years';
+                    break;
+
+                case 'expected_salary':
+                    $details[$criteria] = 'Rp ' . number_format($value, 0, ',', '.');
+                    break;
+
+                case 'distance':
+                    $details[$criteria] = $value . ' km';
+                    break;
+
+                case 'education':
+                    $details[$criteria] = $value ?? 'N/A';
+                    break;
+
+                case 'experience_duration':
+                    $details[$criteria] = $value;
+                    break;
+
+                case 'organization':
+                    $details[$criteria] = $value . ' organizations';
+                    break;
+
+                case 'training':
+                    $details[$criteria] = $value . ' trainings';
+                    break;
+
+                default:
+                    $details[$criteria] = $value;
+            }
+        }
+
+        return $details;
+    }
+
+
 
 
     public function index_interview(Request $request)

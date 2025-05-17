@@ -24,4 +24,9 @@ class recruitment_applicant_training extends Model
         'created_at',
         'updated_at',
     ];
+
+    public function applicant()
+    {
+        return $this->belongsTo(recruitment_applicant::class, 'applicant_id');
+    }
 }
