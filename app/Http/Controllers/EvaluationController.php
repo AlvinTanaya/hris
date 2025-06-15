@@ -6133,7 +6133,7 @@ class EvaluationController extends Controller
     public function getEmployees(Request $request)
     {
         $search = $request->input('search', '');
-        
+
         // Remove pagination limit
         $query = User::with(['position', 'department'])->select('id', 'name', 'position_id', 'department_id');
 
@@ -6181,8 +6181,12 @@ class EvaluationController extends Controller
 
     public function reportFinalResultIndex(Request $request)
     {
-        // Build the base query
-        $query = EmployeeFinalEvaluation::with(['user']);
+        // Get current user ID
+        $id = Auth::id();
+
+
+        // Build the base query - exclude current user
+        $query = EmployeeFinalEvaluation::with(['user'])->where('user_id', '!=', $id);
 
         // Get distinct years for dropdown
         $years = EmployeeFinalEvaluation::distinct()->orderBy('year', 'desc')->pluck('year');
@@ -6332,6 +6336,28 @@ class EvaluationController extends Controller
             'departments',
             'positions',
             'grades'
+        ));
+    }
+
+    public function reportFinalResultIndex2(Request $request)
+    {
+        // Get current user ID
+        $id = Auth::id();
+
+        // Build the base query - only for current user
+        $query = EmployeeFinalEvaluation::with(['user'])->where('user_id', $id);
+
+        // Get all evaluations for the current user
+        $evaluations = $query->get();
+        // Get performance history for charts
+        $performanceHistory = EmployeeFinalEvaluation::where('user_id', $id)
+            ->orderBy('year', 'asc')
+            ->get(['year', 'performance_score', 'discipline_score', 'elearning_score', 'final_score']);
+
+
+        return view('evaluation.report.final.result.index2', compact(
+            'evaluations',
+            'performanceHistory',
         ));
     }
 

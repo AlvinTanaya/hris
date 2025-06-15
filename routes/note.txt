@@ -29,3 +29,103 @@ reporting dicipline dinal dia exceed (liaht export final) VV
 
 reporting final anehB
 seed data salary V
+
+-------------------------------------------------------------- START UAT EVALUASI --------------------------------------------------------------
+
+itu ada contoh UAT untuk HRIS proses perekrutan namun aku ingin sekarang kamu bantu membuat untuk evaluasi
+
+Jadi yang user yang terlibat disini adalah Manger HRD dan Setiap Employee yang punya bawahan seperti GM, MAnager, Supervisor gitu
+
+prosesnay gini
+Pre-condition: Seua user sudah memiliki akun di sistem
+
+Pertama ini harus dilakuakn di sisi HRDnya
+jadi si HRD itu itu lgin dengan emai dan passwordnya, lalu akese ke menu evaluation memilih sub berama RUle, artinay dia itu harus membuat semacam aturan gitu kyk settinngya untuk syarata penilaian karyawan gitu ada4 sub menu lagi yaitu Discipline, performance, elearning, dan final
+pada sub menu discilpline ada 2 seub menu lagi yaitu 
+* grade:
+ketika grade ini dilkik kan diabwa ke halaman indexnya muncul list kriteria range grade gitu untuk ngatur scre sckiena itu owh masuk kategori Grade A untuk kategori discipline diasana ada CRUDnay Createnya nanti untuk dimunuclkan form untuk si HRd ngisi raneg gitu dan gradenay ketika ingin buat baru atau upadte ketika ingin update
+* score
+sama score itu untuk mengatur cara menjadapannaykan nilai dari mngatur disciplinenya jadi disciplinenya itu ada beberapa aturan itu misal ada ngehitung ketrelambatan, ngatus banyak bolosanya nah itu semua di atur d iscroe ini misal owh orang ini terlambat 5 kali maka itu scorenya sekian orang orang ini absennya misal 80% ya itu dapet score skein nah ada bnyak kriteria pula gk cuma ngatus attendacen dan keterlambatan itu bisa diatur pertautrn nya denagn CRud nti ditampilakn form pengisian yang diseseauikan taip kriteria penilain nya
+
+pada sub menu performance ada 4 seub menu lagi yaitu 
+* criteria
+ketika grade ini dilkik kan diabwa ke halaman indexnya muncul list kriteria untuk dialukaan penilaain performan pegawai seperti kerjasama, kominukasi, dsb, ada CRUDNYA ADA form permbuatannya ketika pilih cretar
+* weight
+nah di ahalaman ini gunanay membarikan bobot per keriteria yang telah dibuat misa komunukasi itu bobotnya 10, nah juga pada disini itu semacam ngatur kkriteria apa dan bobotnya seberapa untuk posisi tertentu jadi setaip posisi itu memeliki krtieria tersendiri dan bobot sendiri misal si Manger itu ada namnaya kriteria kepemimpinan tetapi yang staff itu gk ada lalau bobotnya pun beda juga misal bobt komunukasi manager itu 30 dan staff itu 50 nah beda" gitu itu diatur di halaman ini ada juga CRUD nya juga disisi form gitu
+* Reduction 
+halaman ini gunayana itu mengatur penguranagn untuk niali performanya jadi pada perhiutngan penipain performa pegawai itu ada pengrrangannya dari surat pelanggaran yang telah diberikan nah jadi user disini mnegatur scorenya itu diminus berapa gitu jumlah minusnya amksdunya ada CRUDNYa pula jadi user pilih jenis pelanggaran yang sudah di buat di sistemnay lalau ngatur jumlahnya misal -300 gitu
+* Grade
+halaman ini ngatur grade dari scorenya sama seeprti atas itu user ngatur range score yang didapatkan dari hasil perhitungan kemudian totoal scroenya itu dimaskukkan di kategoti grade apa sama ada CRUDNYA
+
+pada sub menu edukasi ada 1 sub menu yaitu grade saja sama seperti halnay atas nentukin totalscore sekian itu dapet score apa gitu
+
+pada final ada 1 sub menu yaitu salary grade namanya
+jadi turujanya ini adalah semacam otomatis untuk naik gajinya jadi gini di usernay ketikan masuk dinisi ada list gradenya dan jumlah incsredsednya by berapa gitu jadi misal dpatet grade A maka slarynya 250 gitu dianaikkan 250 gitu nah itu ada CRUDnya jgua jadi input gradenya lalau jumlah salarynay
+
+nah setelah sealai mnegatur semua perturan dan seting yang telah dibuat maka sattna itu proese penilaian oleh atasan kepada bawahnanya yaitu pada bagian performance
+Pre-condition: Seua user sudah memiliki akun di sistem
+
+itu si usernya ke menu evaluatooj ke sub menu assignment ke sub ment performace jadi ketika disana user akan ditampilkan list pegwai yang sudha dinilai perturannya dena ada scorenya disana user juga bisa filter bisa mempermudah pencarian juga, nah di sini ada tombol assign untuk menilai performa karywan ketika diklik akan diabwa kelamahan pengisian form disana user kana memilih user yang aakn adinilai nah ada prconditionany juga sistem ini sudah melakuakan prmilterng naman yang bisa dinilai oelh penilai itu msial si user yang manu menulai ada manager denagn depratmen checker nah maka yang bisa dinilai adalah bahawahnya yang sasesama checker atau msial GM nah list namanya itu hampir semuanay gitu bisa dinilai nah pilih juga tanggal penilain bulan berapa gitu misal bulan mei usnutk pegwai a giut nah sistem juga cek dia itu udah ada penulaianay gk di bulan itu kalo ada gk bisa kalo belum akan ditampilkan form penilain sesaui rule crutiyeria yang telah dibuat gitu
+nah kalau selesai ngisi tinggal submit maka akan disimpen ke database gitu
+
+Nah lalau lanjut ke bagian HRD
+HRD bisa ke Menu REport giut untuk melihat list penilain karyawa nah apda ini caranya adalah user HRD iut lgon  lalu ke pemu evqlation ke sub meru report dan disana ada 4 sub menu
+* Performance
+HRD akan ditampilakn list penilain performa pegwai. disaa ada filter seperti nama, tahun, departmen, dll, list pegwai itu ada juga ditmapilkan score penilaian yang sudah dinili oleh atasan dan juga bisa melihat score reduction yang diterima sesaui dia mendapatkan pelanggaran apa yang diteriam dan jumlahnya itu ssaui dengan rule yang dihatas dan akan tiampilkan total scorenya daept berapa dan gradenya dapet apa sesaui jumlah score dan peraturan rule gradenay itu, pada list pegwai ini ada tombol detail untuk dibawa kehalama detail penilainnya. pada halamn dtail dan pada halam utama itu ada export excel untuk mengepxrort report penilain sesuai fomat yang telah dibuat gitu
+* decipline
+SAma HRD dakan ditampilkan list penilain kedicipline yang sudah diatur, di situ user HRd bisa melihat score yang diapatkan tiap bulannya itu sudah terintegrasi dengan jumlah absensi, jumlah jenus pelanggaran yang diterima sudah dhiung oleh sistem gitu nah user itu tinggal liaht score yang didapat di tiap bulan lalu ada tab final untuk melihat score final dan grade finalnya berapa
+* elearning
+Sama HRD akand ditampilkan list penilain eleaning yang sudha dikalkukan oleh sistem dari eleanring yang dilakuakn oleh si susernya nah ada filter dan list nay ada score yang diperoleh dan gradenay juga diperoleh, disitu juga ada tombol deatil untukj bsia melihat detail eleaning yang udah dilakuakn oelh peserta, di tampilakn detil itu suer hrd bisa menlihat elearnign yang telah dilakauakn oleh si user pada tiap bulannya dan user hrd jgua ada dsediakan view detail utuk melihat jawaban dari user dan nilai yang diperoleh gitu
+* Final
+nah pada menu ini ada 3 sub menu lagi
+   * calcuate
+      * calcuate ini akan dibawah kehalaman index untuk menghiutn gkalkukalsi dari 3 penilain performa diatas gitu nah user, ketika masuk pada tmapila index itu user memeilih terlebih dauhu tahu n berapa yang mau diperhitungankan lalu mengisi persentase kepentingnagn adntara 3 kriteria itu dari performance, discipline, eeleaning nah msial 60% 30% 10% maka sistem akan mengakalukali naya gitu jadi pada sistem itu ada peraturn dari gradenay didadapt itu mendapatkan reperesentasi score gitu misal di disicpoine itu dapet A nah A itu misal dapet value 5 maaka akan dikalikan 60% jadi berap gitu nah yg lainnya jgua sama nanti mendapatkan totala score nya serta mendapatkan final gradenya. di sana user itu ada disediapa export excel haislnya itu dan dad tomobl save untuk mentimpan hasil perhiutnagn reslutnya
+   * result
+      * nah ini akan dimnulkan disini hasil save"nay shingga tidak meembankan system untuk menghitung ulang gitu, nah pada hala m ini ini hrd diatmpilkan list pegwai yangsudah dialkuakn kalaulasi penilainnya user ada totnal socre dan total gradenya nah disini suer bias melakuak n pemrffiterlaisrarsai bir bsia mudah mencari, user jgua bsia melkuak upload file prorosal untuuk mngejaukan peningkatnan grade pegwai msial adari c mendji B gitu user juga bisa ngubah proposal gradenya, nah inget kan apda diatas ada rule salary di final nah itu kan ada grade apa dan peningkatan gaji berapa kan nah dari grade yang didaptan pada result itu akan dibaca dari rule lalua menambhakan salary increasenay lalau disana juga da tombol save untuk tentu mengupdate gradenay kalau ingin ditingkatkan dan gajinya ketika juga bila ingin diubah nantinya peruhbahan itu akan disimpan ke databse, ada jgua tombol mass update unutk update grade dan salary increase nay gitu
+   * graphicc
+nah apda halam ini utjuan nany menmpilkan graphic dari penialain resukltnay gitu, diini user bisa memlih up to 5 peirode tahun dan 5 pegwai untuk dibandingkan/ ingin melihat pekrkembahangan gitu nah setelah milih user klik tombol genertae kemudian sistem akan mencgenere barchart dan chart chart lain mengetai total score dari elelarning, performa, discipine dari tiap user dan sesaui dnegan jumlahnya gitu
+
+-------------------------------------------------------------- END UAT EVALUASI --------------------------------------------------------------
+
+
+
+
+TOlong perbaiki bagain latar belakang in i menjadi lebih krittis, ringkas, cermat dan jelas gini untuk penulannnay menggunakan APA style lalau gini ini ada pertauran dia itu perubahan yang dulu pakai konsep panjang jelas sekearang ingin itu rraingkas sehingga kasih uyang inti intinya gitu yang kiranya gk benaer gk usah ini adalah laratar belakang skripsi ku 
+
+kau ceritakan dulu gimana kisajhnya 
+
+jadi skripssi ku itu tentang memebuatkan sistem informasi Sumber daya manusia atau HRIS berbeasis website gitu dan didalamnya itu ada fitur pendukung kepututsan AHP di PT TImur Jaya Indo Steel
+
+nah gini
+
+proses manajemen yang sekarang diterapkan untuk memeajnameen karywan perusahaan itu masih menggunakan excel dan beberapa pakai kertas, shingga waktu saya wawancara itu HRd ingin ada sistem informmasi agar memeprmudah prmerosessan gitu nah ini proses di bagian HR itu gini
+
+untuk data karywan itu semua di sctore dalam excel gk ada disismpan dalam database nah jadi si hr ny aitu ingin dibuatin sistem informasi yang tentu bisa ntimpen data pegwai lebih aman di dalam database dan tentu bsia menampung ldata inforamsinya itu lebih lengkap, lebih terintegarsi gitu nah itu permaslaahn dan kemauan nya pertama, lanjut pada masalah Perekrutan, jadi untuk sekarangprosesnya itu seeperti ini pertama HRD akan berdiskusi kepada GM secara lgsg untuk reqeust permintaan tenaga kerja gitu / si GM bilang ke HRD butuh tambah orang gitu carikan nah HRD akan membuat lowowngan  kerja dan di upload ke beberapa app seelerti dari linkedin, jobstreet, dsb. nah mainlynya pakai jobstreet. nah dari situ si HRD mengeluhkan pada pemilihan calon karywan atau pelmar itu manual satu persatu ngecek datanya edukasi, informasi lainnya itu satu persatu dan menyeleksi sceara manula pilih satu persatu bandingkan gitu dan akhirnya dipilih nah dia itu ingin bsia pada sistem HRiS ada semacam pemfilteran gitu secara otomasi yag bisa kasih dia rekomendasi aman sih yang palin oke dari kriteria yang aku atur gitu maunay misal aku mau pentingkan umur, lalau edukasinya s1 lalau ada dpengalam kerja ya begitulah dsb. nah kemudian lanjut setalh selesi masual lah dia itu panggil si pelamr lewat email untuk proses interview kemudian setelah interview si HRD akan memepertimbangkan si pelamar itu ketrimam nggak, selesai pertimbangkan kemudian hrd akan memilih pelamr yang oke dan mengirimkan form ecel berisi form-form input data diri yang perlu disii untuk butuhakn data pegwai, kemdian si pelamer ngisi dan ngirim lagi ke hr hr itu kemudain mencatat data pelamr itu ke dalam database secara manual gitu, nah si hrd itu ngeluhkan bagian itu kan kalau bisa sya itu gk perlu menulisakn manual lagi data dirinya. kemudian lanjut pada bagian Time management ini tetnag menejem sumbr mansuai kyk atur shift, cuti (izin,sakit,cuti tahunan ),absesni, lembur, surat peringatan, pada shift dia itu ngatus shift pegwainya dia itu assignnay manual jadi shift pada pt ini mainly ada 3 shift normal shit pagi dan shift siang, jadi gini untuk karyawan shift pagi san sore tiap minggunay itu dituker shiftnya jadi misal karaywan a minggu pertama pagi minggu kedua itu sore, nah gitu sebaliknay juga sama nah itu is HRD ngeluah karena dia itu prosesnya makai manual diexcel asisgn satu per satu gitu ganti satu per satu taip usernya, nah serta pada shift itu si karyawan itu bisa reuqest ganti shift denagn orang lain atau sekedar gnati shift karnea misal terhalang sesauiatu nah si pelamar itu mengisi form kertas kemudian si hrd adak memproses dan mengubah shiftnay nah yang dikeluhkan adalah is hrd itu harus tiap minggunya ganti satu persatu usernya itu dari sift pagi ke siang lalu siang ke pagi, serta dia ingin kalau bsia denagn sistem gk perlu pakai kertas begituna gitu dan bsia lgsg otomatis gitu msial ada request tuker nah lgsg tk approve lgsg sistem itu bsia ngubah shiftnya gitu dai amau seeprti itu gk sah dia manual nyari pegawai tiu kemudain ganti shift. llau kemudian pada absensi nah absensi nay dia itu menggunakan mensin fingerprint yang tersebar di berbagi lokasi gitu nah dia itu datanay ntni dieksport mengugunakan excel dan datanay itu berisi employee_id nama jabwan deprtamen jam masuk dan jam keluar serta datetimenya gitu tgl pencatatan pada pmensin nah yang dikerlkan adalah prses pencatatan absensi peserta itu maasih menggunakan manual diaman si hrd akan melihat shift pegwainya dia itu shift pgai msial itu kan ada jam masuk kemudian dia lihat jamna itu ngelebihi nggak nah kemudian buka form absesn kemudian mencetang kalau kamu kalau telambat dia nyatet kalau bolo sdia nyari lgi di excel absesninay nah kan gitu ribet banget, tentu dia ingin pada website dia itu cukup masukin excelnya itu kemudian sistem itu bsia baca kemudian mencocokkan datanay itu kepada tiap user apakah masuk atau ngga gitu gk perlu maunal ngecek. Nah pada bagian cuti (izin,sakit,cuti tahunan ), lembur, surat peringatan, itu semua masih menggunakan konsep pengjuan pakai kertas kemudian si hrd approval nggak kemudian dimasukkan dalam pencattatan excel gitu nah si HR itu kyk muak gitu dai itu masih harus mencatat perminttannya dimasukkan ke dalam excel nah kalau bisakan lgsg kesimpan ke database gk pelu dia masukkan ke excel lagi gitu datanay serta dia mau itu ternitngrasi dengan absesni misal si user cuti sakit nah dia ketika lihat data absesin dia tau owh orang itu kok gk absen owh ternya ta sakit jadi selama ini  si hrd nyatet absesin sidia itu harus buka file exsel lainnya itu nyati gitu kan gk efiseian dia mau halhal seperti bsia dialkauakn by sistem. nah kemudain si HRD itu ingin ada semacam elraning kyk traingin gitu pada sistemnya jadi si HRD cerita bawha pada ptnya sekarang itu gk ada semacam training/ elearning misal kyk pembelajaran hal -haal yang ada pada ptnya nah dia itu ingin konsepnay seperti di pekerjaan hrd di pt sebelum ia kerja disni jadi si HRD / dia itu pada sistem informasinay bisa mengassign beberapa pegwai itu dikasi materi ppt ttg pembealjaran penting ayang ada pada ptnya misal cara pengoperasian sebuah mesin nah dia itngin materi itu bsia dipelajar pada departemen yang ngurusi atau nbahkan yang gk ngurusi mesia misal hr nah utjuannay apa jadi bagi si yang berususan tentang mesin itu kemempuannay diasah kembali diingatkan gitu biar tetp perform dan gk salah, nah dan unutk yang bersangkutan kyk hr itu bisa belajar owh jadi gini atau menambha ilmu kelak untuk kebutuhannya msial ia dipindahkan ke diivisi itu atau sekarli ilmu tambahn untuk dipakai di dinaua luar atau untuk emnemubkan kerjaan lain kan lumayan tuh ilmau nah dia mau gitu dai memebuat materi diassign beberapa user user itu memeca materi adan ada soal pop quiznya ada nilainay gitu dan itu akan katnaya masuk ek evaluai karywan gitu.
+
+nah untuk evaluasi karyawan pada pt ini ada 2 macam yaitu evaluasi performa dan evaluasi keidsiplinan, jadi utnuk evaluasi performa adalah evalauasi penilan performa yang diberikan atasan kepada bawahan gitu ada format kriteria terseindi caranya jadi gitu dan yang keuda kedisiplinan itu semacam peniain akan kdieslpilnan dari jumlah ia absesi bolos kerja banyak izinnya banyak terlambat atau banyak pelanggarannya gitu nah gtu, prosesnya itu gini jadi setaip bulan atasan itu akan mengisi form penilain pada excel sesaui yang dibaut owlh HR gimana formnay si atasan akan menilai bahwanyannay kemudian form excel itu akan dikirmkan ke HR HR akan mengecek form itu kemudian melkauakn proeses pengumabahn score itu mendjai sebuah grade misal dapet A/B ada tersendii caranay kemudian untuk score kediplinan itu si hrd akan secar amanul meemasukkan data jumlah dia absen jumlah bolos cummalah di adapet pelangkaran jumlah dia izin kemudian dia hrus koncevert itu ke dalam jadi score dan sjujungnay ketika difinal dia ngubah jadi grade nah dari kedua grade itu permorma kedisipplinan si hrd akan mengagabungkan dan mendapatkan score final dan grade final , nah kemudian si HRD itu akan mendiskusikan denagn petingginay yaitu GM dan directur untuk diskusi kenaikan gaji nah diisitu dia bisa menaikkan gradenya dan bsia menaikkan gaji atau memutuskan gk naik gaji pokok giut, nah yang dikerluhakan pada proses evalausi ini adalah dia bagian performa dia harus melihat lagi penilaian oleh atasan dari beberagai hrd kemudian dai harus juga menconvert pakai vlookup gitu menjadi grade apa gitu, lalau pada beagian kesiiplinana ini yang paling menyusahkan karne adia harus buaka banyak form seeprto form excel absensi, form ctui, ofrm surat pelanggara turs masih input satu persatu jumalhnay bearapa harus concert ke socre trs dari score ke concert jadi grade nah itu lama banget dia tentu ingin terintegarasi dalam sistem dajdi sistem sudha mengkalkulasi gitu berapa dia nemriam surat peringatan berapa jumlahd ida masuk dai bolos gitu gitu  serta pada bgaib gfinal waktu gabungan socre dan grade final dari performa dan kedisiplinan dia juga kan mash ngehitung dia itngin jgua itu otomtais sistem ngehitung, owh ya sama katanay dia ingin memealukkan elraning sebagai kriteria penilain karyawan shingga ada tambahan elarning gitu yang sebeilmnay cuam 2 kriteria performa dan keisipan sekarang ada 3 ditambahi elearning itu.
+
+nah itu ceritanya yang keluhan dan apa yang dibutuhkan untuk mmebatu pembuatkan sistem HRISnay igtu
+
+nah aku kak juga ada statae of arts nya kan dari 3 penielian akuyaitu:
+
+(Suwarno & Jaya, 2021)
+
+(Prutanto, A. 2011)
+
+Syafi’i & Sulastri, 2017).
+
+aku ingin dia itu (Suwarno & Jaya, 2021) itu tetap dipakai yang (Prutanto, A. 2011) memebahas elearning dihaous saja karena kataku itu gk butuh, dan terlakhir Syafi’i & Sulastri, 2017). itu dgantikan denagn 
+
+https://journal.atim.ac.id/index.php/prosiding/article/view/560
+
+itu membahas  PERANCANGAN SISTEM PENGAMBILAN KEPUTUSAN PEREKRUTAN KARYAWAN YANG BERBASIS ANALYTICAL HIERARCHY PROCESS (AHP) (STUDI KASUS : PT. XYZ) oleh
+
+Muhammad BasriPoliteknik ATI Makassar
+
+RiskawatiPoliteknik ATI Makassar
+
+Mauliana KiraniaPoliteknik ATI Makassar
+
+DITERBIKAN DI TAHUN 2023 
+
+alasannya digantikan agar lebih masuk akal kerna yang aku rancang AHP itu diletakkan di perekrutian sedangkan Syafi’i & Sulastri, 2017). itu pada penilain karyawan yang aku gk pakek

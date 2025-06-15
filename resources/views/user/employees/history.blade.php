@@ -17,7 +17,7 @@
     #historyTabs .nav-item {
         flex: 1;
         text-align: center;
-        max-width: 33.3333%;
+        max-width: 50%;
     }
 </style>
 <a href="{{ route('user.employees.index') }}" class="btn btn-danger px-5">
@@ -59,9 +59,7 @@
         <li class="nav-item">
             <a class="nav-link" id="extend-tab" data-bs-toggle="tab" href="#extend">Extend</a>
         </li>
-        <li class="nav-item">
-            <a class="nav-link" id="payment-tab" data-bs-toggle="tab" href="#payment">Payment</a>
-        </li>
+
     </ul>
 
 
@@ -135,14 +133,7 @@
             </div>
         </div>
 
-        <!-- Payment Tab (Masih kosong) -->
-        <div class="tab-pane fade" id="payment">
-            <div class="card shadow-sm">
-                <div class="card-body">
-                    <h1>Payment data is not yet available.</h1>
-                </div>
-            </div>
-        </div>
+       
     </div>
 </div>
 

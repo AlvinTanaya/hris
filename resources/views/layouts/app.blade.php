@@ -828,10 +828,10 @@
                             <i class="fas fa-user-check"></i>
                             <span>AHP Recommendation</span>
                         </a>
-                        <a href="{{ url('/recruitment/weight_calculation/index') }}" class="nav-link">
+                        <!-- <a href="{{ url('/recruitment/weight_calculation/index') }}" class="nav-link">
                             <i class="fa-solid fa-weight-scale"></i>
                             <span>Weight Based Recommendation</span>
-                        </a>
+                        </a> -->
 
                         <a href="{{ url('/recruitment/interview/index') }}" class="nav-link">
                             <i class="fas fa-comments"></i>
@@ -1134,6 +1134,11 @@
                                     <span>Result</span>
                                 </a>
 
+                                <a href="{{ route('evaluation.report.final.result.index2',) }}" class="nav-link">
+                                    <i class="fa-solid fa-square-poll-vertical"></i>
+                                    <span>My Result</span>
+                                </a>
+
                                 <a href="{{ route('evaluation.report.final.graph.index') }}" class="nav-link">
                                     <i class="fa-solid fa-chart-simple"></i>
                                     <span>Graphic</span>
@@ -1292,9 +1297,50 @@
                                 <span>Performance</span>
                             </a>
                         </div>
+                        <!-- Report submenu -->
+                        <a href="#" class="nav-link dropdown-toggle evaluation-report-dropdown">
+                            <i class="fa-solid fa-book"></i>
+                            <span>Report</span>
+                        </a>
+                        <div class="evaluation-report-submenu" style="display: none; padding-left: 15px;">
+                            <a href="#" class="nav-link dropdown-toggle final-dropdown">
+                                <i class="fa-solid fa-file-lines"></i>
+                                <span>Final</span>
+                                <!-- <i class="dropdown-icon fas fa-chevron-right ms-auto"></i> -->
+                            </a>
+                            <div class="final-submenu" style="display: none; padding-left: 15px;">
+                                <a href="{{ route('evaluation.report.final.result.index2',) }}" class="nav-link">
+                                    <i class="fa-solid fa-square-poll-vertical"></i>
+                                    <span>My Result</span>
+                                </a>
+                            </div>
+                        </div>
                     </div>
                 </li>
 
+                <!-- Pay Roll -->
+                <li class="nav-item">
+                    <a href="#" class="nav-link dropdown-toggle payroll-dropdown d-flex align-items-center gap-2">
+                        <i class="fas fa-money-check-alt"></i>
+                        <span>Payroll</span>
+                    </a>
+                    <div class="payroll-submenu" style="display: none; padding-left: 15px;">
+                        <a href="{{ route('payroll.master.salary.index2', ['user_id' => auth()->user()->id]) }}" class="nav-link d-flex align-items-center gap-2">
+                            <i class="fas fa-coins"></i>
+                            <span>Base Salary</span>
+                        </a>
+
+                        <a href="{{ route('payroll.salary_history.index2', Auth::user()->id) }}" class="nav-link d-flex align-items-center gap-2">
+                            <i class="fas fa-history"></i>
+                            <span>Salary History</span>
+                        </a>
+
+                        <a href="{{ route('payroll.assign.index2', Auth::user()->id) }}" class="nav-link d-flex align-items-center gap-2">
+                            <i class="fas fa-user-cog"></i>
+                            <span>My Payroll</span>
+                        </a>
+                    </div>
+                </li>
 
                 @elseif(Auth::user()->isSupervisor())
                 <li class="nav-item">
@@ -1365,6 +1411,50 @@
                                 <span>Performance</span>
                             </a>
                         </div>
+
+                        <!-- Report submenu -->
+                        <a href="#" class="nav-link dropdown-toggle evaluation-report-dropdown">
+                            <i class="fa-solid fa-book"></i>
+                            <span>Report</span>
+                        </a>
+                        <div class="evaluation-report-submenu" style="display: none; padding-left: 15px;">
+                            <a href="#" class="nav-link dropdown-toggle final-dropdown">
+                                <i class="fa-solid fa-file-lines"></i>
+                                <span>Final</span>
+                                <!-- <i class="dropdown-icon fas fa-chevron-right ms-auto"></i> -->
+                            </a>
+                            <div class="final-submenu" style="display: none; padding-left: 15px;">
+                                <a href="{{ route('evaluation.report.final.result.index2',) }}" class="nav-link">
+                                    <i class="fa-solid fa-square-poll-vertical"></i>
+                                    <span>My Result</span>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </li>
+
+
+                <!-- Pay Roll -->
+                <li class="nav-item">
+                    <a href="#" class="nav-link dropdown-toggle payroll-dropdown d-flex align-items-center gap-2">
+                        <i class="fas fa-money-check-alt"></i>
+                        <span>Payroll</span>
+                    </a>
+                    <div class="payroll-submenu" style="display: none; padding-left: 15px;">
+                        <a href="{{ route('payroll.master.salary.index2', ['user_id' => auth()->user()->id]) }}" class="nav-link d-flex align-items-center gap-2">
+                            <i class="fas fa-coins"></i>
+                            <span>Base Salary</span>
+                        </a>
+
+                        <a href="{{ route('payroll.salary_history.index2', Auth::user()->id) }}" class="nav-link d-flex align-items-center gap-2">
+                            <i class="fas fa-history"></i>
+                            <span>Salary History</span>
+                        </a>
+
+                        <a href="{{ route('payroll.assign.index2', Auth::user()->id) }}" class="nav-link d-flex align-items-center gap-2">
+                            <i class="fas fa-user-cog"></i>
+                            <span>My Payroll</span>
+                        </a>
                     </div>
                 </li>
 
@@ -1419,6 +1509,57 @@
                     </div>
                 </li>
 
+                <!-- Evaluation -->
+                <li class="nav-item">
+                    <a href="#" class="nav-link dropdown-toggle evaluation-dropdown">
+                        <i class="fas fa-chart-line"></i>
+                        <span>Evaluation</span>
+                    </a>
+                    <div class="dropdown-container">
+                        <!-- Report submenu -->
+                        <a href="#" class="nav-link dropdown-toggle evaluation-report-dropdown">
+                            <i class="fa-solid fa-book"></i>
+                            <span>Report</span>
+                        </a>
+                        <div class="evaluation-report-submenu" style="display: none; padding-left: 15px;">
+                            <a href="#" class="nav-link dropdown-toggle final-dropdown">
+                                <i class="fa-solid fa-file-lines"></i>
+                                <span>Final</span>
+                                <!-- <i class="dropdown-icon fas fa-chevron-right ms-auto"></i> -->
+                            </a>
+                            <div class="final-submenu" style="display: none; padding-left: 15px;">
+                                <a href="{{ route('evaluation.report.final.result.index2',) }}" class="nav-link">
+                                    <i class="fa-solid fa-square-poll-vertical"></i>
+                                    <span>My Result</span>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </li>
+
+                <!-- Pay Roll -->
+                <li class="nav-item">
+                    <a href="#" class="nav-link dropdown-toggle payroll-dropdown d-flex align-items-center gap-2">
+                        <i class="fas fa-money-check-alt"></i>
+                        <span>Payroll</span>
+                    </a>
+                    <div class="payroll-submenu" style="display: none; padding-left: 15px;">
+                        <a href="{{ route('payroll.master.salary.index2', ['user_id' => auth()->user()->id]) }}" class="nav-link d-flex align-items-center gap-2">
+                            <i class="fas fa-coins"></i>
+                            <span>Base Salary</span>
+                        </a>
+
+                        <a href="{{ route('payroll.salary_history.index2', Auth::user()->id) }}" class="nav-link d-flex align-items-center gap-2">
+                            <i class="fas fa-history"></i>
+                            <span>Salary History</span>
+                        </a>
+
+                        <a href="{{ route('payroll.assign.index2', Auth::user()->id) }}" class="nav-link d-flex align-items-center gap-2">
+                            <i class="fas fa-user-cog"></i>
+                            <span>My Payroll</span>
+                        </a>
+                    </div>
+                </li>
 
 
                 @else
@@ -1471,6 +1612,59 @@
                                 <span>Time Off</span>
                             </a>
                         </div>
+                    </div>
+                </li>
+
+
+                <!-- Evaluation -->
+                <li class="nav-item">
+                    <a href="#" class="nav-link dropdown-toggle evaluation-dropdown">
+                        <i class="fas fa-chart-line"></i>
+                        <span>Evaluation</span>
+                    </a>
+                    <div class="dropdown-container">
+                        <!-- Report submenu -->
+                        <a href="#" class="nav-link dropdown-toggle evaluation-report-dropdown">
+                            <i class="fa-solid fa-book"></i>
+                            <span>Report</span>
+                        </a>
+                        <div class="evaluation-report-submenu" style="display: none; padding-left: 15px;">
+                            <a href="#" class="nav-link dropdown-toggle final-dropdown">
+                                <i class="fa-solid fa-file-lines"></i>
+                                <span>Final</span>
+                                <!-- <i class="dropdown-icon fas fa-chevron-right ms-auto"></i> -->
+                            </a>
+                            <div class="final-submenu" style="display: none; padding-left: 15px;">
+                                <a href="{{ route('evaluation.report.final.result.index2',) }}" class="nav-link">
+                                    <i class="fa-solid fa-square-poll-vertical"></i>
+                                    <span>My Result</span>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </li>
+
+                <!-- Pay Roll -->
+                <li class="nav-item">
+                    <a href="#" class="nav-link dropdown-toggle payroll-dropdown d-flex align-items-center gap-2">
+                        <i class="fas fa-money-check-alt"></i>
+                        <span>Payroll</span>
+                    </a>
+                    <div class="payroll-submenu" style="display: none; padding-left: 15px;">
+                        <a href="{{ route('payroll.master.salary.index2', ['user_id' => auth()->user()->id]) }}" class="nav-link d-flex align-items-center gap-2">
+                            <i class="fas fa-coins"></i>
+                            <span>Base Salary</span>
+                        </a>
+
+                        <a href="{{ route('payroll.salary_history.index2', Auth::user()->id) }}" class="nav-link d-flex align-items-center gap-2">
+                            <i class="fas fa-history"></i>
+                            <span>Salary History</span>
+                        </a>
+
+                        <a href="{{ route('payroll.assign.index2', Auth::user()->id) }}" class="nav-link d-flex align-items-center gap-2">
+                            <i class="fas fa-user-cog"></i>
+                            <span>My Payroll</span>
+                        </a>
                     </div>
                 </li>
                 @endif

@@ -24,7 +24,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;
-
+use Illuminate\Support\Facades\Auth;
 
 class PayrollController extends Controller
 {
@@ -46,6 +46,22 @@ class PayrollController extends Controller
         return view('payroll.master_salary.index', compact('employeeSalaries', 'availableEmployees'));
     }
 
+
+
+    public function masterSalaryIndex2(Request $request, $user_id)
+    {
+        // Pastikan user hanya bisa melihat salary mereka sendiri
+        if (Auth::id() != $user_id) {
+            abort(403, 'Unauthorized access');
+        }
+
+        $employeeSalary = EmployeeSalary::with('user')
+            ->where('users_id', $user_id)
+            ->orderBy('created_at', 'desc')
+            ->first();
+
+        return view('payroll.master_salary.index2', compact('employeeSalary'));
+    }
     public function masterSalaryStore(Request $request)
     {
         $validator = Validator::make($request->all(), [
@@ -240,6 +256,82 @@ class PayrollController extends Controller
             'employees',
             'users'
         ));
+    }
+
+
+
+
+    // Add this method to your PayrollController class
+
+    public function salaryAssignIndex2(Request $request, $userId)
+    {
+        // Get the specific user with relationships
+        $user = User::with(['department', 'position'])->findOrFail($userId);
+
+        // Build the query for specific user only
+        $query = EmployeePayroll::with(['user'])
+            ->where('users_id', $userId);
+
+        // Apply month/year filter if provided
+        if ($request->filled('month_year')) {
+            $monthYear = $request->month_year;
+            $month = Carbon::parse($monthYear)->format('m');
+            $year = Carbon::parse($monthYear)->format('Y');
+            $query->whereMonth('created_at', $month)
+                ->whereYear('created_at', $year);
+        }
+
+        // Get results - sort by period (month and year) chronologically
+        $results = $query->get();
+
+        // Sort the results by period (created_at) chronologically
+        $results = $results->sortBy(function ($payroll) {
+            return $payroll->created_at->format('Y-m');
+        });
+
+        // Process historical data for this specific user
+        foreach ($results as $payroll) {
+            $payrollDate = $payroll->created_at;
+
+            $historyRecord = history_transfer_employee::where('users_id', $payroll->users_id)
+                ->where('created_at', '<=', $payrollDate)
+                ->orderBy('created_at', 'desc')
+                ->first();
+
+            if ($historyRecord) {
+                $position = EmployeePosition::find($historyRecord->new_position_id);
+                $department = EmployeeDepartment::find($historyRecord->new_department_id);
+
+                $payroll->historical_position_id = $historyRecord->new_position_id;
+                $payroll->historical_position = $position ? $position->position : null;
+                $payroll->historical_department_id = $historyRecord->new_department_id;
+                $payroll->historical_department = $department ? $department->department : null;
+            } else {
+                $payroll->historical_position_id = $user->position_id ?? null;
+                $payroll->historical_position = $user->position->position ?? null;
+                $payroll->historical_department_id = $user->department_id ?? null;
+                $payroll->historical_department = $user->department->department ?? null;
+            }
+        }
+
+        // Add sequential numbering
+        $counter = 1;
+        foreach ($results as $payroll) {
+            $payroll->display_number = $counter++;
+        }
+
+        // Paginate results
+        $page = request()->get('page', 1);
+        $perPage = 10;
+        $payrolls = new \Illuminate\Pagination\LengthAwarePaginator(
+            $results->forPage($page, $perPage),
+            $results->count(),
+            $perPage,
+            $page,
+            ['path' => request()->url(), 'query' => request()->query()]
+        );
+
+        return view('payroll.assign.index2', compact('payrolls', 'user'));
     }
 
     // Upload payroll attachment
@@ -902,7 +994,6 @@ class PayrollController extends Controller
 
 
     // HISTORY SECTION
-
     public function salaryHistoryIndex(Request $request)
     {
         // Get filter parameters
@@ -1034,6 +1125,68 @@ class PayrollController extends Controller
             'dateStart',
             'dateEnd',
             'filter',
+            'stats'
+        ));
+    }
+
+
+
+    public function salaryHistoryIndex2($userId)
+    {
+        // Get salary history for specific user only
+        $query = SalaryHistory::with('user')->where('users_id', $userId);
+
+        // Get all records and order by creation date
+        $salaryHistories = $query->orderBy('created_at', 'desc')->get();
+
+        // Process each salary history record to find the effective department and position
+        foreach ($salaryHistories as $history) {
+            // Find the closest historical transfer record at or before the salary change
+            $transferHistory = history_transfer_employee::where('users_id', $history->users_id)
+                ->where('created_at', '<=', $history->created_at)
+                ->orderBy('created_at', 'desc')
+                ->first();
+
+            if ($transferHistory) {
+                // Use the department and position from transfer history
+                $effectivePosition = EmployeePosition::find($transferHistory->new_position_id);
+                $effectiveDepartment = EmployeeDepartment::find($transferHistory->new_department_id);
+
+                $history->effectivePosition = $effectivePosition;
+                $history->effectiveDepartment = $effectiveDepartment;
+            } else {
+                // No transfer history found before this time, use user's current position/department
+                $user = User::find($history->users_id);
+                if ($user) {
+                    $history->effectivePosition = $user->position;
+                    $history->effectiveDepartment = $user->department;
+                }
+            }
+        }
+
+        // Get user information
+        $user = User::find($userId);
+
+        // Gather statistics for this specific user
+        $stats = [
+            'total_records' => $salaryHistories->count(),
+            'increases' => $salaryHistories->filter(function ($item) {
+                return $item->new_basic_salary > $item->old_basic_salary;
+            })->count(),
+            'decreases' => $salaryHistories->filter(function ($item) {
+                return $item->new_basic_salary < $item->old_basic_salary;
+            })->count(),
+            'overtime_changes' => $salaryHistories->filter(function ($item) {
+                return $item->new_overtime_rate_per_hour != $item->old_overtime_rate_per_hour;
+            })->count(),
+            'allowance_changes' => $salaryHistories->filter(function ($item) {
+                return $item->new_allowance != $item->old_allowance;
+            })->count(),
+        ];
+
+        return view('payroll.salary_history.index2', compact(
+            'salaryHistories',
+            'user',
             'stats'
         ));
     }

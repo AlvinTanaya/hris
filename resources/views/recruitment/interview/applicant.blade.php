@@ -1713,10 +1713,10 @@
             $('#statusModal').modal('show');
         });
 
-        $(document).on('#saveStatus', function() {
+        $(document).on('click','#saveStatus', function() {
             const id = $('#statusForm').data('id');
             const formData = new FormData($('#statusForm')[0]);
-
+            console.log(id);
             $.ajax({
                 url: `/recruitment/applicant/status/${id}`,
                 method: 'POST',

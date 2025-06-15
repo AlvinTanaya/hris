@@ -431,6 +431,10 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/evaluation/report/final/result/index', [EvaluationController::class, 'reportFinalResultIndex'])
         ->name('evaluation.report.final.result.index');
+    Route::get('/evaluation/report/final/result/index2', [EvaluationController::class, 'reportFinalResultIndex2'])
+        ->name('evaluation.report.final.result.index2');
+
+
     Route::put('/evaluation/report/final/result/update/{id}', [EvaluationController::class, 'reportFinalResultUpdate'])
         ->name('evaluation.report.final.result.update');
     Route::post('/evaluation/report/final/result/upload-proposal/{id}', [EvaluationController::class, 'reportFinalResultUploadProposal'])
@@ -455,12 +459,17 @@ Route::middleware('auth')->group(function () {
     Route::get('/payroll/salary_history/index', [PayrollController::class, 'salaryHistoryIndex'])
         ->name('payroll.salary_history.index');
 
+    Route::get('/payroll/salary_history/index2/{userId}', [PayrollController::class, 'salaryHistoryIndex2'])
+        ->name('payroll.salary_history.index2');
+    Route::get('/payroll/master_salary/index2/{user_id}', [PayrollController::class, 'masterSalaryIndex2'])
+        ->name('payroll.master.salary.index2');
 
 
 
     Route::prefix('payroll')->group(function () {
         // Employee Payroll Routes
         Route::get('/assign/index', [PayrollController::class, 'salaryAssignIndex'])->name('payroll.assign.index');
+        Route::get('/assign/index2/{userId}', [PayrollController::class, 'salaryAssignIndex2'])->name('payroll.assign.index2');
         Route::get('/assign/create', [PayrollController::class, 'salaryAssignCreate'])->name('payroll.assign.create');
         Route::post('/assign/store', [PayrollController::class, 'salaryAssignStore'])->name('payroll.assign.store');
         Route::get('/assign/edit/{id}', [PayrollController::class, 'salaryAssignEdit'])->name('payroll.assign.edit');

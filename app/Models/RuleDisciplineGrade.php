@@ -9,6 +9,8 @@ class RuleDisciplineGrade extends Model
 {
     use HasFactory;
 
+    protected $table = 'rule_discipline_grades';
+
     protected $fillable = [
         'grade',
         'min_score',

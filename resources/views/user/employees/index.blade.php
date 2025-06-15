@@ -293,6 +293,37 @@
                                 </span>
                                 @endif
                             </td>
+                            <!-- <td class="text-end pe-3">
+
+                                <div class="dropdown-manual position-relative">
+                                    <button class="btn btn-sm btn-outline-secondary dropdown-toggle-manual" type="button">
+                                        <i class="fas fa-ellipsis-v"></i>
+                                    </button>
+                                    <ul class="dropdown-menu-manual dropdown-menu dropdown-menu-end shadow-sm border-0 position-absolute" style="display: none;">
+                                        <li>
+                                            <a class="dropdown-item d-flex align-items-center" href="#">
+                                                <i class="fas fa-user-edit text-warning me-2"></i> Edit Employee Info
+                                            </a>
+                                        </li>
+                                        <li>
+                                            <a class="dropdown-item d-flex align-items-center" href="#">
+                                                <i class="fas fa-exchange-alt text-success me-2"></i> Transfer Employee
+                                            </a>
+                                        </li>
+                                        <li>
+                                            <a class="dropdown-item d-flex align-items-center" href="#">
+                                                <i class="fas fa-history text-info me-2"></i> View History
+                                            </a>
+                                        </li>
+                                        <li>
+                                            <button class="dropdown-item d-flex align-items-center">
+                                                <i class="fas fa-calendar-plus text-primary me-2"></i> Extend Contract
+                                            </button>
+                                        </li>
+                                    </ul>
+
+                                </div>
+                            </td> -->
 
                             <td class="text-end pe-3">
                                 <div class="dropdown">
@@ -488,10 +519,32 @@
 @endsection
 
 @push('scripts')
+<!-- Pastikan Bootstrap JS ter-load -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
     $(document).ready(function() {
+        // Manual dropdown functionality
+        $('.dropdown-toggle-manual').on('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+
+            // Close all other manual dropdowns
+            $('.dropdown-menu-manual').not($(this).next()).hide();
+
+            // Toggle current dropdown
+            $(this).next('.dropdown-menu-manual').toggle();
+        });
+
+        // Close manual dropdown when clicking outside
+        $(document).on('click', function(e) {
+            if (!$(e.target).closest('.dropdown-manual').length) {
+                $('.dropdown-menu-manual').hide();
+            }
+        });
+
+
+
         // Initialize DataTable with improved styling
         $('#userTable').DataTable({
             "paging": true,
