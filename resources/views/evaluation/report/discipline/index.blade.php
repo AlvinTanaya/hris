@@ -424,10 +424,8 @@
             data.forEach(function(item) {
                 // Apply background color based on total score
                 let rowClass = '';
-                if (item.total_score !== '' && item.total_score < 105) {
+                if (item.total_score === null || item.total_score === '' || item.total_score <= 0) {
                     rowClass = 'table-danger';
-                } else if (item.total_score !== '' && item.total_score < 110) {
-                    rowClass = 'table-warning';
                 }
 
                 // Calculate reduction (pengurangan) - ADD THIS CODE HERE

@@ -831,24 +831,21 @@ class TimeManagementController extends Controller
     {
 
         // If both levels approved, update the main approval status and process the change
-        if ($request->dept_approval_status === 'Approved' && $request->admin_approval_status === 'Approved') {
+        if ($request->admin_approval_status === 'Approved') {
             DB::beginTransaction();
             try {
                 $request->status_change = 'Approved';
                 $request->save();
-
-
-
                 $startDate = Carbon::parse($request->date_change_start);
                 $endDate = Carbon::parse($request->date_change_end);
 
-                // $this->processUserShiftChange($request->user_id, $request->rule_user_id_after, $startDate, $endDate);
+                $this->processUserShiftChange($request->user_id, $request->rule_user_id_after, $startDate, $endDate);
 
-                // if ($request->user_exchange_id) {
-                //     $this->processUserShiftChange($request->user_exchange_id, $request->rule_user_exchange_id_after, $startDate, $endDate);
-                // } else if ($request->rule_user_exchange_id_after) {
-                //     $this->processUserShiftChange($request->user_id, $request->rule_user_exchange_id_after, $startDate, $endDate, true);
-                // }
+                if ($request->user_exchange_id) {
+                    $this->processUserShiftChange($request->user_exchange_id, $request->rule_user_exchange_id_after, $startDate, $endDate);
+                } else if ($request->rule_user_exchange_id_after) {
+                    $this->processUserShiftChange($request->user_id, $request->rule_user_exchange_id_after, $startDate, $endDate, true);
+                }
 
                 // Send email
                 Mail::to($request->user->email)->send(new ShiftChangeApprovedMail($request));
@@ -1477,6 +1474,7 @@ class TimeManagementController extends Controller
 
     public function importAttendance(Request $request)
     {
+
         $data = $request->json('data');
         $year = $request->json('year');
         $month = $request->json('month');
@@ -2641,10 +2639,19 @@ class TimeManagementController extends Controller
      */
     private function findPotentialExchanges($userId, $targetShiftType, $startDate, $endDate)
     {
+        // Get position_id and department_id of the current user
+        $user = DB::table('users')->where('id', $userId)->first();
+    
+        if (!$user) {
+            return collect(); // return empty collection if user not found
+        }
+    
         return DB::table('employee_shift')
             ->join('users', 'employee_shift.user_id', '=', 'users.id')
             ->join('rule_shift', 'employee_shift.rule_id', '=', 'rule_shift.id')
             ->where('users.id', '!=', $userId)
+            // ->where('users.position_id', '=', $user->position_id)
+            ->where('users.department_id', '=', $user->department_id)
             ->where('rule_shift.type', $targetShiftType)
             ->where(function ($query) use ($startDate, $endDate) {
                 $query->where(function ($q) use ($startDate, $endDate) {
@@ -2655,9 +2662,10 @@ class TimeManagementController extends Controller
                         ->where('employee_shift.end_date', '>=', $endDate);
                 });
             })
-            ->select('users.id', 'users.name', 'rule_shift.type', 'rule_shift.id as rule_id')
+            ->select('users.id', 'users.name', 'users.position_id', 'users.department_id', 'rule_shift.type', 'rule_shift.id as rule_id')
             ->get();
     }
+    
 
     /**
      * Get potential exchange partners for a date range via AJAX

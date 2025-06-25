@@ -190,8 +190,8 @@ Route::middleware('auth')->group(function () {
 
 
 
-    Route::post('/time_management/set_shift/approve/{id}', [TimeManagementController::class, 'approveShiftChange'])->name('change_shift.approve');
-    Route::post('/time_management/set_shift/decline/{id}', [TimeManagementController::class, 'declineShiftChange'])->name('change_shift.decline');
+    // Route::post('/time_management/set_shift/approve/{id}', [TimeManagementController::class, 'approveShiftChange'])->name('change_shift.approve');
+    // Route::post('/time_management/set_shift/decline/{id}', [TimeManagementController::class, 'declineShiftChange'])->name('change_shift.decline');
 
     Route::get('/time_management/request_shift/index', [TimeManagementController::class, 'indexShiftChange'])->name('change_shift.index');
     Route::post('/time_management/request_shift/approve/{id}', [TimeManagementController::class, 'approveShiftChange'])->name('change_shift.approve');

@@ -531,7 +531,7 @@ class RecruitmentController extends Controller
         'training' => 'Training',
     ];
 
-    
+
     public function ahp_schedule_interview(Request $request, $id)
     {
         $request->validate([
@@ -712,7 +712,7 @@ class RecruitmentController extends Controller
                             $criteriaConfigs['training'] ?? null
                         );
                         break;
-      
+
                     case 'organization':
                         $criteriaScores['organization'] = $this->calculateOrganizationScore(
                             $applicant->id,
@@ -1139,6 +1139,9 @@ class RecruitmentController extends Controller
                 ], 404);
             }
 
+            // Debug matrices - uncomment untuk melihat detail matriks
+            // $this->debugAHPMatrices($ahpData, $mainWeights, $subWeights);
+
             // Calculate scores for each applicant
             $rankings = $this->calculateApplicantScores($applicants, $ahpData, $mainWeights, $subWeights);
 
@@ -1545,6 +1548,165 @@ class RecruitmentController extends Controller
 
         return $details;
     }
+
+
+    // DEBUG
+
+    /**
+     * Fungsi untuk debug dan menampilkan semua matriks AHP dengan dd()
+     */
+    protected function debugAHPMatrices($ahpData, $mainWeights, $subWeights)
+    {
+        $debugData = [];
+
+        // 1. MAIN CRITERIA MATRIX
+        $mainCriteria = array_keys($ahpData['mainCriteria']);
+        $mainMatrix = $this->buildMainCriteriaMatrix($ahpData['mainComparisons']);
+        $mainNormalized = $this->normalizeMatrix($mainMatrix);
+        $mainConsistency = $this->checkConsistency($mainMatrix, array_values($mainWeights));
+
+        $debugData['main_criteria'] = [
+            'criteria_names' => $mainCriteria,
+            'original_matrix' => $mainMatrix,
+            'normalized_matrix' => $mainNormalized,
+            'weights' => $mainWeights,
+            'consistency_ratio' => round($mainConsistency, 4),
+            'is_consistent' => $mainConsistency <= 0.1
+        ];
+
+        // 2. SUB-CRITERIA MATRICES
+        $debugData['sub_criteria'] = [];
+
+        foreach ($ahpData['subCriteria'] as $criteria => $config) {
+            if (!empty($config['comparisons'])) {
+                // Get items for this sub-criteria
+                if (isset($config['ranges'])) {
+                    $items = array_map(function ($range) {
+                        return $range['label'];
+                    }, $config['ranges']);
+                    $itemsInfo = $config['ranges'];
+                } elseif (isset($config['levels'])) {
+                    $items = $config['levels'];
+                    $itemsInfo = $config['levels'];
+                } elseif (isset($config['periods'])) {
+                    $items = $config['periods'];
+                    $itemsInfo = $config['periods'];
+                } else {
+                    continue;
+                }
+
+                // Build matrix for this sub-criteria
+                $subMatrix = $this->buildSubCriteriaMatrix($items, $config['comparisons']);
+                $subNormalized = $this->normalizeMatrix($subMatrix);
+                $subWeightsArray = isset($subWeights[$criteria]) ? array_values($subWeights[$criteria]) : [];
+                $subConsistency = !empty($subWeightsArray) ? $this->checkConsistency($subMatrix, $subWeightsArray) : 0;
+
+                $debugData['sub_criteria'][$criteria] = [
+                    'items' => $items,
+                    'items_info' => $itemsInfo,
+                    'original_matrix' => $subMatrix,
+                    'normalized_matrix' => $subNormalized,
+                    'weights' => $subWeights[$criteria] ?? [],
+                    'consistency_ratio' => round($subConsistency, 4),
+                    'is_consistent' => $subConsistency <= 0.1,
+                    'comparisons_input' => $config['comparisons']
+                ];
+            }
+        }
+
+        // 3. SUMMARY
+        $debugData['summary'] = [
+            'total_main_criteria' => count($mainCriteria),
+            'total_sub_criteria' => count($debugData['sub_criteria']),
+            'all_consistent' => $debugData['main_criteria']['is_consistent'] &&
+                collect($debugData['sub_criteria'])->every(function ($sub) {
+                    return $sub['is_consistent'];
+                })
+        ];
+
+        dd($debugData);
+    }
+
+    /**
+     * Helper function untuk build main criteria matrix
+     */
+    protected function buildMainCriteriaMatrix($comparisons)
+    {
+        $criteria = array_keys($comparisons);
+        $n = count($criteria);
+        $matrix = [];
+
+        for ($i = 0; $i < $n; $i++) {
+            $matrix[$i] = [];
+            for ($j = 0; $j < $n; $j++) {
+                if ($i == $j) {
+                    $matrix[$i][$j] = 1;
+                } elseif (isset($comparisons[$criteria[$i]][$criteria[$j]])) {
+                    $matrix[$i][$j] = $comparisons[$criteria[$i]][$criteria[$j]];
+                } elseif (isset($comparisons[$criteria[$j]][$criteria[$i]])) {
+                    $matrix[$i][$j] = 1 / $comparisons[$criteria[$j]][$criteria[$i]];
+                } else {
+                    $matrix[$i][$j] = 1;
+                }
+            }
+        }
+
+        return $matrix;
+    }
+
+    /**
+     * Helper function untuk build sub criteria matrix
+     */
+    protected function buildSubCriteriaMatrix($items, $comparisons)
+    {
+        $n = count($items);
+        $matrix = [];
+
+        for ($i = 0; $i < $n; $i++) {
+            $matrix[$i] = [];
+            for ($j = 0; $j < $n; $j++) {
+                if ($i == $j) {
+                    $matrix[$i][$j] = 1;
+                } elseif (isset($comparisons[$items[$i]][$items[$j]])) {
+                    $matrix[$i][$j] = $comparisons[$items[$i]][$items[$j]];
+                } elseif (isset($comparisons[$items[$j]][$items[$i]])) {
+                    $matrix[$i][$j] = 1 / $comparisons[$items[$j]][$items[$i]];
+                } else {
+                    $matrix[$i][$j] = 1;
+                }
+            }
+        }
+
+        return $matrix;
+    }
+
+    /**
+     * Helper function untuk normalize matrix
+     */
+    protected function normalizeMatrix($matrix)
+    {
+        $n = count($matrix);
+        $normalized = [];
+        $columnSums = array_fill(0, $n, 0);
+
+        // Calculate column sums
+        for ($j = 0; $j < $n; $j++) {
+            for ($i = 0; $i < $n; $i++) {
+                $columnSums[$j] += $matrix[$i][$j];
+            }
+        }
+
+        // Normalize each element
+        for ($i = 0; $i < $n; $i++) {
+            $normalized[$i] = [];
+            for ($j = 0; $j < $n; $j++) {
+                $normalized[$i][$j] = round($matrix[$i][$j] / $columnSums[$j], 4);
+            }
+        }
+
+        return $normalized;
+    }
+
 
 
 

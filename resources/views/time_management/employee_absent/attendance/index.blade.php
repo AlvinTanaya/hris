@@ -70,35 +70,53 @@
     </div>
 </div>
 
-<!-- Import Modal -->
+<!-- Import Attendance Modal -->
 <div class="modal fade" id="importModal" tabindex="-1" role="dialog">
-    <div class="modal-dialog" role="document">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Import Attendance</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+    <div class="modal-dialog" role="document"> <!-- removed modal-dialog-centered -->
+        <div class="modal-content border-0 shadow rounded-4">
+            <div class="modal-header bg-success text-white rounded-top-4">
+                <h5 class="modal-title">
+                    <i class="fas fa-file-import me-2"></i>Import Attendance
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
 
             <div class="modal-body">
+                <!-- Success Alert -->
+                <div id="importSuccess" class="alert alert-success d-none" role="alert">
+                    <i class="fas fa-check-circle me-2"></i>Import successful!
+                </div>
+
                 <form id="importForm" enctype="multipart/form-data">
-                    <div class="form-group">
-                        <label>Select Excel File</label>
-                        <small class="form-text text-muted">
-                            Required columns: NIP, Date, Hour In, Hour Out, Place
-                        </small>
-                        <input type="file" class="form-control-file mt-2" id="excelFile"
-                            accept=".xlsx,.xls,.csv">
+                    <div class="mb-3">
+                        <label for="excelFile" class="form-label fw-bold">Select Excel File</label>
+                        <input type="file" class="form-control" id="excelFile" accept=".xlsx,.xls,.csv">
+                        <div class="form-text">
+                            Required columns: <code>NIP</code>, <code>Date</code>, <code>Hour In</code>, <code>Hour Out</code>, <code>Place</code>
+                        </div>
+                    </div>
+
+                    <div class="text-end">
+                        <a href="{{ asset('storage/sample_employee_absence_import.xlsx') }}" class="btn btn-outline-success btn-sm">
+                            <i class="fas fa-download me-1"></i>Download Sample
+                        </a>
                     </div>
                 </form>
             </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
 
-                <button type="button" class="btn btn-primary" id="uploadBtn">Upload</button>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-light" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-1"></i>Close
+                </button>
+                <button type="button" class="btn btn-success" id="uploadBtn">
+                    <i class="fas fa-upload me-1"></i>Upload
+                </button>
             </div>
         </div>
     </div>
 </div>
+
+
 
 
 <!-- Styled Attendance Modal -->
@@ -394,6 +412,7 @@
 @endsection
 
 @push('scripts')
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script>
     // Indonesian Holidays for 2025
     let holidayCache = {}; // Cache untuk menyimpan data holiday per tahun

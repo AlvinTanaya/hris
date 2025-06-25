@@ -1135,9 +1135,9 @@
 
         <div class="d-flex justify-content-end mt-4">
             @if ($user->id == Auth::user()->id)
-            <button type="submit" class="btn btn-success px-5"><i class="fas fa-edit"></i> Update Profile Information</button>
+            <button type="submit" class="btn btn-success px-5"><i class="fas fa-edit"></i> Submit</button>
             @else
-            <button type="submit" class="btn btn-success px-5"><i class="fas fa-edit"></i> Update Employee Profile Information</button>
+            <button type="submit" class="btn btn-success px-5"><i class="fas fa-edit"></i> Submit</button>
             @endif
         </div>
 
@@ -1541,10 +1541,189 @@
             font-size: 1.75rem;
         }
     }
+
+    /* Tambahkan CSS ini ke file style Anda atau di dalam <style> tag */
+
+    /* Enhanced Alert Styles */
+    .alert {
+        border: none;
+        border-radius: 8px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        margin-bottom: 20px;
+        animation: slideDown 0.3s ease-out;
+    }
+
+    .alert-success {
+        background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+        border-left: 4px solid #28a745;
+        color: #155724;
+    }
+
+    .alert-danger {
+        background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%);
+        border-left: 4px solid #dc3545;
+        color: #721c24;
+    }
+
+    .alert-warning {
+        background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%);
+        border-left: 4px solid #ffc107;
+        color: #856404;
+    }
+
+    .alert-info {
+        background: linear-gradient(135deg, #d1ecf1 0%, #bee5eb 100%);
+        border-left: 4px solid #17a2b8;
+        color: #0c5460;
+    }
+
+    /* Animation for alerts */
+    @keyframes slideDown {
+        from {
+            opacity: 0;
+            transform: translateY(-20px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    /* Field error styling */
+    .is-invalid {
+        border-color: #dc3545 !important;
+        box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25) !important;
+    }
+
+    .invalid-feedback {
+        color: #dc3545;
+        font-size: 0.875em;
+        margin-top: 0.25rem;
+    }
+
+    /* Loading overlay */
+    #loading-overlay {
+        backdrop-filter: blur(2px);
+    }
+
+    #loading-overlay>div {
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+    }
+
+    /* Button loading state */
+    button:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+    }
+
+    /* Success checkmark animation */
+    .alert-success::before {
+        content: '✓';
+        display: inline-block;
+        width: 20px;
+        height: 20px;
+        background: #28a745;
+        color: white;
+        border-radius: 50%;
+        text-align: center;
+        line-height: 20px;
+        font-weight: bold;
+        font-size: 12px;
+        margin-right: 10px;
+        animation: checkmark 0.5s ease-in-out;
+    }
+
+    @keyframes checkmark {
+        0% {
+            transform: scale(0);
+        }
+
+        50% {
+            transform: scale(1.2);
+        }
+
+        100% {
+            transform: scale(1);
+        }
+    }
+
+    /* Error icon */
+    .alert-danger::before {
+        content: '✕';
+        display: inline-block;
+        width: 20px;
+        height: 20px;
+        background: #dc3545;
+        color: white;
+        border-radius: 50%;
+        text-align: center;
+        line-height: 20px;
+        font-weight: bold;
+        font-size: 12px;
+        margin-right: 10px;
+    }
+
+    /* Form validation feedback */
+    .form-control.is-invalid:focus {
+        border-color: #dc3545;
+        box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25);
+    }
+
+    .form-select.is-invalid:focus {
+        border-color: #dc3545;
+        box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25);
+    }
+
+    /* Toast-style alerts (alternative) */
+    .alert.toast-style {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        z-index: 9999;
+        min-width: 300px;
+        max-width: 500px;
+        animation: slideInRight 0.3s ease-out;
+    }
+
+    @keyframes slideInRight {
+        from {
+            opacity: 0;
+            transform: translateX(100%);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateX(0);
+        }
+    }
+
+    /* Responsive adjustments */
+    @media (max-width: 768px) {
+        .alert {
+            margin: 10px;
+            font-size: 0.9rem;
+        }
+
+        .alert.toast-style {
+            right: 10px;
+            left: 10px;
+            min-width: auto;
+        }
+    }
+
+    /* Print styles - hide alerts when printing */
+    @media print {
+        .alert {
+            display: none !important;
+        }
+    }
 </style>
 
 
 @push('scripts')
+
+
 
 <script>
     function updateFamilyNumbers() {
@@ -2816,69 +2995,82 @@
 
 
 
-
-        // Show loading state on buttons
-        $(document).on('submit', 'form', function() {
-            $(this).find('button[type="submit"]').html(
-                '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Processing...'
-            ).prop('disabled', true);
-        });
-
-        // Handle form submission with AJAX
-        $('form').on('submit', function(e) {
-            e.preventDefault();
-
-            // Show processing Swal
-            Swal.fire({
-                title: 'Processing',
-                html: 'Please wait while we save employee data...',
-                allowOutsideClick: false,
-                didOpen: () => {
-                    Swal.showLoading();
-                }
+        $(document).ready(function() {
+            // Tombol state (ubah tombol jadi loading)
+            $(document).on('submit', 'form', function() {
+                const btn = $(this).find('button[type="submit"]');
+                // Simpan teks asli
+                btn.data('original-text', btn.html());
+                btn.html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Processing...')
+                    .prop('disabled', true);
             });
 
-            // Prepare form data
-            let formData = new FormData(this);
+            // Handle form submission with AJAX
+            $('form').on('submit', function(e) {
+                e.preventDefault();
 
-            // Submit via AJAX
-            $.ajax({
-                url: $(this).attr('action'),
-                type: 'POST',
-                data: formData,
-                processData: false,
-                contentType: false,
-                success: function(response) {
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'Success!',
-                        text: response.message,
-                        confirmButtonText: 'OK'
-                    }).then((result) => {
-                        if (result.isConfirmed) {
-                            window.location.href = response.redirect;
-                        }
-                    });
-                },
-                error: function(xhr) {
-                    let errorMessage = 'An error occurred';
-                    if (xhr.responseJSON && xhr.responseJSON.message) {
-                        errorMessage = xhr.responseJSON.message;
-                    } else if (xhr.responseJSON && xhr.responseJSON.errors) {
-                        errorMessage = 'Please check the form for errors';
-                        // Highlight error fields
-                        $.each(xhr.responseJSON.errors, function(key, value) {
-                            $(`[name="${key}"]`).addClass('is-invalid');
-                            $(`[name="${key}"]`).after(`<div class="invalid-feedback">${value[0]}</div>`);
-                        });
+                const form = $(this);
+                const submitBtn = form.find('button[type="submit"]');
+                const originalBtnText = submitBtn.data('original-text') || '<i class="fas fa-edit"></i> Submit';
+
+                Swal.fire({
+                    title: 'Processing',
+                    html: 'Please wait while we save employee data...',
+                    allowOutsideClick: false,
+                    didOpen: () => {
+                        Swal.showLoading();
                     }
+                });
 
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Error!',
-                        text: errorMessage
-                    });
-                }
+                let formData = new FormData(this);
+
+                $.ajax({
+                    url: form.attr('action'),
+                    type: 'POST',
+                    data: formData,
+                    processData: false,
+                    contentType: false,
+                    success: function(response) {
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Success!',
+                            text: response.message,
+                            confirmButtonText: 'OK'
+                        }).then((result) => {
+                            if (result.isConfirmed && response.redirect) {
+                                window.location.href = response.redirect;
+                            }
+                        });
+                    },
+                    error: function(xhr) {
+                        let errorMessage = 'An error occurred';
+                        if (xhr.responseJSON && xhr.responseJSON.message) {
+                            errorMessage = xhr.responseJSON.message;
+                        } else if (xhr.responseJSON && xhr.responseJSON.errors) {
+                            errorMessage = 'Please check the form for errors';
+                            // Bersihkan error sebelumnya
+                            form.find('.is-invalid').removeClass('is-invalid');
+                            form.find('.invalid-feedback').remove();
+
+                            // Tampilkan error
+                            $.each(xhr.responseJSON.errors, function(key, value) {
+                                const input = form.find(`[name="${key}"]`);
+                                input.addClass('is-invalid');
+                                input.after(`<div class="invalid-feedback">${value[0]}</div>`);
+                            });
+                        }
+
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Error!',
+                            text: errorMessage
+                        });
+                    },
+                    complete: function() {
+                        // Kembalikan tombol submit seperti semula
+                        submitBtn.prop('disabled', false).html(originalBtnText);
+                    }
+                });
             });
         });
 

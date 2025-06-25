@@ -47,6 +47,7 @@
 
         .navbar-brand img {
             height: 40px;
+            border-radius: 10px;
             transition: transform 0.3s ease;
         }
 
@@ -64,7 +65,7 @@
         .company-logo {
             max-width: 220px;
             filter: drop-shadow(0 8px 24px rgba(0, 0, 0, 0.5));
-            border-radius: 12px;
+            border-radius: 10px;
             margin-bottom: 2rem;
         }
 
@@ -129,6 +130,7 @@
         .footer-logo {
             height: 40px;
             opacity: 0.8;
+            border-radius: 10px;
             margin-bottom: 1rem;
         }
 

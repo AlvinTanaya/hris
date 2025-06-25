@@ -16,6 +16,11 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Exception;
+use Illuminate\Validation\Rule;
+
 
 use App\Models\User;
 use App\Models\history_transfer_employee;
@@ -65,9 +70,9 @@ class UserController extends Controller
 
         // Get the filtered results
         $users = $query->join('employee_positions', 'users.position_id', '=', 'employee_positions.id')
-                    ->orderBy('employee_positions.ranking')
-                    ->select('users.*')
-                    ->get();
+            ->orderBy('employee_positions.ranking')
+            ->select('users.*')
+            ->get();
         // Get options for dropdowns from related tables
         $departments = EmployeeDepartment::orderBy('department')->get();
         $positions = EmployeePosition::orderBy('ranking')->get();
@@ -532,231 +537,1073 @@ class UserController extends Controller
         ));
     }
 
+    // public function employees_update(Request $request, $id)
+    // {
+    //     // dd($request->department_id);
+    //     // Validasi input
+
+    //     // Validasi input dengan custom error messages
+    //     $validator = Validator::make($request->all(), [
+    //         'password' => 'nullable|min:8',
+    //         'photo' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+    //         'id_card' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+    //         'cv' => 'nullable|mimes:pdf|max:5120',
+    //         'achievement' => 'nullable|mimes:pdf|max:5120',
+    //         'employee_id' => 'required',
+    //         'name' => 'required|string|max:255',
+    //         'user_status' => 'required',
+    //         'ID_number' => 'required|numeric|digits:16',
+    //         'birth_date' => 'required|date|before:today',
+    //         'birth_place' => 'required|string|max:255',
+    //         'ID_address' => 'required|string',
+    //         'domicile_address' => 'required|string',
+    //         'religion' => 'required',
+    //         'gender' => 'required|in:Male,Female',
+    //         'phone_number' => 'required|numeric|min:10',
+    //         'status' => 'required',
+    //         'emergency_contact' => 'required|numeric|min:10',
+    //         'employee_status' => 'required',
+    //         'email' => 'required|email|max:255',
+    //         'join_date' => 'required|date',
+    //         'distance' => 'required|numeric',
+    //         'contract_start_date' => 'required_if:employee_status,Contract,Part Time|nullable|date',
+    //         'contract_end_date' => 'required_if:employee_status,Contract,Part Time|nullable|date|after:contract_start_date',
+    //         'position_id' => 'required|exists:employee_positions,id',
+    //         'department_id' => 'required|exists:employee_departments,id'
+    //     ], [
+    //         // Custom error messages
+    //         'employee_id.required' => 'Employee ID is required',
+    //         'name.required' => 'Name is required',
+    //         'name.string' => 'Name must be text',
+    //         'name.max' => 'Name cannot exceed 255 characters',
+    //         'ID_number.required' => 'ID Number is required',
+    //         'ID_number.numeric' => 'ID Number must be numeric',
+    //         'ID_number.digits' => 'ID Number must be exactly 16 digits',
+    //         'birth_date.required' => 'Birth date is required',
+    //         'birth_date.date' => 'Birth date must be a valid date',
+    //         'birth_date.before' => 'Birth date must be before today',
+    //         'phone_number.required' => 'Phone number is required',
+    //         'phone_number.numeric' => 'Phone number must be numeric',
+    //         'phone_number.min' => 'Phone number must be at least 10 digits',
+    //         'emergency_contact.required' => 'Emergency contact is required',
+    //         'emergency_contact.numeric' => 'Emergency contact must be numeric',
+    //         'emergency_contact.min' => 'Emergency contact must be at least 10 digits',
+    //         'email.required' => 'Email is required',
+    //         'email.email' => 'Email must be a valid email address',
+    //         'gender.in' => 'Gender must be either Male or Female',
+    //         'distance.numeric' => 'Distance must be numeric',
+    //         'photo.image' => 'Photo must be an image file',
+    //         'photo.mimes' => 'Photo must be jpeg, png, jpg, or gif format',
+    //         'photo.max' => 'Photo size cannot exceed 2MB',
+    //         'id_card.image' => 'ID Card must be an image file',
+    //         'id_card.mimes' => 'ID Card must be jpeg, png, jpg, or gif format',
+    //         'id_card.max' => 'ID Card size cannot exceed 2MB',
+    //         'cv.mimes' => 'CV must be a PDF file',
+    //         'cv.max' => 'CV size cannot exceed 5MB',
+    //         'achievement.mimes' => 'Achievement file must be a PDF',
+    //         'achievement.max' => 'Achievement file size cannot exceed 5MB',
+    //         'contract_start_date.required_if' => 'Contract start date is required for Contract/Part Time employees',
+    //         'contract_end_date.required_if' => 'Contract end date is required for Contract/Part Time employees',
+    //         'contract_end_date.after' => 'Contract end date must be after start date',
+    //         'position_id.required' => 'Position is required',
+    //         'position_id.exists' => 'Selected position does not exist',
+    //         'department_id.required' => 'Department is required',
+    //         'department_id.exists' => 'Selected department does not exist',
+    //     ]);
+
+    //     // Jika validasi gagal, return error response
+    //     if ($validator->fails()) {
+    //         return response()->json([
+    //             'success' => false,
+    //             'message' => 'Validation failed',
+    //             'errors' => $validator->errors()->all(),
+    //             'field_errors' => $validator->errors()
+    //         ], 422);
+    //     }
+
+    //     // dd('masuk validate');
+
+    //     // Cari data pegawai berdasarkan ID
+    //     $user = User::findOrFail($id);
+
+    //     // Update password only if a new one is provided
+    //     if (!empty($request->password)) {
+    //         $newpassword = bcrypt($request->password);
+    //     } else {
+    //         $newpassword = $user->password;
+    //     }
+
+    //     // dd($newpassword);
+
+    //     // Handle file uploads with error checking
+    //     if ($request->hasFile('photo')) {
+    //         try {
+    //             // Delete old photo if exists
+    //             if ($user->photo_profile_path) {
+    //                 Storage::disk('public')->delete('user/photos_profile/' . $user->photo_profile_path);
+    //             }
+
+    //             // Store new photo with custom filename
+    //             $photoPath = $request->file('photo')->storeAs(
+    //                 'user/photos_profile',
+    //                 $user->employee_id . '.' . $request->file('photo')->getClientOriginalExtension(),
+    //                 'public'
+    //             );
+
+    //             // Update photo path
+    //             $user->photo_profile_path = $photoPath;
+    //         } catch (Exception $e) {
+    //             return response()->json([
+    //                 'success' => false,
+    //                 'message' => 'Failed to upload photo',
+    //                 'errors' => ['Photo upload failed: ' . $e->getMessage()]
+    //             ], 500);
+    //         }
+    //     }
+
+    //     if ($request->hasFile('id_card')) {
+    //         try {
+    //             // Hapus file lama jika ada
+    //             if ($user->ID_card_path) {
+    //                 Storage::disk('public')->delete('user/ID_card/' . $user->ID_card_path);
+    //             }
+
+    //             // Simpan file baru
+    //             $idCardPath = $request->file('id_card')->storeAs(
+    //                 'user/ID_card',
+    //                 'ID_card_' . $user->employee_id . '.' . $request->file('id_card')->getClientOriginalExtension(),
+    //                 'public'
+    //             );
+
+    //             // Update path
+    //             $user->ID_card_path = $idCardPath;
+    //         } catch (Exception $e) {
+    //             return response()->json([
+    //                 'success' => false,
+    //                 'message' => 'Failed to upload ID card',
+    //                 'errors' => ['ID Card upload failed: ' . $e->getMessage()]
+    //             ], 500);
+    //         }
+    //     }
+
+    //     if ($request->hasFile('cv')) {
+    //         try {
+    //             // Hapus file lama jika ada
+    //             if ($user->cv_path) {
+    //                 Storage::disk('public')->delete('user/cv_user/' . $user->cv_path);
+    //             }
+
+    //             // Simpan file baru
+    //             $cvPath = $request->file('cv')->storeAs(
+    //                 'user/cv_user',
+    //                 'cv_' . $user->employee_id . '.' . $request->file('cv')->getClientOriginalExtension(),
+    //                 'public'
+    //             );
+
+    //             // Update path
+    //             $user->cv_path = $cvPath;
+    //         } catch (Exception $e) {
+    //             return response()->json([
+    //                 'success' => false,
+    //                 'message' => 'Failed to upload CV',
+    //                 'errors' => ['CV upload failed: ' . $e->getMessage()]
+    //             ], 500);
+    //         }
+    //     }
+
+    //     if ($request->hasFile('achievement')) {
+    //         try {
+    //             // Hapus file lama jika ada
+    //             if ($user->achievement_path) {
+    //                 Storage::disk('public')->delete('user/achievement_user/' . $user->achievement_path);
+    //             }
+
+    //             // Simpan file baru
+    //             $achievementPath = $request->file('achievement')->storeAs(
+    //                 'user/achievement_user',
+    //                 'achievement_' . $user->employee_id . '.' . $request->file('achievement')->getClientOriginalExtension(),
+    //                 'public'
+    //             );
+
+    //             // Update path
+    //             $user->achievement_path = $achievementPath;
+    //         } catch (Exception $e) {
+    //             return response()->json([
+    //                 'success' => false,
+    //                 'message' => 'Failed to upload achievement file',
+    //                 'errors' => ['Achievement upload failed: ' . $e->getMessage()]
+    //             ], 500);
+    //         }
+    //     }
+
+
+    //     //sim
+    //     if (!$request->has('no_license') || $request->has('sim')) {
+    //         // Lakukan sesuatu
+    //         $user->sim = $request->has('sim') ? implode(',', $request->sim) : null;
+
+    //         // Ambil nomor SIM sesuai SIM yang dipilih
+    //         $selectedSimNumbers = [];
+    //         if ($request->has('sim')) {
+    //             foreach ($request->sim as $simType) {
+    //                 if (!empty($request->sim_number[$simType])) {
+    //                     $selectedSimNumbers[$simType] = $request->sim_number[$simType];
+    //                 }
+    //             }
+    //         }
+
+    //         // Simpan nomor SIM dengan format JSON
+    //         $user->sim_number = !empty($selectedSimNumbers) ? json_encode($selectedSimNumbers) : null;
+    //     } else {
+    //         $user->sim = null;
+    //         $user->sim_number = null;
+    //     }
+
+
+    //     //bank
+    //     $bankNames = [];
+    //     $bankNumbers = [];
+
+    //     if ($request->has('bank_name') && $request->has('bank_number')) {
+    //         foreach ($request->bank_name as $index => $bankName) {
+    //             if (!empty($bankName) && !empty($request->bank_number[$index])) {
+    //                 $bankNames[] = $bankName;
+    //                 $bankNumbers[] = $request->bank_number[$index];
+    //             }
+    //         }
+    //     }
+    //     // dd($bankNames,   $bankNumbers);
+
+
+    //     // Update data pegawai
+    //     $user->update([
+    //         'password' => $newpassword,
+    //         'employee_id' => $request->employee_id,
+    //         'name' => $request->name,
+    //         'position_id' => $request->position_id,
+    //         'department_id' => $request->department_id,
+    //         'join_date' => $request->join_date,
+    //         'email' => $request->email,
+    //         'phone_number' => $request->phone_number,
+    //         'employee_status' => $request->employee_status,
+    //         'user_status' => $request->user_status,
+    //         'bpjs_employment' => $request->bpjs_employment,
+    //         'bpjs_health' => $request->bpjs_health,
+    //         'ID_number' => $request->ID_number,
+    //         'birth_date' => $request->birth_date,
+    //         'birth_place' => $request->birth_place,
+    //         'ID_address' => $request->ID_address,
+    //         'domicile_address' => $request->domicile_address,
+    //         'religion' => $request->religion,
+    //         'gender' => $request->gender,
+    //         'height' => $request->height,
+    //         'weight' => $request->weight,
+    //         'distance' => $request->distance,
+    //         'status' => $request->status,
+    //         'NPWP' => $request->npwp,
+    //         'exit_date' => $request->exit_date ?? null,
+    //         'emergency_contact' => $request->emergency_contact,
+    //         'bank_name' => !empty($bankNames) ? json_encode($bankNames) : null,
+    //         'bank_number' => !empty($bankNumbers) ? json_encode($bankNumbers) : null,
+    //         'updated_at' => now(),
+    //     ]);
+
+
+    //     // data keluarga
+    //     if ($request->has('name_family')) {
+    //         $id_used = [];
+
+    //         foreach ($request->name_family as $index => $name) {
+    //             // Cek apakah nama tidak kosong
+
+    //             if (!is_null($name)) {
+    //                 //dd($name);
+    //                 // Jika ID family sudah ada (update)
+    //                 if (isset($request->id_family) && array_key_exists($index, $request->id_family) && !is_null($request->id_family[$index])) {
+
+    //                     $id_used[] = $request->id_family[$index]; // Simpan ID untuk pengecekan akhir
+
+    //                     // Cari data yang ada di database
+    //                     $userfamily = users_family::findOrFail($request->id_family[$index]);
+
+    //                     // Cek apakah data di database berbeda dengan data dari request
+    //                     if (
+    //                         $userfamily->name !== $name ||
+    //                         $userfamily->relation !== $request->relation[$index] ||
+    //                         $userfamily->birth_date !== $request->birth_date_family[$index] ||
+    //                         $userfamily->birth_place !== $request->birth_place_family[$index] ||
+    //                         $userfamily->ID_number !== $request->ID_number_family[$index] ||
+    //                         $userfamily->phone_number !== $request->phone_number_family[$index] ||
+    //                         $userfamily->address !== $request->address_family[$index] ||
+    //                         $userfamily->gender !== $request->gender_family[$index] ||
+    //                         $userfamily->job !== $request->job[$index]
+    //                     ) {
+    //                         // Update hanya jika ada perubahan
+    //                         $userfamily->update([
+    //                             'name' => $name,
+    //                             'relation' => $request->relation[$index],
+    //                             'birth_date' => $request->birth_date_family[$index],
+    //                             'birth_place' => $request->birth_place_family[$index],
+    //                             'ID_number' => $request->ID_number_family[$index],
+    //                             'phone_number' => $request->phone_number_family[$index],
+    //                             'address' => $request->address_family[$index],
+    //                             'gender' => $request->gender_family[$index],
+    //                             'job' => $request->job[$index],
+    //                             'updated_at' => now(),
+    //                         ]);
+    //                     }
+    //                 } else {
+    //                     // Jika data baru (create)
+    //                     $newFamily = users_family::create([
+    //                         'users_id' => $user->id,
+    //                         'name' => $name,
+    //                         'relation' => $request->relation[$index],
+    //                         'birth_date' => $request->birth_date_family[$index],
+    //                         'birth_place' => $request->birth_place_family[$index],
+    //                         'ID_number' => $request->ID_number_family[$index],
+    //                         'phone_number' => $request->phone_number_family[$index],
+    //                         'address' => $request->address_family[$index],
+    //                         'gender' => $request->gender_family[$index],
+    //                         'job' => $request->job[$index],
+    //                         'created_at' => now(),
+    //                         'updated_at' => now(),
+    //                     ]);
+
+    //                     $id_used[] = $newFamily->id; // Simpan ID yang baru di-create
+    //                 }
+    //             }
+    //         }
+
+    //         // Hapus data yang tidak ada di $id_used
+    //         users_family::where('users_id', $user->id)
+    //             ->whereNotIn('id', $id_used)
+    //             ->delete();
+    //     }
+
+
+    //     // Logika untuk Education
+    //     if ($request->has('education_level')) {
+    //         $id_used_education = [];
+
+    //         foreach ($request->education_level as $index => $education_level) {
+    //             // Cek apakah degree pendidikan tidak kosong
+    //             if (!is_null($education_level)) {
+    //                 if (isset($request->id_education) && array_key_exists($index, $request->id_education) && !is_null($request->id_education[$index])) {
+    //                     // Update data jika ID education ada
+    //                     $id_used_education[] = $request->id_education[$index];
+
+    //                     $userEducation = users_education::findOrFail($request->id_education[$index]);
+
+    //                     // Cek apakah ada perubahan pada data
+    //                     if (
+    //                         $userEducation->degree !== $education_level ||
+    //                         $userEducation->educational_place !== $request->education_place[$index] ||
+    //                         $userEducation->educational_city !== $request->education_city[$index] ||
+    //                         $userEducation->start_education !== $request->start_education[$index] ||
+    //                         $userEducation->end_education !== $request->end_education[$index] ||
+    //                         $userEducation->major !== $request->major[$index] ||
+    //                         $userEducation->grade !== $request->grade[$index]
+    //                     ) {
+    //                         $userEducation->update([
+    //                             'degree' => $education_level,
+    //                             'educational_place' => $request->education_place[$index],
+    //                             'educational_city' => $request->education_city[$index],
+    //                             'educational_province' => $request->education_province[$index],
+    //                             'start_education' => $request->start_education[$index],
+    //                             'end_education' => $request->end_education[$index],
+    //                             'major' => $request->major[$index],
+    //                             'grade' => $request->grade[$index],
+    //                             'updated_at' => now(),
+    //                         ]);
+    //                     }
+
+    //                     // Handle file upload untuk sertifikat/transkrip
+    //                     if ($request->hasFile("education_transcript.$index")) {
+    //                         // Jika ada file lama, hapus terlebih dahulu
+    //                         if ($userEducation->transcript_file_path && Storage::disk('public')->exists($userEducation->transcript_file_path)) {
+    //                             Storage::disk('public')->delete($userEducation->transcript_file_path);
+    //                         }
+
+    //                         $file = $request->file("education_transcript.$index");
+    //                         $extension = $file->getClientOriginalExtension();
+
+    //                         // Buat nama file yang sesuai
+    //                         $fileName = "transcript_" . Str::slug($user->name) . "_{$user->id}_{$education_level}_{$userEducation->id}.{$extension}";
+
+    //                         // Simpan file ke public/user/achievement_user
+    //                         $filePath = $file->storeAs('user/achievement_user', $fileName, 'public');
+
+    //                         // Update path file di database
+    //                         $userEducation->update(['transcript_file_path' => "user/achievement_user/{$fileName}"]);
+    //                     }
+    //                 } else {
+    //                     // Create data baru jika ID education tidak ada
+    //                     $newEducation = users_education::create([
+    //                         'users_id' => $user->id,
+    //                         'degree' => $education_level,
+    //                         'educational_place' => $request->education_place[$index],
+    //                         'educational_city' => $request->education_city[$index],
+    //                         'educational_province' => $request->education_province[$index],
+    //                         'start_education' => $request->start_education[$index],
+    //                         'end_education' => $request->end_education[$index],
+    //                         'major' => $request->major[$index],
+    //                         'grade' => $request->grade[$index],
+    //                         'created_at' => now(),
+    //                         'updated_at' => now(),
+    //                     ]);
+
+    //                     $id_used_education[] = $newEducation->id;
+
+    //                     // Handle file upload untuk sertifikat/transkrip
+    //                     if ($request->hasFile("education_transcript.$index")) {
+    //                         $file = $request->file("education_transcript.$index");
+    //                         $extension = $file->getClientOriginalExtension();
+
+    //                         // Buat nama file yang sesuai
+    //                         $fileName = "transcript_" . Str::slug($user->name) . "_{$user->id}_{$education_level}_{$newEducation->id}.{$extension}";
+
+    //                         // Simpan file ke public/user/achievement_user
+    //                         $filePath = $file->storeAs('user/achievement_user', $fileName, 'public');
+
+    //                         // Update path file di database
+    //                         $newEducation->update(['transcript_file_path' => "user/achievement_user/{$fileName}"]);
+    //                     }
+    //                 }
+    //             }
+    //         }
+
+    //         // Ambil data pendidikan yang akan dihapus
+    //         $educationsToDelete = users_education::where('users_id', $user->id)
+    //             ->whereNotIn('id', $id_used_education)
+    //             ->get();
+
+    //         // Hapus file transkrip terlebih dahulu
+    //         foreach ($educationsToDelete as $education) {
+    //             if ($education->transcript_file_path && Storage::disk('public')->exists($education->transcript_file_path)) {
+    //                 Storage::disk('public')->delete($education->transcript_file_path);
+    //             }
+    //         }
+
+    //         // Kemudian hapus data dari database
+    //         users_education::where('users_id', $user->id)
+    //             ->whereNotIn('id', $id_used_education)
+    //             ->delete();
+    //     }
+
+    //     // Logika untuk Work
+    //     if ($request->has('company_name')) {
+    //         $id_used_work = [];
+
+    //         foreach ($request->company_name as $index => $company_name) {
+    //             // Cek apakah nama perusahaan tidak kosong
+    //             if (!is_null($company_name)) {
+    //                 if (isset($request->id_work) && array_key_exists($index, $request->id_work) && !is_null($request->id_work[$index])) {
+
+    //                     // Update data jika ID work ada
+    //                     $id_used_work[] = $request->id_work[$index];
+
+    //                     $userWork = users_work_experience::findOrFail($request->id_work[$index]);
+
+    //                     // Cek apakah ada perubahan pada data
+    //                     if (
+    //                         $userWork->nama_perusahaan !== $company_name ||
+    //                         $userWork->position !== $request->position[$index] ||
+    //                         $userWork->start_work !== $request->start_work[$index] ||
+    //                         $userWork->end_work !== $request->end_work[$index]
+    //                     ) {
+    //                         $userWork->update([
+    //                             'company_name' => $company_name,
+    //                             'position' => $request->position_work[$index] ?? null,
+    //                             'start_working' => $request->start_work[$index] ?? null,
+    //                             'end_working' => $request->end_work[$index] ?? null,
+
+    //                             'company_address' => $request->company_address[$index] ?? null,
+    //                             'company_phone' => $request->company_phone[$index] ?? null,
+    //                             'salary' => $request->previous_salary[$index] ?? null,
+    //                             'supervisor_name' => $request->supervisor_name[$index] ?? null,
+    //                             'supervisor_phone' => $request->supervisor_phone[$index] ?? null,
+    //                             'job_desc' => str_replace(["\r", "\n", "-", "  "], ["", ";", "", " "], trim($request->job_desc[$index] ?? null)),
+    //                             'reason' => str_replace(["\r", "\n", "-", "  "], ["", ";", "", " "], trim($request->reason[$index] ?? null)),
+    //                             'benefit' => str_replace(["\r", "\n", "-", "  "], ["", ";", "", " "], trim($request->benefit[$index] ?? null)),
+    //                             'facility' => str_replace(["\r", "\n", "-", "  "], ["", ";", "", " "], trim($request->facility[$index] ?? null)),
+
+    //                             'created_at' => now(),
+    //                             'updated_at' => now(),
+    //                         ]);
+    //                     }
+    //                 } else {
+    //                     // Create data baru jika ID work tidak ada
+    //                     $newWork = users_work_experience::create([
+    //                         'users_id' => $user->id,
+    //                         'nama_perusahaan' => $company_name,
+
+    //                         'position' => $request->position_work[$index] ?? null,
+    //                         'start_working' => $request->start_work[$index] ?? null,
+    //                         'end_working' => $request->end_work[$index] ?? null,
+    //                         'company_address' => $request->company_address[$index] ?? null,
+    //                         'company_phone' => $request->company_phone[$index] ?? null,
+    //                         'salary' => $request->salary[$index] ?? null,
+    //                         'supervisor_name' => $request->supervisor_name[$index] ?? null,
+    //                         'supervisor_phone' => $request->supervisor_phone[$index] ?? null,
+    //                         'job_desc' => str_replace(["\r", "\n", "-", "  "], ["", ";", "", " "], trim($request->job_desc[$index] ?? null)),
+    //                         'reason' => str_replace(["\r", "\n", "-", "  "], ["", ";", "", " "], trim($request->reason[$index] ?? null)),
+    //                         'benefit' => str_replace(["\r", "\n", "-", "  "], ["", ";", "", " "], trim($request->benefit[$index] ?? null)),
+    //                         'facility' => str_replace(["\r", "\n", "-", "  "], ["", ";", "", " "], trim($request->facility[$index] ?? null)),
+
+    //                         'created_at' => now(),
+    //                         'updated_at' => now(),
+    //                     ]);
+
+    //                     $id_used_work[] = $newWork->id;
+    //                 }
+    //             }
+    //         }
+
+    //         // Hapus data yang tidak ada di $id_used_work
+    //         users_work_experience::where('users_id', $user->id)
+    //             ->whereNotIn('id', $id_used_work)
+    //             ->delete();
+
+    //         // dd('beres');
+    //     }
+
+
+
+    //     // Logika untuk Training
+    //     if ($request->has('training_name')) {
+    //         $id_used_training = [];
+
+    //         foreach ($request->training_name as $index => $training_name) {
+    //             if (!is_null($training_name)) {
+    //                 if (isset($request->id_training) && array_key_exists($index, $request->id_training) && !is_null($request->id_training[$index])) {
+    //                     $id_used_training[] = $request->id_training[$index];
+    //                     $userTraining = users_training::findOrFail($request->id_training[$index]);
+
+    //                     if (
+    //                         $userTraining->training_name !== $training_name ||
+    //                         $userTraining->training_city !== $request->training_city[$index] ||
+    //                         $userTraining->start_date !== $request->training_start_date[$index] ||
+    //                         $userTraining->end_date !== $request->training_end_date[$index]
+    //                     ) {
+    //                         $userTraining->update([
+    //                             'training_name' => $training_name,
+    //                             'training_city' => $request->training_city[$index] ?? null,
+    //                             'training_province' => $request->training_province[$index] ?? null,
+    //                             'start_date' => $request->training_start_date[$index] ?? null,
+    //                             'end_date' => $request->training_end_date[$index] ?? null,
+    //                             'updated_at' => now(),
+    //                         ]);
+    //                     }
+    //                 } else {
+    //                     $newTraining = users_training::create([
+    //                         'users_id' => $user->id,
+    //                         'training_name' => $training_name,
+    //                         'training_city' => $request->training_city[$index] ?? null,
+    //                         'training_province' => $request->training_province[$index] ?? null,
+    //                         'start_date' => $request->training_start_date[$index] ?? null,
+    //                         'end_date' => $request->training_end_date[$index] ?? null,
+    //                         'created_at' => now(),
+    //                         'updated_at' => now(),
+    //                     ]);
+    //                     $id_used_training[] = $newTraining->id;
+    //                 }
+    //             }
+    //         }
+
+    //         users_training::where('users_id', $user->id)
+    //             ->whereNotIn('id', $id_used_training)
+    //             ->delete();
+    //     }
+
+    //     // Logika untuk Organization
+    //     if ($request->has('organization_name')) {
+    //         $id_used_organization = [];
+
+    //         foreach ($request->organization_name as $index => $organization_name) {
+    //             if (!is_null($organization_name)) {
+    //                 if (isset($request->id_organization) && array_key_exists($index, $request->id_organization) && !is_null($request->id_organization[$index])) {
+
+    //                     $id_used_organization[] = $request->id_organization[$index];
+    //                     $userOrganization = users_organization::findOrFail($request->id_organization[$index]);
+
+    //                     if (
+    //                         $userOrganization->organization_name !== $organization_name ||
+    //                         $userOrganization->position !== $request->organization_position[$index] ||
+    //                         $userOrganization->start_date !== $request->organization_start_date[$index] ||
+    //                         $userOrganization->end_date !== $request->organization_end_date[$index]
+    //                     ) {
+    //                         $userOrganization->update([
+    //                             'organization_name' => $organization_name,
+    //                             'position' => $request->organization_position[$index] ?? null,
+    //                             'city' => $request->organization_city[$index] ?? null,
+    //                             'province' => $request->organization_province[$index] ?? null,
+    //                             'activity_type' => str_replace(["\r", "\n", "-", "  "], ["", ";", "", " "], trim($request->activity_type[$index] ?? null)),
+
+    //                             'start_date' => $request->organization_start_date[$index] ?? null,
+    //                             'end_date' => $request->organization_end_date[$index] ?? null,
+    //                             'updated_at' => now(),
+    //                         ]);
+    //                     }
+    //                 } else {
+    //                     $newOrganization = users_organization::create([
+    //                         'users_id' => $user->id,
+    //                         'organization_name' => $organization_name,
+    //                         'position' => $request->organization_position[$index] ?? null,
+    //                         'city' => $request->organization_city[$index] ?? null,
+    //                         'province' => $request->organization_province[$index] ?? null,
+    //                         'activity_type' => str_replace(["\r", "\n", "-", "  "], ["", ";", "", " "], trim($request->activity_type[$index] ?? null)),
+    //                         'start_date' => $request->organization_start_date[$index] ?? null,
+    //                         'end_date' => $request->organization_end_date[$index] ?? null,
+    //                         'created_at' => now(),
+    //                         'updated_at' => now(),
+    //                     ]);
+    //                     $id_used_organization[] = $newOrganization->id;
+    //                 }
+    //             }
+    //         }
+
+    //         users_organization::where('users_id', $user->id)
+    //             ->whereNotIn('id', $id_used_organization)
+    //             ->delete();
+    //     }
+
+    //     // Logika untuk Language
+    //     if ($request->has('language')) {
+    //         $id_used_language = [];
+
+    //         foreach ($request->language as $index => $language) {
+    //             if (!is_null($language)) {
+    //                 if (isset($request->id_language) && array_key_exists($index, $request->id_language) && !is_null($request->id_language[$index])) {
+
+    //                     $id_used_language[] = $request->id_language[$index];
+    //                     $userLanguage = users_language::findOrFail($request->id_language[$index]);
+
+
+
+
+    //                     if (
+    //                         $userLanguage->language !== $language ||
+    //                         $userLanguage->verbal !== $request->verbal[$index] ||
+    //                         $userLanguage->written !== $request->written[$index]
+    //                     ) {
+    //                         if ($language === 'Other') {
+    //                             $otherLanguage = $request->other_language[$index] ?? null;
+    //                             if (empty($otherLanguage)) {
+    //                                 continue;
+    //                             }
+    //                             $language = $otherLanguage;
+    //                         }
+
+
+
+    //                         $userLanguage->update([
+    //                             'language' => $language,
+    //                             'verbal' => $request->verbal[$index] ?? null,
+    //                             'written' => $request->written[$index] ?? null,
+    //                             'updated_at' => now(),
+    //                         ]);
+    //                     }
+    //                 } else {
+    //                     if ($language === 'Other') {
+    //                         $otherLanguage = $request->other_language[$index] ?? null;
+    //                         if (empty($otherLanguage)) {
+    //                             continue;
+    //                         }
+    //                         $language = $otherLanguage;
+    //                     }
+
+    //                     $newLanguage = users_language::create([
+    //                         'users_id' => $user->id,
+    //                         'language' => $language,
+    //                         'verbal' => $request->verbal[$index] ?? null,
+    //                         'written' => $request->written[$index] ?? null,
+    //                         'created_at' => now(),
+    //                         'updated_at' => now(),
+    //                     ]);
+    //                     $id_used_language[] = $newLanguage->id;
+    //                 }
+    //             }
+    //         }
+
+    //         users_language::where('users_id', $user->id)
+    //             ->whereNotIn('id', $id_used_language)
+    //             ->delete();
+    //     }
+
+
+    //     // 1. Send update notification to the employee who was updated
+    //     Mail::to($user->email)->send(new UpdateNotification($user->name));
+
+    //     // Create notification for the updated employee
+    //     Notification::create([
+    //         'users_id' => $user->id,
+    //         'message' => "Your profile information has been updated",
+    //         'type' => 'employee_update',
+    //         'maker_id' => Auth::user()->id,
+    //         'status' => 'Unread'
+    //     ]);
+
+    //     // 2. Get HR department users (first we need to find HR department ID)
+    //     $hrDepartment = EmployeeDepartment::where('department', 'Human Resources')->first();
+    //     if ($hrDepartment) {
+    //         // Get HR users excluding the updated user (if they're in HR)
+    //         $hrUsers = User::where('department_id', $hrDepartment->id)
+    //             ->where('id', '!=', $user->id)
+    //             ->get();
+
+    //         // Send email to all HR staff
+    //         $hrEmails = $hrUsers->pluck('email');
+    //         Mail::to($hrEmails)->send(new DepartmentUpdateNotification(
+    //             $user->employee_id,
+    //             $user->position->position, // Access position name through relationship
+    //             $user->department->department // Access department name through relationship
+    //         ));
+
+    //         // Create notifications for each HR staff
+    //         foreach ($hrUsers as $hrUser) {
+    //             Notification::create([
+    //                 'users_id' => $hrUser->id,
+    //                 'message' => "Employee data for {$user->name} (ID: {$user->employee_id}) has been updated",
+    //                 'type' => 'employee_update',
+    //                 'maker_id' => Auth::user()->id,
+    //                 'status' => 'Unread'
+    //             ]);
+    //         }
+    //     }
+
+    //     // Redirect ke halaman index atau halaman lain dengan pesan sukses
+    //     return response()->json([
+    //         'message' => 'Employee Updated successfully',
+    //         'redirect' => route('user.employees.index')
+    //     ]);
+    // }
+
+
     public function employees_update(Request $request, $id)
     {
-        // dd($request->department_id);
-        // Validasi input
-
-        $request->validate([
-            'password' => 'nullable|min:8',
-            'photo' => 'nullable|image|mimes:jpeg,png,jpg,gif',
-            'id_card' => 'nullable|image|mimes:jpeg,png,jpg,gif',
-            'cv' => 'nullable|mimes:pdf',
-            'achievement' => 'nullable|mimes:pdf',
-            'employee_id' => 'required',
-            'name' => 'required',
-            'user_status' => 'required',
-            'ID_number' => 'required',
-            'birth_date' => 'required|date',
-            'birth_place' => 'required',
-            'ID_address' => 'required',
-            'domicile_address' => 'required',
-            'religion' => 'required',
-            'gender' => 'required',
-            'phone_number' => 'required',
-            'status' => 'required',
-            'emergency_contact' => 'required',
-            'employee_status' => 'required',
-            'email' => 'required|email',
-            'join_date' => 'required',
-            'distance' => 'required',
-            'contract_start_date' => 'required_if:employee_status,Contract,Part Time|nullable|date',
-            'contract_end_date' => 'required_if:employee_status,Contract,Part Time|nullable|date',
-            'position_id' => 'required|exists:employee_positions,id',
-            'department_id' => 'required|exists:employee_departments,id'
-
-        ]);
+        try {
+            // Validasi input dengan custom error messages
+            $validator = Validator::make($request->all(), [
+                'password' => 'nullable|min:8',
+                'photo' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+                'id_card' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+                'cv' => 'nullable|mimes:pdf|max:5120',
+                'achievement' => 'nullable|mimes:pdf|max:5120',
+                'employee_id' => 'required',
+                'name' => 'required|string|max:255',
+                'user_status' => 'required',
+                'ID_number' => 'required|numeric|digits:16',
+                'birth_date' => 'required|date|before:today',
+                'birth_place' => 'required|string|max:255',
+                'ID_address' => 'required|string',
+                'domicile_address' => 'required|string',
+                'religion' => 'required',
+                'gender' => 'required|in:Male,Female',
+                'phone_number' => 'required|numeric|min:10',
+                'status' => 'required',
+                'emergency_contact' => 'required|numeric|min:10',
+                'employee_status' => 'required',
+                'email' => 'required|email|max:255',
+                'join_date' => 'required|date',
+                'distance' => 'required|numeric',
+                'position_id' => 'required|exists:employee_positions,id',
+                'department_id' => 'required|exists:employee_departments,id',
 
 
-        // dd('masuk validate');
+                'contract_start_date' => [
+                    Rule::requiredIf(function () {
+                        return in_array(request('employee_status'), ['Contract', 'Part Time']);
+                    }),
+                    'nullable',
+                    'date',
+                ],
+                'contract_end_date' => [
+                    Rule::requiredIf(function () {
+                        return in_array(request('employee_status'), ['Contract', 'Part Time']);
+                    }),
+                    'nullable',
+                    'date',
+                    'after:contract_start_date',
+                ],
 
-        // Cari data pegawai berdasarkan ID
-        $user = User::findOrFail($id);
+            ], [
+                // Custom error messages
+                'employee_id.required' => 'Employee ID is required',
+                'name.required' => 'Name is required',
+                'name.string' => 'Name must be text',
+                'name.max' => 'Name cannot exceed 255 characters',
+                'ID_number.required' => 'ID Number is required',
+                'ID_number.numeric' => 'ID Number must be numeric',
+                'ID_number.digits' => 'ID Number must be exactly 16 digits',
+                'birth_date.required' => 'Birth date is required',
+                'birth_date.date' => 'Birth date must be a valid date',
+                'birth_date.before' => 'Birth date must be before today',
+                'phone_number.required' => 'Phone number is required',
+                'phone_number.numeric' => 'Phone number must be numeric',
+                'phone_number.min' => 'Phone number must be at least 10 digits',
+                'emergency_contact.required' => 'Emergency contact is required',
+                'emergency_contact.numeric' => 'Emergency contact must be numeric',
+                'emergency_contact.min' => 'Emergency contact must be at least 10 digits',
+                'email.required' => 'Email is required',
+                'email.email' => 'Email must be a valid email address',
+                'gender.in' => 'Gender must be either Male or Female',
+                'distance.numeric' => 'Distance must be numeric',
+                'photo.image' => 'Photo must be an image file',
+                'photo.mimes' => 'Photo must be jpeg, png, jpg, or gif format',
+                'photo.max' => 'Photo size cannot exceed 2MB',
+                'id_card.image' => 'ID Card must be an image file',
+                'id_card.mimes' => 'ID Card must be jpeg, png, jpg, or gif format',
+                'id_card.max' => 'ID Card size cannot exceed 2MB',
+                'cv.mimes' => 'CV must be a PDF file',
+                'cv.max' => 'CV size cannot exceed 5MB',
+                'achievement.mimes' => 'Achievement file must be a PDF',
+                'achievement.max' => 'Achievement file size cannot exceed 5MB',
+                'contract_start_date.required_if' => 'Contract start date is required for Contract/Part Time employees',
+                'contract_end_date.required_if' => 'Contract end date is required for Contract/Part Time employees',
+                'contract_end_date.after' => 'Contract end date must be after start date',
+                'position_id.required' => 'Position is required',
+                'position_id.exists' => 'Selected position does not exist',
+                'department_id.required' => 'Department is required',
+                'department_id.exists' => 'Selected department does not exist',
+            ]);
 
-        // Update password only if a new one is provided
-        if (!empty($request->password)) {
-            $newpassword = bcrypt($request->password);
-        } else {
-            $newpassword = $user->password;
-        }
-
-        // dd($newpassword);
-
-        if ($request->hasFile('photo')) {
-            // Delete old photo if exists
-
-            if ($user->photo_profile_path) {
-                Storage::disk('public')->delete('user/photos_profile/' . $user->photo_profile_path);
+            // Jika validasi gagal, return error response
+            if ($validator->fails()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Validation failed',
+                    'errors' => $validator->errors()->all(),
+                    'field_errors' => $validator->errors()
+                ], 422);
             }
 
-            // Store new photo with custom filename
-            $photoPath = $request->file('photo')->storeAs(
-                'user/photos_profile',
-                $user->employee_id . '.' . $request->file('photo')->getClientOriginalExtension(),
-                'public'
-            );
+            // dd('stop');
+            // Cari data pegawai berdasarkan ID
+            $user = User::findOrFail($id);
 
-            // Update photo path
-            $user->photo_profile_path = $photoPath;
-        }
-
-        if ($request->hasFile('id_card')) {
-            // Hapus file lama jika ada
-            if ($user->ID_card_path) {
-                Storage::disk('public')->delete('user/ID_card/' . $user->ID_card_path);
+            // Update password only if a new one is provided
+            if (!empty($request->password)) {
+                $newpassword = bcrypt($request->password);
+            } else {
+                $newpassword = $user->password;
             }
 
-            // Simpan file baru
-            $idCardPath = $request->file('id_card')->storeAs(
-                'user/ID_card',
-                'ID_card_' . $user->employee_id . '.' . $request->file('id_card')->getClientOriginalExtension(),
-                'public'
-            );
+            // Handle file uploads with error checking
+            if ($request->hasFile('photo')) {
+                try {
+                    // Delete old photo if exists
+                    if ($user->photo_profile_path) {
+                        Storage::disk('public')->delete('user/photos_profile/' . $user->photo_profile_path);
+                    }
 
-            // Update path
-            $user->ID_card_path = $idCardPath;
-        }
+                    // Store new photo with custom filename
+                    $photoPath = $request->file('photo')->storeAs(
+                        'user/photos_profile',
+                        $user->employee_id . '.' . $request->file('photo')->getClientOriginalExtension(),
+                        'public'
+                    );
 
-        if ($request->hasFile('cv')) {
-            // Hapus file lama jika ada
-            if ($user->cv_path) {
-                Storage::disk('public')->delete('user/cv_user/' . $user->cv_path);
+                    // Update photo path
+                    $user->photo_profile_path = $photoPath;
+                } catch (Exception $e) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Failed to upload photo',
+                        'errors' => ['Photo upload failed: ' . $e->getMessage()]
+                    ], 500);
+                }
             }
 
-            // Simpan file baru
-            $cvPath = $request->file('cv')->storeAs(
-                'user/cv_user',
-                'cv_' . $user->employee_id . '.' . $request->file('cv')->getClientOriginalExtension(),
-                'public'
-            );
+            if ($request->hasFile('id_card')) {
+                try {
+                    // Hapus file lama jika ada
+                    if ($user->ID_card_path) {
+                        Storage::disk('public')->delete('user/ID_card/' . $user->ID_card_path);
+                    }
 
-            // Update path
-            $user->cv_path = $cvPath;
-        }
+                    // Simpan file baru
+                    $idCardPath = $request->file('id_card')->storeAs(
+                        'user/ID_card',
+                        'ID_card_' . $user->employee_id . '.' . $request->file('id_card')->getClientOriginalExtension(),
+                        'public'
+                    );
 
-
-        if ($request->hasFile('achievement')) {
-            // Hapus file lama jika ada
-            if ($user->achievement_path) {
-                Storage::disk('public')->delete('user/achievement_user/' . $user->cv_path);
+                    // Update path
+                    $user->ID_card_path = $idCardPath;
+                } catch (Exception $e) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Failed to upload ID card',
+                        'errors' => ['ID Card upload failed: ' . $e->getMessage()]
+                    ], 500);
+                }
             }
 
-            // Simpan file baru
-            $achievementPath = $request->file('achievement')->storeAs(
-                'user/achievement_user',
-                'achievement_' . $user->employee_id . '.' . $request->file('achievement')->getClientOriginalExtension(),
-                'public'
-            );
+            if ($request->hasFile('cv')) {
+                try {
+                    // Hapus file lama jika ada
+                    if ($user->cv_path) {
+                        Storage::disk('public')->delete('user/cv_user/' . $user->cv_path);
+                    }
 
-            // Update path
-            $user->achievement_path = $achievementPath;
-        }
+                    // Simpan file baru
+                    $cvPath = $request->file('cv')->storeAs(
+                        'user/cv_user',
+                        'cv_' . $user->employee_id . '.' . $request->file('cv')->getClientOriginalExtension(),
+                        'public'
+                    );
 
+                    // Update path
+                    $user->cv_path = $cvPath;
+                } catch (Exception $e) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Failed to upload CV',
+                        'errors' => ['CV upload failed: ' . $e->getMessage()]
+                    ], 500);
+                }
+            }
 
+            if ($request->hasFile('achievement')) {
+                try {
+                    // Hapus file lama jika ada
+                    if ($user->achievement_path) {
+                        Storage::disk('public')->delete('user/achievement_user/' . $user->achievement_path);
+                    }
 
-        //sim
-        if (!$request->has('no_license') || $request->has('sim')) {
-            // Lakukan sesuatu
-            $user->sim = $request->has('sim') ? implode(',', $request->sim) : null;
+                    // Simpan file baru
+                    $achievementPath = $request->file('achievement')->storeAs(
+                        'user/achievement_user',
+                        'achievement_' . $user->employee_id . '.' . $request->file('achievement')->getClientOriginalExtension(),
+                        'public'
+                    );
 
-            // Ambil nomor SIM sesuai SIM yang dipilih
-            $selectedSimNumbers = [];
-            if ($request->has('sim')) {
-                foreach ($request->sim as $simType) {
-                    if (!empty($request->sim_number[$simType])) {
-                        $selectedSimNumbers[$simType] = $request->sim_number[$simType];
+                    // Update path
+                    $user->achievement_path = $achievementPath;
+                } catch (Exception $e) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Failed to upload achievement file',
+                        'errors' => ['Achievement upload failed: ' . $e->getMessage()]
+                    ], 500);
+                }
+            }
+
+            // Rest of your existing code for SIM, bank, etc...
+            // (keeping the same logic as before)
+
+            //sim
+            if (!$request->has('no_license') || $request->has('sim')) {
+                $user->sim = $request->has('sim') ? implode(',', $request->sim) : null;
+
+                $selectedSimNumbers = [];
+                if ($request->has('sim')) {
+                    foreach ($request->sim as $simType) {
+                        if (!empty($request->sim_number[$simType])) {
+                            $selectedSimNumbers[$simType] = $request->sim_number[$simType];
+                        }
+                    }
+                }
+
+                $user->sim_number = !empty($selectedSimNumbers) ? json_encode($selectedSimNumbers) : null;
+            } else {
+                $user->sim = null;
+                $user->sim_number = null;
+            }
+
+            //bank
+            $bankNames = [];
+            $bankNumbers = [];
+
+            if ($request->has('bank_name') && $request->has('bank_number')) {
+                foreach ($request->bank_name as $index => $bankName) {
+                    if (!empty($bankName) && !empty($request->bank_number[$index])) {
+                        $bankNames[] = $bankName;
+                        $bankNumbers[] = $request->bank_number[$index];
                     }
                 }
             }
 
-            // Simpan nomor SIM dengan format JSON
-            $user->sim_number = !empty($selectedSimNumbers) ? json_encode($selectedSimNumbers) : null;
-        } else {
-            $user->sim = null;
-            $user->sim_number = null;
-        }
+            // Update data pegawai
+            $user->update([
+                'password' => $newpassword,
+                'employee_id' => $request->employee_id,
+                'name' => $request->name,
+                'position_id' => $request->position_id,
+                'department_id' => $request->department_id,
+                'join_date' => $request->join_date,
+                'email' => $request->email,
+                'phone_number' => $request->phone_number,
+                'employee_status' => $request->employee_status,
+                'user_status' => $request->user_status,
+                'bpjs_employment' => $request->bpjs_employment,
+                'bpjs_health' => $request->bpjs_health,
+                'ID_number' => $request->ID_number,
+                'birth_date' => $request->birth_date,
+                'birth_place' => $request->birth_place,
+                'ID_address' => $request->ID_address,
+                'domicile_address' => $request->domicile_address,
+                'religion' => $request->religion,
+                'gender' => $request->gender,
+                'height' => $request->height,
+                'weight' => $request->weight,
+                'distance' => $request->distance,
+                'status' => $request->status,
+                'NPWP' => $request->npwp,
+                'exit_date' => $request->exit_date ?? null,
+                'emergency_contact' => $request->emergency_contact,
+                'bank_name' => !empty($bankNames) ? json_encode($bankNames) : null,
+                'bank_number' => !empty($bankNumbers) ? json_encode($bankNumbers) : null,
+                'updated_at' => now(),
+            ]);
 
+            // data keluarga
+            if ($request->has('name_family')) {
+                $id_used = [];
 
-        //bank
-        $bankNames = [];
-        $bankNumbers = [];
+                foreach ($request->name_family as $index => $name) {
+                    // Cek apakah nama tidak kosong
 
-        if ($request->has('bank_name') && $request->has('bank_number')) {
-            foreach ($request->bank_name as $index => $bankName) {
-                if (!empty($bankName) && !empty($request->bank_number[$index])) {
-                    $bankNames[] = $bankName;
-                    $bankNumbers[] = $request->bank_number[$index];
-                }
-            }
-        }
-        // dd($bankNames,   $bankNumbers);
+                    if (!is_null($name)) {
+                        //dd($name);
+                        // Jika ID family sudah ada (update)
+                        if (isset($request->id_family) && array_key_exists($index, $request->id_family) && !is_null($request->id_family[$index])) {
 
+                            $id_used[] = $request->id_family[$index]; // Simpan ID untuk pengecekan akhir
 
-        // Update data pegawai
-        $user->update([
-            'password' => $newpassword,
-            'employee_id' => $request->employee_id,
-            'name' => $request->name,
-            'position_id' => $request->position_id,
-            'department_id' => $request->department_id,
-            'join_date' => $request->join_date,
-            'email' => $request->email,
-            'phone_number' => $request->phone_number,
-            'employee_status' => $request->employee_status,
-            'user_status' => $request->user_status,
-            'bpjs_employment' => $request->bpjs_employment,
-            'bpjs_health' => $request->bpjs_health,
-            'ID_number' => $request->ID_number,
-            'birth_date' => $request->birth_date,
-            'birth_place' => $request->birth_place,
-            'ID_address' => $request->ID_address,
-            'domicile_address' => $request->domicile_address,
-            'religion' => $request->religion,
-            'gender' => $request->gender,
-            'height' => $request->height,
-            'weight' => $request->weight,
-            'distance' => $request->distance,
-            'status' => $request->status,
-            'NPWP' => $request->npwp,
-            'exit_date' => $request->exit_date ?? null,
-            'emergency_contact' => $request->emergency_contact,
-            'bank_name' => !empty($bankNames) ? json_encode($bankNames) : null,
-            'bank_number' => !empty($bankNumbers) ? json_encode($bankNumbers) : null,
-            'updated_at' => now(),
-        ]);
+                            // Cari data yang ada di database
+                            $userfamily = users_family::findOrFail($request->id_family[$index]);
 
-
-        // data keluarga
-        if ($request->has('name_family')) {
-            $id_used = [];
-
-            foreach ($request->name_family as $index => $name) {
-                // Cek apakah nama tidak kosong
-
-                if (!is_null($name)) {
-                    //dd($name);
-                    // Jika ID family sudah ada (update)
-                    if (isset($request->id_family) && array_key_exists($index, $request->id_family) && !is_null($request->id_family[$index])) {
-
-                        $id_used[] = $request->id_family[$index]; // Simpan ID untuk pengecekan akhir
-
-                        // Cari data yang ada di database
-                        $userfamily = users_family::findOrFail($request->id_family[$index]);
-
-                        // Cek apakah data di database berbeda dengan data dari request
-                        if (
-                            $userfamily->name !== $name ||
-                            $userfamily->relation !== $request->relation[$index] ||
-                            $userfamily->birth_date !== $request->birth_date_family[$index] ||
-                            $userfamily->birth_place !== $request->birth_place_family[$index] ||
-                            $userfamily->ID_number !== $request->ID_number_family[$index] ||
-                            $userfamily->phone_number !== $request->phone_number_family[$index] ||
-                            $userfamily->address !== $request->address_family[$index] ||
-                            $userfamily->gender !== $request->gender_family[$index] ||
-                            $userfamily->job !== $request->job[$index]
-                        ) {
-                            // Update hanya jika ada perubahan
-                            $userfamily->update([
+                            // Cek apakah data di database berbeda dengan data dari request
+                            if (
+                                $userfamily->name !== $name ||
+                                $userfamily->relation !== $request->relation[$index] ||
+                                $userfamily->birth_date !== $request->birth_date_family[$index] ||
+                                $userfamily->birth_place !== $request->birth_place_family[$index] ||
+                                $userfamily->ID_number !== $request->ID_number_family[$index] ||
+                                $userfamily->phone_number !== $request->phone_number_family[$index] ||
+                                $userfamily->address !== $request->address_family[$index] ||
+                                $userfamily->gender !== $request->gender_family[$index] ||
+                                $userfamily->job !== $request->job[$index]
+                            ) {
+                                // Update hanya jika ada perubahan
+                                $userfamily->update([
+                                    'name' => $name,
+                                    'relation' => $request->relation[$index],
+                                    'birth_date' => $request->birth_date_family[$index],
+                                    'birth_place' => $request->birth_place_family[$index],
+                                    'ID_number' => $request->ID_number_family[$index],
+                                    'phone_number' => $request->phone_number_family[$index],
+                                    'address' => $request->address_family[$index],
+                                    'gender' => $request->gender_family[$index],
+                                    'job' => $request->job[$index],
+                                    'updated_at' => now(),
+                                ]);
+                            }
+                        } else {
+                            // Jika data baru (create)
+                            $newFamily = users_family::create([
+                                'users_id' => $user->id,
                                 'name' => $name,
                                 'relation' => $request->relation[$index],
                                 'birth_date' => $request->birth_date_family[$index],
@@ -766,62 +1613,81 @@ class UserController extends Controller
                                 'address' => $request->address_family[$index],
                                 'gender' => $request->gender_family[$index],
                                 'job' => $request->job[$index],
+                                'created_at' => now(),
                                 'updated_at' => now(),
                             ]);
-                        }
-                    } else {
-                        // Jika data baru (create)
-                        $newFamily = users_family::create([
-                            'users_id' => $user->id,
-                            'name' => $name,
-                            'relation' => $request->relation[$index],
-                            'birth_date' => $request->birth_date_family[$index],
-                            'birth_place' => $request->birth_place_family[$index],
-                            'ID_number' => $request->ID_number_family[$index],
-                            'phone_number' => $request->phone_number_family[$index],
-                            'address' => $request->address_family[$index],
-                            'gender' => $request->gender_family[$index],
-                            'job' => $request->job[$index],
-                            'created_at' => now(),
-                            'updated_at' => now(),
-                        ]);
 
-                        $id_used[] = $newFamily->id; // Simpan ID yang baru di-create
+                            $id_used[] = $newFamily->id; // Simpan ID yang baru di-create
+                        }
                     }
                 }
+
+                // Hapus data yang tidak ada di $id_used
+                users_family::where('users_id', $user->id)
+                    ->whereNotIn('id', $id_used)
+                    ->delete();
             }
 
-            // Hapus data yang tidak ada di $id_used
-            users_family::where('users_id', $user->id)
-                ->whereNotIn('id', $id_used)
-                ->delete();
-        }
 
+            // Logika untuk Education
+            if ($request->has('education_level')) {
+                $id_used_education = [];
 
-        // Logika untuk Education
-        if ($request->has('education_level')) {
-            $id_used_education = [];
+                foreach ($request->education_level as $index => $education_level) {
+                    // Cek apakah degree pendidikan tidak kosong
+                    if (!is_null($education_level)) {
+                        if (isset($request->id_education) && array_key_exists($index, $request->id_education) && !is_null($request->id_education[$index])) {
+                            // Update data jika ID education ada
+                            $id_used_education[] = $request->id_education[$index];
 
-            foreach ($request->education_level as $index => $education_level) {
-                // Cek apakah degree pendidikan tidak kosong
-                if (!is_null($education_level)) {
-                    if (isset($request->id_education) && array_key_exists($index, $request->id_education) && !is_null($request->id_education[$index])) {
-                        // Update data jika ID education ada
-                        $id_used_education[] = $request->id_education[$index];
+                            $userEducation = users_education::findOrFail($request->id_education[$index]);
 
-                        $userEducation = users_education::findOrFail($request->id_education[$index]);
+                            // Cek apakah ada perubahan pada data
+                            if (
+                                $userEducation->degree !== $education_level ||
+                                $userEducation->educational_place !== $request->education_place[$index] ||
+                                $userEducation->educational_city !== $request->education_city[$index] ||
+                                $userEducation->start_education !== $request->start_education[$index] ||
+                                $userEducation->end_education !== $request->end_education[$index] ||
+                                $userEducation->major !== $request->major[$index] ||
+                                $userEducation->grade !== $request->grade[$index]
+                            ) {
+                                $userEducation->update([
+                                    'degree' => $education_level,
+                                    'educational_place' => $request->education_place[$index],
+                                    'educational_city' => $request->education_city[$index],
+                                    'educational_province' => $request->education_province[$index],
+                                    'start_education' => $request->start_education[$index],
+                                    'end_education' => $request->end_education[$index],
+                                    'major' => $request->major[$index],
+                                    'grade' => $request->grade[$index],
+                                    'updated_at' => now(),
+                                ]);
+                            }
 
-                        // Cek apakah ada perubahan pada data
-                        if (
-                            $userEducation->degree !== $education_level ||
-                            $userEducation->educational_place !== $request->education_place[$index] ||
-                            $userEducation->educational_city !== $request->education_city[$index] ||
-                            $userEducation->start_education !== $request->start_education[$index] ||
-                            $userEducation->end_education !== $request->end_education[$index] ||
-                            $userEducation->major !== $request->major[$index] ||
-                            $userEducation->grade !== $request->grade[$index]
-                        ) {
-                            $userEducation->update([
+                            // Handle file upload untuk sertifikat/transkrip
+                            if ($request->hasFile("education_transcript.$index")) {
+                                // Jika ada file lama, hapus terlebih dahulu
+                                if ($userEducation->transcript_file_path && Storage::disk('public')->exists($userEducation->transcript_file_path)) {
+                                    Storage::disk('public')->delete($userEducation->transcript_file_path);
+                                }
+
+                                $file = $request->file("education_transcript.$index");
+                                $extension = $file->getClientOriginalExtension();
+
+                                // Buat nama file yang sesuai
+                                $fileName = "transcript_" . Str::slug($user->name) . "_{$user->id}_{$education_level}_{$userEducation->id}.{$extension}";
+
+                                // Simpan file ke public/user/achievement_user
+                                $filePath = $file->storeAs('user/achievement_user', $fileName, 'public');
+
+                                // Update path file di database
+                                $userEducation->update(['transcript_file_path' => "user/achievement_user/{$fileName}"]);
+                            }
+                        } else {
+                            // Create data baru jika ID education tidak ada
+                            $newEducation = users_education::create([
+                                'users_id' => $user->id,
                                 'degree' => $education_level,
                                 'educational_place' => $request->education_place[$index],
                                 'educational_city' => $request->education_city[$index],
@@ -830,113 +1696,101 @@ class UserController extends Controller
                                 'end_education' => $request->end_education[$index],
                                 'major' => $request->major[$index],
                                 'grade' => $request->grade[$index],
+                                'created_at' => now(),
                                 'updated_at' => now(),
                             ]);
-                        }
 
-                        // Handle file upload untuk sertifikat/transkrip
-                        if ($request->hasFile("education_transcript.$index")) {
-                            // Jika ada file lama, hapus terlebih dahulu
-                            if ($userEducation->transcript_file_path && Storage::disk('public')->exists($userEducation->transcript_file_path)) {
-                                Storage::disk('public')->delete($userEducation->transcript_file_path);
+                            $id_used_education[] = $newEducation->id;
+
+                            // Handle file upload untuk sertifikat/transkrip
+                            if ($request->hasFile("education_transcript.$index")) {
+                                $file = $request->file("education_transcript.$index");
+                                $extension = $file->getClientOriginalExtension();
+
+                                // Buat nama file yang sesuai
+                                $fileName = "transcript_" . Str::slug($user->name) . "_{$user->id}_{$education_level}_{$newEducation->id}.{$extension}";
+
+                                // Simpan file ke public/user/achievement_user
+                                $filePath = $file->storeAs('user/achievement_user', $fileName, 'public');
+
+                                // Update path file di database
+                                $newEducation->update(['transcript_file_path' => "user/achievement_user/{$fileName}"]);
                             }
-
-                            $file = $request->file("education_transcript.$index");
-                            $extension = $file->getClientOriginalExtension();
-
-                            // Buat nama file yang sesuai
-                            $fileName = "transcript_" . Str::slug($user->name) . "_{$user->id}_{$education_level}_{$userEducation->id}.{$extension}";
-
-                            // Simpan file ke public/user/achievement_user
-                            $filePath = $file->storeAs('user/achievement_user', $fileName, 'public');
-
-                            // Update path file di database
-                            $userEducation->update(['transcript_file_path' => "user/achievement_user/{$fileName}"]);
-                        }
-                    } else {
-                        // Create data baru jika ID education tidak ada
-                        $newEducation = users_education::create([
-                            'users_id' => $user->id,
-                            'degree' => $education_level,
-                            'educational_place' => $request->education_place[$index],
-                            'educational_city' => $request->education_city[$index],
-                            'educational_province' => $request->education_province[$index],
-                            'start_education' => $request->start_education[$index],
-                            'end_education' => $request->end_education[$index],
-                            'major' => $request->major[$index],
-                            'grade' => $request->grade[$index],
-                            'created_at' => now(),
-                            'updated_at' => now(),
-                        ]);
-
-                        $id_used_education[] = $newEducation->id;
-
-                        // Handle file upload untuk sertifikat/transkrip
-                        if ($request->hasFile("education_transcript.$index")) {
-                            $file = $request->file("education_transcript.$index");
-                            $extension = $file->getClientOriginalExtension();
-
-                            // Buat nama file yang sesuai
-                            $fileName = "transcript_" . Str::slug($user->name) . "_{$user->id}_{$education_level}_{$newEducation->id}.{$extension}";
-
-                            // Simpan file ke public/user/achievement_user
-                            $filePath = $file->storeAs('user/achievement_user', $fileName, 'public');
-
-                            // Update path file di database
-                            $newEducation->update(['transcript_file_path' => "user/achievement_user/{$fileName}"]);
                         }
                     }
                 }
-            }
 
-            // Ambil data pendidikan yang akan dihapus
-            $educationsToDelete = users_education::where('users_id', $user->id)
-                ->whereNotIn('id', $id_used_education)
-                ->get();
+                // Ambil data pendidikan yang akan dihapus
+                $educationsToDelete = users_education::where('users_id', $user->id)
+                    ->whereNotIn('id', $id_used_education)
+                    ->get();
 
-            // Hapus file transkrip terlebih dahulu
-            foreach ($educationsToDelete as $education) {
-                if ($education->transcript_file_path && Storage::disk('public')->exists($education->transcript_file_path)) {
-                    Storage::disk('public')->delete($education->transcript_file_path);
+                // Hapus file transkrip terlebih dahulu
+                foreach ($educationsToDelete as $education) {
+                    if ($education->transcript_file_path && Storage::disk('public')->exists($education->transcript_file_path)) {
+                        Storage::disk('public')->delete($education->transcript_file_path);
+                    }
                 }
+
+                // Kemudian hapus data dari database
+                users_education::where('users_id', $user->id)
+                    ->whereNotIn('id', $id_used_education)
+                    ->delete();
             }
 
-            // Kemudian hapus data dari database
-            users_education::where('users_id', $user->id)
-                ->whereNotIn('id', $id_used_education)
-                ->delete();
-        }
+            // Logika untuk Work
+            if ($request->has('company_name')) {
+                $id_used_work = [];
 
-        // Logika untuk Work
-        if ($request->has('company_name')) {
-            $id_used_work = [];
+                foreach ($request->company_name as $index => $company_name) {
+                    // Cek apakah nama perusahaan tidak kosong
+                    if (!is_null($company_name)) {
+                        if (isset($request->id_work) && array_key_exists($index, $request->id_work) && !is_null($request->id_work[$index])) {
 
-            foreach ($request->company_name as $index => $company_name) {
-                // Cek apakah nama perusahaan tidak kosong
-                if (!is_null($company_name)) {
-                    if (isset($request->id_work) && array_key_exists($index, $request->id_work) && !is_null($request->id_work[$index])) {
+                            // Update data jika ID work ada
+                            $id_used_work[] = $request->id_work[$index];
 
-                        // Update data jika ID work ada
-                        $id_used_work[] = $request->id_work[$index];
+                            $userWork = users_work_experience::findOrFail($request->id_work[$index]);
 
-                        $userWork = users_work_experience::findOrFail($request->id_work[$index]);
+                            // Cek apakah ada perubahan pada data
+                            if (
+                                $userWork->nama_perusahaan !== $company_name ||
+                                $userWork->position !== $request->position[$index] ||
+                                $userWork->start_work !== $request->start_work[$index] ||
+                                $userWork->end_work !== $request->end_work[$index]
+                            ) {
+                                $userWork->update([
+                                    'company_name' => $company_name,
+                                    'position' => $request->position_work[$index] ?? null,
+                                    'start_working' => $request->start_work[$index] ?? null,
+                                    'end_working' => $request->end_work[$index] ?? null,
 
-                        // Cek apakah ada perubahan pada data
-                        if (
-                            $userWork->nama_perusahaan !== $company_name ||
-                            $userWork->position !== $request->position[$index] ||
-                            $userWork->start_work !== $request->start_work[$index] ||
-                            $userWork->end_work !== $request->end_work[$index]
-                        ) {
-                            $userWork->update([
-                                'company_name' => $company_name,
+                                    'company_address' => $request->company_address[$index] ?? null,
+                                    'company_phone' => $request->company_phone[$index] ?? null,
+                                    'salary' => $request->previous_salary[$index] ?? null,
+                                    'supervisor_name' => $request->supervisor_name[$index] ?? null,
+                                    'supervisor_phone' => $request->supervisor_phone[$index] ?? null,
+                                    'job_desc' => str_replace(["\r", "\n", "-", "  "], ["", ";", "", " "], trim($request->job_desc[$index] ?? null)),
+                                    'reason' => str_replace(["\r", "\n", "-", "  "], ["", ";", "", " "], trim($request->reason[$index] ?? null)),
+                                    'benefit' => str_replace(["\r", "\n", "-", "  "], ["", ";", "", " "], trim($request->benefit[$index] ?? null)),
+                                    'facility' => str_replace(["\r", "\n", "-", "  "], ["", ";", "", " "], trim($request->facility[$index] ?? null)),
+
+                                    'created_at' => now(),
+                                    'updated_at' => now(),
+                                ]);
+                            }
+                        } else {
+                            // Create data baru jika ID work tidak ada
+                            $newWork = users_work_experience::create([
+                                'users_id' => $user->id,
+                                'nama_perusahaan' => $company_name,
+
                                 'position' => $request->position_work[$index] ?? null,
                                 'start_working' => $request->start_work[$index] ?? null,
                                 'end_working' => $request->end_work[$index] ?? null,
-
                                 'company_address' => $request->company_address[$index] ?? null,
                                 'company_phone' => $request->company_phone[$index] ?? null,
-                                'salary' => $request->previous_salary[$index] ?? null,
+                                'salary' => $request->salary[$index] ?? null,
                                 'supervisor_name' => $request->supervisor_name[$index] ?? null,
                                 'supervisor_phone' => $request->supervisor_phone[$index] ?? null,
                                 'job_desc' => str_replace(["\r", "\n", "-", "  "], ["", ";", "", " "], trim($request->job_desc[$index] ?? null)),
@@ -947,162 +1801,157 @@ class UserController extends Controller
                                 'created_at' => now(),
                                 'updated_at' => now(),
                             ]);
+
+                            $id_used_work[] = $newWork->id;
                         }
-                    } else {
-                        // Create data baru jika ID work tidak ada
-                        $newWork = users_work_experience::create([
-                            'users_id' => $user->id,
-                            'nama_perusahaan' => $company_name,
-
-                            'position' => $request->position_work[$index] ?? null,
-                            'start_working' => $request->start_work[$index] ?? null,
-                            'end_working' => $request->end_work[$index] ?? null,
-                            'company_address' => $request->company_address[$index] ?? null,
-                            'company_phone' => $request->company_phone[$index] ?? null,
-                            'salary' => $request->salary[$index] ?? null,
-                            'supervisor_name' => $request->supervisor_name[$index] ?? null,
-                            'supervisor_phone' => $request->supervisor_phone[$index] ?? null,
-                            'job_desc' => str_replace(["\r", "\n", "-", "  "], ["", ";", "", " "], trim($request->job_desc[$index] ?? null)),
-                            'reason' => str_replace(["\r", "\n", "-", "  "], ["", ";", "", " "], trim($request->reason[$index] ?? null)),
-                            'benefit' => str_replace(["\r", "\n", "-", "  "], ["", ";", "", " "], trim($request->benefit[$index] ?? null)),
-                            'facility' => str_replace(["\r", "\n", "-", "  "], ["", ";", "", " "], trim($request->facility[$index] ?? null)),
-
-                            'created_at' => now(),
-                            'updated_at' => now(),
-                        ]);
-
-                        $id_used_work[] = $newWork->id;
                     }
                 }
+
+                // Hapus data yang tidak ada di $id_used_work
+                users_work_experience::where('users_id', $user->id)
+                    ->whereNotIn('id', $id_used_work)
+                    ->delete();
+
+                // dd('beres');
             }
 
-            // Hapus data yang tidak ada di $id_used_work
-            users_work_experience::where('users_id', $user->id)
-                ->whereNotIn('id', $id_used_work)
-                ->delete();
-
-            // dd('beres');
-        }
 
 
+            // Logika untuk Training
+            if ($request->has('training_name')) {
+                $id_used_training = [];
 
-        // Logika untuk Training
-        if ($request->has('training_name')) {
-            $id_used_training = [];
+                foreach ($request->training_name as $index => $training_name) {
+                    if (!is_null($training_name)) {
+                        if (isset($request->id_training) && array_key_exists($index, $request->id_training) && !is_null($request->id_training[$index])) {
+                            $id_used_training[] = $request->id_training[$index];
+                            $userTraining = users_training::findOrFail($request->id_training[$index]);
 
-            foreach ($request->training_name as $index => $training_name) {
-                if (!is_null($training_name)) {
-                    if (isset($request->id_training) && array_key_exists($index, $request->id_training) && !is_null($request->id_training[$index])) {
-                        $id_used_training[] = $request->id_training[$index];
-                        $userTraining = users_training::findOrFail($request->id_training[$index]);
-
-                        if (
-                            $userTraining->training_name !== $training_name ||
-                            $userTraining->training_city !== $request->training_city[$index] ||
-                            $userTraining->start_date !== $request->training_start_date[$index] ||
-                            $userTraining->end_date !== $request->training_end_date[$index]
-                        ) {
-                            $userTraining->update([
+                            if (
+                                $userTraining->training_name !== $training_name ||
+                                $userTraining->training_city !== $request->training_city[$index] ||
+                                $userTraining->start_date !== $request->training_start_date[$index] ||
+                                $userTraining->end_date !== $request->training_end_date[$index]
+                            ) {
+                                $userTraining->update([
+                                    'training_name' => $training_name,
+                                    'training_city' => $request->training_city[$index] ?? null,
+                                    'training_province' => $request->training_province[$index] ?? null,
+                                    'start_date' => $request->training_start_date[$index] ?? null,
+                                    'end_date' => $request->training_end_date[$index] ?? null,
+                                    'updated_at' => now(),
+                                ]);
+                            }
+                        } else {
+                            $newTraining = users_training::create([
+                                'users_id' => $user->id,
                                 'training_name' => $training_name,
                                 'training_city' => $request->training_city[$index] ?? null,
                                 'training_province' => $request->training_province[$index] ?? null,
                                 'start_date' => $request->training_start_date[$index] ?? null,
                                 'end_date' => $request->training_end_date[$index] ?? null,
+                                'created_at' => now(),
                                 'updated_at' => now(),
                             ]);
+                            $id_used_training[] = $newTraining->id;
                         }
-                    } else {
-                        $newTraining = users_training::create([
-                            'users_id' => $user->id,
-                            'training_name' => $training_name,
-                            'training_city' => $request->training_city[$index] ?? null,
-                            'training_province' => $request->training_province[$index] ?? null,
-                            'start_date' => $request->training_start_date[$index] ?? null,
-                            'end_date' => $request->training_end_date[$index] ?? null,
-                            'created_at' => now(),
-                            'updated_at' => now(),
-                        ]);
-                        $id_used_training[] = $newTraining->id;
                     }
                 }
+
+                users_training::where('users_id', $user->id)
+                    ->whereNotIn('id', $id_used_training)
+                    ->delete();
             }
 
-            users_training::where('users_id', $user->id)
-                ->whereNotIn('id', $id_used_training)
-                ->delete();
-        }
+            // Logika untuk Organization
+            if ($request->has('organization_name')) {
+                $id_used_organization = [];
 
-        // Logika untuk Organization
-        if ($request->has('organization_name')) {
-            $id_used_organization = [];
+                foreach ($request->organization_name as $index => $organization_name) {
+                    if (!is_null($organization_name)) {
+                        if (isset($request->id_organization) && array_key_exists($index, $request->id_organization) && !is_null($request->id_organization[$index])) {
 
-            foreach ($request->organization_name as $index => $organization_name) {
-                if (!is_null($organization_name)) {
-                    if (isset($request->id_organization) && array_key_exists($index, $request->id_organization) && !is_null($request->id_organization[$index])) {
+                            $id_used_organization[] = $request->id_organization[$index];
+                            $userOrganization = users_organization::findOrFail($request->id_organization[$index]);
 
-                        $id_used_organization[] = $request->id_organization[$index];
-                        $userOrganization = users_organization::findOrFail($request->id_organization[$index]);
+                            if (
+                                $userOrganization->organization_name !== $organization_name ||
+                                $userOrganization->position !== $request->organization_position[$index] ||
+                                $userOrganization->start_date !== $request->organization_start_date[$index] ||
+                                $userOrganization->end_date !== $request->organization_end_date[$index]
+                            ) {
+                                $userOrganization->update([
+                                    'organization_name' => $organization_name,
+                                    'position' => $request->organization_position[$index] ?? null,
+                                    'city' => $request->organization_city[$index] ?? null,
+                                    'province' => $request->organization_province[$index] ?? null,
+                                    'activity_type' => str_replace(["\r", "\n", "-", "  "], ["", ";", "", " "], trim($request->activity_type[$index] ?? null)),
 
-                        if (
-                            $userOrganization->organization_name !== $organization_name ||
-                            $userOrganization->position !== $request->organization_position[$index] ||
-                            $userOrganization->start_date !== $request->organization_start_date[$index] ||
-                            $userOrganization->end_date !== $request->organization_end_date[$index]
-                        ) {
-                            $userOrganization->update([
+                                    'start_date' => $request->organization_start_date[$index] ?? null,
+                                    'end_date' => $request->organization_end_date[$index] ?? null,
+                                    'updated_at' => now(),
+                                ]);
+                            }
+                        } else {
+                            $newOrganization = users_organization::create([
+                                'users_id' => $user->id,
                                 'organization_name' => $organization_name,
                                 'position' => $request->organization_position[$index] ?? null,
                                 'city' => $request->organization_city[$index] ?? null,
                                 'province' => $request->organization_province[$index] ?? null,
                                 'activity_type' => str_replace(["\r", "\n", "-", "  "], ["", ";", "", " "], trim($request->activity_type[$index] ?? null)),
-
                                 'start_date' => $request->organization_start_date[$index] ?? null,
                                 'end_date' => $request->organization_end_date[$index] ?? null,
+                                'created_at' => now(),
                                 'updated_at' => now(),
                             ]);
+                            $id_used_organization[] = $newOrganization->id;
                         }
-                    } else {
-                        $newOrganization = users_organization::create([
-                            'users_id' => $user->id,
-                            'organization_name' => $organization_name,
-                            'position' => $request->organization_position[$index] ?? null,
-                            'city' => $request->organization_city[$index] ?? null,
-                            'province' => $request->organization_province[$index] ?? null,
-                            'activity_type' => str_replace(["\r", "\n", "-", "  "], ["", ";", "", " "], trim($request->activity_type[$index] ?? null)),
-                            'start_date' => $request->organization_start_date[$index] ?? null,
-                            'end_date' => $request->organization_end_date[$index] ?? null,
-                            'created_at' => now(),
-                            'updated_at' => now(),
-                        ]);
-                        $id_used_organization[] = $newOrganization->id;
                     }
                 }
+
+                users_organization::where('users_id', $user->id)
+                    ->whereNotIn('id', $id_used_organization)
+                    ->delete();
             }
 
-            users_organization::where('users_id', $user->id)
-                ->whereNotIn('id', $id_used_organization)
-                ->delete();
-        }
+            // Logika untuk Language
+            if ($request->has('language')) {
+                $id_used_language = [];
 
-        // Logika untuk Language
-        if ($request->has('language')) {
-            $id_used_language = [];
+                foreach ($request->language as $index => $language) {
+                    if (!is_null($language)) {
+                        if (isset($request->id_language) && array_key_exists($index, $request->id_language) && !is_null($request->id_language[$index])) {
 
-            foreach ($request->language as $index => $language) {
-                if (!is_null($language)) {
-                    if (isset($request->id_language) && array_key_exists($index, $request->id_language) && !is_null($request->id_language[$index])) {
-
-                        $id_used_language[] = $request->id_language[$index];
-                        $userLanguage = users_language::findOrFail($request->id_language[$index]);
+                            $id_used_language[] = $request->id_language[$index];
+                            $userLanguage = users_language::findOrFail($request->id_language[$index]);
 
 
 
 
-                        if (
-                            $userLanguage->language !== $language ||
-                            $userLanguage->verbal !== $request->verbal[$index] ||
-                            $userLanguage->written !== $request->written[$index]
-                        ) {
+                            if (
+                                $userLanguage->language !== $language ||
+                                $userLanguage->verbal !== $request->verbal[$index] ||
+                                $userLanguage->written !== $request->written[$index]
+                            ) {
+                                if ($language === 'Other') {
+                                    $otherLanguage = $request->other_language[$index] ?? null;
+                                    if (empty($otherLanguage)) {
+                                        continue;
+                                    }
+                                    $language = $otherLanguage;
+                                }
+
+
+
+                                $userLanguage->update([
+                                    'language' => $language,
+                                    'verbal' => $request->verbal[$index] ?? null,
+                                    'written' => $request->written[$index] ?? null,
+                                    'updated_at' => now(),
+                                ]);
+                            }
+                        } else {
                             if ($language === 'Other') {
                                 $otherLanguage = $request->other_language[$index] ?? null;
                                 if (empty($otherLanguage)) {
@@ -1111,88 +1960,86 @@ class UserController extends Controller
                                 $language = $otherLanguage;
                             }
 
-
-
-                            $userLanguage->update([
+                            $newLanguage = users_language::create([
+                                'users_id' => $user->id,
                                 'language' => $language,
                                 'verbal' => $request->verbal[$index] ?? null,
                                 'written' => $request->written[$index] ?? null,
+                                'created_at' => now(),
                                 'updated_at' => now(),
                             ]);
+                            $id_used_language[] = $newLanguage->id;
                         }
-                    } else {
-                        if ($language === 'Other') {
-                            $otherLanguage = $request->other_language[$index] ?? null;
-                            if (empty($otherLanguage)) {
-                                continue;
-                            }
-                            $language = $otherLanguage;
-                        }
-
-                        $newLanguage = users_language::create([
-                            'users_id' => $user->id,
-                            'language' => $language,
-                            'verbal' => $request->verbal[$index] ?? null,
-                            'written' => $request->written[$index] ?? null,
-                            'created_at' => now(),
-                            'updated_at' => now(),
-                        ]);
-                        $id_used_language[] = $newLanguage->id;
                     }
                 }
+
+                users_language::where('users_id', $user->id)
+                    ->whereNotIn('id', $id_used_language)
+                    ->delete();
             }
 
-            users_language::where('users_id', $user->id)
-                ->whereNotIn('id', $id_used_language)
-                ->delete();
-        }
+            // Send notifications
+            try {
+                // 1. Send update notification to the employee who was updated
+                Mail::to($user->email)->send(new UpdateNotification($user->name));
 
-
-        // 1. Send update notification to the employee who was updated
-        Mail::to($user->email)->send(new UpdateNotification($user->name));
-
-        // Create notification for the updated employee
-        Notification::create([
-            'users_id' => $user->id,
-            'message' => "Your profile information has been updated",
-            'type' => 'employee_update',
-            'maker_id' => Auth::user()->id,
-            'status' => 'Unread'
-        ]);
-
-        // 2. Get HR department users (first we need to find HR department ID)
-        $hrDepartment = EmployeeDepartment::where('department', 'Human Resources')->first();
-        if ($hrDepartment) {
-            // Get HR users excluding the updated user (if they're in HR)
-            $hrUsers = User::where('department_id', $hrDepartment->id)
-                ->where('id', '!=', $user->id)
-                ->get();
-
-            // Send email to all HR staff
-            $hrEmails = $hrUsers->pluck('email');
-            Mail::to($hrEmails)->send(new DepartmentUpdateNotification(
-                $user->employee_id,
-                $user->position->position, // Access position name through relationship
-                $user->department->department // Access department name through relationship
-            ));
-
-            // Create notifications for each HR staff
-            foreach ($hrUsers as $hrUser) {
+                // Create notification for the updated employee
                 Notification::create([
-                    'users_id' => $hrUser->id,
-                    'message' => "Employee data for {$user->name} (ID: {$user->employee_id}) has been updated",
+                    'users_id' => $user->id,
+                    'message' => "Your profile information has been updated",
                     'type' => 'employee_update',
                     'maker_id' => Auth::user()->id,
                     'status' => 'Unread'
                 ]);
-            }
-        }
 
-        // Redirect ke halaman index atau halaman lain dengan pesan sukses
-        return response()->json([
-            'message' => 'Employee Updated successfully',
-            'redirect' => route('user.employees.index')
-        ]);
+                // 2. Get HR department users
+                $hrDepartment = EmployeeDepartment::where('department', 'Human Resources')->first();
+                if ($hrDepartment) {
+                    $hrUsers = User::where('department_id', $hrDepartment->id)
+                        ->where('id', '!=', $user->id)
+                        ->get();
+
+                    $hrEmails = $hrUsers->pluck('email');
+                    Mail::to($hrEmails)->send(new DepartmentUpdateNotification(
+                        $user->employee_id,
+                        $user->position->position,
+                        $user->department->department
+                    ));
+
+                    foreach ($hrUsers as $hrUser) {
+                        Notification::create([
+                            'users_id' => $hrUser->id,
+                            'message' => "Employee data for {$user->name} (ID: {$user->employee_id}) has been updated",
+                            'type' => 'employee_update',
+                            'maker_id' => Auth::user()->id,
+                            'status' => 'Unread'
+                        ]);
+                    }
+                }
+            } catch (Exception $e) {
+                // Log notification error but don't fail the update
+                Log::error('Failed to send notification: ' . $e->getMessage());
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Employee updated successfully!',
+                'redirect' => route('user.employees.index')
+            ]);
+        } catch (ModelNotFoundException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Employee not found',
+                'errors' => ['The specified employee does not exist.']
+            ], 404);
+        } catch (Exception $e) {
+            Log::error('Employee update error: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'An unexpected error occurred',
+                'errors' => ['Please try again. If the problem persists, contact support.']
+            ], 500);
+        }
     }
 
     public function employees_history($id)

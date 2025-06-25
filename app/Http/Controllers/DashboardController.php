@@ -44,6 +44,8 @@ class DashboardController extends Controller
         ")
             ->get();
 
+        // dd($generasiData);
+
 
         $genderData = User::selectRaw('gender, COUNT(*) as total')
             ->whereIn('gender', ['Male', 'Female'])

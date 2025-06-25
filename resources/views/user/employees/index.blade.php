@@ -446,16 +446,6 @@
             <div class="modal-body p-4">
                 <form id="importForm" action="{{ route('user.employees.import') }}" method="POST" enctype="multipart/form-data">
                     @csrf
-                    <div class="mb-4">
-                        <label for="file" class="form-label fw-semibold">Upload Excel File</label>
-                        <div class="input-group">
-                            <span class="input-group-text bg-light">
-                                <i class="fas fa-file-excel text-success"></i>
-                            </span>
-                            <input type="file" name="file" id="file" class="form-control" required>
-                        </div>
-                        <div class="form-text">File format must be Excel (.xlsx)</div>
-                    </div>
 
                     <div class="card bg-light border-0 mb-3">
                         <div class="card-body">
@@ -501,6 +491,18 @@
                             </div>
                         </div>
                     </div>
+
+                    <div class="mt-3 mb-3">
+                        <label for="file" class="form-label fw-semibold">Upload Excel File</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light">
+                                <i class="fas fa-file-excel text-success"></i>
+                            </span>
+                            <input type="file" name="file" id="file" class="form-control" required>
+                        </div>
+                        <div class="form-text">File format must be Excel (.xlsx)</div>
+                    </div>
+
 
                     <div class="d-flex justify-content-between">
                         <a href="{{ asset('storage/sample_employee_import.xlsx') }}" class="btn btn-info">

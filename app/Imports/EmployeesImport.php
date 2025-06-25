@@ -10,13 +10,25 @@ use Illuminate\Support\Facades\Hash;
 use Maatwebsite\Excel\Concerns\ToModel;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
 use Carbon\Carbon;
+use PhpOffice\PhpSpreadsheet\Shared\Date;
 
 class EmployeesImport implements ToModel, WithHeadingRow
 {
     public function model(array $row)
     {
         // Pastikan data yang diperlukan tersedia
-        if (!isset($row['name'], $row['email'], $row['position'], $row['department'], $row['join_date'])) {
+        //dd($row);
+        if (!array_filter($row)) {
+            return null; // skip baris kosong
+        }
+
+        if (
+            empty($row['name']) ||
+            empty($row['email']) ||
+            empty($row['position']) ||
+            empty($row['department']) ||
+            empty($row['join_date'])
+        ) {
             throw new \Exception("Data penting tidak lengkap. Pastikan kolom name, email, position, department, dan join_date terisi.");
         }
 
@@ -30,8 +42,20 @@ class EmployeesImport implements ToModel, WithHeadingRow
             throw new \Exception("Nama karyawan '{$row['name']}' sudah terdaftar dalam database.");
         }
 
+
+        
+        $birthDate = is_numeric($row['birth_date']) ? Date::excelToDateTimeObject($row['birth_date'])->format('Y-m-d') : null;
+        $joinDate = is_numeric($row['join_date']) ? Date::excelToDateTimeObject($row['join_date'])->format('Y-m-d') : null;
+
+        $contractStartDate = (!empty($row['contract_start_date']) && is_numeric($row['contract_start_date']))
+            ? Date::excelToDateTimeObject($row['contract_start_date'])->format('Y-m-d') : null;
+
+        $contractEndDate = (!empty($row['contract_end_date']) && is_numeric($row['contract_end_date']))
+            ? Date::excelToDateTimeObject($row['contract_end_date'])->format('Y-m-d') : null;
+
+
         // Format YYYYMM untuk employee_id
-        $yearMonth = Carbon::parse($row['join_date'])->format('Ym');
+        $yearMonth = Carbon::parse($joinDate)->format('Ym');
 
         // Cari employee terakhir di bulan yang sama
         $lastEmployee = User::where('employee_id', 'like', "{$yearMonth}%")
@@ -192,6 +216,9 @@ class EmployeesImport implements ToModel, WithHeadingRow
         // Buat password default
         $password = strtolower(str_replace(' ', '', $row['name'])) . '12345';
 
+
+
+
         // Buat data user
         $user = new User([
             'employee_id'       => $employeeId,
@@ -201,7 +228,6 @@ class EmployeesImport implements ToModel, WithHeadingRow
             'department_id'      => $departmentRecord->id,
             'user_status'       => 'Unbanned',
             'ID_number'         => $row['id_number'] ?? null,
-            'birth_date'        => $row['birth_date'] ?? null,
             'birth_place'       => $row['birth_place'] ?? null,
             'ID_address'        => $row['id_address'] ?? null,
             'domicile_address'  => $row['domicile_address'] ?? null,
@@ -209,9 +235,12 @@ class EmployeesImport implements ToModel, WithHeadingRow
             'gender'            => ucfirst($gender),
             'phone_number'      => $phoneNumber,
             'employee_status'   => $employeeStatus,
-            'contract_start_date' => $row['contract_start_date'] ?? null,
-            'contract_end_date'   => $row['contract_end_date'] ?? null,
-            'join_date'         => $row['join_date'],
+
+            'birth_date' => $birthDate,
+            'join_date' => $joinDate,
+            'contract_start_date' => $contractStartDate ?? null,
+            'contract_end_date' => $contractEndDate ?? null,
+
             'NPWP'              => $npwp,
             'bpjs_employment'   => $row['bpjs_employment'] ?? null,
             'bpjs_health'       => $row['bpjs_health'] ?? null,

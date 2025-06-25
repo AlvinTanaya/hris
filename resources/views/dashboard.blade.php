@@ -17,7 +17,7 @@
         <div class="col-md-6">
             <div class="card shadow-sm border-0 bg-gradient-primary text-white">
                 <div class="card-body text-center">
-                    <h5 class="card-title">Total Pegawai</h5>
+                    <h5 class="card-title">Total Employees</h5>
                     <h2 class="fw-bold">{{ $totalUsers }}</h2>
                 </div>
             </div>
@@ -25,8 +25,8 @@
         <div class="col-md-6">
             <div class="card shadow-sm border-0 bg-gradient-success text-white">
                 <div class="card-body text-center">
-                    <h5 class="card-title">Rata-rata Umur</h5>
-                    <h2 class="fw-bold">{{ round($avgAge) }} Tahun</h2>
+                    <h5 class="card-title">Average Age</h5>
+                    <h2 class="fw-bold">{{ round($avgAge) }} Years</h2>
                 </div>
             </div>
         </div>
@@ -37,7 +37,7 @@
         <div class="col-md-6">
             <div class="card shadow-sm">
                 <div class="card-body">
-                    <h5 class="card-title text-center">Distribusi Generasi</h5>
+                    <h5 class="card-title text-center">Generation Distribution</h5>
                     <canvas id="generationChart"></canvas>
                 </div>
             </div>
@@ -45,7 +45,7 @@
         <div class="col-md-6">
             <div class="card shadow-sm">
                 <div class="card-body">
-                    <h5 class="card-title text-center">Distribusi Gender</h5>
+                    <h5 class="card-title text-center">Gender Distribution</h5>
                     <canvas id="genderChart"></canvas>
                 </div>
             </div>
@@ -60,7 +60,7 @@
         <div class="col-md-6">
             <div class="card shadow-sm border-danger">
                 <div class="card-header bg-danger text-white d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0"><i class="fas fa-user-clock"></i> Pegawai 55+ Tahun</h5>
+                    <h5 class="mb-0"><i class="fas fa-user-clock"></i> Employees 55+ Years</h5>
 
                     @if (in_array(Auth::user()->department, ['Human Resources', 'Director', 'General Manager']) && Auth::user()->position != 'staff')
                     <!-- Button to User Index -->
@@ -75,21 +75,21 @@
                     <table class="table table-striped">
                         <thead>
                             <tr>
-                                <th>Nama</th>
-                                <th class="text-center">Usia</th>
+                                <th>Name</th>
+                                <th class="text-center">Age</th>
                             </tr>
                         </thead>
                         <tbody>
                             @foreach($olderEmployees as $employee)
                             <tr>
                                 <td>{{ $employee->name }}</td>
-                                <td class="text-center">{{ $employee->age }} Tahun</td>
+                                <td class="text-center">{{ $employee->age }} Years</td>
                             </tr>
                             @endforeach
                         </tbody>
                     </table>
                     @else
-                    <p class="text-center">Tidak ada pegawai berusia 55 tahun atau lebih.</p>
+                    <p class="text-center">No employees aged 55 years or older.</p>
                     @endif
                 </div>
             </div>
@@ -99,7 +99,7 @@
 
 
                 <div class="card-header bg-warning text-white d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0"><i class="fas fa-calendar-times"></i> Kontrak Berakhir</h5>
+                    <h5 class="mb-0"><i class="fas fa-calendar-times"></i> Contract Expiring</h5>
 
                     @if (in_array(Auth::user()->department, ['Human Resources', 'Director', 'General Manager']) && Auth::user()->position != 'staff')
                     <!-- Button to User Index -->
@@ -113,8 +113,8 @@
                     <table class="table table-striped">
                         <thead>
                             <tr>
-                                <th>Nama</th>
-                                <th class="text-center">Tanggal Berakhir</th>
+                                <th>Name</th>
+                                <th class="text-center">Expiration Date</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -127,7 +127,7 @@
                         </tbody>
                     </table>
                     @else
-                    <p class="text-center">Tidak ada kontrak berakhir dalam 2 bulan.</p>
+                    <p class="text-center">No contracts expiring within 2 months.</p>
                     @endif
                 </div>
             </div>
@@ -247,31 +247,31 @@
 
 <script>
     $(document).ready(function() {
-        // Data dari Blade
-        const generasiData = @json($generasiData);
+        // Data from Blade
+        const generationData = @json($generasiData);
         const genderData = @json($genderData);
 
-        console.log("Generasi Data:", generasiData);
+        console.log("Generation Data:", generationData);
         console.log("Gender Data:", genderData);
 
-        const allGenerations = ["Gen Z", "Millennials", "Gen X", "Boomers"];
-        const generasiLabels = allGenerations;
+        const allGenerations = ["Gen Z", "Millennial", "Gen X", "Baby Boomer"];
+        const generationLabels = allGenerations;
 
-        const generasiCounts = generasiLabels.map(gen => {
-            const found = generasiData.find(item => item.generasi === gen);
+        const generationCounts = generationLabels.map(gen => {
+            const found = generationData.find(item => item.generasi === gen);
             return found ? found.total : 0;
         });
 
-        // Cek apakah canvas ada sebelum membuat chart
+        // Check if canvas exists before creating chart
         if ($("#generationChart").length) {
             const genCtx = $("#generationChart")[0].getContext('2d');
             new Chart(genCtx, {
                 type: 'bar',
                 data: {
-                    labels: generasiLabels,
+                    labels: generationLabels,
                     datasets: [{
-                        label: 'Jumlah Pegawai',
-                        data: generasiCounts,
+                        label: 'Number of Employees',
+                        data: generationCounts,
                         backgroundColor: [
                             'rgba(75, 192, 192, 0.8)',
                             'rgba(255, 99, 132, 0.8)',
@@ -301,7 +301,7 @@
                 }
             });
         } else {
-            console.warn('Canvas dengan ID "generationChart" tidak ditemukan.');
+            console.warn('Canvas with ID "generationChart" not found.');
         }
 
         // Gender Chart (Pie Chart)
@@ -328,7 +328,7 @@
                 });
             }, 500);
         } else {
-            console.warn('Canvas dengan ID "genderChart" tidak ditemukan.');
+            console.warn('Canvas with ID "genderChart" not found.');
         }
     });
 </script>
