@@ -1140,7 +1140,7 @@ class RecruitmentController extends Controller
             }
 
             // Debug matrices - uncomment untuk melihat detail matriks
-            // $this->debugAHPMatrices($ahpData, $mainWeights, $subWeights);
+            //$this->debugAHPMatrices($ahpData, $mainWeights, $subWeights);
 
             // Calculate scores for each applicant
             $rankings = $this->calculateApplicantScores($applicants, $ahpData, $mainWeights, $subWeights);

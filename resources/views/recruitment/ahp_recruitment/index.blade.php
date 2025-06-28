@@ -105,56 +105,58 @@
                     <h5 class="card-title border-bottom pb-2 mb-3">Step 3: Configure Sub-Criteria</h5>
 
                     <!-- Saaty Scale Table -->
-                    <div class="card mb-3">
-                        <div class="card-header bg-gradient-primary text-white">
-                            <h6 class="mb-0">Saaty Scale Reference (1-9)</h6>
+                    <div class="card mb-4 shadow-sm border-0">
+                        <div class="card-header bg-primary text-white d-flex align-items-center">
+                            <i class="fas fa-balance-scale me-2"></i>
+                            <h6 class="mb-0">Saaty Scale Reference <small class="fw-normal ms-1">(1–9)</small></h6>
                         </div>
                         <div class="card-body">
                             <div class="table-responsive">
-                                <table class="table table-bordered table-sm mb-0">
+                                <table class="table table-bordered table-striped table-hover align-middle mb-0">
                                     <thead class="table-light">
-                                        <tr>
-                                            <th width="15%">Intensity of importance</th>
-                                            <th width="30%">Definition</th>
-                                            <th width="55%">Explanation</th>
+                                        <tr class="text-center">
+                                            <th style="width: 15%">Intensity</th>
+                                            <th style="width: 30%">Definition</th>
+                                            <th style="width: 55%">Explanation</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         <tr>
-                                            <td class="text-center">1</td>
+                                            <td class="text-center"><span class="badge bg-secondary fs-6">1</span></td>
                                             <td>Equal importance</td>
-                                            <td>Two activities contribute equally to the objective</td>
+                                            <td>Both options contribute equally to the objective.</td>
                                         </tr>
                                         <tr>
-                                            <td class="text-center">3</td>
+                                            <td class="text-center"><span class="badge bg-primary fs-6">3</span></td>
                                             <td>Moderate importance</td>
-                                            <td>Experience and judgment slightly favour one over another</td>
+                                            <td>Experience slightly favors one over the other.</td>
                                         </tr>
                                         <tr>
-                                            <td class="text-center">5</td>
+                                            <td class="text-center"><span class="badge bg-info text-dark fs-6">5</span></td>
                                             <td>Strong importance</td>
-                                            <td>Experience and judgment strongly favour one over another</td>
+                                            <td>Judgment strongly favors one alternative.</td>
                                         </tr>
                                         <tr>
-                                            <td class="text-center">7</td>
+                                            <td class="text-center"><span class="badge bg-warning text-dark fs-6">7</span></td>
                                             <td>Very strong importance</td>
-                                            <td>Activity is strongly favoured and its dominance is demonstrated in practice</td>
+                                            <td>Demonstrated preference backed by practical experience.</td>
                                         </tr>
                                         <tr>
-                                            <td class="text-center">9</td>
+                                            <td class="text-center"><span class="badge bg-danger fs-6">9</span></td>
                                             <td>Absolute importance</td>
-                                            <td>Importance of one over another affirmed on the highest possible order</td>
+                                            <td>One option is overwhelmingly more important than the other.</td>
                                         </tr>
                                         <tr>
-                                            <td class="text-center">2, 4, 6, 8</td>
+                                            <td class="text-center"><span class="badge bg-light text-dark fs-6">2, 4, 6, 8</span></td>
                                             <td>Intermediate values</td>
-                                            <td>Used to represent compromise between the priorities listed above</td>
+                                            <td>Used to express compromise between the judgments above.</td>
                                         </tr>
                                     </tbody>
                                 </table>
                             </div>
                         </div>
                     </div>
+
 
                     <div class="alert alert-warning">
                         <i class="fas fa-exclamation-triangle me-2"></i> You must configure all criteria before proceeding to the next step
@@ -182,60 +184,56 @@
                 <div class="step-content" id="step-4-content">
                     <h5 class="card-title border-bottom pb-2 mb-3">Step 4: Compare Main Criteria</h5>
 
-                    <!-- Saaty Scale Table -->
-                    <div class="card mb-3">
-                        <div class="card-header bg-gradient-primary text-white">
-                            <h6 class="mb-0">Saaty Scale Reference (1-9)</h6>
+                    <div class="card mb-4 shadow-sm border-0">
+                        <div class="card-header bg-primary text-white d-flex align-items-center">
+                            <i class="fas fa-balance-scale me-2"></i>
+                            <h6 class="mb-0">Saaty Scale Reference <small class="fw-normal ms-1">(1–9)</small></h6>
                         </div>
                         <div class="card-body">
                             <div class="table-responsive">
-                                <table class="table table-bordered table-sm mb-0">
+                                <table class="table table-bordered table-striped table-hover align-middle mb-0">
                                     <thead class="table-light">
-                                        <tr>
-                                            <th width="15%">Intensity of importance</th>
-                                            <th width="30%">Definition</th>
-                                            <th width="55%">Explanation</th>
+                                        <tr class="text-center">
+                                            <th style="width: 15%">Intensity</th>
+                                            <th style="width: 30%">Definition</th>
+                                            <th style="width: 55%">Explanation</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         <tr>
-                                            <td class="text-center">1</td>
+                                            <td class="text-center"><span class="badge bg-secondary fs-6">1</span></td>
                                             <td>Equal importance</td>
-                                            <td>Two activities contribute equally to the objective</td>
+                                            <td>Both options contribute equally to the objective.</td>
                                         </tr>
                                         <tr>
-                                            <td class="text-center">3</td>
+                                            <td class="text-center"><span class="badge bg-primary fs-6">3</span></td>
                                             <td>Moderate importance</td>
-                                            <td>Experience and judgment slightly favour one over another</td>
+                                            <td>Experience slightly favors one over the other.</td>
                                         </tr>
                                         <tr>
-                                            <td class="text-center">5</td>
+                                            <td class="text-center"><span class="badge bg-info text-dark fs-6">5</span></td>
                                             <td>Strong importance</td>
-                                            <td>Experience and judgment strongly favour one over another</td>
+                                            <td>Judgment strongly favors one alternative.</td>
                                         </tr>
                                         <tr>
-                                            <td class="text-center">7</td>
+                                            <td class="text-center"><span class="badge bg-warning text-dark fs-6">7</span></td>
                                             <td>Very strong importance</td>
-                                            <td>Activity is strongly favoured and its dominance is demonstrated in practice</td>
+                                            <td>Demonstrated preference backed by practical experience.</td>
                                         </tr>
                                         <tr>
-                                            <td class="text-center">9</td>
+                                            <td class="text-center"><span class="badge bg-danger fs-6">9</span></td>
                                             <td>Absolute importance</td>
-                                            <td>Importance of one over another affirmed on the highest possible order</td>
+                                            <td>One option is overwhelmingly more important than the other.</td>
                                         </tr>
                                         <tr>
-                                            <td class="text-center">2, 4, 6, 8</td>
+                                            <td class="text-center"><span class="badge bg-light text-dark fs-6">2, 4, 6, 8</span></td>
                                             <td>Intermediate values</td>
-                                            <td>Used to represent compromise between the priorities listed above</td>
+                                            <td>Used to express compromise between the judgments above.</td>
                                         </tr>
                                     </tbody>
                                 </table>
                             </div>
                         </div>
-                    </div>
-
-                    <div class="alert alert-info">
-                        <i class="fas fa-info-circle me-2"></i> Compare the relative importance of each criteria pair using the sliders below
                     </div>
 
                     <div id="mainCriteriaSliders" class="mb-3">
@@ -415,6 +413,16 @@
 @endsection
 
 @push('scripts')
+<script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
+<link rel="stylesheet" href="https://code.jquery.com/ui/1.13.2/themes/base/jquery-ui.css">
+<script src="https://code.jquery.com/ui/1.13.2/jquery-ui.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+
+<!-- DataTables CSS & JS -->
+<link rel="stylesheet" href="https://cdn.datatables.net/1.13.4/css/jquery.dataTables.min.css">
+<script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
+
+
 <script>
     // Tambahkan ini di bagian akhir document ready
     $(document).ready(function() {
@@ -676,7 +684,6 @@
 
 
 
-
         // 2. Fix the saveRangesFirst function to update range values before trying to validate
         function saveRangesFirst() {
             const criteriaKey = currentConfig.criteria;
@@ -742,7 +749,6 @@
 
             return true;
         }
-
 
         // New function to separate the logic of finding a gap and creating a range
         function findGapAndCreateRange(criteriaKey) {
@@ -831,9 +837,7 @@
             Swal.fire('Error', 'Cannot add more ranges - no space available between existing ranges', 'error');
             return false;
         }
-
-
-        // 2. Set ranges to readonly mode when saved
+        // Also make sure the button is properly shown/hidden in setRangesReadonly:
         function setRangesReadonly(readonly) {
             if (readonly) {
                 // Disable all inputs and hide delete buttons
@@ -917,7 +921,6 @@
             return valid;
         }
 
-
         function openRangeBasedComparisonModal(criteriaKey) {
             currentConfig.type = 'range';
             currentConfig.criteria = criteriaKey;
@@ -925,7 +928,8 @@
             const ranges = ahpData.subCriteria[criteriaKey].ranges;
 
             let content = `
-<h5 class="mb-3">${criteriaName} Range Configuration</h5>
+            <h5 class="mb-4 fw-bold text-primary">
+    <i class="fas fa-balance-scale me-2"></i>${criteriaName} Range Configuration</h5>
 <div class="alert alert-info mb-3">
     <i class="fas fa-info-circle me-2"></i>
     <strong>Step 1:</strong> Configure the ranges below (Max 7 ranges)
@@ -946,77 +950,134 @@
 </div>
 
 <div id="comparisonSection" class="d-none">
-    <h5 class="mb-3 mt-4 border-top pt-3">Compare ${criteriaName} Ranges</h5>
-    <div class="alert alert-info mb-3">
-        <i class="fas fa-info-circle me-2"></i>
-        <strong>Step 2:</strong> Compare range importance
+  <h5 class="mb-4 fw-bold text-primary">
+    <i class="fas fa-balance-scale me-2"></i>Compare ${criteriaName} Ranges
+  </h5>
+
+  <div class="alert alert-info d-flex align-items-center">
+    <i class="fas fa-info-circle me-2 fs-5"></i>
+    <div>Choose how you want to compare the ranges</div>
+  </div>
+
+  <div class="row g-4">
+    <div class="col-md-6">
+      <div class="card h-100 shadow-sm border-0 hover-shadow">
+        <div class="card-body text-center">
+          <div class="mb-3">
+            <i class="fas fa-sliders-h text-primary fs-3"></i>
+          </div>
+          <h5 class="card-title fw-semibold">Expert Mode</h5>
+          <p class="card-text text-muted">Manual comparison via sliders (1–9)</p>
+          <button id="expertModeBtn" class="btn btn-outline-primary px-4">Use Expert Mode</button>
+        </div>
+      </div>
     </div>
-    <div id="rangeComparisonSliders"></div>
-    <div class="mt-3">
-        <button type="button" id="finishComparisonBtn" class="btn btn-primary">
-            <i class="fas fa-check-circle me-2"></i> Finish Configuration
-        </button>
+    <div class="col-md-6">
+      <div class="card h-100 shadow-sm border-0 hover-shadow">
+        <div class="card-body text-center">
+          <div class="mb-3">
+            <i class="fas fa-magic text-success fs-3"></i>
+          </div>
+          <h5 class="card-title fw-semibold">Easy Mode</h5>
+          <p class="card-text text-muted">Simply rank the ranges by importance</p>
+          <button id="easyModeBtn" class="btn btn-outline-success px-4">Use Easy Mode</button>
+        </div>
+      </div>
     </div>
+  </div>
+
+  <div id="comparisonContainer" class="mt-4"></div>
 </div>
 `;
 
             $rangeConfigContent.html(content);
             renderRanges(criteriaKey, ranges);
 
-            // Handler untuk Add Range
+            if (ahpData.subCriteria[criteriaKey].comparisons &&
+                Object.keys(ahpData.subCriteria[criteriaKey].comparisons).length > 0) {
+                setRangesReadonly(true);
+                $('#comparisonSection').removeClass('d-none');
+
+                if (ahpData.subCriteria[criteriaKey].mode === 'easy') {
+                    renderRangeEasyMode(ahpData.subCriteria[criteriaKey].ranges, ahpData.subCriteria[criteriaKey].ranking);
+                } else {
+                    renderRangeExpertMode(ahpData.subCriteria[criteriaKey].ranges, ahpData.subCriteria[criteriaKey].comparisons);
+                }
+            }
+
+            $('#saveRangesBtn').on('click', function() {
+                if (saveRangesFirst()) {
+                    $('#comparisonSection').removeClass('d-none');
+                    $('#comparisonSection')[0].scrollIntoView({
+                        behavior: 'smooth'
+                    });
+                }
+            });
+
+            $('#editRangesBtn').off('click').on('click', function() {
+                const key = currentConfig.criteria;
+                if (ahpData.subCriteria[key].comparisons &&
+                    Object.keys(ahpData.subCriteria[key].comparisons).length > 0) {
+                    Swal.fire({
+                        title: 'Warning',
+                        text: 'Editing ranges will clear existing comparisons. Continue?',
+                        icon: 'warning',
+                        showCancelButton: true,
+                        confirmButtonText: 'Yes, edit',
+                        cancelButtonText: 'Cancel'
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            ahpData.subCriteria[key].comparisons = {};
+                            setRangesReadonly(false);
+                            $('#comparisonSection').addClass('d-none');
+                        }
+                    });
+                } else {
+                    setRangesReadonly(false);
+                }
+            });
+
             $('#addRangeBtn').off('click').on('click', function() {
                 if ($('#rangeSliders .range-item').length >= 7) {
                     Swal.fire('Error', 'Maximum 7 ranges allowed', 'error');
                     return;
                 }
-
-                // Logika pembuatan range baru
-                const currentRanges = ahpData.subCriteria[criteriaKey].ranges;
-                let newMin = 0;
-                let newMax = 1;
-
-                if (currentRanges.length > 0) {
-                    const lastRange = currentRanges[currentRanges.length - 1];
-                    newMin = lastRange.max + 1;
-                    newMax = newMin + 1; // Default increment 1
-                }
-
-                const newRange = {
-                    min: newMin,
-                    max: newMax > 999 ? 999 : newMax, // Gunakan 999 sebagai batas atas
-                    label: newMax >= 999 ? `${newMin}+` : `${newMin}-${newMax}`
-                };
-
-                ahpData.subCriteria[criteriaKey].ranges.push(newRange);
-                renderRanges(criteriaKey, ahpData.subCriteria[criteriaKey].ranges);
+                updateRangesFromUI(criteriaKey);
+                findGapAndCreateRange(criteriaKey);
             });
 
-            // Handler untuk Save Ranges
-            $('#saveRangesBtn').on('click', function() {
-                if (validateRangesBeforeSave(criteriaKey)) {
-                    setRangesReadonly(true);
-                    $('#comparisonSection').removeClass('d-none');
-                    renderRangeComparisons(ahpData.subCriteria[criteriaKey].ranges);
-                }
+            $('#expertModeBtn').on('click', function() {
+                renderRangeExpertMode(
+                    ahpData.subCriteria[criteriaKey].ranges,
+                    ahpData.subCriteria[criteriaKey].comparisons || {}
+                );
+                ahpData.subCriteria[criteriaKey].mode = 'expert';
             });
 
-            // Handler untuk Finish Comparison
+            $('#easyModeBtn').on('click', function() {
+                renderRangeEasyMode(
+                    ahpData.subCriteria[criteriaKey].ranges,
+                    ahpData.subCriteria[criteriaKey].ranking
+                );
+                ahpData.subCriteria[criteriaKey].mode = 'easy';
+            });
+
             $('#finishComparisonBtn').on('click', function() {
                 const comparisons = {};
                 $('.range-comparison-slider').each(function() {
-                    const range1 = $(this).data('range1');
-                    const range2 = $(this).data('range2');
-                    const value = parseFloat($(this).val());
-
-                    comparisons[range1] = comparisons[range1] || {};
-                    comparisons[range2] = comparisons[range2] || {};
-                    comparisons[range1][range2] = value;
-                    comparisons[range2][range1] = 1 / value;
+                    const r1 = $(this).data('range1');
+                    const r2 = $(this).data('range2');
+                    const val = parseFloat($(this).val());
+                    comparisons[r1] = comparisons[r1] || {};
+                    comparisons[r2] = comparisons[r2] || {};
+                    comparisons[r1][r2] = val;
+                    comparisons[r2][r1] = 1 / val;
                 });
 
                 ahpData.subCriteria[criteriaKey].comparisons = comparisons;
                 $rangeConfigModal.modal('hide');
                 updateSubCriteriaConfigButtons();
+                updateConfigurationStatus();
             });
 
             $rangeConfigModal.modal('show');
@@ -1287,6 +1348,60 @@
             }
         });
 
+        // Set all comparison values to 1 (neutral) — cleaned up default logic
+        function setDefaultComparisonValues(criteriaKey, type) {
+            const comparisons = {};
+
+            if (type === 'range') {
+                const ranges = ahpData.subCriteria[criteriaKey].ranges;
+                for (let i = 0; i < ranges.length; i++) {
+                    for (let j = i + 1; j < ranges.length; j++) {
+                        const r1 = ranges[i];
+                        const r2 = ranges[j];
+
+                        const label1 = r1.label || `${r1.min}-${r1.max === 999 || r1.max === 999999999 ? '+' : r1.max}`;
+                        const label2 = r2.label || `${r2.min}-${r2.max === 999 || r2.max === 999999999 ? '+' : r2.max}`;
+
+                        if (!comparisons[label1]) comparisons[label1] = {};
+                        if (!comparisons[label2]) comparisons[label2] = {};
+
+                        comparisons[label1][label2] = 1;
+                        comparisons[label2][label1] = 1;
+                    }
+                }
+                ahpData.subCriteria[criteriaKey].comparisons = comparisons;
+            } else if (type === 'education') {
+                const levels = ahpData.subCriteria.education.levels;
+                for (let i = 0; i < levels.length; i++) {
+                    for (let j = i + 1; j < levels.length; j++) {
+                        const level1 = levels[i];
+                        const level2 = levels[j];
+
+                        if (!comparisons[level1]) comparisons[level1] = {};
+                        if (!comparisons[level2]) comparisons[level2] = {};
+
+                        comparisons[level1][level2] = 1;
+                        comparisons[level2][level1] = 1;
+                    }
+                }
+                ahpData.subCriteria.education.comparisons = comparisons;
+            } else if (type === 'experience') {
+                const periods = ahpData.subCriteria.experience_duration.periods;
+                for (let i = 0; i < periods.length; i++) {
+                    for (let j = i + 1; j < periods.length; j++) {
+                        const p1 = periods[i];
+                        const p2 = periods[j];
+
+                        if (!comparisons[p1]) comparisons[p1] = {};
+                        if (!comparisons[p2]) comparisons[p2] = {};
+
+                        comparisons[p1][p2] = 1;
+                        comparisons[p2][p1] = 1;
+                    }
+                }
+                ahpData.subCriteria.experience_duration.comparisons = comparisons;
+            }
+        }
 
         // 7. Update the configure sub-criteria button handler to include the new criteria
         $(document).on('click', '.configure-sub-criteria', function() {
@@ -1303,16 +1418,18 @@
                 openRangeConfigModal(criteriaKey);
             }
 
-            // Set default comparison values if none exist
-            if (Object.keys(ahpData.subCriteria[criteriaKey].comparisons).length === 0) {
+            // Set all to neutral (1) if no comparisons exist
+            const comp = ahpData.subCriteria[criteriaKey].comparisons;
+            if (!comp || Object.keys(comp).length === 0) {
                 let type = 'range';
                 if (criteriaKey === 'education') type = 'education';
                 if (criteriaKey === 'experience_duration') type = 'experience';
-
                 setDefaultComparisonValues(criteriaKey, type);
             }
         });
 
+
+        // Modified openRangeConfigModal function to include mode selection
         function openRangeConfigModal(criteriaKey) {
             currentConfig.type = 'range';
             currentConfig.criteria = criteriaKey;
@@ -1320,7 +1437,8 @@
             const ranges = ahpData.subCriteria[criteriaKey].ranges;
 
             let content = `
-<h5 class="mb-3">${criteriaName} Range Configuration</h5>
+            <h5 class="mb-4 fw-bold text-primary">
+    <i class="fas fa-balance-scale me-2"></i> Range Configuration</h5>
 <div class="alert alert-info mb-3">
     <i class="fas fa-info-circle me-2"></i>
     <strong>Step 1:</strong> Configure the ranges below, then click "Save Ranges" button
@@ -1341,18 +1459,50 @@
 </div>
 
 <div id="comparisonSection" class="d-none">
-    <h5 class="mb-3 mt-4 border-top pt-3">Compare ${criteriaName} Ranges</h5>
-    <div class="alert alert-info mb-3">
-        <i class="fas fa-info-circle me-2"></i>
-        <strong>Step 2:</strong> Move the sliders to indicate which range is more important and by how much
+  <h5 class="mb-4 fw-bold text-primary">
+    <i class="fas fa-balance-scale me-2"></i>Compare ${criteriaName} Ranges
+  </h5>
+
+  <div class="alert alert-info d-flex align-items-center">
+    <i class="fas fa-info-circle me-2 fs-5"></i>
+    <div>Choose how you want to compare the ranges</div>
+  </div>
+
+  <div class="row g-4">
+    <!-- Expert Mode Card -->
+    <div class="col-md-6">
+      <div class="card h-100 shadow-sm border-0 hover-shadow">
+        <div class="card-body text-center">
+          <div class="mb-3">
+            <i class="fas fa-sliders-h text-primary fs-3"></i>
+          </div>
+          <h5 class="card-title fw-semibold">Expert Mode</h5>
+          <p class="card-text text-muted">Manual comparison via sliders (1–9)</p>
+          <button id="expertModeBtn" class="btn btn-outline-primary px-4">Use Expert Mode</button>
+        </div>
+      </div>
     </div>
-    <div id="rangeComparisonSliders"></div>
-    <div class="mt-4">
-        <button type="button" id="finishComparisonBtn" class="btn btn-primary">
-            <i class="fas fa-check"></i> Finish Configuration
-        </button>
+
+    <!-- Easy Mode Card -->
+    <div class="col-md-6">
+      <div class="card h-100 shadow-sm border-0 hover-shadow">
+        <div class="card-body text-center">
+          <div class="mb-3">
+            <i class="fas fa-magic text-success fs-3"></i>
+          </div>
+          <h5 class="card-title fw-semibold">Easy Mode</h5>
+          <p class="card-text text-muted">Simply rank the ranges by importance</p>
+          <button id="easyModeBtn" class="btn btn-outline-success px-4">Use Easy Mode</button>
+        </div>
+      </div>
     </div>
+  </div>
+
+  <div id="comparisonContainer" class="mt-4"></div>
 </div>
+
+
+
 `;
 
             $rangeConfigContent.html(content);
@@ -1362,17 +1512,57 @@
                 Object.keys(ahpData.subCriteria[criteriaKey].comparisons).length > 0) {
                 setRangesReadonly(true);
                 $('#comparisonSection').removeClass('d-none');
+
+                // Show the appropriate comparison mode based on what was saved
+                if (ahpData.subCriteria[criteriaKey].mode === 'easy') {
+                    renderRangeEasyMode(ahpData.subCriteria[criteriaKey].ranges, ahpData.subCriteria[criteriaKey].ranking);
+                } else {
+                    renderRangeExpertMode(ahpData.subCriteria[criteriaKey].ranges, ahpData.subCriteria[criteriaKey].comparisons);
+                }
             }
 
-            // Event handler untuk save ranges
+            // Event handler for save ranges
             $('#saveRangesBtn').on('click', function() {
                 if (saveRangesFirst()) {
-                    // Setelah save ranges berhasil, tampilkan slider comparisons
+                    // After saving ranges successfully, show comparison section
                     $('#comparisonSection').removeClass('d-none');
                     $('#comparisonSection')[0].scrollIntoView({
                         behavior: 'smooth'
                     });
                 }
+            });
+
+            // In the openRangeConfigModal function, modify the editRangesBtn handler like this:
+            $('#editRangesBtn').off('click').on('click', function() {
+                const criteriaKey = currentConfig.criteria;
+                if (ahpData.subCriteria[criteriaKey].comparisons &&
+                    Object.keys(ahpData.subCriteria[criteriaKey].comparisons).length > 0) {
+                    Swal.fire({
+                        title: 'Warning',
+                        text: 'Editing ranges will clear all your existing comparisons. Are you sure?',
+                        icon: 'warning',
+                        showCancelButton: true,
+                        confirmButtonText: 'Yes, edit anyway',
+                        cancelButtonText: 'No, keep my comparisons'
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            ahpData.subCriteria[criteriaKey].comparisons = {};
+                            setRangesReadonly(false);
+                            $('#comparisonSection').addClass('d-none');
+                        }
+                    });
+                } else {
+                    setRangesReadonly(false);
+                }
+            });
+
+            // Event handlers for mode selection
+            $('#expertModeBtn').on('click', function() {
+                renderRangeExpertMode(ahpData.subCriteria[criteriaKey].ranges, ahpData.subCriteria[criteriaKey].comparisons || {});
+            });
+
+            $('#easyModeBtn').on('click', function() {
+                renderRangeEasyMode(ahpData.subCriteria[criteriaKey].ranges, ahpData.subCriteria[criteriaKey].ranking);
             });
 
             // Event handler untuk finish comparison
@@ -1397,28 +1587,7 @@
                 updateConfigurationStatus();
             });
 
-            // Handler lainnya tetap sama...
-            $('#editRangesBtn').on('click', function() {
-                if (ahpData.subCriteria[criteriaKey].comparisons &&
-                    Object.keys(ahpData.subCriteria[criteriaKey].comparisons).length > 0) {
-                    Swal.fire({
-                        title: 'Warning',
-                        text: 'Editing ranges will clear all your existing comparisons. Are you sure?',
-                        icon: 'warning',
-                        showCancelButton: true,
-                        confirmButtonText: 'Yes, edit anyway',
-                        cancelButtonText: 'No, keep my comparisons'
-                    }).then((result) => {
-                        if (result.isConfirmed) {
-                            ahpData.subCriteria[criteriaKey].comparisons = {};
-                            setRangesReadonly(false);
-                            $('#comparisonSection').addClass('d-none');
-                        }
-                    });
-                } else {
-                    setRangesReadonly(false);
-                }
-            });
+
 
             $('#addRangeBtn').off('click').on('click', function() {
                 if ($('#rangeSliders .range-item').length >= 7) {
@@ -1430,6 +1599,224 @@
             });
 
             $rangeConfigModal.modal('show');
+        }
+
+        // New function to render expert mode for ranges
+        function renderRangeExpertMode(ranges, comparisons) {
+            $('#comparisonContainer').html(`
+            <div class="alert alert-info d-flex align-items-start gap-2">
+    <i class="fas fa-info-circle mt-1"></i>
+    <div>
+        <strong>Note:</strong> <br>The slider is interpreted from <strong>left to right</strong>.
+        For example, a value of <strong>2</strong> means that the <strong>left label</strong> is slightly more important than the right.
+        <br>
+        To reverse the comparison direction, click the 
+        <i class="fa-solid fa-right-left text-secondary mx-1"></i> icon.
+    </div>
+</div>
+
+        <div id="rangeComparisonSliders"></div>
+        <div class="mt-4 text-start">
+            <button type="button" id="saveRangeComparison" class="btn btn-primary">
+                <i class="fas fa-save me-2"></i>Save Range Comparison
+            </button>
+        </div>
+    `);
+
+            renderRangeComparisons(ranges);
+
+            // Initialize sliders with existing comparison values if available
+            if (comparisons && Object.keys(comparisons).length > 0) {
+                $('.range-comparison-slider').each(function() {
+                    const range1 = $(this).data('range1');
+                    const range2 = $(this).data('range2');
+
+                    if (comparisons[range1] && comparisons[range1][range2] !== undefined) {
+                        $(this).val(comparisons[range1][range2]);
+                    } else if (comparisons[range2] && comparisons[range2][range1] !== undefined) {
+                        $(this).val(1 / comparisons[range2][range1]);
+                    }
+                });
+            }
+
+            // Save button handler
+            $('#saveRangeComparison').on('click', function() {
+                const comparisons = {};
+                $('.range-comparison-slider').each(function() {
+                    const range1 = $(this).data('range1');
+                    const range2 = $(this).data('range2');
+                    const value = parseFloat($(this).val());
+
+                    comparisons[range1] = comparisons[range1] || {};
+                    comparisons[range2] = comparisons[range2] || {};
+                    comparisons[range1][range2] = value;
+                    comparisons[range2][range1] = 1 / value;
+                });
+
+                ahpData.subCriteria[currentConfig.criteria].comparisons = comparisons;
+                ahpData.subCriteria[currentConfig.criteria].mode = 'expert'; // Mark as expert mode
+                $rangeConfigModal.modal('hide');
+                updateSubCriteriaConfigButtons();
+                updateConfigurationStatus();
+            });
+        }
+
+        // New function to render easy mode for ranges
+        function renderRangeEasyMode(ranges, existingRanking) {
+            // Sort ranges by min value to get default order
+            const sortedRanges = [...ranges].sort((a, b) => a.min - b.min);
+
+            // Get range labels
+            const rangeLabels = sortedRanges.map(range =>
+                range.max === 999 || range.max === 999999999 ?
+                `${range.min}+` :
+                `${range.min}-${range.max}`
+            );
+
+            let orderedRanges;
+            if (existingRanking && existingRanking.length > 0) {
+                // Use existing ranking if available
+                orderedRanges = existingRanking;
+
+                // Add any new ranges that weren't in the existing ranking
+                rangeLabels.forEach(label => {
+                    if (!orderedRanges.includes(label)) {
+                        orderedRanges.push(label);
+                    }
+                });
+            } else {
+                // Default order is sorted by min value
+                orderedRanges = rangeLabels;
+            }
+
+            // Generate sortable list with proper ordering
+            let rangeItems = '';
+            orderedRanges.forEach((label, index) => {
+                rangeItems += `
+            <div class="list-group-item range-rank-item" data-range="${label}" data-index="${index}">
+                <div class="d-flex align-items-center">
+                    <span class="handle me-3">
+                        <i class="fas fa-grip-vertical"></i>
+                    </span>
+                    <span class="rank-number me-3 fw-bold text-primary">${index + 1}.</span>
+                    <span class="range-name">${label}</span>
+                </div>
+            </div>
+        `;
+            });
+
+            $('#comparisonContainer').html(`
+        <h5 class="mb-3 mt-4 border-top pt-3">Easy Mode: Rank Ranges by Importance</h5>
+        <div class="alert alert-info mb-3">
+            <i class="fas fa-info-circle me-2"></i>
+            <strong>Instructions:</strong> Drag to rank the ranges from most to least important. The system will automatically generate comparison values.
+        </div>
+        <div id="rangeRankingList" class="list-group mb-4">
+            ${rangeItems}
+        </div>
+        <button id="saveEasyModeBtn" class="btn btn-success">
+            <i class="fas fa-save me-2"></i> Save Ranking
+        </button>
+    `);
+
+            // Initialize SortableJS
+            const sortableList = document.getElementById('rangeRankingList');
+            const sortable = Sortable.create(sortableList, {
+                animation: 150,
+                handle: '.handle',
+                ghostClass: 'sortable-ghost',
+                chosenClass: 'sortable-chosen',
+                dragClass: 'sortable-drag',
+                onEnd: function(evt) {
+                    updateRankNumbers();
+                }
+            });
+
+            // Function to update rank numbers
+            function updateRankNumbers() {
+                const items = document.querySelectorAll('#rangeRankingList .range-rank-item');
+                items.forEach((item, index) => {
+                    const rankNumber = item.querySelector('.rank-number');
+                    rankNumber.textContent = (index + 1) + '.';
+                    item.setAttribute('data-index', index);
+                });
+            }
+
+            // Save button handler
+            $('#saveEasyModeBtn').on('click', function() {
+                const rankedRanges = [];
+                $('#rangeRankingList .range-rank-item').each(function() {
+                    rankedRanges.push($(this).data('range'));
+                });
+
+                // Generate comparison matrix based on ranking
+                const comparisons = generateRangeComparisonFromRanking(rankedRanges);
+
+                // Save easy mode comparisons
+                ahpData.subCriteria[currentConfig.criteria].comparisons = comparisons;
+                ahpData.subCriteria[currentConfig.criteria].mode = 'easy'; // Mark as easy mode
+                ahpData.subCriteria[currentConfig.criteria].ranking = rankedRanges; // Save the ranking
+
+                Swal.fire({
+                    title: 'Ranking Saved!',
+                    text: 'Ranges have been ranked and comparison values generated automatically.',
+                    icon: 'success',
+                    timer: 1500,
+                    showConfirmButton: false
+                });
+
+                $rangeConfigModal.modal('hide');
+                updateSubCriteriaConfigButtons();
+                updateConfigurationStatus();
+            });
+        }
+
+        // New function to generate comparisons from ranking for ranges
+        function generateRangeComparisonFromRanking(rankedRanges) {
+            const comparisons = {};
+            const n = rankedRanges.length;
+
+            // Initialize comparison matrix
+            rankedRanges.forEach(range => {
+                comparisons[range] = {};
+            });
+
+            // Generate comparison values based on ranking
+            // Using a progressive scale that ensures consistency
+            for (let i = 0; i < n; i++) {
+                for (let j = 0; j < n; j++) {
+                    if (i === j) {
+                        comparisons[rankedRanges[i]][rankedRanges[j]] = 1;
+                    } else if (i < j) {
+                        // Higher ranked (lower index) is more important
+                        // Use a moderate scale to avoid extreme values
+                        const rankDiff = j - i;
+                        let value;
+
+                        switch (rankDiff) {
+                            case 1:
+                                value = 2; // Slightly more important
+                                break;
+                            case 2:
+                                value = 3; // Moderately more important
+                                break;
+                            case 3:
+                                value = 5; // Strongly more important
+                                break;
+                            case 4:
+                                value = 7; // Very strongly more important
+                                break;
+                            default:
+                                value = Math.min(9, 2 * rankDiff); // Cap at 9
+                        }
+
+                        comparisons[rankedRanges[i]][rankedRanges[j]] = value;
+                        comparisons[rankedRanges[j]][rankedRanges[i]] = 1 / value;
+                    }
+                }
+            }
+
+            return comparisons;
         }
 
 
@@ -1531,7 +1918,6 @@
             setupRangeDeletionHandlers();
         }
 
-
         // 6. Modified setupRangeInputValidation to update the data structure when ranges change
         function setupRangeInputValidation(criteriaKey) {
             const isOrganizationOrTraining = criteriaKey === 'organization' || criteriaKey === 'training';
@@ -1601,7 +1987,6 @@
             });
         }
 
-
         // 7. Add function to handle range deletion
         function setupRangeDeletionHandlers() {
             $('.range-delete').off('click').on('click', function() {
@@ -1622,7 +2007,6 @@
                 renderRanges(criteriaKey, ranges);
             });
         }
-
 
         // 3. Fixed regenerateRangeComparisons function
         function regenerateRangeComparisons(criteriaKey) {
@@ -1677,83 +2061,89 @@
         }
 
 
-
-        // 4. Fixed renderRangeComparisons function to properly handle the supplied ranges
         function renderRangeComparisons(ranges) {
             $('#rangeComparisonSliders').empty();
 
-            // If no ranges provided, use the ones from currentConfig
             const criteriaKey = currentConfig.criteria;
             const rangesArray = Array.isArray(ranges) ? ranges : ahpData.subCriteria[criteriaKey].ranges;
 
-            // Create a copy sorted by min value
             const sortedRanges = [...rangesArray].sort((a, b) => a.min - b.min);
 
-            // Generate comparison sliders for each unique pair of ranges
             for (let i = 0; i < sortedRanges.length; i++) {
                 for (let j = i + 1; j < sortedRanges.length; j++) {
-                    const range1 = sortedRanges[i];
-                    const range2 = sortedRanges[j];
+                    const r1 = sortedRanges[i];
+                    const r2 = sortedRanges[j];
 
-                    // Create consistent labels
-                    const label1 = range1.max === 999 || range1.max === 999999999 ?
-                        `${range1.min}+` :
-                        `${range1.min}-${range1.max}`;
+                    const label1 = r1.max === 999 || r1.max === 999999999 ? `${r1.min}+` : `${r1.min}-${r1.max}`;
+                    const label2 = r2.max === 999 || r2.max === 999999999 ? `${r2.min}+` : `${r2.min}-${r2.max}`;
 
-                    const label2 = range2.max === 999 || range2.max === 999999999 ?
-                        `${range2.min}+` :
-                        `${range2.min}-${range2.max}`;
-
-                    // Get saved comparison value
                     let savedValue = 1;
-                    if (ahpData.subCriteria[criteriaKey].comparisons &&
-                        ahpData.subCriteria[criteriaKey].comparisons[label1] &&
-                        ahpData.subCriteria[criteriaKey].comparisons[label1][label2] !== undefined) {
-                        savedValue = ahpData.subCriteria[criteriaKey].comparisons[label1][label2];
-                    } else if (ahpData.subCriteria[criteriaKey].comparisons &&
-                        ahpData.subCriteria[criteriaKey].comparisons[label2] &&
-                        ahpData.subCriteria[criteriaKey].comparisons[label2][label1] !== undefined) {
-                        savedValue = 9 - ahpData.subCriteria[criteriaKey].comparisons[label2][label1];
-                        if (savedValue < 1) savedValue = 1;
+                    let flipLabels = false;
+
+                    const comparisons = ahpData.subCriteria[criteriaKey].comparisons || {};
+
+                    if (comparisons[label1] && comparisons[label1][label2] !== undefined) {
+                        let val = comparisons[label1][label2];
+                        if (val < 1) {
+                            savedValue = Math.round(1 / val);
+                            flipLabels = true;
+                        } else {
+                            savedValue = Math.round(val);
+                        }
+                    } else if (comparisons[label2] && comparisons[label2][label1] !== undefined) {
+                        let val = comparisons[label2][label1];
+                        if (val >= 1) {
+                            savedValue = Math.round(val);
+                            flipLabels = true;
+                        } else {
+                            savedValue = Math.round(1 / val);
+                        }
                     }
 
-                    // Ensure savedValue is within range 1-9
-                    savedValue = Math.min(Math.max(savedValue, 1), 9);
+                    const left = flipLabels ? label2 : label1;
+                    const right = flipLabels ? label1 : label2;
 
-                    // Create the slider
                     $('#rangeComparisonSliders').append(`
-        <div class="range-comparison mb-3 p-3 border rounded bg-light">
-            <div class="d-flex justify-content-between align-items-center mb-2">
-                <span class="fw-bold">${label1}</span>
-                <span class="fw-bold">${label2}</span>
-            </div>
-            <div class="slider-container">
-                <input type="range" class="form-range range-comparison-slider" 
-                       min="1" max="9" value="${savedValue}" step="1"
-                       data-range1="${label1}" data-range2="${label2}">
-                <div class="d-flex justify-content-between px-2">
-                    <small>1</small>
-                    <small>2</small>
-                    <small>3</small>
-                    <small>4</small>
-                    <small>5</small>
-                    <small>6</small>
-                    <small>7</small>
-                    <small>8</small>
-                    <small>9</small>
+                <div class="range-comparison mb-3 p-3 border rounded bg-light">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="fw-bold comparison-left">${left}</span>
+                        <button class="btn btn-sm btn-outline-secondary flip-btn mx-2" data-range1="${left}" data-range2="${right}"><i class="fa-solid fa-right-left"></i></button>
+                        <span class="fw-bold comparison-right">${right}</span>
+                    </div>
+                    <div class="slider-container">
+                        <input type="range" class="form-range range-comparison-slider" 
+                               min="1" max="9" value="${savedValue}" step="1"
+                               data-range1="${left}" data-range2="${right}">
+                        <div class="d-flex justify-content-between px-2">
+                            ${[...Array(9)].map((_, i) => `<small>${i + 1}</small>`).join('')}
+                        </div>
+                    </div>
                 </div>
-                <div class="d-flex justify-content-between mt-1">
-                    <small>${label1} ></small>
-                    <small>Equal</small>
-                    <small>${label2} ></small>
-                </div>
-            </div>
-        </div>
-    `);
+            `);
                 }
             }
 
-            // Initialize sliders event handlers
+            $('.flip-btn').off('click').on('click', function() {
+                const container = $(this).closest('.range-comparison');
+                const leftLabel = container.find('.comparison-left');
+                const rightLabel = container.find('.comparison-right');
+                const slider = container.find('.range-comparison-slider');
+
+                const tmpText = leftLabel.text();
+                leftLabel.text(rightLabel.text());
+                rightLabel.text(tmpText);
+
+                const r1 = slider.data('range1');
+                const r2 = slider.data('range2');
+                slider.data('range1', r2);
+                slider.data('range2', r1);
+
+                let value = parseInt(slider.val());
+                let inverted = Math.round(1 / value);
+                inverted = Math.max(1, Math.min(9, inverted));
+                slider.val(inverted);
+            });
+
             setupRangeSliderListeners();
         }
 
@@ -1783,6 +2173,14 @@
             });
         }
 
+
+
+
+
+
+
+
+
         function openEducationComparisonModal() {
             currentConfig.type = 'education';
             const criteriaName = ahpData.mainCriteria[currentConfig.criteria];
@@ -1790,61 +2188,126 @@
             const comparisons = ahpData.subCriteria.education.comparisons || {};
 
             let content = `
-        <h5 class="mb-3">${criteriaName} Configuration</h5>
-        <div class="alert alert-info mb-3">
-            <i class="fas fa-info-circle me-2"></i>
-            Compare education levels by moving the sliders below
+            <h5 class="mb-4 fw-bold text-primary"><i class="fa-solid fa-scale-balanced"></i> ${criteriaName} Configuration</h5>
+
+    <div class="alert alert-info d-flex align-items-start gap-2">
+        <i class="fas fa-info-circle mt-1"></i>
+        <div>
+            Choose how you want to compare <strong>education levels</strong>. You can either rank them easily or define detailed comparisons manually.
         </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-6 mb-3">
+            <div class="card h-100 shadow-sm border-0">
+                <div class="card-body text-center">
+                    <i class="fas fa-sliders-h fa-2x text-primary mb-3"></i>
+                    <h5 class="card-title fw-bold">Expert Mode</h5>
+                    <p class="card-text text-muted">Manually adjust comparison values using sliders (1–9 scale).</p>
+                    <button id="expertModeBtn" class="btn btn-outline-primary w-100">Use Expert Mode</button>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6 mb-3">
+            <div class="card h-100 shadow-sm border-0">
+                <div class="card-body text-center">
+                    <i class="fas fa-magic fa-2x text-success mb-3"></i>
+                    <h5 class="card-title fw-bold">Easy Mode</h5>
+                    <p class="card-text text-muted">Quickly rank education levels by importance without using sliders.</p>
+                    <button id="easyModeBtn" class="btn btn-outline-success w-100">Use Easy Mode</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="comparisonContainer" class="mt-4"></div>
+`;
+
+
+            $rangeConfigContent.html(content);
+
+            $('#expertModeBtn').on('click', function() {
+                renderEducationExpertMode(levels, comparisons);
+            });
+
+            $('#easyModeBtn').on('click', function() {
+                renderEducationEasyMode(levels);
+            });
+
+            $rangeConfigModal.modal('show');
+        }
+
+        function renderEducationExpertMode(levels, comparisons) {
+            $('#comparisonContainer').html(`
+            <div class="alert alert-info d-flex align-items-start gap-2">
+    <i class="fas fa-info-circle mt-1"></i>
+    <div>
+        <strong>Note:</strong> <br>The slider is interpreted from <strong>left to right</strong>.
+        For example, a value of <strong>2</strong> means that the <strong>left label</strong> is slightly more important than the right.
+        <br>
+        To reverse the comparison direction, click the 
+        <i class="fa-solid fa-right-left text-secondary mx-1"></i> icon.
+    </div>
+</div>
+
         <div id="educationComparisonSliders"></div>
         <div class="mt-4 text-start">
             <button type="button" id="saveEducationComparison" class="btn btn-primary">
                 <i class="fas fa-save me-2"></i>Save Education Comparison
             </button>
         </div>
-    `;
+    `);
 
-            $rangeConfigContent.html(content);
-
-            // Initialize education level comparisons
             $('#educationComparisonSliders').empty();
+
+            // Loop pairwise combinations
             for (let i = 0; i < levels.length; i++) {
                 for (let j = i + 1; j < levels.length; j++) {
-                    const level1 = levels[i];
-                    const level2 = levels[j];
+                    let level1 = levels[i];
+                    let level2 = levels[j];
+                    const originalL1 = level1;
+                    const originalL2 = level2;
 
-                    // Get saved comparison value if exists
                     let savedValue = 1;
+                    let flipLabels = false;
+
                     if (comparisons[level1] && comparisons[level1][level2] !== undefined) {
-                        savedValue = comparisons[level1][level2];
+                        let val = comparisons[level1][level2];
+                        if (val < 1) {
+                            savedValue = Math.round(1 / val);
+                            flipLabels = true;
+                        } else {
+                            savedValue = Math.round(val);
+                        }
                     } else if (comparisons[level2] && comparisons[level2][level1] !== undefined) {
-                        savedValue = 1 / comparisons[level2][level1];
+                        let val = comparisons[level2][level1];
+                        if (val >= 1) {
+                            savedValue = Math.round(val);
+                            flipLabels = true;
+                        } else {
+                            savedValue = Math.round(1 / val);
+                        }
+                    }
+
+                    if (flipLabels) {
+                        [level1, level2] = [originalL2, originalL1];
                     }
 
                     $('#educationComparisonSliders').append(`
                 <div class="education-comparison mb-3 p-3 border rounded bg-light">
                     <div class="d-flex justify-content-between align-items-center mb-2">
-                        <span class="fw-bold">${level1}</span>
-                        <span class="fw-bold">${level2}</span>
+                        <span class="fw-bold comparison-left">${level1}</span>
+                        <button class="btn btn-sm btn-outline-secondary flip-btn mx-2" data-level1="${level1}" data-level2="${level2}">
+                            <i class="fa-solid fa-right-left"></i>
+                        </button>
+                        <span class="fw-bold comparison-right">${level2}</span>
                     </div>
                     <div class="slider-container">
                         <input type="range" class="form-range education-comparison-slider" 
                                min="1" max="9" value="${savedValue}" step="1"
                                data-level1="${level1}" data-level2="${level2}">
                         <div class="d-flex justify-content-between px-2">
-                            <small>1</small>
-                            <small>2</small>
-                            <small>3</small>
-                            <small>4</small>
-                            <small>5</small>
-                            <small>6</small>
-                            <small>7</small>
-                            <small>8</small>
-                            <small>9</small>
-                        </div>
-                        <div class="d-flex justify-content-between mt-1">
-                            <small>${level1} ></small>
-                            <small>Equal</small>
-                            <small>${level2} ></small>
+                            ${[...Array(9)].map((_, i) => `<small>${i + 1}</small>`).join('')}
                         </div>
                     </div>
                 </div>
@@ -1852,9 +2315,35 @@
                 }
             }
 
-            // Add event handler for save button inside the modal
+            // Flip button behavior
+            $('.flip-btn').off('click').on('click', function() {
+                const container = $(this).closest('.education-comparison');
+                const leftLabel = container.find('.comparison-left');
+                const rightLabel = container.find('.comparison-right');
+                const slider = container.find('.education-comparison-slider');
+
+                // Swap label text
+                const tmpText = leftLabel.text();
+                leftLabel.text(rightLabel.text());
+                rightLabel.text(tmpText);
+
+                // Swap data attributes
+                const l1 = slider.data('level1');
+                const l2 = slider.data('level2');
+                slider.data('level1', l2);
+                slider.data('level2', l1);
+
+                // Invert slider value
+                const value = parseInt(slider.val());
+                let inverted = Math.round(1 / value);
+                inverted = Math.max(1, Math.min(9, inverted)); // Clamp
+                slider.val(inverted);
+            });
+
+            // Save the comparisons
             $('#saveEducationComparison').on('click', function() {
                 const comparisons = {};
+
                 $('.education-comparison-slider').each(function() {
                     const level1 = $(this).data('level1');
                     const level2 = $(this).data('level2');
@@ -1864,17 +2353,289 @@
                     if (!comparisons[level2]) comparisons[level2] = {};
 
                     comparisons[level1][level2] = value;
-                    comparisons[level2][level1] = 1 / value;
+                    comparisons[level2][level1] = parseFloat((1 / value).toFixed(4));
                 });
 
+                // Save into global AHP config
                 ahpData.subCriteria.education.comparisons = comparisons;
+                ahpData.subCriteria.education.mode = 'expert';
+
                 $rangeConfigModal.modal('hide');
                 updateSubCriteriaConfigButtons();
                 updateConfigurationStatus();
             });
-
-            $rangeConfigModal.modal('show');
         }
+        // Function 1: Range Easy Mode with SortableJS
+        function renderRangeEasyMode(ranges, existingRanking) {
+            // Sort ranges by min value to get default order
+            const sortedRanges = [...ranges].sort((a, b) => a.min - b.min);
+
+            // Get range labels
+            const rangeLabels = sortedRanges.map(range =>
+                range.max === 999 || range.max === 999999999 ?
+                `${range.min}+` :
+                `${range.min}-${range.max}`
+            );
+
+            let orderedRanges;
+            if (existingRanking && existingRanking.length > 0) {
+                // Use existing ranking if available
+                orderedRanges = existingRanking;
+
+                // Add any new ranges that weren't in the existing ranking
+                rangeLabels.forEach(label => {
+                    if (!orderedRanges.includes(label)) {
+                        orderedRanges.push(label);
+                    }
+                });
+            } else {
+                // Default order is sorted by min value
+                orderedRanges = rangeLabels;
+            }
+
+            // Generate sortable list with proper ordering
+            let rangeItems = '';
+            orderedRanges.forEach((label, index) => {
+                rangeItems += `
+            <div class="list-group-item range-rank-item" data-range="${label}" data-index="${index}">
+                <div class="d-flex align-items-center">
+                    <span class="handle me-3">
+                        <i class="fas fa-grip-vertical"></i>
+                    </span>
+                    <span class="rank-number me-3 fw-bold text-primary">${index + 1}.</span>
+                    <span class="range-name">${label}</span>
+                </div>
+            </div>
+        `;
+            });
+
+            $('#comparisonContainer').html(`
+        <h5 class="mb-3 mt-4 border-top pt-3">Easy Mode: Rank Ranges by Importance</h5>
+        <div class="alert alert-info mb-3">
+            <i class="fas fa-info-circle me-2"></i>
+            <strong>Instructions:</strong> Drag to rank the ranges from most to least important. The system will automatically generate comparison values.
+        </div>
+        <div id="rangeRankingList" class="list-group mb-4">
+            ${rangeItems}
+        </div>
+        <button id="saveEasyModeBtn" class="btn btn-success">
+            <i class="fas fa-save me-2"></i> Save Ranking
+        </button>
+    `);
+
+            // Initialize SortableJS
+            const sortableList = document.getElementById('rangeRankingList');
+            const sortable = Sortable.create(sortableList, {
+                animation: 150,
+                handle: '.handle',
+                ghostClass: 'sortable-ghost',
+                chosenClass: 'sortable-chosen',
+                dragClass: 'sortable-drag',
+                onEnd: function(evt) {
+                    updateRankNumbers();
+                }
+            });
+
+            // Function to update rank numbers
+            function updateRankNumbers() {
+                const items = document.querySelectorAll('#rangeRankingList .range-rank-item');
+                items.forEach((item, index) => {
+                    const rankNumber = item.querySelector('.rank-number');
+                    rankNumber.textContent = (index + 1) + '.';
+                    item.setAttribute('data-index', index);
+                });
+            }
+
+            // Save button handler
+            $('#saveEasyModeBtn').on('click', function() {
+                const rankedRanges = [];
+                $('#rangeRankingList .range-rank-item').each(function() {
+                    rankedRanges.push($(this).data('range'));
+                });
+
+                // Generate comparison matrix based on ranking
+                const comparisons = generateRangeComparisonFromRanking(rankedRanges);
+
+                // Save easy mode comparisons
+                ahpData.subCriteria[currentConfig.criteria].comparisons = comparisons;
+                ahpData.subCriteria[currentConfig.criteria].mode = 'easy'; // Mark as easy mode
+                ahpData.subCriteria[currentConfig.criteria].ranking = rankedRanges; // Save the ranking
+
+                Swal.fire({
+                    title: 'Ranking Saved!',
+                    text: 'Ranges have been ranked and comparison values generated automatically.',
+                    icon: 'success',
+                    timer: 1500,
+                    showConfirmButton: false
+                });
+
+                $rangeConfigModal.modal('hide');
+                updateSubCriteriaConfigButtons();
+                updateConfigurationStatus();
+            });
+        }
+
+
+        function renderEducationEasyMode(levels) {
+            // Check if there's existing ranking from previous save
+            const existingRanking = ahpData.subCriteria.education.ranking;
+            let orderedLevels;
+
+            if (existingRanking && existingRanking.length > 0) {
+                // Use existing ranking if available
+                orderedLevels = existingRanking;
+            } else {
+                // Set default ranking: S2 > S1 > D3 > SMK > SMA
+                const defaultOrder = ['S2', 'S1', 'D3', 'SMK', 'SMA'];
+                orderedLevels = [];
+
+                // Add levels in default order if they exist
+                defaultOrder.forEach(defaultLevel => {
+                    if (levels.includes(defaultLevel)) {
+                        orderedLevels.push(defaultLevel);
+                    }
+                });
+
+                // Add any remaining levels that weren't in default order
+                levels.forEach(level => {
+                    if (!orderedLevels.includes(level)) {
+                        orderedLevels.push(level);
+                    }
+                });
+            }
+
+            // Generate sortable list with proper ordering
+            let levelItems = '';
+            orderedLevels.forEach((level, index) => {
+                levelItems += `
+            <div class="list-group-item level-rank-item" data-level="${level}" data-index="${index}">
+                <div class="d-flex align-items-center">
+                    <span class="handle me-3">
+                        <i class="fas fa-grip-vertical"></i>
+                    </span>
+                    <span class="rank-number me-3 fw-bold text-primary">${index + 1}.</span>
+                    <span class="level-name">${level}</span>
+                </div>
+            </div>
+        `;
+            });
+
+            $('#comparisonContainer').html(`
+        <h5 class="mb-3 mt-4 border-top pt-3">Easy Mode: Rank Education Levels</h5>
+        <div class="alert alert-info mb-3">
+            <i class="fas fa-info-circle me-2"></i>
+            <strong>Instructions:</strong> Drag to rank the education levels from most to least important. The system will automatically generate comparison values.
+        </div>
+        <div id="levelRankingList" class="list-group mb-4">
+            ${levelItems}
+        </div>
+        <button id="saveEasyModeBtn" class="btn btn-success">
+            <i class="fas fa-save me-2"></i> Save Ranking
+        </button>
+    `);
+
+            // Initialize SortableJS
+            const sortableList = document.getElementById('levelRankingList');
+            const sortable = Sortable.create(sortableList, {
+                animation: 150,
+                handle: '.handle',
+                ghostClass: 'sortable-ghost',
+                chosenClass: 'sortable-chosen',
+                dragClass: 'sortable-drag',
+                onEnd: function(evt) {
+                    updateRankNumbers();
+                }
+            });
+
+            // Function to update rank numbers
+            function updateRankNumbers() {
+                const items = document.querySelectorAll('#levelRankingList .level-rank-item');
+                items.forEach((item, index) => {
+                    const rankNumber = item.querySelector('.rank-number');
+                    rankNumber.textContent = (index + 1) + '.';
+                    item.setAttribute('data-index', index);
+                });
+            }
+
+            // Save button handler
+            $('#saveEasyModeBtn').on('click', function() {
+                const rankedLevels = [];
+                $('#levelRankingList .level-rank-item').each(function() {
+                    rankedLevels.push($(this).data('level'));
+                });
+
+                // Generate comparison matrix based on ranking
+                const comparisons = generateComparisonFromRanking(rankedLevels);
+
+                // Save easy mode comparisons
+                ahpData.subCriteria.education.comparisons = comparisons;
+                ahpData.subCriteria.education.mode = 'easy'; // Mark as easy mode
+                ahpData.subCriteria.education.ranking = rankedLevels; // Save the ranking
+
+                Swal.fire({
+                    title: 'Ranking Saved!',
+                    text: 'Education levels have been ranked and comparison values generated automatically.',
+                    icon: 'success',
+                    timer: 1500,
+                    showConfirmButton: false
+                });
+
+                $rangeConfigModal.modal('hide');
+                updateSubCriteriaConfigButtons();
+                updateConfigurationStatus();
+            });
+        }
+
+
+        function generateComparisonFromRanking(rankedLevels) {
+            const comparisons = {};
+            const n = rankedLevels.length;
+
+            // Initialize comparison matrix
+            rankedLevels.forEach(level => {
+                comparisons[level] = {};
+            });
+
+            // Generate comparison values based on ranking
+            // Using a progressive scale that ensures consistency
+            for (let i = 0; i < n; i++) {
+                for (let j = 0; j < n; j++) {
+                    if (i === j) {
+                        comparisons[rankedLevels[i]][rankedLevels[j]] = 1;
+                    } else if (i < j) {
+                        // Higher ranked (lower index) is more important
+                        // Use a moderate scale to avoid extreme values
+                        const rankDiff = j - i;
+                        let value;
+
+                        switch (rankDiff) {
+                            case 1:
+                                value = 2; // Slightly more important
+                                break;
+                            case 2:
+                                value = 3; // Moderately more important
+                                break;
+                            case 3:
+                                value = 5; // Strongly more important
+                                break;
+                            case 4:
+                                value = 7; // Very strongly more important
+                                break;
+                            default:
+                                value = Math.min(9, 2 * rankDiff); // Cap at 9
+                        }
+
+                        comparisons[rankedLevels[i]][rankedLevels[j]] = value;
+                        comparisons[rankedLevels[j]][rankedLevels[i]] = 1 / value;
+                    }
+                }
+            }
+
+            return comparisons;
+        }
+
+
+
 
         function openExperienceComparisonModal() {
             currentConfig.type = 'experience';
@@ -1883,61 +2644,123 @@
             const comparisons = ahpData.subCriteria.experience_duration.comparisons || {};
 
             let content = `
-        <h5 class="mb-3">${criteriaName} Configuration</h5>
-        <div class="alert alert-info mb-3">
-            <i class="fas fa-info-circle me-2"></i>
-            Compare work experience periods by moving the sliders below
+            <h5 class="mb-4 fw-bold text-primary"><i class="fa-solid fa-scale-balanced"></i> ${criteriaName} Configuration</h5>
+
+    <div class="alert alert-info d-flex align-items-start gap-2">
+        <i class="fas fa-info-circle mt-1"></i>
+        <div>
+            Choose how you want to compare <strong>experience periods</strong>. You can either rank them quickly or manually set detailed comparison values.
         </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-6 mb-3">
+            <div class="card h-100 shadow-sm border-0">
+                <div class="card-body text-center">
+                    <i class="fas fa-sliders-h fa-2x text-primary mb-3"></i>
+                    <h5 class="card-title fw-bold">Expert Mode</h5>
+                    <p class="card-text text-muted">Manually adjust comparison values using sliders (scale of 1–9).</p>
+                    <button id="expertModeBtn" class="btn btn-outline-primary w-100">Use Expert Mode</button>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6 mb-3">
+            <div class="card h-100 shadow-sm border-0">
+                <div class="card-body text-center">
+                    <i class="fas fa-magic fa-2x text-success mb-3"></i>
+                    <h5 class="card-title fw-bold">Easy Mode</h5>
+                    <p class="card-text text-muted">Quickly rank the experience periods by importance.</p>
+                    <button id="easyModeBtn" class="btn btn-outline-success w-100">Use Easy Mode</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="comparisonContainer" class="mt-4"></div>
+`;
+
+            $rangeConfigContent.html(content);
+
+            $('#expertModeBtn').on('click', function() {
+                renderExperienceExpertMode(periods, comparisons);
+            });
+
+            $('#easyModeBtn').on('click', function() {
+                renderExperienceEasyMode(periods);
+            });
+
+            $rangeConfigModal.modal('show');
+        }
+
+
+        function renderExperienceExpertMode(periods, comparisons) {
+            $('#comparisonContainer').html(`
+            <div class="alert alert-info d-flex align-items-start gap-2">
+    <i class="fas fa-info-circle mt-1"></i>
+    <div>
+        <strong>Note:</strong> <br>The slider is interpreted from <strong>left to right</strong>.
+        For example, a value of <strong>2</strong> means that the <strong>left label</strong> is slightly more important than the right.
+        <br>
+        To reverse the comparison direction, click the 
+        <i class="fa-solid fa-right-left text-secondary mx-1"></i> icon.
+    </div>
+</div>
+
         <div id="experienceComparisonSliders"></div>
         <div class="mt-4 text-start">
             <button type="button" id="saveExperienceComparison" class="btn btn-primary">
                 <i class="fas fa-save me-2"></i>Save Experience Comparison
             </button>
         </div>
-    `;
+    `);
 
-            $rangeConfigContent.html(content);
-
-            // Initialize experience comparisons
             $('#experienceComparisonSliders').empty();
+
             for (let i = 0; i < periods.length; i++) {
                 for (let j = i + 1; j < periods.length; j++) {
-                    const period1 = periods[i];
-                    const period2 = periods[j];
+                    let period1 = periods[i];
+                    let period2 = periods[j];
+                    const originalP1 = period1;
+                    const originalP2 = period2;
 
-                    // Get saved comparison value if exists
                     let savedValue = 1;
+                    let flipLabels = false;
+
                     if (comparisons[period1] && comparisons[period1][period2] !== undefined) {
-                        savedValue = comparisons[period1][period2];
+                        let val = comparisons[period1][period2];
+                        if (val < 1) {
+                            savedValue = Math.round(1 / val);
+                            flipLabels = true;
+                        } else {
+                            savedValue = Math.round(val);
+                        }
                     } else if (comparisons[period2] && comparisons[period2][period1] !== undefined) {
-                        savedValue = 1 / comparisons[period2][period1];
+                        let val = comparisons[period2][period1];
+                        if (val >= 1) {
+                            savedValue = Math.round(val);
+                            flipLabels = true;
+                        } else {
+                            savedValue = Math.round(1 / val);
+                        }
+                    }
+
+                    if (flipLabels) {
+                        [period1, period2] = [originalP2, originalP1];
                     }
 
                     $('#experienceComparisonSliders').append(`
                 <div class="experience-comparison mb-3 p-3 border rounded bg-light">
                     <div class="d-flex justify-content-between align-items-center mb-2">
-                        <span class="fw-bold">${period1}</span>
-                        <span class="fw-bold">${period2}</span>
+                        <span class="fw-bold comparison-left">${period1}</span>
+                        <button class="btn btn-sm btn-outline-secondary flip-btn mx-2" data-period1="${period1}" data-period2="${period2}"><i class="fa-solid fa-right-left"></i></button>
+                        <span class="fw-bold comparison-right">${period2}</span>
                     </div>
                     <div class="slider-container">
-                        <input type="range" class="form-range experience-comparison-slider" 
-                               min="1" max="9" value="${savedValue}" step="1"
-                               data-period1="${period1}" data-period2="${period2}">
+                        <input type="range" class="form-range experience-comparison-slider"
+                            min="1" max="9" value="${savedValue}" step="1"
+                            data-period1="${period1}" data-period2="${period2}">
                         <div class="d-flex justify-content-between px-2">
-                            <small>1</small>
-                            <small>2</small>
-                            <small>3</small>
-                            <small>4</small>
-                            <small>5</small>
-                            <small>6</small>
-                            <small>7</small>
-                            <small>8</small>
-                            <small>9</small>
-                        </div>
-                        <div class="d-flex justify-content-between mt-1">
-                            <small>${period1} ></small>
-                            <small>Equal</small>
-                            <small>${period2} ></small>
+                            ${[...Array(9)].map((_, i) => `<small>${i + 1}</small>`).join('')}
                         </div>
                     </div>
                 </div>
@@ -1945,9 +2768,30 @@
                 }
             }
 
-            // Add event handler for save button inside the modal
+            $('.flip-btn').off('click').on('click', function() {
+                const container = $(this).closest('.experience-comparison');
+                const leftLabel = container.find('.comparison-left');
+                const rightLabel = container.find('.comparison-right');
+                const slider = container.find('.experience-comparison-slider');
+
+                const tmpText = leftLabel.text();
+                leftLabel.text(rightLabel.text());
+                rightLabel.text(tmpText);
+
+                const p1 = slider.data('period1');
+                const p2 = slider.data('period2');
+                slider.data('period1', p2);
+                slider.data('period2', p1);
+
+                let value = parseInt(slider.val());
+                let inverted = Math.round(1 / value);
+                inverted = Math.max(1, Math.min(9, inverted));
+                slider.val(inverted);
+            });
+
             $('#saveExperienceComparison').on('click', function() {
                 const comparisons = {};
+
                 $('.experience-comparison-slider').each(function() {
                     const period1 = $(this).data('period1');
                     const period2 = $(this).data('period2');
@@ -1957,18 +2801,176 @@
                     if (!comparisons[period2]) comparisons[period2] = {};
 
                     comparisons[period1][period2] = value;
-                    comparisons[period2][period1] = 1 / value;
+                    comparisons[period2][period1] = parseFloat((1 / value).toFixed(4));
                 });
 
                 ahpData.subCriteria.experience_duration.comparisons = comparisons;
+                ahpData.subCriteria.experience_duration.mode = 'expert';
+
                 $rangeConfigModal.modal('hide');
                 updateSubCriteriaConfigButtons();
                 updateConfigurationStatus();
             });
-
-            $rangeConfigModal.modal('show');
         }
 
+
+        function renderExperienceEasyMode(periods) {
+            // Check if there's existing ranking from previous save
+            const existingRanking = ahpData.subCriteria.experience_duration.ranking;
+            let orderedPeriods;
+
+            if (existingRanking && existingRanking.length > 0) {
+                // Use existing ranking if available
+                orderedPeriods = existingRanking;
+            } else {
+                // Set default ranking: longer experience is more valuable
+                // Assuming periods like "5+ years", "3-5 years", "1-3 years", "< 1 year"
+                const defaultOrder = ['5+ years', '3-5 years', '1-3 years', '< 1 year', 'No experience'];
+                orderedPeriods = [];
+
+                // Add periods in default order if they exist
+                defaultOrder.forEach(defaultPeriod => {
+                    if (periods.includes(defaultPeriod)) {
+                        orderedPeriods.push(defaultPeriod);
+                    }
+                });
+
+                // Add any remaining periods that weren't in default order
+                periods.forEach(period => {
+                    if (!orderedPeriods.includes(period)) {
+                        orderedPeriods.push(period);
+                    }
+                });
+            }
+
+            // Generate sortable list with proper ordering
+            let periodItems = '';
+            orderedPeriods.forEach((period, index) => {
+                periodItems += `
+            <div class="list-group-item period-rank-item" data-period="${period}" data-index="${index}">
+                <div class="d-flex align-items-center">
+                    <span class="handle me-3">
+                        <i class="fas fa-grip-vertical"></i>
+                    </span>
+                    <span class="rank-number me-3 fw-bold text-primary">${index + 1}.</span>
+                    <span class="period-name">${period}</span>
+                </div>
+            </div>
+        `;
+            });
+
+            $('#comparisonContainer').html(`
+        <h5 class="mb-3 mt-4 border-top pt-3">Easy Mode: Rank Experience Periods</h5>
+        <div class="alert alert-info mb-3">
+            <i class="fas fa-info-circle me-2"></i>
+            <strong>Instructions:</strong> Drag to rank the experience periods from most to least important. The system will automatically generate comparison values.
+        </div>
+        <div id="periodRankingList" class="list-group mb-4">
+            ${periodItems}
+        </div>
+        <button id="saveEasyModeBtn" class="btn btn-success">
+            <i class="fas fa-save me-2"></i> Save Ranking
+        </button>
+    `);
+
+            // Initialize SortableJS
+            const sortableList = document.getElementById('periodRankingList');
+            const sortable = Sortable.create(sortableList, {
+                animation: 150,
+                handle: '.handle',
+                ghostClass: 'sortable-ghost',
+                chosenClass: 'sortable-chosen',
+                dragClass: 'sortable-drag',
+                onEnd: function(evt) {
+                    updateRankNumbers();
+                }
+            });
+
+            // Function to update rank numbers
+            function updateRankNumbers() {
+                const items = document.querySelectorAll('#periodRankingList .period-rank-item');
+                items.forEach((item, index) => {
+                    const rankNumber = item.querySelector('.rank-number');
+                    rankNumber.textContent = (index + 1) + '.';
+                    item.setAttribute('data-index', index);
+                });
+            }
+
+            // Save button handler
+            $('#saveEasyModeBtn').on('click', function() {
+                const rankedPeriods = [];
+                $('#periodRankingList .period-rank-item').each(function() {
+                    rankedPeriods.push($(this).data('period'));
+                });
+
+                // Generate comparison matrix based on ranking
+                const comparisons = generateExperienceComparisonFromRanking(rankedPeriods);
+
+                // Save easy mode comparisons
+                ahpData.subCriteria.experience_duration.comparisons = comparisons;
+                ahpData.subCriteria.experience_duration.mode = 'easy'; // Mark as easy mode
+                ahpData.subCriteria.experience_duration.ranking = rankedPeriods; // Save the ranking
+
+                Swal.fire({
+                    title: 'Ranking Saved!',
+                    text: 'Experience periods have been ranked and comparison values generated automatically.',
+                    icon: 'success',
+                    timer: 1500,
+                    showConfirmButton: false
+                });
+
+                $rangeConfigModal.modal('hide');
+                updateSubCriteriaConfigButtons();
+                updateConfigurationStatus();
+            });
+        }
+
+        function generateExperienceComparisonFromRanking(rankedPeriods) {
+            const comparisons = {};
+            const n = rankedPeriods.length;
+
+            // Initialize comparison matrix
+            rankedPeriods.forEach(period => {
+                comparisons[period] = {};
+            });
+
+            // Generate comparison values based on ranking
+            // Using a progressive scale that ensures consistency
+            for (let i = 0; i < n; i++) {
+                for (let j = 0; j < n; j++) {
+                    if (i === j) {
+                        comparisons[rankedPeriods[i]][rankedPeriods[j]] = 1;
+                    } else if (i < j) {
+                        // Higher ranked (lower index) is more important
+                        // Use a moderate scale to avoid extreme values
+                        const rankDiff = j - i;
+                        let value;
+
+                        switch (rankDiff) {
+                            case 1:
+                                value = 2; // Slightly more important
+                                break;
+                            case 2:
+                                value = 3; // Moderately more important
+                                break;
+                            case 3:
+                                value = 5; // Strongly more important
+                                break;
+                            case 4:
+                                value = 7; // Very strongly more important
+                                break;
+                            default:
+                                value = Math.min(9, 2 * rankDiff); // Cap at 9
+                        }
+
+                        comparisons[rankedPeriods[i]][rankedPeriods[j]] = value;
+                        comparisons[rankedPeriods[j]][rankedPeriods[i]] = 1 / value;
+                    }
+                }
+            }
+
+            return comparisons;
+        }
 
 
         // 8. Updated saveRangeConfig function to handle the two-step process
@@ -2030,180 +3032,365 @@
             updateConfigurationStatus();
         });
 
-        // Set default comparison values based on logical preferences
-        function setDefaultComparisonValues(criteriaKey, type) {
-            if (type === 'range') {
-                const ranges = ahpData.subCriteria[criteriaKey].ranges;
-
-                // For range-based criteria, higher ranges are generally preferred
-                for (let i = 0; i < ranges.length; i++) {
-                    for (let j = i + 1; j < ranges.length; j++) {
-                        const range1 = ranges[i];
-                        const range2 = ranges[j];
-                        const label1 = range1.label || `${range1.min}-${range1.max === 999 || range1.max === 999999999 ? '+' : range1.max}`;
-                        const label2 = range2.label || `${range2.min}-${range2.max === 999 || range2.max === 999999999 ? '+' : range2.max}`;
-
-                        // Determine default value based on which range is "better"
-                        let value = 1;
-                        if (criteriaKey === 'expected_salary') {
-                            // Lower salary is better
-                            value = range1.min < range2.min ? 5 : (range1.min > range2.min ? 1 / 5 : 1);
-                        } else if (criteriaKey === 'distance') {
-                            // Shorter distance is better
-                            value = range1.min < range2.min ? 5 : (range1.min > range2.min ? 1 / 5 : 1);
-                        } else {
-                            // For age, organization, training - higher is better
-                            value = range1.min > range2.min ? 5 : (range1.min < range2.min ? 1 / 5 : 1);
-                        }
-
-                        // Set the comparison values
-                        if (!ahpData.subCriteria[criteriaKey].comparisons[label1]) {
-                            ahpData.subCriteria[criteriaKey].comparisons[label1] = {};
-                        }
-                        if (!ahpData.subCriteria[criteriaKey].comparisons[label2]) {
-                            ahpData.subCriteria[criteriaKey].comparisons[label2] = {};
-                        }
-
-                        ahpData.subCriteria[criteriaKey].comparisons[label1][label2] = value;
-                        ahpData.subCriteria[criteriaKey].comparisons[label2][label1] = 1 / value;
-                    }
-                }
-            } else if (type === 'education') {
-                const levels = ahpData.subCriteria.education.levels;
-                const levelRanking = {
-                    'SMK': 1,
-                    'SMA': 2,
-                    'D3': 3,
-                    'S1': 4,
-                    'S2': 5
-                };
-
-                for (let i = 0; i < levels.length; i++) {
-                    for (let j = i + 1; j < levels.length; j++) {
-                        const level1 = levels[i];
-                        const level2 = levels[j];
-                        const value = levelRanking[level1] > levelRanking[level2] ? 5 : (levelRanking[level1] < levelRanking[level2] ? 1 / 5 : 1);
-
-                        if (!ahpData.subCriteria.education.comparisons[level1]) {
-                            ahpData.subCriteria.education.comparisons[level1] = {};
-                        }
-                        if (!ahpData.subCriteria.education.comparisons[level2]) {
-                            ahpData.subCriteria.education.comparisons[level2] = {};
-                        }
-
-                        ahpData.subCriteria.education.comparisons[level1][level2] = value;
-                        ahpData.subCriteria.education.comparisons[level2][level1] = 1 / value;
-                    }
-                }
-            } else if (type === 'experience') {
-                const periods = ahpData.subCriteria.experience_duration.periods;
-                const periodRanking = {
-                    '<1 year': 1,
-                    '1-2 years': 2,
-                    '3-5 years': 3,
-                    '5+ years': 4
-                };
-
-                for (let i = 0; i < periods.length; i++) {
-                    for (let j = i + 1; j < periods.length; j++) {
-                        const period1 = periods[i];
-                        const period2 = periods[j];
-                        const value = periodRanking[period1] > periodRanking[period2] ? 5 : (periodRanking[period1] < periodRanking[period2] ? 1 / 5 : 1);
-
-                        if (!ahpData.subCriteria.experience_duration.comparisons[period1]) {
-                            ahpData.subCriteria.experience_duration.comparisons[period1] = {};
-                        }
-                        if (!ahpData.subCriteria.experience_duration.comparisons[period2]) {
-                            ahpData.subCriteria.experience_duration.comparisons[period2] = {};
-                        }
-
-                        ahpData.subCriteria.experience_duration.comparisons[period1][period2] = value;
-                        ahpData.subCriteria.experience_duration.comparisons[period2][period1] = 1 / value;
-                    }
-                }
-            }
-        }
 
 
 
 
 
 
-
-
-
-
-
-
-
-
-        // Initialize main criteria comparison
+        // Initialize main criteria comparison with mode selection
         function initializeMainCriteriaComparison() {
             $mainCriteriaSliders.empty();
 
             const criteria = Object.keys(ahpData.mainCriteria);
-            let html = '<div class="criteria-comparison-container">';
 
-            // Generate all pairwise comparisons (n*(n-1)/2)
+            // Show mode selection like education
+            showMainCriteriaModeSelection(criteria);
+        }
+
+        function showMainCriteriaModeSelection(criteria) {
+            const html = `
+        <div class="alert alert-info d-flex align-items-start gap-2">
+            <i class="fas fa-info-circle mt-1"></i>
+            <div>
+                Choose how you want to compare <strong>main criteria</strong>. You can either rank them easily or define detailed comparisons manually.
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <div class="card h-100 shadow-sm border-0">
+                    <div class="card-body text-center">
+                        <i class="fas fa-sliders-h fa-2x text-primary mb-3"></i>
+                        <h5 class="card-title fw-bold">Expert Mode</h5>
+                        <p class="card-text text-muted">Manually adjust comparison values using sliders (1–9 scale).</p>
+                        <button id="mainExpertModeBtn" class="btn btn-outline-primary w-100">Use Expert Mode</button>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6 mb-3">
+                <div class="card h-100 shadow-sm border-0">
+                    <div class="card-body text-center">
+                        <i class="fas fa-magic fa-2x text-success mb-3"></i>
+                        <h5 class="card-title fw-bold">Easy Mode</h5>
+                        <p class="card-text text-muted">Quickly rank criteria by importance without using sliders.</p>
+                        <button id="mainEasyModeBtn" class="btn btn-outline-success w-100">Use Easy Mode</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="mainComparisonContainer" class="mt-4"></div>
+    `;
+
+            $mainCriteriaSliders.html(html);
+
+            $('#mainExpertModeBtn').on('click', function() {
+                renderMainCriteriaExpertMode(criteria);
+            });
+
+            $('#mainEasyModeBtn').on('click', function() {
+                renderMainCriteriaEasyMode(criteria);
+            });
+        }
+
+        function renderMainCriteriaExpertMode(criteria) {
+            const comparisons = ahpData.mainComparisons || {};
+
+            $('#mainComparisonContainer').html(`
+        <div class="alert alert-info d-flex align-items-start gap-2">
+            <i class="fas fa-info-circle mt-1"></i>
+            <div>
+                <strong>Note:</strong> <br>The slider is interpreted from <strong>left to right</strong>.
+                For example, a value of <strong>2</strong> means that the <strong>left criterion</strong> is slightly more important than the right.
+                <br>
+                To reverse the comparison direction, click the 
+                <i class="fa-solid fa-right-left text-secondary mx-1"></i> icon.
+            </div>
+        </div>
+
+        <div id="mainCriteriaComparisonSliders"></div>
+        <div class="mt-4 text-start">
+            <button type="button" id="saveMainCriteriaComparison" class="btn btn-primary">
+                <i class="fas fa-save me-2"></i>Save Main Criteria Comparison
+            </button>
+        </div>
+    `);
+
+            $('#mainCriteriaComparisonSliders').empty();
+
+            // Loop pairwise combinations for dynamic criteria (3-7)
             for (let i = 0; i < criteria.length; i++) {
                 for (let j = i + 1; j < criteria.length; j++) {
-                    const crit1 = criteria[i];
-                    const crit2 = criteria[j];
+                    let crit1 = criteria[i];
+                    let crit2 = criteria[j];
+                    const originalC1 = crit1;
+                    const originalC2 = crit2;
                     const crit1Name = ahpData.mainCriteria[crit1];
                     const crit2Name = ahpData.mainCriteria[crit2];
 
-                    // Check if we have a saved comparison value
-                    const savedValue = ahpData.mainComparisons[crit1]?.[crit2] || 1;
+                    let savedValue = 1;
+                    let flipLabels = false;
 
-                    // Ensure the default value is saved to the data structure
-                    if (!ahpData.mainComparisons[crit1]) ahpData.mainComparisons[crit1] = {};
-                    if (!ahpData.mainComparisons[crit2]) ahpData.mainComparisons[crit2] = {};
-
-                    // Set the default values if they don't already exist
-                    if (!ahpData.mainComparisons[crit1][crit2]) {
-                        ahpData.mainComparisons[crit1][crit2] = savedValue;
+                    if (comparisons[crit1] && comparisons[crit1][crit2] !== undefined) {
+                        let val = comparisons[crit1][crit2];
+                        if (val < 1) {
+                            savedValue = Math.round(1 / val);
+                            flipLabels = true;
+                        } else {
+                            savedValue = Math.round(val);
+                        }
+                    } else if (comparisons[crit2] && comparisons[crit2][crit1] !== undefined) {
+                        let val = comparisons[crit2][crit1];
+                        if (val >= 1) {
+                            savedValue = Math.round(val);
+                            flipLabels = true;
+                        } else {
+                            savedValue = Math.round(1 / val);
+                        }
                     }
-                    if (!ahpData.mainComparisons[crit2][crit1]) {
-                        ahpData.mainComparisons[crit2][crit1] = 1 / savedValue;
+
+                    if (flipLabels) {
+                        [crit1, crit2] = [originalC2, originalC1];
                     }
 
-                    html += `
-                <div class="criteria-comparison mb-4 p-3 border rounded bg-light">
+                    const displayCrit1Name = ahpData.mainCriteria[crit1];
+                    const displayCrit2Name = ahpData.mainCriteria[crit2];
+
+                    $('#mainCriteriaComparisonSliders').append(`
+                <div class="main-criteria-comparison mb-3 p-3 border rounded bg-light">
                     <div class="d-flex justify-content-between align-items-center mb-2">
-                        <span class="fw-bold">${crit1Name}</span>
-                        <span class="fw-bold">${crit2Name}</span>
+                        <span class="fw-bold comparison-left">${displayCrit1Name}</span>
+                        <button class="btn btn-sm btn-outline-secondary flip-btn mx-2" data-crit1="${crit1}" data-crit2="${crit2}">
+                            <i class="fa-solid fa-right-left"></i>
+                        </button>
+                        <span class="fw-bold comparison-right">${displayCrit2Name}</span>
                     </div>
                     <div class="slider-container">
-                        <input type="range" class="form-range main-comparison-slider" 
+                        <input type="range" class="form-range main-criteria-comparison-slider" 
                                min="1" max="9" value="${savedValue}" step="1"
                                data-crit1="${crit1}" data-crit2="${crit2}">
                         <div class="d-flex justify-content-between px-2">
-                            <small>1</small>
-                            <small>2</small>
-                            <small>3</small>
-                            <small>4</small>
-                            <small>5</small>
-                            <small>6</small>
-                            <small>7</small>
-                            <small>8</small>
-                            <small>9</small>
-                        </div>
-                        <div class="d-flex justify-content-between mt-1">
-                            <small>${crit1Name} ></small>
-                            <small>Equal</small>
-                            <small>${crit2Name} ></small>
+                            ${[...Array(9)].map((_, i) => `<small>${i + 1}</small>`).join('')}
                         </div>
                     </div>
                 </div>
-            `;
+            `);
                 }
             }
 
-            html += '</div>';
-            $mainCriteriaSliders.html(html);
+            // Flip button behavior
+            $('.flip-btn').off('click').on('click', function() {
+                const container = $(this).closest('.main-criteria-comparison');
+                const leftLabel = container.find('.comparison-left');
+                const rightLabel = container.find('.comparison-right');
+                const slider = container.find('.main-criteria-comparison-slider');
+
+                // Swap label text
+                const tmpText = leftLabel.text();
+                leftLabel.text(rightLabel.text());
+                rightLabel.text(tmpText);
+
+                // Swap data attributes
+                const c1 = slider.data('crit1');
+                const c2 = slider.data('crit2');
+                slider.data('crit1', c2);
+                slider.data('crit2', c1);
+
+                // Update button data attributes
+                $(this).data('crit1', c2);
+                $(this).data('crit2', c1);
+
+                // Invert slider value
+                const value = parseInt(slider.val());
+                let inverted = Math.round(1 / value);
+                inverted = Math.max(1, Math.min(9, inverted)); // Clamp
+                slider.val(inverted);
+            });
+
+            // Save the comparisons
+            $('#saveMainCriteriaComparison').on('click', function() {
+                const comparisons = {};
+
+                $('.main-criteria-comparison-slider').each(function() {
+                    const crit1 = $(this).data('crit1');
+                    const crit2 = $(this).data('crit2');
+                    const value = parseInt($(this).val());
+
+                    if (!comparisons[crit1]) comparisons[crit1] = {};
+                    if (!comparisons[crit2]) comparisons[crit2] = {};
+
+                    comparisons[crit1][crit2] = value;
+                    comparisons[crit2][crit1] = parseFloat((1 / value).toFixed(4));
+                });
+
+                // Save into global AHP config
+                ahpData.mainComparisons = comparisons;
+                ahpData.mainCriteriaMode = 'expert';
+
+                Swal.fire({
+                    title: 'Comparison Saved!',
+                    text: 'Main criteria comparisons have been saved successfully.',
+                    icon: 'success',
+                    timer: 1500,
+                    showConfirmButton: false
+                });
+
+                // Update configuration status if function exists
+                if (typeof updateConfigurationStatus === 'function') {
+                    updateConfigurationStatus();
+                }
+            });
         }
 
-        // Save main criteria comparisons when slider changes
+
+        function renderMainCriteriaEasyMode(criteria) {
+            // Check if there's existing ranking from previous save
+            const existingRanking = ahpData.mainCriteriaRanking;
+            let orderedCriteria;
+
+            if (existingRanking && existingRanking.length > 0) {
+                orderedCriteria = existingRanking;
+            } else {
+                orderedCriteria = [...criteria];
+            }
+
+            // Generate sortable list
+            let criteriaItems = '';
+            orderedCriteria.forEach((criterion, index) => {
+                const criterionName = ahpData.mainCriteria[criterion];
+                criteriaItems += `
+            <div class="list-group-item criteria-rank-item" data-criterion="${criterion}" data-index="${index}">
+                <div class="d-flex align-items-center">
+                    <span class="handle me-3">
+                        <i class="fas fa-grip-vertical"></i>
+                    </span>
+                    <span class="rank-number me-3 fw-bold text-primary">${index + 1}.</span>
+                    <span class="criterion-name">${criterionName}</span>
+                </div>
+            </div>
+        `;
+            });
+
+            $('#mainComparisonContainer').html(`
+        <h5 class="mb-3 mt-4 border-top pt-3">Easy Mode: Rank Main Criteria</h5>
+        <div class="alert alert-info mb-3">
+            <i class="fas fa-info-circle me-2"></i>
+            <strong>Instructions:</strong> Drag to rank the criteria from most to least important.
+        </div>
+        <div id="criteriaRankingList" class="list-group mb-4">
+            ${criteriaItems}
+        </div>
+        <button id="saveMainEasyModeBtn" class="btn btn-success">
+            <i class="fas fa-save me-2"></i> Save Ranking
+        </button>
+    `);
+
+            // Initialize SortableJS
+            const sortableList = document.getElementById('criteriaRankingList');
+            const sortable = Sortable.create(sortableList, {
+                animation: 150,
+                handle: '.handle',
+                ghostClass: 'sortable-ghost',
+                chosenClass: 'sortable-chosen',
+                dragClass: 'sortable-drag',
+                onEnd: function(evt) {
+                    updateRankNumbers();
+                }
+            });
+
+            // Function to update rank numbers
+            function updateRankNumbers() {
+                const items = document.querySelectorAll('#criteriaRankingList .criteria-rank-item');
+                items.forEach((item, index) => {
+                    const rankNumber = item.querySelector('.rank-number');
+                    rankNumber.textContent = (index + 1) + '.';
+                    item.setAttribute('data-index', index);
+                });
+            }
+
+            // Save button handler
+            $('#saveMainEasyModeBtn').on('click', function() {
+                const rankedCriteria = [];
+                $('#criteriaRankingList .criteria-rank-item').each(function() {
+                    rankedCriteria.push($(this).data('criterion'));
+                });
+
+                const comparisons = generateMainCriteriaComparisonFromRanking(rankedCriteria);
+
+                ahpData.mainComparisons = comparisons;
+                ahpData.mainCriteriaMode = 'easy';
+                ahpData.mainCriteriaRanking = rankedCriteria;
+
+                Swal.fire({
+                    title: 'Ranking Saved!',
+                    text: 'Main criteria have been ranked successfully.',
+                    icon: 'success',
+                    timer: 1500,
+                    showConfirmButton: false
+                });
+
+                if (typeof updateConfigurationStatus === 'function') {
+                    updateConfigurationStatus();
+                }
+            });
+        }
+
+
+        function generateMainCriteriaComparisonFromRanking(rankedCriteria) {
+            const comparisons = {};
+            const n = rankedCriteria.length;
+
+            // Initialize comparison matrix for dynamic criteria
+            rankedCriteria.forEach(criterion => {
+                comparisons[criterion] = {};
+            });
+
+            // Generate comparison values based on ranking
+            // Using a progressive scale that ensures consistency for 3-7 criteria
+            for (let i = 0; i < n; i++) {
+                for (let j = 0; j < n; j++) {
+                    if (i === j) {
+                        comparisons[rankedCriteria[i]][rankedCriteria[j]] = 1;
+                    } else if (i < j) {
+                        // Higher ranked (lower index) is more important
+                        // Use a moderate scale to avoid extreme values
+                        const rankDiff = j - i;
+                        let value;
+
+                        switch (rankDiff) {
+                            case 1:
+                                value = 2; // Slightly more important
+                                break;
+                            case 2:
+                                value = 3; // Moderately more important
+                                break;
+                            case 3:
+                                value = 5; // Strongly more important
+                                break;
+                            case 4:
+                                value = 7; // Very strongly more important
+                                break;
+                            case 5:
+                                value = 8; // Very strongly more important
+                                break;
+                            case 6:
+                                value = 9; // Absolutely more important
+                                break;
+                            default:
+                                value = Math.min(9, 2 * rankDiff); // Cap at 9
+                        }
+
+                        comparisons[rankedCriteria[i]][rankedCriteria[j]] = value;
+                        comparisons[rankedCriteria[j]][rankedCriteria[i]] = parseFloat((1 / value).toFixed(4));
+                    }
+                }
+            }
+
+            return comparisons;
+        }
+
+        // Save main criteria comparisons when slider changes (keep existing functionality)
         $(document).on('input', '.main-comparison-slider', function() {
             const crit1 = $(this).data('crit1');
             const crit2 = $(this).data('crit2');
@@ -2215,6 +3402,14 @@
             ahpData.mainComparisons[crit1][crit2] = value;
             ahpData.mainComparisons[crit2][crit1] = 1 / value;
         });
+
+
+
+
+
+
+
+
 
         // Calculate button handler
         $calculateBtn.on('click', function() {
@@ -2961,6 +4156,12 @@
 @endpush
 
 <style>
+    .hover-shadow:hover {
+        box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.1);
+        transition: box-shadow 0.3s ease-in-out;
+    }
+
+
     /* Pastikan container utama terlihat */
     #container-body {
         opacity: 1;
@@ -3264,10 +4465,20 @@
     /* Range Configuration */
     .range-configuration {
         background-color: #f8f9fa;
-        padding: 20px;
+        padding: 0;
+
         border-radius: 10px;
-        margin-bottom: 20px;
+        margin-top: 0;
     }
+
+    #comparisonSection {
+        background-color: #f8f9fa;
+        padding: 0;
+
+        border-radius: 10px;
+        margin-top: 1.5rem;
+    }
+
 
     .range-item {
         background-color: white;
@@ -3327,13 +4538,7 @@
         border: 1px solid #e0e6f5;
     }
 
-    /* Comparison Section */
-    #comparisonSection {
-        background-color: #f8f9fa;
-        padding: 1.5rem;
-        border-radius: 10px;
-        margin-top: 1.5rem;
-    }
+
 
     /* Responsive Adjustments */
     @media (max-width: 768px) {
